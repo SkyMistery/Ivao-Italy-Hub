@@ -14,6 +14,8 @@ import {
   type PublicActivityDto,
 } from '../api';
 
+import { endOfHours } from './hours';
+
 /**
  * The parallel activities of an event in person on its page (design M4 §4-bis.2, §7.1, E17), inside the section of the registration: each
  * activity with its turns, in UTC as every hour of an event, and the seats still free in each — to everybody, never who took them. A member
@@ -117,7 +119,7 @@ function Activity({
                   <td className="py-2 pr-3">
                     {t('events:public.activities.hours', {
                       from: moment(turn.startsAtUtc),
-                      to: moment(turn.endsAtUtc, { date: false }),
+                      to: endOfHours(turn.startsAtUtc, turn.endsAtUtc, moment),
                     })}
                   </td>
                   <td className="py-2 pr-3">
@@ -186,7 +188,7 @@ export function RegistrationSeats({ registration }: { registration: MyRegistrati
               {' — '}
               {t('events:public.activities.hours', {
                 from: moment(seat.startsAtUtc),
-                to: moment(seat.endsAtUtc, { date: false }),
+                to: endOfHours(seat.startsAtUtc, seat.endsAtUtc, moment),
               })}
             </span>
             {registration.withdrawable ? (

@@ -5,10 +5,10 @@ import { routeTree } from '../routeTree.gen';
 import { Route as MemberLayoutRoute } from '../routes/_member';
 import { Route as PublicLayoutRoute } from '../routes/_public';
 import { Route as StaffLayoutRoute } from '../routes/_staff';
-import { holdsPermissionAnywhere } from '../shared/api/bootstrap';
 import type { RouteDefinition } from '../shared/modules';
 
 import { registry } from './registry';
+import { opensStaffRoute } from './staffRoute';
 
 /**
  * The router, with the routes the modules declare mounted into the generated tree.
@@ -52,7 +52,8 @@ export function createHubRouter(queryClient: QueryClient) {
     );
 
   // A module's back office (M2, T5): under the staff layout, so the staff guard runs first, and behind the
-  // permission the manifest names — the same "held anywhere" question the core's own screens ask.
+  // permission the manifest names — the same "held anywhere" question the core's own screens ask, or "held
+  // without a row scope" for a register (`unscoped`, #427).
   const staffRoutes = registry.routes
     .filter((definition) => definition.area === 'staff')
     .map((definition) =>
@@ -61,10 +62,7 @@ export function createHubRouter(queryClient: QueryClient) {
         path: definition.path,
         ...searchOf(definition),
         beforeLoad: ({ context }) => {
-          if (
-            definition.permission !== undefined &&
-            !holdsPermissionAnywhere(context.bootstrap, definition.permission)
-          ) {
+          if (!opensStaffRoute(context.bootstrap, definition)) {
             // eslint-disable-next-line @typescript-eslint/only-throw-error -- a redirect is how a guard stops a navigation
             throw redirect({ to: '/forbidden' });
           }

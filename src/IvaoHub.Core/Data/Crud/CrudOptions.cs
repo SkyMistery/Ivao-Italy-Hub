@@ -136,6 +136,16 @@ public sealed class CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto>
     /// <summary>Entity to detail row.</summary>
     public Func<TEntity, TDetailDto>? ToDetail { get; set; }
 
+    /// <summary>
+    /// The detail row with the services of the request, in place of <see cref="ToDetail"/>, for a detail that says something
+    /// the row alone does not hold — what its reader may do on it. The engine hands it the row it read, created or updated,
+    /// after the permission on the row was asked, and returns what it gives on the read, the create and the update alike.
+    /// <para>The page of an event is the reason it exists (#427, note 2026-11-01-le-azioni-di-un-evento-dal-server): its
+    /// buttons are the reader's actions on that event, which only the single handler answers row by row — a grant on one
+    /// event, a FIR team's FIR. The engine adds no rule: whatever it says, the module asks that handler.</para>
+    /// </summary>
+    public Func<TEntity, IServiceProvider, CancellationToken, Task<TDetailDto>>? ToDetailPage { get; set; }
+
     /// <summary>Write payload onto the entity, for both create and update.</summary>
     public Action<TWriteDto, TEntity>? Apply { get; set; }
 
