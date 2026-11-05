@@ -204,12 +204,10 @@ test('a row is not offered where the server would refuse one', () => {
 
   const hints = screen
     .getAllByRole('button', { name: editor.insertRow })
-    .map((button) => button.getAttribute('title'));
+    .map((button) => button.getAttribute('title')?.split(' ').at(-1));
 
-  // Three inside the first three at their end, and three before each row: never a 1.1.1.1.1.
-  expect(hints).toHaveLength(6);
-  expect(hints.filter((hint) => hint?.endsWith('1.1.1.1'))).toHaveLength(1);
-  expect(hints.filter((hint) => hint?.endsWith('1.1.1.1.1'))).toHaveLength(0);
+  // Before each of the three rows, and after the last one of the section of the page: never a 1.1.1.1.1.
+  expect(hints).toEqual(['1.1', '1.1.1', '1.1.1.1', '1.2']);
 });
 
 test('a section a template locks takes no row, and its neighbours take a section', () => {

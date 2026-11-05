@@ -543,8 +543,10 @@ export function BodyEditor({
   // What may be done to a section or a block, written once and reached from two places: the rows
   // of the outline, and the bar on the picked thing itself on the page (Carmine, 11 September
   // 2026). The rules of the template are read here, so the page and the outline offer the same.
-  const addSectionAt = (parentId?: string, at?: number) => {
+  const addSectionAt = (parentId?: string, at?: number, byKeyboard = false) => {
     const added = addSection(body, locales, parentId, at);
+    // Reached with the keyboard, the cursor goes on to the new section's name, the way a double click does.
+    focusWanted.current = byKeyboard;
     change(added.body);
     setSelection({ kind: 'section', id: added.id });
   };

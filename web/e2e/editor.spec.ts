@@ -147,7 +147,18 @@ test('a section is inserted between two others, by the pointer or the keyboard, 
   await expect(labels).toHaveText(['1 · First · pale blue background', '2 · Second']);
 
   // ⚠️ Nothing on the page moves for any of this, which is the rule of composing on the page: the
-  // label and the gap stand out of the flow.
+  // sections stand exactly where they would with the labels and the places to insert gone from the flow.
+  const boxes = () =>
+    section.evaluateAll((all) => all.map((one) => JSON.stringify(one.getBoundingClientRect())));
+  const drawn = await boxes();
+  await frame.locator('[data-section-label], [data-insert-gap]').evaluateAll((chrome) => {
+    chrome.forEach((one) => ((one as HTMLElement).style.display = 'none'));
+  });
+  expect(await boxes()).toEqual(drawn);
+  await frame.locator('[data-section-label], [data-insert-gap]').evaluateAll((chrome) => {
+    chrome.forEach((one) => ((one as HTMLElement).style.display = ''));
+  });
+
   const before = await section.nth(1).boundingBox();
   const insert = section.nth(1).getByRole('button', { name: editor.insertSection, exact: true });
 
@@ -163,6 +174,8 @@ test('a section is inserted between two others, by the pointer or the keyboard, 
     '2 · Section without a name',
     '3 · Second',
   ]);
+  // From the pointer, the cursor stays out of the panel: only the keyboard, below, is taken there.
+  await expect(page.locator('#content-properties input:focus')).toHaveCount(0);
 
   // The one just inserted is picked, and the panel says what its name is for.
   await expect(section.nth(1)).toHaveAttribute('data-picked', '');
@@ -178,8 +191,9 @@ test('a section is inserted between two others, by the pointer or the keyboard, 
   await expect(reached).toBeFocused();
   await expect(reached).toHaveCSS('opacity', '1');
 
-  // A row inside the second, then one inside that: the number says where each one stands.
-  await section.nth(1).getByRole('button', { name: editor.insertRow, exact: true }).first().focus();
+  // A row inside the second, from the place at the end of what it holds, and the cursor goes on to the
+  // new row's name: the button it was on now stands somewhere else.
+  await section.nth(1).getByRole('button', { name: editor.insertRow, exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(labels).toHaveText([
     '1 · First · pale blue background',
@@ -187,8 +201,9 @@ test('a section is inserted between two others, by the pointer or the keyboard, 
     'Row 2.1',
     '3 · Second',
   ]);
+  await expect(page.locator('#content-properties input:focus')).toBeVisible();
 
-  // The row is what is picked: its own air takes the click, not the section around it.
+  // The row is what is picked; its label takes the click, not the section around it.
   const row = section.nth(2);
   await expect(row).toHaveAttribute('data-picked', '');
   await labels.nth(1).click();
@@ -196,9 +211,8 @@ test('a section is inserted between two others, by the pointer or the keyboard, 
   await labels.nth(2).click();
   await expect(row).toHaveAttribute('data-picked', '');
 
-  // The second of the row's two: the first stands before it, among the rows of its section.
-  await row.getByRole('button', { name: editor.insertRow, exact: true }).nth(1).focus();
-  await page.keyboard.press('Enter');
+  // A row inside the row, from its own bar: the number says where each one stands.
+  await row.getByRole('button', { name: editor.addRow, exact: true }).click();
   await expect(labels).toHaveText([
     '1 · First · pale blue background',
     '2 · Section without a name',
@@ -206,6 +220,64 @@ test('a section is inserted between two others, by the pointer or the keyboard, 
     'Row 2.1.1',
     '3 · Second',
   ]);
+});
+
+test('a block in a row is picked up to its edges, where a place to insert would otherwise take the click', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/staff/content/1');
+
+  const frame = page.getByRole('region', { name: editor.preview });
+  const section = frame.locator('[data-pickable="section"]');
+
+  await page.getByRole('button', { name: editor.addSection, exact: true }).click();
+  await section.first().getByRole('button', { name: editor.insertRow, exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(section).toHaveCount(2);
+
+  // A row is born with no padding: a heading in it has no air above it, centred across the whole row.
+  await page
+    .getByLabel(englishCommon.blocks.subgroups.text)
+    .getByRole('button', { name: englishCommon.blocks.heading.label })
+    .click();
+  await page.locator('#content-properties input:visible').first().fill('Heading in a row');
+  const heading = frame.getByRole('heading', { name: 'Heading in a row' });
+  await expect(heading).toBeVisible();
+  const block = frame.locator('[data-pickable="block"]');
+
+  // Something else picked, so that picking the block is something a click has to do. `click` also
+  // refuses when something else would take the pointer at that point.
+  const box = (await heading.boundingBox())!;
+  for (const position of [
+    { x: box.width / 2, y: 1 },
+    { x: box.width / 2, y: box.height / 2 },
+    { x: box.width / 2, y: box.height - 1 },
+    { x: 1, y: 1 },
+  ]) {
+    await frame.locator('[data-section-label]').first().click();
+    await expect(block).not.toHaveAttribute('data-picked', '');
+
+    await heading.click({ position });
+    await expect(block).toHaveAttribute('data-picked', '');
+    // And nothing was inserted on the way.
+    await expect(section).toHaveCount(2);
+  }
+
+  // The place before the row is there all the same, in the gap above it, and answers the pointer.
+  await frame.locator('[data-section-label]').first().click();
+  const gap = section.nth(1).locator('[data-insert-gap]');
+  const insert = gap.getByRole('button', { name: editor.insertRow, exact: true });
+  await gap.hover();
+  await expect(insert).toHaveCSS('opacity', '1');
+  await insert.click();
+  await expect(section).toHaveCount(3);
+
+  // The keyboard goes down the page: past the row, the place at the end of the section's rows comes last.
+  const places = frame.locator('[data-insert-gap] button');
+  expect(
+    await places.evaluateAll((all) => all.map((one) => (one as HTMLElement).title.split(' ').at(-1))),
+  ).toEqual(['1', '1.1', '1.2', '1.3']);
 });
 
 test("a calendar block's kinds are chosen from the calendar's own, not typed (issue #360)", async ({

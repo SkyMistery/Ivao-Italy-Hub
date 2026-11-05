@@ -36,12 +36,30 @@ cookie è scesa a 0–2 vuote su 8 con il difetto presente: per giudicare una co
 
 ## 3. La correzione
 
-`SectionInsertions` (`web/src/blocks/ContentRenderer.tsx`) disegna le fessure solo dopo `document.fonts.ready`. Non si perde niente:
-una fessura è invisibile finché non ci arriva il puntatore o la tastiera. Le **etichette** non aspettano, non aprono il difetto e
-servono subito. Un componente a sé, che esiste solo mentre si compone: per un visitatore non c'è né stato né effetto in più.
+`useInsert` (`web/src/blocks/ContentRenderer.tsx`) disegna le fessure solo dopo `document.fonts.ready`. Non si perde niente: una
+fessura è invisibile finché non ci arriva il puntatore o la tastiera. Le **etichette** non aspettano, non aprono il difetto e servono
+subito. Componenti a sé, che esistono solo mentre si compone: per un visitatore non c'è né stato né effetto in più.
 
 Le guardie: `preview.spec.ts`, non toccata; `picking.test.tsx`, deterministica in jsdom, dice che le fessure aspettano i caratteri e
 le etichette no.
+
+## 3 bis. Le fessure stanno sotto quello che la sezione contiene
+
+Dalla revisione della #457, riprodotto nel browser: una fessura sopra il contenuto prendeva il clic ai blocchi. In una riga appena
+nata, senza padding, un titolo da 48 px restava al blocco per 28, e **un clic al centro del titolo inseriva una riga** invece di
+sceglierlo. Due scelte, che non cambiano né il disegno né la geometria della pagina:
+
+- **Gli strati.** Mentre si compone, il contenuto di una sezione sta su `z-[1]` e la striscia su `z-0`: la striscia risponde solo dove
+  c'è aria, e un blocco si sceglie fino al bordo. La tastiera la alza, così il bottone con il focus si vede. Dove si toccano due sezioni
+  **senza padding** l'aria non c'è e il puntatore non ci arriva: restano la tastiera e la struttura. La fessura di una riga sta al centro
+  dello spazio sopra la riga, che è suo e non copre niente.
+- **«+ riga» in fondo solo per le sezioni della pagina.** Il design chiede «+ riga» fra le righe; quella in fondo a una sezione è
+  un'aggiunta di questa PR, perché la prima riga di una sezione deve poter nascere. Su una riga non c'è aria per starci, e la sua
+  striscia stava su quella dell'ultima figlia. Una riga dentro una riga nasce dalla barra della riga, come prima, o dalla struttura.
+
+Il cursore: un «+» premuto da tastiera porta al nome della nuova sezione, come il doppio clic; dal puntatore resta dov'è.
+
+Verificato con una mutazione: rimessa la striscia sopra il contenuto, il test nuovo di `web/e2e/editor.spec.ts` cade.
 
 ## 4. Che cosa non è stato verificato
 
@@ -56,4 +74,6 @@ le etichette no.
 - Fra le trappole di `HANDOFF.md`, accanto a quella del 6 ottobre: ⚠️ **dentro il `@container` di `ContentRenderer` un'etichetta passa,
   un bottone della cromatura no: quello che si aggiunge alle sezioni dell'editor si prova con `preview.spec.ts --repeat-each`**;
   ⚠️ **il difetto non si riproduce con una copia ritoccata della spec**.
+- Sempre fra le trappole: ⚠️ **la cromatura dell'editor sta sotto il contenuto delle sezioni, non sopra**: quello che sta sopra ruba il
+  clic ai blocchi, e nessun test in jsdom lo vede.
 - Nessuna sezione del piano cambia.

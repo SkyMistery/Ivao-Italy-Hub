@@ -467,12 +467,17 @@ test('"+ section" inserts at the place it stands, among the sections of the page
   await user.click(inserts[1]!);
 
   expect(added).toHaveBeenCalledTimes(1);
-  expect(added).toHaveBeenCalledWith(undefined, 1);
+  expect(added).toHaveBeenCalledWith(undefined, 1, false);
+
+  // The same place from the keyboard, and the editor is told: the cursor is the editor's to move.
+  inserts[1]!.focus();
+  await user.keyboard('{Enter}');
+  expect(added).toHaveBeenLastCalledWith(undefined, 1, true);
 });
 
 test('the places to insert wait for the typefaces, and the labels do not', async () => {
-  // Drawn with the page, they leave a slow machine's preview without a box (`SectionInsertions`): what
-  // jsdom can keep is when they arrive. `preview.spec.ts` measures the fault itself.
+  // Drawn with the page, they leave a slow machine's preview without a box (`useInsert`): what jsdom can
+  // keep is when they arrive. `preview.spec.ts` measures the fault itself.
   let finish = () => undefined as void;
   const ready = new Promise<void>((resolve) => {
     finish = resolve;
@@ -499,6 +504,45 @@ test('the places to insert wait for the typefaces, and the labels do not', async
   }
 });
 
+test('"+ row" stands in the order of the page, and at the end of a section of the page, never of a row', () => {
+  renderWithProviders(
+    <PickingContext.Provider
+      value={editing({
+        onAddSection: vi.fn(),
+        // Every section and every row takes a row here: the end of a row is still not offered.
+        actions: () => [{ key: 'addRow', run: () => {} }],
+      })}
+    >
+      <ContentRenderer body={tree} />
+    </PickingContext.Provider>,
+  );
+
+  // In document order, which is the order of the keyboard: the end of the second section after its rows.
+  expect(screen.getAllByRole('button', { name: '+ row' }).map((insert) => insert.title)).toEqual([
+    'Insert a row here: it becomes number 1.1',
+    'Insert a row here: it becomes number 2.1',
+    'Insert a row here: it becomes number 2.2',
+    'Insert a row here: it becomes number 2.3',
+  ]);
+});
+
+test('what a section holds stands above the places to insert while composing, and a visitor has neither', () => {
+  const { unmount } = renderWithProviders(
+    <PickingContext.Provider value={editing({ onAddSection: vi.fn() })}>
+      <ContentRenderer body={tree} />
+    </PickingContext.Provider>,
+  );
+
+  // The geometry is the browser's (`editor.spec.ts` clicks it): what jsdom can keep is the layers.
+  expect(document.querySelector('[data-insert-gap]')).toHaveClass('z-0');
+  const content = document.querySelector('[data-pickable="section"] > div.flex:not([data-chrome])');
+  expect(content).toHaveClass('relative', 'z-[1]');
+  unmount();
+
+  renderWithProviders(<ContentRenderer body={tree} />);
+  expect(document.querySelector('section > div.flex')).not.toHaveClass('z-[1]');
+});
+
 test('"+ row" inserts among the rows of a section, and at their end, where the editor offers a row', async () => {
   const user = userEvent.setup();
   const added = vi.fn();
@@ -519,16 +563,16 @@ test('"+ row" inserts among the rows of a section, and at their end, where the e
 
   const inserts = screen.getAllByRole('button', { name: '+ row' });
   expect(inserts.map((insert) => insert.getAttribute('title'))).toEqual([
-    'Insert a row here: it becomes number 2.3',
     'Insert a row here: it becomes number 2.1',
     'Insert a row here: it becomes number 2.2',
+    'Insert a row here: it becomes number 2.3',
   ]);
 
-  await user.click(inserts[2]!);
-  expect(added).toHaveBeenLastCalledWith('s2', 1);
+  await user.click(inserts[1]!);
+  expect(added).toHaveBeenLastCalledWith('s2', 1, false);
 
-  await user.click(inserts[0]!);
-  expect(added).toHaveBeenLastCalledWith('s2');
+  await user.click(inserts[2]!);
+  expect(added).toHaveBeenLastCalledWith('s2', undefined, false);
 
   // A press on the button is not a click on the section it stands in.
   expect(picked).not.toHaveBeenCalled();
@@ -544,7 +588,7 @@ test('nothing is offered where nothing may be added', () => {
   expect(document.querySelectorAll('[data-insert-gap]')).toHaveLength(0);
 });
 
-test('the air of a row picks the row, and not the section around it', async () => {
+test('a row is picked by its own air and by its label, and not the section around it', async () => {
   const user = userEvent.setup();
   const picked = vi.fn();
   const opened = vi.fn();
@@ -555,13 +599,19 @@ test('the air of a row picks the row, and not the section around it', async () =
     </PickingContext.Provider>,
   );
 
-  const row = screen.getByText('Row 2.2 · Annex');
+  const label = screen.getByText('Row 2.2 · Annex');
+  // The row's element itself, which is what a click between its children lands on.
+  const air = label.closest<HTMLElement>('[data-pickable="section"]')!;
 
-  await user.click(row);
+  await user.click(air);
   expect(picked).toHaveBeenCalledTimes(1);
-  expect(picked).toHaveBeenCalledWith('section', 'r2');
+  expect(picked).toHaveBeenLastCalledWith('section', 'r2');
 
-  await user.dblClick(row);
+  await user.click(label);
+  expect(picked).toHaveBeenCalledTimes(2);
+  expect(picked).toHaveBeenLastCalledWith('section', 'r2');
+
+  await user.dblClick(air);
   expect(opened).toHaveBeenCalledTimes(1);
   expect(opened).toHaveBeenCalledWith('section', 'r2');
 });

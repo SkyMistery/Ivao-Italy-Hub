@@ -297,7 +297,7 @@ function SectionLabel({ section, place }: { section: SectionEnvelope; place: Sec
     <div
       data-section-label=""
       title={label}
-      className={`bg-body text-muted-foreground absolute left-0 z-30 max-w-[60%] cursor-pointer truncate rounded-sm px-1.5 text-xs/5 ${
+      className={`bg-body text-muted-foreground absolute left-0 z-30 max-w-[45%] cursor-pointer truncate rounded-sm px-1.5 text-xs/5 ${
         isRow ? '-top-5' : 'top-0'
       }`}
     >
@@ -312,7 +312,11 @@ function SectionLabel({ section, place }: { section: SectionEnvelope; place: Sec
  * nothing on the page moves to make room for it. The strip is what the pointer has to reach, the line
  * says where the new one would go.
  *
- * A click beside the button lands on the section around it, like any click on its air.
+ * ⚠️ Under what the section holds, not over it (`z-0`, with the section's content on `z-[1]` while
+ * composing): the strip takes the pointer only in the air, and a block is picked up to its edge, however
+ * little air its section leaves. Over the content a click on a heading in a row inserted a row. Where two
+ * sections with no padding touch there is no air, and the place is the keyboard's, which raises it, and
+ * the outline's. A click beside the button lands on the section around it, like any click on its air.
  */
 function InsertGap({
   label,
@@ -323,13 +327,13 @@ function InsertGap({
   label: string;
   hint: string;
   placement: string;
-  onInsert: () => void;
+  onInsert: (byKeyboard: boolean) => void;
 }) {
   return (
     <div
       data-chrome=""
       data-insert-gap=""
-      className={`group/gap absolute inset-x-0 z-20 flex h-4 items-center justify-center ${placement}`}
+      className={`group/gap absolute inset-x-0 z-0 flex h-4 items-center justify-center focus-within:z-40 ${placement}`}
     >
       <span
         aria-hidden
@@ -340,7 +344,8 @@ function InsertGap({
         title={hint}
         onClick={(event) => {
           event.stopPropagation();
-          onInsert();
+          // A click the keyboard made has no pointer behind it, and so no count of presses.
+          onInsert(event.detail === 0);
         }}
         className="bg-body text-primary border-primary relative rounded-full border px-2 text-xs/4 opacity-0 shadow-sm transition-opacity group-hover/gap:opacity-100 focus-visible:opacity-100"
       >
@@ -366,54 +371,74 @@ function useTypefacesLoaded(): boolean {
 }
 
 /**
- * Where a section or a row can be inserted while composing: before this one, among its siblings, and
- * after the last row inside it. The end of the page has its own invitation.
+ * What inserts a section, once there is somewhere to draw it.
  *
- * ⚠️ Drawn only once the typefaces have loaded (`decisions/2026-11-05-le-fessure-e-l-anteprima-vuota.md`).
- * With these inside the sections from the first draw, the trap of the empty preview is back: on a slow
- * machine the typefaces finish a moment after that draw, and every section of the preview is left in the
- * document with no box, for good. Nothing is lost by waiting: a place to insert is out of sight until the
- * pointer or the keyboard reaches it. A component of its own so that a visitor has no state for it at all.
+ * ⚠️ Nothing until the typefaces have loaded (`decisions/2026-11-05-le-fessure-e-l-anteprima-vuota.md`).
+ * With a place to insert inside the sections from the first draw, the trap of the empty preview is back:
+ * on a slow machine the typefaces finish a moment after that draw, and every section of the preview is
+ * left in the document with no box, for good. Nothing is lost by waiting: a place to insert is out of sight
+ * until the pointer or the keyboard reaches it. Asked by components of their own, so that a visitor has no
+ * state for it at all.
  */
-function SectionInsertions({ section, place }: { section: SectionEnvelope; place: SectionPlace }) {
+function useInsert(): Picking['onAddSection'] {
+  const picking = usePicking();
+  const typefacesLoaded = useTypefacesLoaded();
+
+  return typefacesLoaded ? picking?.onAddSection : undefined;
+}
+
+/**
+ * The place before a section, among its siblings: where its edge meets the one above for a section of the
+ * page, which has no gap, and in the gap above it for a row. The end of the page has its own invitation.
+ */
+function InsertBefore({ place }: { place: SectionPlace }) {
   const picking = usePicking();
   const { t } = useTranslation();
-  const typefacesLoaded = useTypefacesLoaded();
-  const insert = picking?.onAddSection;
+  const insert = useInsert();
+  const isRow = place.parent !== null;
 
-  if (insert === undefined || !typefacesLoaded) {
+  if (insert === undefined || (isRow && !takesRows(picking, place.parent))) {
     return null;
   }
 
-  const isRow = place.parent !== null;
-  const before = !isRow || takesRows(picking, place.parent);
+  return (
+    <InsertGap
+      label={t(isRow ? 'content.editor.insertRow' : 'content.editor.insertSection')}
+      hint={t(isRow ? 'content.editor.insertRowHint' : 'content.editor.insertSectionHint', {
+        number: place.number,
+      })}
+      // The first section of the page keeps inside its own edge, which the frame would cut. A row's stands
+      // in the middle of the gap above it, clear of the row: a row is born with no air of its own.
+      placement={isRow ? '-top-5' : place.index === 0 ? 'top-0' : '-top-2'}
+      onInsert={(byKeyboard) => insert(place.parent ?? undefined, place.index, byKeyboard)}
+    />
+  );
+}
+
+/**
+ * The place after the last row of a section of the page, drawn after what the section holds so that the
+ * keyboard meets it where the eye does. Not on a row: it has no air to stand in, and its strip would stand
+ * on its last child's. A row inside a row comes from the row's own bar, or from the outline.
+ */
+function InsertRowAtEnd({ section, place }: { section: SectionEnvelope; place: SectionPlace }) {
+  const picking = usePicking();
+  const { t } = useTranslation();
+  const insert = useInsert();
+
+  if (insert === undefined || place.parent !== null || !takesRows(picking, section.id)) {
+    return null;
+  }
 
   return (
-    <>
-      {before ? (
-        <InsertGap
-          label={t(isRow ? 'content.editor.insertRow' : 'content.editor.insertSection')}
-          hint={t(isRow ? 'content.editor.insertRowHint' : 'content.editor.insertSectionHint', {
-            number: place.number,
-          })}
-          // Astride the edge between two; inside the first section of the page, which the frame would cut.
-          placement={!isRow && place.index === 0 ? 'top-0' : '-top-2'}
-          onInsert={() => insert(place.parent ?? undefined, place.index)}
-        />
-      ) : null}
-
-      {takesRows(picking, section.id) ? (
-        <InsertGap
-          label={t('content.editor.insertRow')}
-          hint={t('content.editor.insertRowHint', {
-            number: `${place.number}.${section.sections.length + 1}`,
-          })}
-          // Clear of the strip on the edge below, which belongs to the next section.
-          placement="bottom-2.5"
-          onInsert={() => insert(section.id)}
-        />
-      ) : null}
-    </>
+    <InsertGap
+      label={t('content.editor.insertRow')}
+      hint={t('content.editor.insertRowHint', {
+        number: `${place.number}.${section.sections.length + 1}`,
+      })}
+      // Clear of the strip on the edge below, which belongs to the next section.
+      placement="bottom-2"
+      onInsert={(byKeyboard) => insert(section.id, undefined, byKeyboard)}
+    />
   );
 }
 
@@ -476,7 +501,7 @@ function SectionView({
           })}
     >
       {picking !== null ? <SectionLabel section={section} place={place} /> : null}
-      {picking !== null ? <SectionInsertions section={section} place={place} /> : null}
+      {picking !== null ? <InsertBefore place={place} /> : null}
 
       {picking !== null && picking.selected === section.id ? (
         <PickedBar
@@ -490,7 +515,13 @@ function SectionView({
         />
       ) : null}
 
-      <div className={`${dashboard ? WIDTH.full : WIDTH[section.width]} flex flex-col gap-6`}>
+      {/* Above the places to insert while composing, so that what is in the section takes the pointer first
+          (`InsertGap`). For a visitor there is nothing to be above. */}
+      <div
+        className={`${dashboard ? WIDTH.full : WIDTH[section.width]} flex flex-col gap-6 ${
+          picking === null ? '' : 'relative z-[1]'
+        }`}
+      >
         <SectionBlocks section={section} staff={staff} />
 
         <Siblings
@@ -499,6 +530,8 @@ function SectionView({
           parent={{ id: section.id, number: place.number }}
         />
       </div>
+
+      {picking !== null ? <InsertRowAtEnd section={section} place={place} /> : null}
     </section>
   );
 

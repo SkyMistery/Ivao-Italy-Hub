@@ -158,6 +158,7 @@ interface CommonStrings {
       readonly addSection: string;
       readonly insertSection: string;
       readonly insertRow: string;
+      readonly addRow: string;
       readonly components: string;
       readonly outline: string;
       readonly undo: string;

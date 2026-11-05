@@ -66,9 +66,11 @@ export interface Picking {
    * one the way an empty column offers a block; with a place, between two others — `parentId` the
    * section whose row it is, none for one of the page, and `at` its place among its siblings. Absent
    * on a body nothing may be added to. Rows are offered only inside a section whose `actions` answer
-   * `addRow`, so the template's rules and the depth the server accepts stay in the editor.
+   * `addRow`, so the template's rules and the depth the server accepts stay in the editor. `byKeyboard`
+   * says the press came from the keyboard: the button it was on is about to mean something else, and
+   * where the cursor goes next is the editor's, which owns the panel.
    */
-  readonly onAddSection?: (parentId?: string, at?: number) => void;
+  readonly onAddSection?: (parentId?: string, at?: number, byKeyboard?: boolean) => void;
   /**
    * The name to draw a block by while nothing has been written into it, or `null` once something
    * has (Carmine, 11 September 2026). A heading without words draws nothing, and nothing is what
