@@ -56,6 +56,11 @@ export function AtcCoverageBlock({ data }: BlockComponentProps) {
   const { data: bootstrap } = useQuery(bootstrapQuery);
   const coverage = data as AtcCoverageData | null | undefined;
 
+  // `null` is a request that failed, `undefined` one on its way: the two never read the same (the core's `NoRows`).
+  if (coverage === null) {
+    return <p className="text-muted-foreground text-sm">{t('events:blocks.unavailable')}</p>;
+  }
+
   if (coverage?.signedIn === undefined || bootstrap === undefined) {
     return <p className="text-muted-foreground text-sm">{t('common.loading')}</p>;
   }
