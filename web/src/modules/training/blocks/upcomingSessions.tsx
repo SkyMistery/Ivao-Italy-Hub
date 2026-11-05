@@ -28,6 +28,11 @@ export function UpcomingSessionsBlock({ props, data }: BlockComponentProps) {
   const items = answer?.items;
   const exams = answer?.exams ?? [];
 
+  // `null` is a request that failed, `undefined` one on its way: the two never read the same (the core's `NoRows`).
+  if (answer === null) {
+    return <p className="text-muted-foreground text-sm">{t('training:blocks.unavailable')}</p>;
+  }
+
   if (items === undefined || bootstrap === undefined) {
     return <p className="text-muted-foreground text-sm">{t('common.loading')}</p>;
   }

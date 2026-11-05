@@ -14,7 +14,13 @@ import { EventCards } from '../screens/EventCards';
  */
 export function EventListBlock({ data }: BlockComponentProps) {
   const { t } = useTranslation();
-  const items = (data as EventListData | null | undefined)?.items;
+  const answer = data as EventListData | null | undefined;
+  const items = answer?.items;
+
+  // `null` is a request that failed, `undefined` one on its way: the two never read the same (the core's `NoRows`).
+  if (answer === null) {
+    return <p className="text-muted-foreground text-sm">{t('events:blocks.unavailable')}</p>;
+  }
 
   if (items === undefined) {
     return <p className="text-muted-foreground text-sm">{t('common.loading')}</p>;
