@@ -398,24 +398,24 @@ test('a panel opened by a choice gets its room, with no box around it changing',
  * ⚠️ What a choice changes without moving any box and without touching an attribute the shell watches: a
  * rule of the fragment's own decides, and only the click knows. The guidelines ask for `aria-pressed`.
  */
-const PANEL_OF_A_RULE = `style>html,body{height:100%}.panel{display:none;height:900px;${FILLED}}`;
+const PANEL_OF_A_RULE = `html,body{height:100%}.panel{display:none;height:900px;${FILLED}}`;
 
 const WHAT_OPENS_A_PANEL = {
-  'aria-pressed': `<${PANEL_OF_A_RULE}[aria-pressed=true]~.panel{display:block}</style>
+  'aria-pressed': `<style>${PANEL_OF_A_RULE}[aria-pressed=true]~.panel{display:block}</style>
      <button type="button" id="more" aria-pressed="false">more</button><div class="panel"></div>
      <script>
        document.getElementById('more').addEventListener('click', function () {
          this.setAttribute('aria-pressed', 'true');
        });
      </script>`,
-  'a data attribute': `<${PANEL_OF_A_RULE}[data-open]~.panel{display:block}</style>
+  'a data attribute': `<style>${PANEL_OF_A_RULE}[data-open]~.panel{display:block}</style>
      <button type="button" id="more">more</button><div class="panel"></div>
      <script>
        document.getElementById('more').addEventListener('click', function () {
          this.setAttribute('data-open', '');
        });
      </script>`,
-  ':checked': `<${PANEL_OF_A_RULE}:checked~.panel{display:block}</style>
+  ':checked': `<style>${PANEL_OF_A_RULE}:checked~.panel{display:block}</style>
      <input type="checkbox" id="more" aria-label="more"><div class="panel"></div>`,
 };
 
