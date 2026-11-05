@@ -564,8 +564,9 @@ different in kind rather than in degree. The code lives on the block's **envelop
 in `props`, because the server reads it to serve the frame and the server never reads inside `props`.
 It runs in a frame served by `/embed/{content}/{version}/{block}` with a policy of its own —
 `default-src 'none'`, `sandbox allow-scripts`, an opaque origin — so it can draw and answer clicks
-and can do nothing else: no network, no storage, no access to the page around it. Whatever it tries
-and is refused, and any error it throws, is drawn under it **for the staff only**. The rules an
+and can do nothing else: no network, no storage, no access to the page around it. It is as tall as
+what it holds, up to 2000 px, and it never scrolls. Whatever it tries and is refused, any error it
+throws, and a fragment past that height, is drawn under it **for the staff only**. The rules an
 author follows — what to write, how it should look, how to see it before publishing — are not in this
 file: they are served by the hub at `/embed/guidelines`, generated from the very shell that wraps
 the code, beside a local preview at `/embed/preview`. If you fork this and change the shell, those
