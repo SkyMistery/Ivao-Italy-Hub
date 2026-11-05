@@ -2,6 +2,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace IvaoHub.Web.Endpoints;
 
@@ -23,6 +24,21 @@ internal static class AuthEndpoints
         group.MapGet("/login", (string? returnUrl) => Results.Challenge(
             new AuthenticationProperties { RedirectUri = IvaoAuthenticationExtensions.SafeReturnUrl(returnUrl) },
             [HubClaims.IvaoScheme]));
+
+        // Starts the round trip that links a member's Discord account. A link and not a form: `form-action 'self'` refuses a
+        // form whose redirect ends on another site. Another site linking here costs nothing: the account linked is the one
+        // the member themselves authorises, and to their own VID (note 2026-11-05-il-collegamento-con-discord §5).
+        group.MapGet("/discord", (ICurrentUser user, IOptions<DiscordOAuthOptions> discord) =>
+        {
+            if (!discord.Value.IsConfigured)
+            {
+                return Results.NotFound();
+            }
+
+            return user.IsAuthenticated
+                ? Results.Challenge(new AuthenticationProperties(), [HubClaims.DiscordScheme])
+                : Results.Redirect($"/auth/login?returnUrl={Uri.EscapeDataString("/me")}");
+        });
 
         // A POST, and with the header the CSRF middleware demands: signing somebody out from a
         // third party page is a small nuisance, but it is still an action taken in their name.

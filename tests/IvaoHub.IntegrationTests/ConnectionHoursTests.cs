@@ -100,7 +100,6 @@ public sealed class ConnectionHoursTests(MariaDbFixture database) : IAsyncLifeti
         CountryId: "IT",
         RatingAtc: atc,
         RatingPilot: pilot,
-        DiscordId: null,
         Email: null,
         LanguageId: "en",
         IvaoIsStaff: false,
