@@ -185,7 +185,7 @@
       </div>
 
       <div class="stage" id="stage" data-ground="light">
-        <iframe id="frame" sandbox="allow-scripts" title="The animation"></iframe>
+        <iframe id="frame" sandbox="allow-scripts" scrolling="no" title="The animation"></iframe>
       </div>
 
       <ul class="refusals" id="refusals" aria-live="polite"></ul>
@@ -202,7 +202,6 @@
 
         var MAX_BYTES = 64 * 1024;
         var state = { lang: 'it', ground: 'light', motion: 'full', width: 'full' };
-        var toldTooTall = false;
 
         var fragment = document.getElementById('fragment');
         var frame = document.getElementById('frame');
@@ -257,7 +256,7 @@
 
           frame.style.height = '160px';
           frame.style.width = state.width === 'full' ? '100%' : state.width + 'px';
-          toldTooTall = false;
+          frame.setAttribute('scrolling', 'no');
           stage.setAttribute('data-ground', state.ground);
           frame.srcdoc = compose(source);
         }
@@ -274,12 +273,14 @@
           }
 
           if (event.data.hub === 'embed-height' && typeof event.data.height === 'number') {
-            frame.style.height = Math.min(Math.max(Math.round(event.data.height), 80), 2000) + 'px';
+            var asked = Math.round(event.data.height);
+            frame.style.height = Math.min(Math.max(asked, 80), 2000) + 'px';
 
-            if (event.data.height > 2000 && !toldTooTall) {
-              toldTooTall = true;
-              report('Too tall: the fragment is ' + Math.round(event.data.height) + ' px and a frame stops at 2000, so the bottom of it is cut off. A height in vh grows with the frame.');
-            }
+            // As the hub does: no bar up to 2000 px, and once there is one it goes only when what the
+            // fragment says would fit at the width the bar was taking.
+            var width = frame.clientWidth;
+            var without = frame.getAttribute('scrolling') === 'auto' && width > 20 ? (asked * width) / (width - 20) : asked;
+            frame.setAttribute('scrolling', without > 2000 ? 'auto' : 'no');
           }
 
           if (event.data.hub === 'embed-refused') {

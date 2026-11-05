@@ -94,19 +94,6 @@
         line-height: 1.5;
       }
 
-      /*
-        The frame never scrolls: it is as tall as its content because the height travels (below).
-
-        ⚠️ This is not tidiness, it is the fault itself. A scroll bar takes 15 px of width on a desktop,
-        a drawing scaled by its `viewBox` is then shorter, the measure says the shorter height, and at
-        that height the full width would not fit: so the bar stays for good, on every drawing taller
-        than the room it was first given. The worked example of the guidelines did it, at every width
-        (5 November 2026). `!important` because a fragment is free to write `html { overflow: auto }`.
-      */
-      html {
-        overflow: hidden !important;
-      }
-
       /* The frame is as wide as the page gives it and as tall as its content: the height travels. */
       body > * {
         max-width: 100%;
@@ -280,7 +267,8 @@
 
         /*
           ⚠️ A panel shown out of the flow changes no box the observer above is watching, and in a frame
-          that does not scroll what is not measured cannot be reached at all. So a change to the
+          the page does not let scroll (`scrolling`, on its side) what is not measured cannot be reached
+          at all. So a change to the
           document asks for a measure too, once per frame at most. The filter leaves out what a drawing
           changes sixty times a second (`transform`, `d`, `cx`): it moves inside its `svg`.
         */

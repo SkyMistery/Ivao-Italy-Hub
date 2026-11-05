@@ -58,9 +58,11 @@ The colours are CSS variables, and they are the division's own — use them and 
 sees around your drawing, so never paint a ground of your own.
 
 The height is measured for you: the frame tells the page how tall your fragment is, what you drew
-out of the flow included, and the page gives it that room, between 80 and 2000 px. The frame itself
-**never scrolls**. Do not set a height on `body`. ⚠️ Past 2000 px the bottom of your fragment is cut
-off and nothing can reach it; the page says so to the staff, as it does for a refusal.
+out of the flow included, and the page gives it that room, between 80 and 2000 px. Up to 2000 px the
+frame **has no scroll bar**, and what you draw has no way of asking for one. Do not set a height on
+`body`. ⚠️ **Past 2000 px the frame stops growing and a scroll bar appears**, on the reader's page: all
+of your fragment can still be reached, and a block with a scroll bar in the middle of a document is
+still something to fix, by splitting it or by making the drawing shorter.
 
 ## Seeing it before you publish
 
@@ -82,8 +84,8 @@ There are two ways to see it, and neither of them is to build something of your 
    hub, so it runs the fragment in the same sandboxed frame under the same policy, and it lets you
    switch what the hub would switch for you: **Italian or English**, a **light page, a dark page or a
    dark section**, a reader who asked for **reduced movement**, a **768 px** tablet and a **360 px**
-   phone. Anything the browser refuses, any error the fragment throws, and a fragment too tall for a
-   frame, is listed underneath — the same lines the hub shows the staff.
+   phone. Anything the browser refuses, and any error the fragment throws, is listed underneath — the
+   same lines the hub shows the staff.
 
 If you are an assistant writing a fragment for somebody: produce the fragment only, and tell them to
 open it in the local preview or in a draft. Do not make a second, standalone page that recreates the
@@ -166,8 +168,8 @@ controller who cannot tell your green from your orange still has to be able to u
 - **One figure per block.** Two ideas are two blocks; the page is what puts them in order.
 - **Controls under the drawing**, in a row, wrapping on a narrow screen. A control is a `<button>`,
   at least 44 px tall including its padding, with `aria-pressed` when it is a choice among several.
-- **Nothing scrolls inside a frame**, and the frame has no scroll bar to offer. If it does not fit, the
-  drawing is too big: make the `viewBox` wider, not the frame taller.
+- **Nothing scrolls inside a frame**, up to the 2000 px above which the page gives it a scroll bar. If it
+  does not fit, the drawing is too big: make the `viewBox` wider, not the frame taller.
 - **A legend only when a symbol is not obvious**, and then as text beside the drawing rather than
   floating on it.
 - **A strip of read-outs is welcome** where the procedure has values that change as the thing moves —
@@ -183,9 +185,10 @@ whatever the page gives, and the height follows from it.
 
 - **No heights in `vh`.** Inside a frame `100vh` is the height of the frame, which is measured from your
   content: `height: 100vh` says nothing, and `min-height: 100vh` with anything beside it grows with the
-  frame until it reaches 2000 px. Let the content decide; the height of an SVG comes from its `viewBox`.
-- **No widths in pixels.** What is wider than the frame is cut off, because nothing scrolls: an SVG with
-  a `viewBox`, and percentages or `max-width: 100%` for anything else. A `<figure>` brings 40 px of
+  frame until it reaches 2000 px, with a scroll bar. Let the content decide; the height of an SVG comes
+  from its `viewBox`.
+- **No widths in pixels.** What is wider than the frame is cut off, because there is no bar to reach it:
+  an SVG with a `viewBox`, and percentages or `max-width: 100%` for anything else. A `<figure>` brings 40 px of
   margin on each side, which a phone cannot spare: write `margin: 0` on it.
 - **`flex-wrap: wrap` on every row**, so that a row of buttons becomes two rows instead of leaving the
   frame.

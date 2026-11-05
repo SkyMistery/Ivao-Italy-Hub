@@ -222,11 +222,13 @@ const NAUGHTY = `
   </script>
 `;
 
-/**
- * The editor, because that is where `staff` is true and where whoever wrote the animation is
- * standing. A visitor is told nothing: it is not their animation to fix.
- */
-async function openInTheEditor(page: Page) {
+test('an animation that tries to open the network says so, to the staff and to nobody else', async ({
+  page,
+}) => {
+  await stubTheFrame(page, NAUGHTY);
+
+  // The editor, because that is where `staff` is true and where whoever wrote the animation is
+  // standing. A visitor is told nothing: it is not their animation to fix.
   await stubTheApiAsStaff(page);
   await page.route('**/api/content/*', (route) =>
     route.fulfill({
@@ -252,13 +254,6 @@ async function openInTheEditor(page: Page) {
   await stubTheAddressOfAPage(page);
 
   await page.goto('/staff/content/1');
-}
-
-test('an animation that tries to open the network says so, to the staff and to nobody else', async ({
-  page,
-}) => {
-  await stubTheFrame(page, NAUGHTY);
-  await openInTheEditor(page);
 
   // The browser refuses the request — `default-src 'none'` — and the refusal, which used to die in a
   // console nobody reads, arrives here as a line naming the directive.
@@ -286,7 +281,8 @@ test('and a visitor reading the same page is told nothing', async ({ page }) => 
 });
 
 /**
- * The height (design of the editor, §5.5): the frame is as tall as what it holds, and it never scrolls.
+ * The height (design of the editor, §5.5): the frame is as tall as what it holds, with no scroll bar up
+ * to 2000 px and one past them (`decisions/2026-11-05-l-altezza-dell-interattivo.md`).
  *
  * ⚠️ All of these are measured against what the frame says about itself, from inside, because that is
  * the only place the bar can be seen.
@@ -306,10 +302,17 @@ async function expectItFits(page: Page) {
   await expect
     .poll(
       async () =>
-        page.frames()[1]?.evaluate(() => {
-          const root = document.documentElement;
-          return { bar: window.innerWidth - root.clientWidth, spills: root.scrollHeight > root.clientHeight };
-        }),
+        page
+          .frames()[1]
+          ?.evaluate(() => {
+            const root = document.documentElement;
+            return {
+              bar: window.innerWidth - root.clientWidth,
+              spills: root.scrollHeight > root.clientHeight,
+            };
+          })
+          // Asked while the frame's document is still arriving: the poll asks again.
+          .catch(() => null),
       { timeout: 5000 },
     )
     .toEqual({ bar: 0, spills: false });
@@ -328,6 +331,7 @@ const WHAT_A_FRAGMENT_DOES = {
   'something positioned below the flow': `<div style="height:100px"></div><div style="position:absolute;top:100px;height:500px;width:50px;${FILLED}"></div>`,
   'a negative margin': `<div style="height:600px;margin-bottom:-300px;${FILLED}"></div><p style="margin:0">after</p>`,
   'a body given the height of the frame': `<style>html,body{height:100%}</style><div style="height:700px;${FILLED}"></div>`,
+  'a fragment asking for a bar itself': `<style>html{overflow:scroll}</style><div style="height:400px;${FILLED}"></div>`,
 };
 
 for (const [what, source] of Object.entries(WHAT_A_FRAGMENT_DOES)) {
@@ -390,19 +394,93 @@ test('a panel opened by a choice gets its room, with no box around it changing',
   await expectItFits(page);
 });
 
-const TOO_TALL = '<div style="height:2600px"></div>';
+/** A wheel over the frame, and how far it went: what a reader does, with a bar of any kind. */
+async function wheeled(page: Page): Promise<number> {
+  const box = await page.locator('iframe').boundingBox();
+  await page.mouse.move((box?.x ?? 0) + 100, Math.min((box?.y ?? 0) + 200, 600));
+  await page.mouse.wheel(0, 150);
+  await page.waitForTimeout(300);
 
-test('a fragment past the limit is cut, and the staff is told', async ({ page }) => {
-  await stubTheFrame(page, TOO_TALL);
-  await openInTheEditor(page);
+  return (await page.frames()[1]?.evaluate(() => window.scrollY)) ?? 0;
+}
 
-  await expect(page.getByText(/this animation is 2600 px tall/i).first()).toBeVisible({ timeout: 10000 });
+test('past 2000 px the frame stops growing and a scroll bar reaches the rest', async ({ page }) => {
+  await showInAPage(page, `<div style="height:2600px;${FILLED}"></div>`);
+
+  // Carmine, 5 November 2026: «(c) resta la barra». What a frame cannot show, it still lets you reach.
   await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBe(2000);
+  await expect(page.locator('iframe')).toHaveAttribute('scrolling', 'auto');
+  expect(await wheeled(page)).toBeGreaterThan(0);
 });
 
-test('and a visitor reading a fragment past the limit is told nothing', async ({ page }) => {
-  await showInAPage(page, TOO_TALL);
+test('up to 2000 px a wheel over the frame moves the page, not the frame', async ({ page }) => {
+  await showInAPage(page, `<div style="height:1900px;${FILLED}"></div>`);
 
-  await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBe(2000);
-  await expect(page.getByText(/this animation is 2600 px tall/i)).toHaveCount(0);
+  await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBe(1900);
+  await expect(page.locator('iframe')).toHaveAttribute('scrolling', 'no');
+  expect(await wheeled(page)).toBe(0);
 });
+
+test('and the bar goes when the fragment comes back under the limit', async ({ page }) => {
+  await showInAPage(
+    page,
+    `<button type="button" id="less">less</button>
+     <div id="panel" style="height:2600px;${FILLED}"></div>
+     <script>
+       document.getElementById('less').addEventListener('click', function () {
+         document.getElementById('panel').hidden = true;
+       });
+     </script>`,
+  );
+  await expect(page.locator('iframe')).toHaveAttribute('scrolling', 'auto');
+
+  await page.frameLocator('iframe').getByRole('button', { name: 'less' }).click();
+
+  await expect(page.locator('iframe')).toHaveAttribute('scrolling', 'no');
+  await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBeLessThan(200);
+  await expectItFits(page);
+});
+
+/**
+ * ⚠️ Around the limit a bar changes the answer: it takes width, the drawing is shorter, and if that
+ * took the bar away the width would be back, and the drawing too tall again, and so on for ever. Each
+ * of these is exactly this tall **at the width it was loaded with**, without a bar.
+ */
+for (const tall of [1975, 1990, 2000, 2001, 2010, 2030, 2060]) {
+  test(`a drawing of ${tall} px scaled by its viewBox settles, and does not go back and forth`, async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const told: number[] = [];
+      Object.assign(window, { told });
+      window.addEventListener('message', (event: MessageEvent<{ hub?: string; height?: number }>) => {
+        if (event.data?.hub === 'embed-height') {
+          told.push(event.data.height ?? 0);
+        }
+      });
+    });
+
+    await showInAPage(
+      page,
+      `<svg id="drawing" width="100%"><rect width="100%" height="100%" fill="var(--line)"></rect></svg>
+       <script>
+         document.getElementById('drawing').setAttribute('viewBox', '0 0 ' + window.innerWidth + ' ${tall}');
+       </script>`,
+    );
+
+    const messages = () => page.evaluate(() => (window as unknown as { told: number[] }).told.length);
+    const seen = async () => ({
+      said: await messages(),
+      frame: await frameHeight(page),
+      scrolling: await page.locator('iframe').getAttribute('scrolling'),
+    });
+
+    await page.waitForTimeout(1000);
+    const settled = await seen();
+    await page.waitForTimeout(700);
+
+    expect(await seen()).toEqual(settled);
+    expect(settled.frame).toBeLessThanOrEqual(2000);
+    expect(settled.frame).toBeGreaterThan(1900);
+  });
+}

@@ -112,10 +112,24 @@ test('what the hub would refuse, the preview says out loud', async ({ page }) =>
   // And a whole page instead of a fragment, which the editor refuses before it gets anywhere.
   await showFragment(page, '<!doctype html><html><body><svg /></body></html>');
   await expect(page.locator('#refusals')).toContainText('whole page, not a fragment');
+});
 
-  // And a fragment past the limit of a frame, where nothing would otherwise say why its bottom is gone.
+test('a scroll bar comes as it does in the hub: past 2000 px and not before', async ({ page }) => {
+  await page.goto(previewFile());
+  const frame = page.locator('#frame');
+
+  await showFragment(page, '<div style="height:1900px"></div>');
+  await expect.poll(async () => (await frame.boundingBox())?.height).toBe(1900);
+  await expect(frame).toHaveAttribute('scrolling', 'no');
+
   await showFragment(page, '<div style="height:2600px"></div>');
-  await expect(page.locator('#refusals')).toContainText('Too tall');
+  await expect.poll(async () => (await frame.boundingBox())?.height).toBe(2000);
+  await expect(frame).toHaveAttribute('scrolling', 'auto');
+
+  // A new fragment starts over.
+  await showFragment(page, '<div style="height:400px"></div>');
+  await expect.poll(async () => (await frame.boundingBox())?.height).toBe(400);
+  await expect(frame).toHaveAttribute('scrolling', 'no');
 });
 
 test('the two widths the guidelines ask for are one press away', async ({ page }) => {

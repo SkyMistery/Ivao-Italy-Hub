@@ -546,8 +546,26 @@ export function EmbedBlock({ props }: BlockComponentProps) {
 
 // ---- interactive -----------------------------------------------------------------------------
 
-/** The most a frame is given, however tall it says it is. */
+/** The most a frame is given, however tall it says it is. Past this it scrolls (Carmine, 5 November 2026). */
 const TALLEST_FRAME = 2000;
+
+/** Rather more than a scroll bar takes on any desktop. */
+const ROOM_OF_A_BAR = 20;
+
+/**
+ * Whether a frame asking for this height has a scroll bar.
+ *
+ * ⚠️ A bar takes width, a drawing scaled by its `viewBox` is then shorter, and what it says with the bar
+ * is less than what it would need without it. That is the fault this exists for, in both directions: left
+ * to the browser below the limit, the bar stays for good on any drawing taller than the room it was first
+ * given (the guidelines' own example did it, at every width); taken at its word around the limit, a
+ * drawing of 2005 px would say 1977 with the bar, lose the bar, say 2005, and so on for ever. So once it
+ * has a bar, the bar goes only when what it says would fit at the width the bar was taking.
+ */
+function hasTheBar(asked: number, width: number, hadIt: boolean): boolean {
+  const without = hadIt && width > ROOM_OF_A_BAR ? (asked * width) / (width - ROOM_OF_A_BAR) : asked;
+  return without > TALLEST_FRAME;
+}
 
 /**
  * An animation, or a small thing with choices in it, written by somebody and run **in a frame that
@@ -573,7 +591,7 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
   const frame = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState(() => count(props, 'minHeight', 320));
   const [refused, setRefused] = useState<{ kind: string; detail: string } | null>(null);
-  const [tooTall, setTooTall] = useState<number | null>(null);
+  const [scrolls, setScrolls] = useState(false);
 
   const title = read(text(props, 'title'));
   const description = read(text(props, 'description'));
@@ -626,10 +644,7 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
 
       const asked = Math.round(message.height);
       setHeight(Math.min(Math.max(asked, 80), TALLEST_FRAME));
-
-      // A frame does not scroll, so what is past the clamp cannot be reached: a mistake nobody would
-      // otherwise hear about, said where the refusals are said.
-      setTooTall(asked > TALLEST_FRAME ? asked : null);
+      setScrolls((had) => hasTheBar(asked, element.clientWidth, had));
     };
 
     window.addEventListener('message', onMessage);
@@ -663,13 +678,6 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
       </p>
     );
 
-  const cutOff =
-    !staff || tooTall === null ? null : (
-      <p className="text-destructive text-sm">
-        {t('blocks.interactive.tooTall', { height: tooTall, most: TALLEST_FRAME })}
-      </p>
-    );
-
   // On paper the frame is a white rectangle nobody can press, so it goes; what the author wrote
   // about it is prose of the document and stays.
   if (printing) {
@@ -697,9 +705,11 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
         // frame back in our origin and hand a pasted script the reader's session: it is the single
         // line that the whole design rests on, and `blocks.test.tsx` fails if it changes.
         sandbox="allow-scripts"
-        // The shell says it too, and the frame of a public page is kept for a year: a version already
-        // published and in somebody's cache has the old shell, and this is how the fix reaches it.
-        scrolling="no"
+        // ⚠️ Here and not in the shell, for two reasons. The limit is this page's, and it is the page that
+        // has it in one place. And the frame of a public page is kept for a year: a version already in
+        // somebody's cache has the shell it was published with, and it obeys this all the same. An old
+        // attribute, and every engine applies a change to it on a frame already loaded (5 November 2026).
+        scrolling={scrolls ? 'auto' : 'no'}
         loading="lazy"
         // ⚠️ `print:hidden` as well as the context above, and the two are not the same thing. The
         // context is how a **document** prints — `PrintContext` takes the frame out of the page
@@ -711,7 +721,6 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
       />
       {caption}
       {refusal}
-      {cutOff}
     </figure>
   );
 }
