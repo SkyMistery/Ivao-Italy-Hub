@@ -308,7 +308,7 @@ test('the title of a list entry keeps its width: in a narrow column the buttons 
 
   const form = page.locator('[data-ui-kit="SchemaForm"]');
   const title = form.getByRole('button', { name: '1 One', exact: true });
-  const remove = form.getByRole('button', { name: englishCommon.form.removeEntry, exact: true }).first();
+  const remove = form.getByRole('button', { name: 'Remove', exact: true }).first();
   await expect(title).toBeVisible();
 
   // Where there is room they share the line.
