@@ -36,8 +36,8 @@ The draft as it stands now is included below, even when it is empty. Your file *
 
 - A section or block you keep or modify **keeps its `id`**, exactly as in the draft. A section made from the template
   also keeps its `key`.
-- A section or block you **add** has **no `id`** at all: the editor gives it one. Never invent an identifier, and never
-  use one twice.
+- A section or block you **add** has **no `id`** at all, which is why the schema of the envelope does not ask for one:
+  the editor gives it one. Never invent an identifier, and never use one twice.
 - The person who approves the page reads a comparison made by these identifiers: a kept `id` is shown as "changed", a
   missing one as "removed", a new block as "added". A page rewritten with new identifiers reads as "everything
   removed, everything added", and a file that drops every identifier of a draft that had them is announced as a page
@@ -78,8 +78,9 @@ The JSON Schema of the envelope (sections and the frame of a block) is below, af
 ## Values you cannot know
 
 - **Pictures.** You cannot upload anything. Leave out every field marked `"media": true`, unless the draft already has
-  a value there, which you keep. Write the alternative text and the caption anyway: the person chooses the picture
-  after the import, and the editor says which blocks wait for one.
+  a value there, which you keep, and **also where the block's schema lists it as required**: this rule goes before the
+  schema. Write the alternative text and the caption anyway: the person chooses the picture after the import, and the
+  editor says which blocks wait for one. A number you were not given is taken out.
 - **Icons.** A field marked `"icon": true` takes one of the names listed below, and nothing else.
 - **Dates.** A field marked `"date": true` is an ISO 8601 instant, `2026-11-04T00:00:00Z`.
 - **Collections, categories and kinds** of the site (`collectionOf`, `calendarKind`, the category of a list of links):
@@ -92,7 +93,9 @@ The JSON Schema of the envelope (sections and the frame of a block) is below, af
 
 ## What you do not do
 
-- Do not use a block that is not listed below: it is not offered on this page, or not to this person.
+- Do not use a block that is not listed below: it is not offered on this page, or not to this person. A block of the
+  draft that is not listed stays as it is; in particular, the interactive block of the draft stays, with its `source`,
+  when that block is not offered below: this person may not write code, and the file would be refused without it.
 - Do not break the rules of the template, when the page has one: a section marked required stays, a locked section keeps
   its blocks (you may change their texts), and a section that lists its blocks takes only those.
 - Do not write members a schema does not have, and do not leave out the ones it requires.

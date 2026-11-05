@@ -196,6 +196,19 @@ describe('the fingerprints', () => {
 });
 
 describe('what the instructions offer', () => {
+  test('the envelope does not ask a new section or block for the identifier it must not have', () => {
+    const schema = envelopeSchema() as {
+      $defs: Record<
+        string,
+        { required?: string[]; properties: { blocks: { items: { required?: string[] } } } }
+      >;
+    };
+    const [section] = Object.values(schema.$defs);
+
+    expect(section?.required ?? []).not.toContain('id');
+    expect(section?.properties.blocks.items.required).toEqual(['type']);
+  });
+
   test("the envelope of a page leaves out the template's rules and keeps what a block of the draft carries", () => {
     const text = JSON.stringify(envelopeSchema());
 

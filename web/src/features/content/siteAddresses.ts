@@ -89,6 +89,14 @@ export function pagesOfTheSite(rows: readonly ContentSiteAddressDto[] | undefine
   }));
 }
 
+/**
+ * Where an address of this site may lead, for the import of a file (note 2026-10-30-una-pagina-scritta-con-claude §3.5):
+ * the addresses the instructions listed, the rows of the site's read and the screens.
+ */
+export function knownAddresses(rows: readonly ContentSiteAddressDto[]): ReadonlySet<string> {
+  return new Set<string>([...SITE_SCREENS, ...rows.map((row) => row.url)]);
+}
+
 /** One address of the site, with what a screen needs to offer it and what the instructions say of it. */
 export interface SiteAddress {
   /** The row, for an address that is one; null for a screen or a link. */
