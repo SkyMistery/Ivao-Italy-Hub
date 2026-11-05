@@ -117,8 +117,18 @@ export interface SortableBinding {
 }
 
 export interface PickAction {
-  readonly key: 'moveUp' | 'moveDown' | 'remove' | 'duplicate' | 'addRow';
-  readonly run: () => void;
+  readonly key:
+    | 'moveUp'
+    | 'moveDown'
+    | 'remove'
+    | 'duplicate'
+    | 'addRow'
+    | 'sectionAbove'
+    | 'sectionBelow'
+    | 'rowAbove'
+    | 'rowBelow';
+  /** `byKeyboard` as in `Picking.onAddSection`: told by the bar, read by what inserts. */
+  readonly run: (byKeyboard?: boolean) => void;
 }
 
 export const PickingContext = createContext<Picking | null>(null);

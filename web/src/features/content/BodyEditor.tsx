@@ -22,6 +22,7 @@ import {
   PickingContext,
   type BlockEnvelope,
   type Body,
+  type PickAction,
   type Span,
 } from '../../blocks';
 import type { Department, LocalizedString } from '../../shared/api/bootstrap';
@@ -47,6 +48,7 @@ import {
   duplicateSection,
   findBlock,
   findSection,
+  placeOf,
   moveBlock,
   moveBlockTo,
   moveSection,
@@ -601,6 +603,28 @@ export function BodyEditor({
     // (Carmine, 11 September 2026: "the sections already placed, I want to move them by hand on
     // the page"). The same arrows the outline has, on the thing itself.
     const rule = ruleFor(rules, findSection(body, id)?.key);
+    const takesRow = (sectionId: string) =>
+      !ruleFor(rules, findSection(body, sectionId)?.key).locked &&
+      (depthOf(body, sectionId) ?? MAX_ROW_DEPTH) < MAX_ROW_DEPTH;
+
+    // One above and one below, on every section and every row (Carmine, 5 November 2026, "dalla barra
+    // della sezione"): the way to insert, which needs no air and no pointer. A section may stand next to
+    // a locked one, since the lock is on what it holds; a row asks what is asked of its parent.
+    const place = placeOf(body, id);
+    const neighbours: PickAction[] =
+      place === undefined || (place.parent !== null && !takesRow(place.parent))
+        ? []
+        : [
+            {
+              key: place.parent === null ? 'sectionAbove' : 'rowAbove',
+              run: (byKeyboard) => addSectionAt(place.parent ?? undefined, place.index, byKeyboard),
+            },
+            {
+              key: place.parent === null ? 'sectionBelow' : 'rowBelow',
+              run: (byKeyboard) => addSectionAt(place.parent ?? undefined, place.index + 1, byKeyboard),
+            },
+          ];
+
     return [
       ...(rule.locked
         ? []
@@ -608,9 +632,8 @@ export function BodyEditor({
             { key: 'moveUp' as const, run: () => change(moveSection(body, id, -1)) },
             { key: 'moveDown' as const, run: () => change(moveSection(body, id, 1)) },
           ]),
-      ...(rule.locked || (depthOf(body, id) ?? MAX_ROW_DEPTH) >= MAX_ROW_DEPTH
-        ? []
-        : [{ key: 'addRow' as const, run: () => addSectionAt(id) }]),
+      ...neighbours,
+      ...(takesRow(id) ? [{ key: 'addRow' as const, run: () => addSectionAt(id) }] : []),
       ...(rule.locked ? [] : [{ key: 'duplicate' as const, run: () => duplicateSectionById(id) }]),
       ...(rule.locked || rule.required ? [] : [{ key: 'remove' as const, run: () => removeSectionById(id) }]),
     ];

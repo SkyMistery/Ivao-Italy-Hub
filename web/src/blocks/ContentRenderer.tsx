@@ -314,9 +314,11 @@ function SectionLabel({ section, place }: { section: SectionEnvelope; place: Sec
  *
  * ⚠️ Under what the section holds, not over it (`z-0`, with the section's content on `z-[1]` while
  * composing): the strip takes the pointer only in the air, and a block is picked up to its edge, however
- * little air its section leaves. Over the content a click on a heading in a row inserted a row. Where two
- * sections with no padding touch there is no air, and the place is the keyboard's, which raises it, and
- * the outline's. A click beside the button lands on the section around it, like any click on its air.
+ * little air its section leaves. Over the content a click on a heading in a row inserted a row. This is a
+ * shortcut for the pointer: the way to insert, everywhere and with a finger too, is the section's bar
+ * (Carmine, 5 November 2026), which is what serves where two sections with no padding touch and there is no
+ * air. The keyboard raises it. A click beside the button lands on the section around it, like any click on
+ * its air.
  */
 function InsertGap({
   label,
@@ -910,19 +912,43 @@ function sectionRing(picking: Picking, id: string): string {
     : 'outline-muted-foreground/50 hover:outline-muted-foreground outline-1 -outline-offset-1 outline-dashed';
 }
 
-const ACTION_LABEL: Record<PickAction['key'], { label: string; Icon: typeof Trash2 }> = {
-  moveUp: { label: 'content.editor.moveUp', Icon: ArrowUp },
-  moveDown: { label: 'content.editor.moveDown', Icon: ArrowDown },
-  remove: { label: 'content.editor.remove', Icon: Trash2 },
-  duplicate: { label: 'content.editor.duplicate', Icon: Copy },
-  addRow: { label: 'content.editor.addRow', Icon: Plus },
+const ICON = 'size-3.5';
+
+/**
+ * "Add, above" and "add, below": the set has no one icon that says it, and two made of its own say it
+ * better than one that has to be learned, next to the arrows that move the same thing up and down.
+ */
+const ADD_ABOVE = (
+  <span aria-hidden className="inline-flex items-center">
+    <Plus className="size-3" />
+    <ArrowUp className="-ml-0.5 size-3" />
+  </span>
+);
+const ADD_BELOW = (
+  <span aria-hidden className="inline-flex items-center">
+    <Plus className="size-3" />
+    <ArrowDown className="-ml-0.5 size-3" />
+  </span>
+);
+
+const ACTION_LABEL: Record<PickAction['key'], { label: string; icon: ReactNode }> = {
+  moveUp: { label: 'content.editor.moveUp', icon: <ArrowUp aria-hidden className={ICON} /> },
+  moveDown: { label: 'content.editor.moveDown', icon: <ArrowDown aria-hidden className={ICON} /> },
+  remove: { label: 'content.editor.remove', icon: <Trash2 aria-hidden className={ICON} /> },
+  duplicate: { label: 'content.editor.duplicate', icon: <Copy aria-hidden className={ICON} /> },
+  addRow: { label: 'content.editor.addRow', icon: <Plus aria-hidden className={ICON} /> },
+  sectionAbove: { label: 'content.editor.sectionAbove', icon: ADD_ABOVE },
+  sectionBelow: { label: 'content.editor.sectionBelow', icon: ADD_BELOW },
+  rowAbove: { label: 'content.editor.rowAbove', icon: ADD_ABOVE },
+  rowBelow: { label: 'content.editor.rowBelow', icon: ADD_BELOW },
 };
 
 /**
  * The name of what is picked and what may be done to it, on the thing itself (Carmine, 11 September
  * 2026). Over the top right corner, out of the flow: nothing on the page moves when it appears.
  * The buttons stop their clicks where they are, so pressing "remove" does not also re-pick the
- * section the block was in.
+ * section the block was in. Where the name and the commands do not fit on one line, the name takes a line
+ * of its own above them, and gives way only past that: a name cut to nothing beside them says nothing.
  */
 function PickedBar({
   name,
@@ -942,45 +968,51 @@ function PickedBar({
   return (
     <div
       data-chrome
-      className={`bg-body text-foreground border-primary absolute right-2 z-40 flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs shadow-sm ${
+      className={`bg-body text-foreground border-primary absolute right-2 z-40 flex max-w-[calc(100%-1rem)] flex-wrap items-center justify-end gap-x-1 rounded-md border px-2 py-0.5 text-xs shadow-sm ${
         placement === 'inside' ? 'top-2' : '-top-3'
       }`}
       onClick={(event) => event.stopPropagation()}
     >
-      {handle === undefined ? null : (
-        <button
-          type="button"
-          // Attached from a callback and not handed over as the ref itself: handed over, the lint
-          // takes the whole handle for a ref and refuses to read its listeners while drawing.
-          ref={(element) => handle.attach(element)}
-          aria-label={t('content.editor.reorder')}
-          title={t('content.editor.reorder')}
-          className="text-muted-foreground cursor-grab touch-none"
-          {...handle.listeners}
-        >
-          <GripVertical aria-hidden className="size-3.5" />
-        </button>
-      )}
-      <span className="text-primary font-medium">{name}</span>
-      {actions.map(({ key, run }) => {
-        const { label, Icon } = ACTION_LABEL[key];
-
-        return (
+      <span className="flex max-w-full min-w-0 items-center gap-1">
+        {handle === undefined ? null : (
           <button
-            key={key}
             type="button"
-            aria-label={t(label)}
-            title={t(label)}
-            onClick={(event) => {
-              event.stopPropagation();
-              run();
-            }}
-            className="hover:text-primary rounded-sm p-0.5"
+            // Attached from a callback and not handed over as the ref itself: handed over, the lint
+            // takes the whole handle for a ref and refuses to read its listeners while drawing.
+            ref={(element) => handle.attach(element)}
+            aria-label={t('content.editor.reorder')}
+            title={t('content.editor.reorder')}
+            className="text-muted-foreground shrink-0 cursor-grab touch-none"
+            {...handle.listeners}
           >
-            <Icon aria-hidden className="size-3.5" />
+            <GripVertical aria-hidden className={ICON} />
           </button>
-        );
-      })}
+        )}
+        <span title={name} className="text-primary min-w-0 truncate font-medium">
+          {name}
+        </span>
+      </span>
+      <span className="flex items-center gap-1">
+        {actions.map(({ key, run }) => {
+          const { label, icon } = ACTION_LABEL[key];
+
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-label={t(label)}
+              title={t(label)}
+              onClick={(event) => {
+                event.stopPropagation();
+                run(event.detail === 0);
+              }}
+              className="hover:text-primary rounded-sm p-0.5"
+            >
+              {icon}
+            </button>
+          );
+        })}
+      </span>
     </div>
   );
 }

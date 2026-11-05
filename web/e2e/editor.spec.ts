@@ -280,6 +280,62 @@ test('a block in a row is picked up to its edges, where a place to insert would 
   ).toEqual(['1', '1.1', '1.2', '1.3']);
 });
 
+test('between two sections with no padding that touch, the way in is the bar, by pointer and by keyboard', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/staff/content/1');
+
+  const frame = page.getByRole('region', { name: editor.preview });
+  const labels = frame.locator('[data-section-label]');
+  const section = frame.locator('[data-pickable="section"]');
+
+  const bare = async (name: string) => {
+    await page.getByRole('button', { name: editor.addSection, exact: true }).click();
+    await page.locator('#content-properties input:visible').first().fill(name);
+    await expect(labels.filter({ hasText: name })).toBeVisible();
+    await page.getByRole('combobox', { name: englishCommon.content.section.fields.padding }).click();
+    await page
+      .getByRole('option', { name: englishCommon.content.section.options.padding.none, exact: true })
+      .click();
+    await expect(section.last()).not.toHaveClass(/py-8/);
+    await page
+      .getByLabel(englishCommon.blocks.subgroups.text)
+      .getByRole('button', { name: englishCommon.blocks.heading.label })
+      .click();
+    await page.locator('#content-properties input:visible').first().fill(`Heading of ${name}`);
+    await expect(frame.getByRole('heading', { name: `Heading of ${name}` })).toBeVisible();
+  };
+  await bare('One');
+  await bare('Two');
+
+  // They touch, and where they do the pointer finds what they hold, and no place to insert.
+  const one = (await section.nth(0).boundingBox())!;
+  const two = (await section.nth(1).boundingBox())!;
+  expect(two.y).toBe(one.y + one.height);
+  const atTheEdge = await page.evaluate(
+    ([x, y]) => document.elementFromPoint(x!, y!)?.closest('[data-insert-gap]') === null,
+    [two.x + two.width / 2, two.y],
+  );
+  expect(atTheEdge).toBe(true);
+
+  // Between the two, from the bar of the one above.
+  await labels.nth(0).click();
+  await section.nth(0).getByRole('button', { name: editor.sectionBelow, exact: true }).click();
+  await expect(labels).toHaveText(['1 · One', '2 · Section without a name', '3 · Two']);
+  await expect(section.nth(1)).toHaveAttribute('data-picked', '');
+  await expect(page.locator('#content-properties input:focus')).toHaveCount(0);
+
+  // And from the keyboard, above the last, with the cursor going on to the new section's name.
+  await labels.nth(2).click();
+  await section.nth(2).getByRole('button', { name: editor.sectionAbove, exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(labels).toHaveCount(4);
+  await expect(labels.nth(3)).toHaveText('4 · Two');
+  await expect(section.nth(2)).toHaveAttribute('data-picked', '');
+  await expect(page.locator('#content-properties input:focus')).toBeVisible();
+});
+
 test("a calendar block's kinds are chosen from the calendar's own, not typed (issue #360)", async ({
   page,
 }) => {

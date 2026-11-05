@@ -836,11 +836,13 @@ re-find your place in every time.
 **While composing, the page says what it is made of, and a visitor never reads any of it.** Every
 section has a thin dashed outline, solid when it is the one picked, and a label with its number among
 its siblings, its name and its background ("2 · Rules · pale blue background"; a row says "Row 2.1").
-The name is a section's `title`, which only who writes sees. Between two sections, when the pointer or
-the keyboard reaches the place, "+ section" inserts one there, and "+ row" does the same for the rows
-of a section. A place to insert stands under what the section holds, so a block is picked up to its
-edge and the place answers only in the air: where two sections with no padding touch there is none, and
-it is the keyboard's and the outline's. A row inside a row comes from the row's bar. All of it stands
+The name is a section's `title`, which only who writes sees. The way to insert is the bar of what is
+picked: "+ section above" and "+ section below", "+ row above" and "+ row below" on a row, which needs
+no air and works with a finger. Between two sections, when the pointer or the keyboard reaches the
+place, "+ section" does the same as a shortcut, and "+ row" for the rows of a section. A place to insert
+stands under what the section holds, so a block is picked up to its edge and the place answers only in
+the air: where two sections with no padding touch there is none, and that is what the bar is for. A row
+inside a row comes from the row's bar. All of it stands
 out of the flow, so nothing on the page moves to make room, and all of it reads the composing context
 (`blocks/picking.ts`), which the public site does not mount. Rows are
 the only subsections there are: for things side by side there are the columns, and for things grouped

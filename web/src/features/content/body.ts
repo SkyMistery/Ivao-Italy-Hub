@@ -81,6 +81,30 @@ export function depthOf(body: Body, id: string): number | undefined {
   return walk(body.sections, 0);
 }
 
+/** Where a section stands among its siblings: the section it is a row of, `null` for one of the page, and its index. */
+export function placeOf(body: Body, id: string): { parent: string | null; index: number } | undefined {
+  const walk = (
+    sections: SectionEnvelope[],
+    parent: string | null,
+  ): { parent: string | null; index: number } | undefined => {
+    const index = sections.findIndex((section) => section.id === id);
+    if (index !== -1) {
+      return { parent, index };
+    }
+
+    for (const section of sections) {
+      const below = walk(section.sections, section.id);
+      if (below !== undefined) {
+        return below;
+      }
+    }
+
+    return undefined;
+  };
+
+  return walk(body.sections, null);
+}
+
 export function findBlock(
   body: Body,
   id: string,

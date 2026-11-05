@@ -15,6 +15,7 @@ import {
   moveBlock,
   moveBlockTo,
   moveSection,
+  placeOf,
   removeSection,
   reorderBlocks,
   setSpan,
@@ -299,4 +300,14 @@ test('a section of a dashboard is written as the tiles it is drawn as', () => {
 
   const narrower = setSpan(asTiles(seeded, 's_board'), 'b_wide', 6);
   expect(findBlock(narrower, 'b_wide')?.block.span).toBe(6);
+});
+
+test('a section says where it stands among its siblings, and nothing for one that is not there', () => {
+  const row = addSection(addSection(readBody(null), LOCALES).body, LOCALES);
+  const inner = addSection(row.body, LOCALES, row.id);
+  const second = addSection(inner.body, LOCALES, row.id);
+
+  expect(placeOf(second.body, row.id)).toEqual({ parent: null, index: 1 });
+  expect(placeOf(second.body, second.id)).toEqual({ parent: row.id, index: 1 });
+  expect(placeOf(second.body, 'gone')).toBeUndefined();
 });

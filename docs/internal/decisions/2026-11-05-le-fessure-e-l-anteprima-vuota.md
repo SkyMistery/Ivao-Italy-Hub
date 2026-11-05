@@ -2,7 +2,8 @@
 
 **Data:** 5 novembre 2026 — PR 3.1 della fase 3 dell'editor, sessione di lavoro di Carmine, ramo `feat/editor-sections`
 **Stato:** **Correzione**, non una decisione di prodotto: il difetto l'ha aperto questa stessa PR, prima che entrasse in `main`.
-Scritta perché è la stessa trappola di `2026-10-06-l-anteprima-vuota-dell-editor.md`, e il suo perché resta non capito (§4).
+Scritta perché è la stessa trappola di `2026-10-06-l-anteprima-vuota-dell-editor.md`, e il suo perché resta non capito (§4). Dentro c'è
+una **decisione di Carmine**, con le sue parole: §3 ter.
 **Regola applicata:** `CLAUDE.md` §5, caso **(a)**: nessun meccanismo nuovo, un componente della PR che aspetta i caratteri.
 
 ## 1. Che cosa è successo
@@ -51,8 +52,8 @@ sceglierlo. Due scelte, che non cambiano né il disegno né la geometria della p
 
 - **Gli strati.** Mentre si compone, il contenuto di una sezione sta su `z-[1]` e la striscia su `z-0`: la striscia risponde solo dove
   c'è aria, e un blocco si sceglie fino al bordo. La tastiera la alza, così il bottone con il focus si vede. Dove si toccano due sezioni
-  **senza padding** l'aria non c'è e il puntatore non ci arriva: restano la tastiera e la struttura. La fessura di una riga sta al centro
-  dello spazio sopra la riga, che è suo e non copre niente.
+  **senza padding** l'aria non c'è e la striscia non risponde al puntatore: §3 ter. La fessura di una riga sta al centro dello spazio
+  sopra la riga, che è suo e non copre niente.
 - **«+ riga» in fondo solo per le sezioni della pagina.** Il design chiede «+ riga» fra le righe; quella in fondo a una sezione è
   un'aggiunta di questa PR, perché la prima riga di una sezione deve poter nascere. Su una riga non c'è aria per starci, e la sua
   striscia stava su quella dell'ultima figlia. Una riga dentro una riga nasce dalla barra della riga, come prima, o dalla struttura.
@@ -61,6 +62,27 @@ Il cursore: un «+» premuto da tastiera porta al nome della nuova sezione, come
 
 Verificato con una mutazione: rimessa la striscia sopra il contenuto, il test nuovo di `web/e2e/editor.spec.ts` cade.
 
+## 3 ter. Come si inserisce fra due sezioni che si toccano: la decisione di Carmine
+
+**La domanda**, portata dal master: dove due sezioni senza padding si toccano non c'è aria per la striscia, e allora come si inserisce
+fra le due? **La risposta di Carmine, 5 novembre 2026, in chat al master: «Dalla barra della sezione».**
+
+Che cosa ne viene, come l'ha scritto il master:
+
+- Nella barra della sezione scelta (`PickedBar`) ci sono **«+ sezione sopra» e «+ sezione sotto»**, per **ogni** sezione della pagina e
+  non solo per quelle senza padding: il modo di inserire è uno solo, e funziona anche col dito. Su una **riga**, lo stesso gesto con
+  **«+ riga sopra» e «+ riga sotto»**, dove il genitore prende righe.
+- Le regole sono quelle che `actionsFor` già legge per la barra e la struttura: su un corpo bloccato niente; accanto a una sezione che
+  un template blocca si inserisce, perché il blocco è su quello che contiene; una riga chiede quello che si chiede al genitore.
+- Le strisce nello spazio vuoto **restano** come scorciatoia col mouse.
+- Da tastiera il cursore va al nome della sezione nuova, come dalle strisce.
+
+Scelte di chi scrive, non di Carmine, perché la barra restasse leggibile (guardata a schermo su una sezione stretta e a 360 px):
+
+- Dove nome e comandi non stanno su una riga, il nome ne prende una sua sopra i comandi; prima si riduceva a una scheggia.
+- Le due icone sono `+↑` e `+↓`, composte con quelle del set: nessuna icona sola di `lucide-react` dice «sopra» e «sotto» (le
+  `between-horizontal-*` si distinguono per un triangolino a sinistra o a destra).
+
 ## 4. Che cosa non è stato verificato
 
 - **Il perché dentro Chromium**, come il 6 ottobre: la correzione è scelta per misura, non per comprensione.
@@ -68,6 +90,9 @@ Verificato con una mutazione: rimessa la striscia sopra il contenuto, il test nu
   già disegnata la lasciava disegnata, 3 su 3; qui non è stato rimisurato.
 - **Firefox, Safari, Chrome stabile**: provato solo il Chromium di Playwright.
 - **`rows` e sezioni molte**: la spec ha una pagina di una sezione sola.
+- **La barra col dito, davvero**: guardata a 360 px e cliccata col puntatore, non provata su un telefono.
+- **L'editor in una finestra da 360 px con il menu dello staff aperto**: la pagina resta larga 72 px, anche su `main` (`8755eb9f`). La
+  barra è stata guardata con il menu chiuso a mano. Chiudere il menu è il §4.2 del design, che è un'altra PR.
 
 ## Da portare nel piano
 
@@ -76,4 +101,7 @@ Verificato con una mutazione: rimessa la striscia sopra il contenuto, il test nu
   ⚠️ **il difetto non si riproduce con una copia ritoccata della spec**.
 - Sempre fra le trappole: ⚠️ **la cromatura dell'editor sta sotto il contenuto delle sezioni, non sopra**: quello che sta sopra ruba il
   clic ai blocchi, e nessun test in jsdom lo vede.
+- **Design della fase 3, §4.1** (`12-design-editor-fase-3.md`), la decisione di Carmine del 5 novembre 2026, «Dalla barra della sezione»:
+  il modo di inserire una sezione o una riga è la barra di quella scelta, sopra e sotto, per ogni sezione e ogni riga; le strisce sono
+  la scorciatoia col mouse, e non rispondono dove non c'è aria. «+ riga» in fondo solo sulle sezioni della pagina.
 - Nessuna sezione del piano cambia.
