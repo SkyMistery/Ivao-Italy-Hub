@@ -1,7 +1,7 @@
 # Le scelte dell'import da Claude che la nota del 30 ottobre non diceva
 
 - **Data**: 4 novembre 2026
-- **Stato**: scelte di una sessione di lavoro di Carmine dentro la nota approvata, lette dal revisore sulla #453. Nessuna è una decisione di Carmine: la sola domanda andata a lui, la riga della versione, è in `2026-11-04-la-bozza-che-viene-da-un-file.md`
+- **Stato**: scelte di una sessione di lavoro di Carmine dentro la nota approvata, lette dal revisore sulla #453. Una sola è una decisione di Carmine: la foto da scegliere del punto 11 (in chat al master, 5 novembre 2026: «Sì, la ferma»). L'altra domanda andata a lui, la riga della versione, è in `2026-11-04-la-bozza-che-viene-da-un-file.md`
 - **Classificazione** (`CLAUDE.md` §5): **(b)**, dentro `2026-10-30-una-pagina-scritta-con-claude.md` §3 e §4: nessun meccanismo nuovo, nessun tocco al server
 
 ## 1. Che cosa fa l'import, oltre a quello che la nota dice
@@ -25,11 +25,11 @@
 
 ## 4. Dove stanno le cose
 
-11. **L'elenco di quello che resta da fare** sta nel `localStorage` di chi importa, per riga: regge un ricaricamento, ma un altro non lo vede. Una foto non scelta non blocca la pubblicazione e non disegna niente, quindi l'elenco è l'unica parola su quel buco, ed è da riprendere se servirà anche a chi approva: il controllo sul server è della fase 3 (3.15), per i link; per le foto oggi non c'è.
+11. **L'elenco di quello che resta da fare** sta nel `localStorage` di chi importa, per riga: regge un ricaricamento, ma un altro non lo vede. Oggi una foto non scelta non ferma la pubblicazione e non disegna niente, quindi fino alla 3.15 l'elenco è l'unica parola su quel buco. **Decisione di Carmine**, alla domanda se una foto rimasta da scegliere debba fermare la pubblicazione, in chat al master il 5 novembre 2026: «Sì, la ferma». Nel codice con la 3.15 (design §5.9, il controllo alla pubblicazione), non in questa PR, e vale anche per le pagine scritte a mano. ⚠️ Il server non legge gli schemi (`CLAUDE.md` §2), quindi da solo non sa quale `mediaId` è obbligatorio: la 3.15 dice come lo sa, nella sua nota, e se serve un meccanismo nuovo è una domanda per Carmine.
 12. **Le parole della riga** sono «Importata da Claude», come le cita la nota §3.3, e non «importata da un file» della domanda 6.
 13. **Un 409 sull'import ferma l'editor** come un conflitto dell'autosalvataggio: scaricare di nuovo comporrebbe dalla stessa riga vecchia, e il file dopo prenderebbe un altro 409.
 
 ## Da portare nel piano
 
 - **§9.3** (modello dei contenuti), accanto alle righe della nota del 30 ottobre: i punti 1, 2, 6 e 9, che sono le regole dell'import; e che un file non sceglie mai `renderMode`, `span`, `frozen` di un blocco tenuto né la `key` di una sezione tenuta.
-- **La fase 3** (design `12-design-editor-fase-3.md`): il punto 11 è una domanda da riaprire se una foto mancante deve fermare la pubblicazione.
+- **La fase 3** (design `12-design-editor-fase-3.md`, §5.9 e la riga 3.15 del §7): una foto rimasta da scegliere ferma la pubblicazione, per ogni pagina, importata o scritta a mano (Carmine, 5 novembre 2026: «Sì, la ferma»). La 3.15 dice nella sua nota come il server sa quale `mediaId` è obbligatorio.
