@@ -1337,7 +1337,10 @@ function RepeatableList({
           t,
         });
 
-  const [open, setOpen] = useState<readonly number[]>([]);
+  // A list that opens with one entry shows it (Carmine, 5 November 2026, note
+  // `2026-11-05-la-voce-sola-nasce-aperta`): a pilot opening a report would find a row to click before
+  // anything to write, and closing the only entry makes room for nothing.
+  const [open, setOpen] = useState<readonly number[]>(fields.length === 1 ? [0] : []);
 
   // An entry holding an error is open, because an error in a closed entry is an error nobody sees: it
   // opens by itself, and whoever closes it finds it open again until the error is gone. Added to what

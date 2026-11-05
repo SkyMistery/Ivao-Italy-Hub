@@ -63,6 +63,37 @@ test('an entry is a closed row with its number and its title', () => {
   expect(box(0)).not.toBeVisible();
 });
 
+test('a list that opens with one entry shows it, and it can still be closed', async () => {
+  // Carmine, 5 November 2026: a pilot opening a report would otherwise find a row to click first.
+  const user = userEvent.setup();
+  renderList({ steps: [{ name: 'Only' }] });
+
+  expect(box(0)).toBeVisible();
+
+  await user.click(row('1 Only'));
+  expect(box(0)).not.toBeVisible();
+});
+
+test('the entry shown at the opening closes like any other when another is added', async () => {
+  const user = userEvent.setup();
+  renderList({ steps: [{ name: 'Only' }] });
+
+  await user.click(row('Add'));
+
+  expect(box(1)).toBeVisible();
+  expect(box(0)).not.toBeVisible();
+});
+
+test('a list that reaches one entry by removing the others does not open it', async () => {
+  // The rule is about how the form opens: nobody asked for this entry to be opened.
+  const user = userEvent.setup();
+  renderList({ steps: [{ name: 'First' }, { name: 'Second' }] });
+
+  await user.click(screen.getAllByRole('button', { name: 'Remove' })[1] as HTMLElement);
+
+  expect(row('1 First')).toHaveAttribute('aria-expanded', 'false');
+});
+
 test('one click opens an entry and closes the one open before', async () => {
   const user = userEvent.setup();
   renderList();
@@ -218,12 +249,26 @@ test('a closed entry is validated as a drawn one is: a box turns what the server
   // drawn would hand it the null, and the form could not be saved.
   const user = userEvent.setup();
   const onSubmit = vi.fn(() => Promise.resolve());
-  renderList({ steps: [{ name: 'First', hours: null as unknown as number }] }, onSubmit);
+  renderList(
+    {
+      steps: [
+        { name: 'First', hours: null as unknown as number },
+        { name: 'Second', hours: null as unknown as number },
+      ],
+    },
+    onSubmit,
+  );
 
+  expect(box(0)).not.toBeVisible();
   await user.click(row('Save'));
 
   await waitFor(() => expect(onSubmit).toHaveBeenCalled());
-  expect(onSubmit).toHaveBeenCalledWith({ steps: [{ name: 'First', hours: undefined }] });
+  expect(onSubmit).toHaveBeenCalledWith({
+    steps: [
+      { name: 'First', hours: undefined },
+      { name: 'Second', hours: undefined },
+    ],
+  });
 });
 
 test('an entry takes its title from a translated field in the language on screen, or the first one written', async () => {

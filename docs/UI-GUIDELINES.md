@@ -419,10 +419,11 @@ What the schema may say about how a field is drawn:
 - a **list** of objects can be reordered with the up and down buttons beside add and remove. They
   are what a keyboard reaches, and they stay when dragging arrives. An entry is a closed row, its
   number and its title, and a click opens it and closes the one open before; a new entry is born
-  open, and an entry holding an error opens by itself. The title is the first text of the entry, in
-  the language on screen — or the first choice, or the first date, in a list that has no text — and
-  `.meta({ entryTitle: true })` on another field says otherwise. A closed entry stays mounted,
-  hidden: its fields keep doing to their values what a drawn field does;
+  open, a list that opens with one entry shows it, and an entry holding an error opens by itself.
+  The title is the first text of the entry, in the language on screen — or the first choice, or the
+  first date, in a list that has no text — and `.meta({ entryTitle: true })` on another field says
+  otherwise. A closed entry stays mounted, hidden: its fields keep doing to their values what a
+  drawn field does;
 - `.meta({ slugFrom: 'title' })` proposes a field from another one while the other is being typed,
   and stops for ever the moment somebody writes in it. `slugPrefix: '/'` puts the leading slash of a
   menu path in front. An address outlives the page it was made for, so a row that already has one
