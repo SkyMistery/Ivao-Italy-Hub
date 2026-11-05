@@ -80,6 +80,7 @@ internal static class MeEndpoints
                     options.Locales,
                     options.DefaultLocale,
                     options.Timezone,
+                    options.DateFormat,
                     options.LogoUrl,
                     options.FaviconUrl,
                     options.FirStaffScope.ToString().ToLowerInvariant(),
@@ -269,6 +270,8 @@ internal sealed record BootstrapDivision(
     IReadOnlyList<string> Locales,
     string DefaultLocale,
     string Timezone,
+    // How a date is written in numbers (note 2026-10-31-il-formato-della-data): `formatMoment` reads it, the mails write the same.
+    string DateFormat,
     string? LogoUrl,
     string? FaviconUrl,
     string FirStaffScope,

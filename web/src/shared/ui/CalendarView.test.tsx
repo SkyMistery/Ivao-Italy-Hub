@@ -130,13 +130,13 @@ describe('CalendarView', () => {
 
   it('writes the day beside the time only where nothing else says which day it is', () => {
     // Asked for by Carmine running the demo: in a grid the square is the day, and in the list of a
-    // week the heading is — so repeating "Sep 15, 2026" on the line a reader actually reads is
+    // week the heading is — so repeating "15/09/2026" on the line a reader actually reads is
     // noise. The agenda has neither, because it is a flat list running forward, so there it stays.
     const { unmount } = renderWithProviders(
       <CalendarView items={items} view="agenda" timezone="Asia/Tokyo" empty="Nothing" />,
     );
 
-    expect(screen.getByText(/Sep 15, 2026, 14:00Z/)).toBeInTheDocument();
+    expect(screen.getByText(/15\/09\/2026 14:00Z/)).toBeInTheDocument();
     unmount();
 
     renderWithProviders(
@@ -150,13 +150,13 @@ describe('CalendarView', () => {
     );
 
     // The line is **exactly** the time: no date in front of it, because the heading above already
-    // said the day. Exact, because `Sep 15, 2026, 14:00Z` would match a loose one.
+    // said the day. Exact, because `15/09/2026 14:00Z` would match a loose one.
     expect(screen.getByText('14:00Z', { exact: true })).toBeInTheDocument();
 
     // ⚠️ The entry that has no time keeps its date wherever it is drawn — a day is all it has, and
     // a line with nothing on it would be worse than a repeated date. And no `Z` on it: a day is not
     // an instant in UTC, which is a mistake this test caught the first time it ran.
-    expect(screen.getByText('Sep 20, 2026', { exact: true })).toBeInTheDocument();
+    expect(screen.getByText('20/09/2026', { exact: true })).toBeInTheDocument();
   });
 
   it('says the local time in brackets, beside the UTC one', () => {

@@ -334,7 +334,7 @@ test('the page of a request reminds of the theory exam with its site, and the re
   // The day of the decision, not an hour that would have to say whose.
   await expect(
     page.getByText(
-      filled(words.staff.decision.accepted, { name: 'Test Coordinator (790097)', date: 'Sep 21, 2026' }),
+      filled(words.staff.decision.accepted, { name: 'Test Coordinator (790097)', date: '21/09/2026' }),
       { exact: true },
     ),
   ).toBeVisible();
@@ -480,7 +480,7 @@ test('a step somebody else overtook reads the page again, says so, and the next 
       filled(words.staff.trainer.assigned, {
         name: 'Other Trainer (790096)',
         by: 'Test Coordinator (790097)',
-        date: 'Sep 21, 2026',
+        date: '21/09/2026',
       }),
       { exact: true },
     ),
@@ -555,7 +555,7 @@ test('a person whose data was erased is a deleted person in the list and on the 
       filled(words.staff.trainer.assigned, {
         name: deleted,
         by: 'Test Coordinator (790097)',
-        date: 'Sep 21, 2026',
+        date: '21/09/2026',
       }),
       { exact: true },
     ),
@@ -564,11 +564,11 @@ test('a person whose data was erased is a deleted person in the list and on the 
   // Closed by the staff, not by the hub: who closed it tells the two apart, not the reason that is gone.
   await expect(
     page.getByText(
-      filled(words.staff.closing.byStaff, { name: 'Test Coordinator (790097)', date: 'Sep 25, 2026' }),
+      filled(words.staff.closing.byStaff, { name: 'Test Coordinator (790097)', date: '25/09/2026' }),
       { exact: true },
     ),
   ).toBeVisible();
-  await expect(page.getByText(filled(words.staff.closing.byHub, { date: 'Sep 25, 2026' }))).toHaveCount(0);
+  await expect(page.getByText(filled(words.staff.closing.byHub, { date: '25/09/2026' }))).toHaveCount(0);
   await expect(page.getByText('-3', { exact: true })).toHaveCount(0);
 });
 
@@ -650,16 +650,16 @@ test('the history says every step of the training, who took it and when, a delet
     filled(words.staff.history.datesChanged!, { name: 'Test Trainer (790098)' }),
     filled(words.staff.history.dateChosen!, {
       name: 'Test Trainee (790099)',
-      date: filled(words.time.utc, { when: 'Sep 25, 2026, 13:00' }),
+      date: filled(words.time.utc, { when: '25/09/2026 13:00' }),
     }),
     filled(words.staff.history.dateMoved!, {
       name: 'Test Trainer (790098)',
-      from: filled(words.time.utc, { when: 'Sep 25, 2026, 13:00' }),
-      to: filled(words.time.utc, { when: 'Sep 26, 2026, 18:30' }),
+      from: filled(words.time.utc, { when: '25/09/2026 13:00' }),
+      to: filled(words.time.utc, { when: '26/09/2026 18:30' }),
     }),
     filled(words.staff.history.rescheduled!, {
       name: 'Test Trainer (790098)',
-      date: filled(words.time.utc, { when: 'Sep 26, 2026, 18:30' }),
+      date: filled(words.time.utc, { when: '26/09/2026 18:30' }),
     }),
     filled(words.staff.history.closed!, { name: 'Test Coordinator (790097)' }),
   ];
@@ -669,10 +669,10 @@ test('the history says every step of the training, who took it and when, a delet
 
   // When, in UTC and where the division lives; the reason of the closing on a line of its own.
   await expect(
-    lines.first().getByText(filled(words.time.utc, { when: 'Sep 20, 2026, 10:00' }), { exact: true }),
+    lines.first().getByText(filled(words.time.utc, { when: '20/09/2026 10:00' }), { exact: true }),
   ).toBeVisible();
   await expect(
-    lines.first().getByText(filled(words.time.local, { when: 'Sep 20, 2026, 12:00', zone: 'Europe/Rome' }), {
+    lines.first().getByText(filled(words.time.local, { when: '20/09/2026 12:00', zone: 'Europe/Rome' }), {
       exact: true,
     }),
   ).toBeVisible();

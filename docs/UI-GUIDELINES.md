@@ -446,7 +446,7 @@ Filtering in memory is right for a short, fixed list and wrong for anything a da
 
 ⚠️ And where that set contains **routes of this client**, the two halves agree **by hand**: a route
 is not something the OpenAPI contract can carry. `MenuItemWriteDtoValidator.Screens` and
-`SITE_SCREENS` in `web/src/routes/_staff/staff.$dept.menu.$id.tsx` are one list written twice. A fork
+`SITE_SCREENS` in `web/src/features/content/siteAddresses.ts` are one list written twice. A fork
 that adds or removes a screen edits both, and an integration test posting a screen keeps them honest
 — the same arrangement the backgrounds of a section already use.
 
@@ -870,6 +870,16 @@ which is the only place in the client that formats an instant, and that is why i
 component calls `useMoment`, and what is not a component — a list cell, the line under an instant
 field — calls `formatMoment` with the language it was handed. A `new Intl.DateTimeFormat` with a
 `timeStyle` of its own is how three formatters once wrote "7:00 PM" in English.
+
+**The day in the division's order, not the language's.** `31/10/2026 14:05`: the day, the month and
+the year in numbers, in the order `division.json → dateFormat` says (`dd/mm/yyyy` when it says
+nothing, or `mm/dd/yyyy`, `yyyy/mm/dd`), whatever language the reader has chosen — an English reader
+of an Italian division must not read 03/11 as the eleventh of March. `formatMoment` takes the order
+from the bootstrap once, at the root route, so a caller never passes it. Only a date with its month
+in words, `dateStyle: 'long'` ("31 October 2026", the date of a news item, the steps of a timeline),
+keeps the language's own order: written that way it cannot be misread. The mails write the same
+through the server's `HubDates` (`Core/Division/`). A date a program reads — a sitemap, an address —
+stays ISO.
 
 **The date goes only where nothing else has said the day.** A square of a calendar grid and the
 heading of a day list have already said it; repeating it is noise on the line a reader actually

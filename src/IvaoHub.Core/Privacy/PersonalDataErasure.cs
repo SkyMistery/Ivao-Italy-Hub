@@ -55,6 +55,12 @@ public sealed class PersonalDataErasure(
     /// <summary>Where the last pseudonym handed out is kept, in <c>hub_division_settings</c>.</summary>
     public const string PseudonymSettingKey = "privacy.lastPseudonym";
 
+    /// <summary>What the lock on the last pseudonym is called, before the database's name.</summary>
+    public const string PseudonymLockPrefix = "hub-pseudonym:";
+
+    /// <summary>How long an erasure waits for another to take its number: taking one is a read and a save.</summary>
+    private static readonly TimeSpan PseudonymWait = TimeSpan.FromSeconds(10);
+
     /// <summary>The action of the one audit row an erasure leaves.</summary>
     public const string AuditAction = "erasure";
 
@@ -306,9 +312,27 @@ public sealed class PersonalDataErasure(
     /// <summary>
     /// A new negative number, one below the last one handed out. Saved before the erasure starts and outside its mode, so the
     /// setting's own audit row is an ordinary one: it says a number was taken, and by whom, never for whom.
+    /// <para>Read and written under a lock of the database (issue #326, item 3): two erasures at once — two processes, or two
+    /// tabs — read the same last number and handed out the same pseudonym. A lock still held by another erasure after
+    /// <see cref="PseudonymWait"/> is a refusal, to ask again; one the database cannot be asked for goes ahead without it, as
+    /// the jobs do.</para>
+    /// <para>⚠️ A new number on every run, a run again after one that failed halfway included: what the first run committed keeps
+    /// its pseudonym, what is left takes the second, and the aggregated counts grow by one. Accepted by the maintainer (issue
+    /// #326, item 4; note 2026-11-04-il-secondo-pseudonimo): reusing the first would mean keeping the link between the VID and
+    /// its pseudonym until somebody ran the erasure again — the very link the erasure removes.</para>
     /// </summary>
     private async Task<int> NextPseudonymAsync(CancellationToken cancellationToken)
     {
+        await using var held = await DatabaseLock.TakeAsync(
+            database.Database.GetConnectionString(),
+            name => DatabaseLock.NameFor(PseudonymLockPrefix, name),
+            PseudonymWait,
+            cancellationToken);
+        if (held.Busy)
+        {
+            throw new DomainRefusalException("vid", "errors.erasure.busy");
+        }
+
         var setting = await database.DivisionSettings.FirstOrDefaultAsync(row => row.Key == PseudonymSettingKey, cancellationToken);
         if (setting is null)
         {

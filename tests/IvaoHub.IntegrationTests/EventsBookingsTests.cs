@@ -512,7 +512,7 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         var told = Assert.Single(await NotificationsAsync(EventsNotifications.EventChanged, Slug("grow"), token));
         Assert.Equal(PilotVid, told.Vid);
-        Assert.Contains(day.AddHours(16).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture), told.DataJson, StringComparison.Ordinal);
+        Assert.Contains(day.AddHours(16).ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture), told.DataJson, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -950,7 +950,7 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await CorrectAsync(coordinator, slots["XEA211"], slot => slot with { OffBlockUtc = day.AddHours(17).AddMinutes(30), OnBlockUtc = day.AddHours(18).AddMinutes(55) }, token);
         var told = Assert.Single(await NotificationsAsync(EventsNotifications.BookingChanged, Slug("corrected"), token));
         Assert.Equal(PilotVid, told.Vid);
-        Assert.Contains(Stamp(day.AddHours(18).AddMinutes(55)), told.DataJson, StringComparison.Ordinal);
+        Assert.Contains(day.AddHours(18).AddMinutes(55).ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture), told.DataJson, StringComparison.Ordinal);
         Assert.Contains("XEA211", told.DataJson, StringComparison.Ordinal);
 
         // Admitted types that leave the pilot's aircraft out: saved, the booking keeps it, and the pilot is told again.

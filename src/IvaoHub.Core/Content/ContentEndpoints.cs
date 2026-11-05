@@ -40,6 +40,18 @@ public sealed record PublicPageDto(PublicContentDto? Page, string? MovedTo);
 public sealed record ContentPageNodeDto(long Id, string Path, Localized<string> Title, int Depth);
 
 /// <summary>
+/// One address of the site that whoever asks can read online: a page, a news item or a document, with where it is, what it is
+/// called, whose it is and who reads it (<c>decisions/2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere.md</c>).
+/// </summary>
+public sealed record ContentSiteAddressDto(
+    long Id,
+    ContentKind Kind,
+    string Url,
+    Localized<string> Title,
+    Department OwnerDepartment,
+    Visibility Visibility);
+
+/// <summary>
 /// Editorial content: the generic CRUD engine for the back office, plus the three things a page can
 /// do that a link cannot — be born from a template, be published, and be read by a visitor.
 /// <para>Everything about paging, filtering, department narrowing and row level authorisation is
@@ -240,6 +252,16 @@ public static class ContentEndpoints
         // puts a page under `/training`, which the web team owns — and not a share of the rows,
         // which would hand every department the drafts of every other. What crosses is the address
         // and the title, which the site already shows to anybody.
+        // ⚠️ One more hand written read, counted: the addresses of the site whoever writes may read, of every department
+        // (decisions/2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere.md, decided by Carmine on 4 November 2026).
+        // Not the content list, which holds the reader's own departments, and not the tree above, which holds drafts:
+        // the site's own read, with the visibility of whoever asks and the published version only — and unpaged, because
+        // an address missing from the instructions for Claude is an address it cannot use.
+        group.MapGet("/addresses", SiteAddressesAsync)
+            .WithName("ContentSiteAddresses")
+            .Produces<IReadOnlyList<ContentSiteAddressDto>>()
+            .RequireAuthorization(CorePermissions.ContentEdit);
+
         group.MapGet("/pages", PageTreeAsync)
             .WithName("ContentPageTree")
             .Produces<IReadOnlyList<ContentPageNodeDto>>()
@@ -856,6 +878,32 @@ public static class ContentEndpoints
                 .Contains(wanted, StringComparer.Ordinal));
 
         return target is null ? TypedResults.NotFound() : TypedResults.Ok(new PublicPageDto(null, target.Url));
+    }
+
+    private static async Task<IReadOnlyList<ContentSiteAddressDto>> SiteAddressesAsync(HubDbContext database, HttpContext http)
+    {
+        // `database.Contents`, never the back office's source: the query filter answers with what the site shows whoever
+        // asks (`VisibilityQueryFilter`) — their visibility, and rows with a published version.
+        var rows = await database.Contents
+            .AsNoTracking()
+            .Where(row => !row.IsTemplate
+                && (row.Kind == ContentKind.Page || row.Kind == ContentKind.News || row.Kind == ContentKind.Document))
+            .Select(row => new { row.Id, row.Kind, row.Slug, row.ParentPath, row.Title, row.OwnerDepartment, row.Visibility })
+            .ToListAsync(http.RequestAborted);
+
+        return
+        [
+            .. rows
+                .Select(row => new ContentSiteAddressDto(
+                    row.Id,
+                    row.Kind,
+                    ContentEntry.UrlOf(row.Kind, row.Slug, row.ParentPath, row.OwnerDepartment),
+                    row.Title,
+                    row.OwnerDepartment,
+                    row.Visibility))
+                .OrderBy(address => address.Kind)
+                .ThenBy(address => address.Url, StringComparer.Ordinal),
+        ];
     }
 
     private static async Task<IReadOnlyList<ContentPageNodeDto>> PageTreeAsync(HubDbContext database, HttpContext http)

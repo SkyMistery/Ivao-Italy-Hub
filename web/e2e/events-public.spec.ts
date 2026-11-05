@@ -709,7 +709,7 @@ test('the page says when the bookings open, counts down to it, and offers nothin
   // In the line under the title (E8b): from when, in UTC and where the division lives, and how long is left, to the second.
   const head = page.locator('article > header');
   await expect(
-    head.getByText(words.public.booking.opensOn.replace('{{at}}', 'Nov 1, 2099, 18:00Z (19:00 LT)'), {
+    head.getByText(words.public.booking.opensOn.replace('{{at}}', '01/11/2099 18:00Z (19:00 LT)'), {
       exact: true,
     }),
   ).toBeVisible();

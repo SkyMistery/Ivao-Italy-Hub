@@ -55,6 +55,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/content/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentSettings"];
+        put: operations["ContentSettingsWrite"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/notifications": {
         parameters: {
             query?: never;
@@ -1078,6 +1094,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["ContentAddress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/addresses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentSiteAddresses"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4698,6 +4730,7 @@ export interface components {
             locales: string[];
             defaultLocale: string;
             timezone: string;
+            dateFormat: string;
             logoUrl: null | string;
             faviconUrl: null | string;
             firStaffScope: string;
@@ -5250,6 +5283,7 @@ export interface components {
             /** Format: int64 */
             supersededById: null | number;
             showFooter: boolean;
+            draftFromFile: boolean;
             /** Format: int64 */
             publishedVersionId: null | number;
             /** Format: date-time */
@@ -5403,6 +5437,37 @@ export interface components {
              */
             parentId?: null | number;
         };
+        /** @description What the settings of the content say: the page of the staff that describes how the division writes. */
+        ContentSettingsDto: {
+            /**
+             * Format: int64
+             * @description The page chosen, or null when none is.
+             */
+            stylePageId: null | number;
+            /**
+             * @description Its address, read with the visibility of whoever asks and only while it is published: null when they cannot read it, so
+             *     that the instructions for Claude leave the style out rather than promise a page their reader will never open.
+             */
+            stylePagePath: null | string;
+        };
+        /** @description What the settings panel saves. Null takes the choice away. */
+        ContentSettingsWriteDto: {
+            /** Format: int64 */
+            stylePageId: null | number;
+        };
+        /**
+         * @description One address of the site that whoever asks can read online: a page, a news item or a document, with where it is, what it is
+         *     called, whose it is and who reads it (`decisions/2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere.md`).
+         */
+        ContentSiteAddressDto: {
+            /** Format: int64 */
+            id: number;
+            kind: components["schemas"]["ContentKind"];
+            url: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            ownerDepartment: components["schemas"]["Department"];
+            visibility: components["schemas"]["Visibility"];
+        };
         /**
          * @description One version of a row as its history in the editor shows it (note 2026-10-23-la-storia-delle-versioni): for the
          *     staff who may read the row, never for a visitor.
@@ -5481,6 +5546,7 @@ export interface components {
             showFooter: boolean;
             /** Format: int64 */
             parentId?: null | number;
+            draftFromFile?: null | boolean;
         };
         /** @description A controller's own register (§4.5, §7.1): their counts, their penalty, and their shifts of the events over, the latest first. */
         ControllerRecordDto: {
@@ -11608,6 +11674,66 @@ export interface operations {
             };
         };
     };
+    ContentSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentSettingsDto"];
+                };
+            };
+        };
+    };
+    ContentSettingsWrite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContentSettingsWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentSettingsDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     MeNotificationPreferences: {
         parameters: {
             query?: never;
@@ -14012,6 +14138,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContentAddressDto"];
+                };
+            };
+        };
+    };
+    ContentSiteAddresses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentSiteAddressDto"][];
                 };
             };
         };

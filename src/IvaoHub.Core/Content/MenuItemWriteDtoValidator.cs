@@ -87,7 +87,7 @@ public sealed class MenuItemWriteDtoValidator : AbstractValidator<MenuItemWriteD
     /// The addresses of this application that are not rows: they are screens of the single page
     /// application, so no table can be asked about them.
     /// <para>⚠️ The other half is <c>SITE_SCREENS</c> in
-    /// <c>web/src/routes/_staff/staff.$dept.menu.$id.tsx</c>, and the two agree **by hand** — a
+    /// <c>web/src/features/content/siteAddresses.ts</c>, and the two agree **by hand** — a
     /// route of the client is not something the contract can carry. The integration test that posts
     /// a screen the server does not know is what keeps them agreeing, exactly as it does for the
     /// backgrounds of a section.</para>

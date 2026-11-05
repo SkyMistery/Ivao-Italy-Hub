@@ -538,7 +538,7 @@ public sealed class EventsPrivateSlotsTests(MariaDbFixture mariaDb) : IAsyncLife
             .Where(row => row.Type == EventsNotifications.BookingReminder && row.Vid == PilotVid && row.DataJson.Contains(SlugStem))
             .ToListAsync(token));
         var flights = JsonDocument.Parse(told.DataJson).RootElement.GetProperty("flights").GetString()!;
-        Assert.Contains($"XEI701, {TypeA}: {Away} {EventsMail.Moment(starts.AddMinutes(10))} → {First} {EventsMail.Moment(starts.AddHours(1))}", flights, StringComparison.Ordinal);
+        Assert.Contains($"XEI701, {TypeA}: {Away} {EventsMail.Moment(starts.AddMinutes(10), DateOrder.DayMonthYear)} → {First} {EventsMail.Moment(starts.AddHours(1), DateOrder.DayMonthYear)}", flights, StringComparison.Ordinal);
         Assert.NotNull(Assert.Single(await BookingsAsync(id, token)).RemindedAt);
     }
 

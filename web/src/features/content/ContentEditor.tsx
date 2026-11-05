@@ -16,7 +16,16 @@ import { ConfirmDialog, PageActions } from '../../shared/ui';
 import { AddressPreview } from './AddressPreview';
 import { BodyEditor } from './BodyEditor';
 import { CHANGELOG_MAX, changeSummary } from './changeSummary';
-import { emptyContent, toFormValues, type PublishRequest } from './mutations';
+import { ClaudeDownload } from './ClaudeDownload';
+import {
+  readLeftovers,
+  rememberLeftovers,
+  versionLine,
+  type ImportPending,
+  type ImportReady,
+} from './claudeFile';
+import { ClaudeImport, ImportLeftovers } from './ClaudeImport';
+import { emptyContent, spreadLocalized, toFormValues, type PublishRequest } from './mutations';
 import type { PublishedView } from './PreviewFrame';
 import { PublishProblems } from './publishProblems';
 import {
@@ -33,6 +42,7 @@ import {
   type DocumentChoices,
   type PageChoices,
 } from './schema';
+import { templateRules } from './templateRules';
 import { useAutosave, type SaveOutcome } from './useAutosave';
 import { VersionHistory } from './VersionHistory';
 
@@ -57,15 +67,38 @@ import { VersionHistory } from './VersionHistory';
 const METADATA_FORM = 'content-metadata';
 
 /**
+ * The last import of this editor, as the way back and forth over it needs it (`useBodyHistory` undoes the body and
+ * nothing else; note 2026-10-30-una-pagina-scritta-con-claude §3.3: **Annulla** takes the import away, and the import
+ * wrote the title and the summary too). The two bodies are the two sides of it, told apart by identity: what the history
+ * hands back is the very object it was given.
+ */
+interface ImportRun {
+  readonly before: Body;
+  readonly after: Body;
+  readonly fieldsBefore: Pick<ContentFormValues, 'title' | 'summary'>;
+  readonly fieldsAfter: Pick<ContentFormValues, 'title' | 'summary'>;
+  /** What the row said about its draft before: an import may undo back to another import, of another day. */
+  readonly fromFileBefore: boolean;
+  readonly pendingBefore: readonly ImportPending[];
+  readonly pendingAfter: readonly ImportPending[];
+  /** Which side of it the editor is on. */
+  applied: boolean;
+}
+
+/**
  * The version of the row a draft is based on: the one it was opened at, moved on by `adopt` with
  * every row this editor's own writes answer. Held in a ref, because it is read when a save starts —
  * after the one before it, which may have moved it — and never drawn.
  */
-function useDraftBase(opened: string | null) {
-  const base = useRef(opened);
+function useDraftBase(opened: ContentDetailDto | null) {
+  const base = useRef(opened?.rowVersion ?? null);
+  // The row itself, as the server last answered it to this editor: what the instructions for Claude show beside the
+  // version they name, so that the body and the version in their header are always of the same save.
+  const row = useRef(opened);
 
-  const adopt = useCallback((row: ContentDetailDto) => {
-    base.current = row.rowVersion;
+  const adopt = useCallback((stored: ContentDetailDto) => {
+    base.current = stored.rowVersion;
+    row.current = stored;
   }, []);
 
   const withVersion = useCallback(
@@ -76,7 +109,11 @@ function useDraftBase(opened: string | null) {
     [],
   );
 
-  return { adopt, withVersion };
+  // Read when the instructions for Claude are composed, after the draft was stored: the row their header names, whose
+  // version the next save is written over (PR 3.0a, note 2026-10-30-una-pagina-scritta-con-claude §4).
+  const current = useCallback(() => row.current, []);
+
+  return { adopt, withVersion, current };
 }
 
 export function ContentEditor({
@@ -155,7 +192,7 @@ export function ContentEditor({
   onSave: (
     values: ContentFormValues,
     body: Body,
-    options?: { autosave?: boolean },
+    options?: { autosave?: boolean; draftFromFile?: boolean | undefined },
   ) => Promise<ContentDetailDto>;
   /**
    * Null for a row that does not exist yet: there is nothing to publish until it is saved once.
@@ -216,6 +253,28 @@ export function ContentEditor({
       : toFormValues(content, locales),
   );
 
+  // The form as it starts again after an import, and a new form for it: `SchemaForm` reads its defaults once, and these
+  // are not the row the screen holds. Nothing else remounts it, so the cursor stays where it is in every other save.
+  const [formStart, setFormStart] = useState<{ generation: number; values: ContentFormValues } | null>(null);
+  const takeFields = (values: ContentFormValues) => {
+    setMetadata(values);
+    setFormStart((current) => ({ generation: (current?.generation ?? 0) + 1, values }));
+  };
+
+  // What the imports left to do, across a reload, and the way back over every import made here.
+  const [leftovers, setLeftoversNow] = useState<readonly ImportPending[]>(() =>
+    content === null ? [] : readLeftovers(content.id),
+  );
+  const setLeftovers = (id: number, pending: readonly ImportPending[]) => {
+    setLeftoversNow(pending);
+    rememberLeftovers(id, pending);
+  };
+  const importRuns = useRef<ImportRun[]>([]);
+
+  // What the next save says about where the draft came from, once Undo or Redo has crossed an import. Every other save
+  // says nothing, and the row keeps what it has (`decisions/2026-11-04-la-bozza-che-viene-da-un-file.md`).
+  const fromFileToSay = useRef<boolean | undefined>(undefined);
+
   // What the form of a document offers beyond its own row.
   const documentChoices: DocumentChoices = { successors };
 
@@ -243,11 +302,28 @@ export function ContentEditor({
   // refresh it — which a save made by itself would do under somebody's fingers, taking the cursor
   // out of the title. A row that does not exist yet has the version a new row carries, from the
   // form.
-  const { adopt, withVersion } = useDraftBase(content?.rowVersion ?? null);
+  const { adopt, withVersion, current: draftBase } = useDraftBase(content);
+
+  // What the template still says about this page, for the instructions for Claude; the editor reads its own.
+  const rules = useMemo(
+    () => templateRules(template.data === undefined ? null : readBody(template.data.body)),
+    [template.data],
+  );
 
   // The draft, as one string: what the autosave compares, so that a change undone before the pause
   // ends is not a save.
   const snapshot = useMemo(() => JSON.stringify({ metadata, body }), [metadata, body]);
+
+  // A save of the draft as the screen holds it, saying what there is to say about where it came from.
+  const storeDraft = async (values: ContentFormValues, draft: Body, options?: { autosave?: boolean }) => {
+    const said = fromFileToSay.current;
+    const row = await onSave(values, draft, { ...options, draftFromFile: said });
+    // Unless Undo or Redo moved it while this save was on its way: the next one says that.
+    if (fromFileToSay.current === said) {
+      fromFileToSay.current = undefined;
+    }
+    adopt(row);
+  };
 
   const autosave = useAutosave({
     // Never before the first press on "save draft": a row that does not exist is not saved by
@@ -257,7 +333,7 @@ export function ContentEditor({
     busy,
     save: async (): Promise<SaveOutcome> => {
       try {
-        adopt(await onSave(withVersion(metadata), body, { autosave: true }));
+        await storeDraft(withVersion(metadata), body, { autosave: true });
         return 'saved';
       } catch (error) {
         // 409 is somebody else's save, and the one refusal that must not be retried.
@@ -272,7 +348,9 @@ export function ContentEditor({
     await autosave.flush();
     try {
       const changes = await queryClient.fetchQuery({ ...contentReviewQuery(id), staleTime: 0 });
-      const line = changeSummary(changes, t, read);
+      const row = draftBase();
+      const line =
+        row === null ? changeSummary(changes, t, read) : versionLine(row, changeSummary(changes, t, read), t);
       setPublishRequest((current) => {
         if (current.changelog !== '' && current.changelog !== suggested.current) {
           return current;
@@ -283,6 +361,73 @@ export function ContentEditor({
     } catch {
       // No suggestion: the field stays as it is, and the person writes the line.
     }
+  };
+
+  // The body as the editor says it is. Undoing back over an import takes its title and its summary with it, and doing it
+  // again puts them back; anything else leaves the fields to whoever is writing them.
+  const changeBody = (next: Body) => {
+    setBody(next);
+
+    if (content === null) {
+      return;
+    }
+
+    const undone = importRuns.current.findLast((run) => run.applied && next === run.before);
+    const redone = importRuns.current.find((run) => !run.applied && next === run.after);
+
+    if (undone !== undefined) {
+      undone.applied = false;
+      fromFileToSay.current = undone.fromFileBefore;
+      takeFields({ ...metadata, ...undone.fieldsBefore });
+      setLeftovers(content.id, undone.pendingBefore);
+    } else if (redone !== undefined) {
+      redone.applied = true;
+      fromFileToSay.current = true;
+      takeFields({ ...metadata, ...redone.fieldsAfter });
+      setLeftovers(content.id, redone.pendingAfter);
+    }
+  };
+
+  // A file that passed its checks (`ClaudeImport`): saved first, as a press on «save draft» is, over the version it
+  // worked on; only what the server took goes on screen, so a refusal leaves the draft as it was.
+  const importFile = async (file: ImportReady, replace: (next: Body) => void) => {
+    const fieldsAfter = {
+      title: spreadLocalized(file.title, locales),
+      summary: spreadLocalized(file.summary, locales),
+    };
+    const values = { ...metadata, ...fieldsAfter };
+
+    const fromFileBefore = draftBase()?.draftFromFile ?? false;
+
+    const stored = await autosave.exclusive(async () => {
+      try {
+        const row = await onSave(withVersion(values), file.body, { draftFromFile: true });
+        adopt(row);
+        return row;
+      } catch (error) {
+        // Somebody else saved this row: the same as when a save of its own hears it, and reloading is the way on.
+        if (error instanceof ApiError && error.status === 409) {
+          autosave.stop();
+        }
+        throw error;
+      }
+    });
+
+    importRuns.current.push({
+      before: body,
+      after: file.body,
+      fieldsBefore: { title: metadata.title, summary: metadata.summary },
+      fieldsAfter,
+      fromFileBefore,
+      pendingBefore: leftovers,
+      pendingAfter: file.pending,
+      applied: true,
+    });
+
+    takeFields(values);
+    replace(file.body);
+    setLeftovers(stored.id, file.pending);
+    autosave.settle(JSON.stringify({ metadata: values, body: file.body }));
   };
 
   // On the way out: stored, or asked. The in-application road is the router's blocker; the tab
@@ -329,13 +474,15 @@ export function ContentEditor({
   const pageProperties = (
     <>
       <SchemaForm
+        key={formStart?.generation ?? 0}
         id={METADATA_FORM}
         actionsElsewhere
         schema={contentMetadataSchema(kind, categories, documentChoices, pageChoices)}
         defaults={
-          content === null
+          formStart?.values ??
+          (content === null
             ? emptyContent(department, locales, kind, startsAsTemplate)
-            : toFormValues(content, locales)
+            : toFormValues(content, locales))
         }
         locales={locales}
         labels="content"
@@ -364,7 +511,7 @@ export function ContentEditor({
           // disabled the button is, so the button is not what keeps the two apart.
           await autosave.exclusive(async () => {
             try {
-              adopt(await onSave(withVersion(values), body));
+              await storeDraft(withVersion(values), body);
             } catch (error) {
               if (content === null) {
                 autosave.settle('');
@@ -400,7 +547,7 @@ export function ContentEditor({
   return (
     <BodyEditor
       initial={body}
-      onChange={setBody}
+      onChange={changeBody}
       dashboard={kind === 'Dashboard'}
       isTemplate={content?.isTemplate ?? startsAsTemplate}
       template={
@@ -431,7 +578,7 @@ export function ContentEditor({
       // A template has no readers of its own: the page made from it is the one held to its visibility.
       visibility={(content?.isTemplate ?? startsAsTemplate) ? undefined : metadata.visibility}
       pageProperties={pageProperties}
-      toolbar={(tools) => (
+      toolbar={(tools, editor) => (
         // ⚠️ At the top and sticky, and it used to sit at the **bottom of the metadata form** — which
         // measured 1182 pixels in a window of 950, so the page being composed and the buttons that
         // save it were both below the fold. Measured, not guessed (road A1 of
@@ -449,6 +596,42 @@ export function ContentEditor({
             </Button>
 
             {tools}
+
+            <ClaudeDownload
+              content={content}
+              kind={kind}
+              locales={locales}
+              template={rules}
+              holds={holds}
+              flush={autosave.flush}
+              draftBase={draftBase}
+              // Off while the template is on its way: its rules are part of what the instructions give.
+              disabled={
+                busy ||
+                locked ||
+                autosave.stopped ||
+                (typeof content?.templateId === 'number' && template.data === undefined)
+              }
+            />
+
+            <ClaudeImport
+              content={content}
+              kind={kind}
+              locales={locales}
+              template={rules}
+              holds={holds}
+              isDirty={() => leaving.current.autosave.dirty}
+              draftBase={draftBase}
+              apply={(file) => importFile(file, editor.replace)}
+              // Only in the draft: a page waiting for approval is read, not written. Off with the template on its way,
+              // as the download is: its rules are part of what the file is checked against.
+              disabled={
+                busy ||
+                locked ||
+                autosave.stopped ||
+                (typeof content?.templateId === 'number' && template.data === undefined)
+              }
+            />
 
             {onPublish === null ? null : (
               // A question on the way: what changed, for the staff. What is on screen is stored first, then
@@ -518,6 +701,8 @@ export function ContentEditor({
           {review?.(autosave.flush, adopt)}
 
           <PublishProblems body={body} problems={publishProblems} />
+
+          <ImportLeftovers body={body} pending={leftovers} />
 
           {draftStatus === null ? null : (
             // Named, because the drag and drop context draws a live region of its own for its

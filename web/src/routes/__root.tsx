@@ -4,6 +4,7 @@ import { Outlet, createRootRouteWithContext } from '@tanstack/react-router';
 import { createBuildWatch } from '../app/newBuild';
 import { bootstrapQuery } from '../features/me/queries';
 import { useDivisionLanguage } from '../shared/i18n/useDivisionLanguage';
+import { setDateFormat } from '../shared/i18n/useMoment';
 import { DivisionTitle } from '../shared/seo/PageMetadata';
 import { NotFound } from '../shared/ui';
 
@@ -31,6 +32,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       ...bootstrapQuery,
       revalidateIfStale: true,
     });
+
+    // Before any route draws a date: every `formatMoment` writes the day in the division's order from here on.
+    setDateFormat(bootstrap.division.dateFormat);
 
     // A delivery happened under this page: the bootstrap is the new server's, the bundle is not.
     // The page loads again at the address it was going to rather than draw a menu it has no screens

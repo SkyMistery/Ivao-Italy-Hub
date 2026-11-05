@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
 import {
+  EMBED_GUIDELINES_PATH,
   SPANS,
   columnsOf,
   spanOf,
@@ -25,6 +26,7 @@ import { useLocalized } from '../../shared/i18n/useLocalized';
 import { collectionsOfKindQuery } from '../categories/queries';
 import { bootstrapQuery } from '../me/queries';
 import { emptyLocalized } from '../../shared/i18n/localized';
+import { aboutKeyOf } from '../../shared/modules';
 import type { MediaLibraryQuery } from '../../shared/ui';
 
 import { defaultProps } from './body';
@@ -288,7 +290,7 @@ function SourceField({
 
       <p className="text-muted-foreground text-sm">{t('blocks.interactive.sourceHint')}</p>
       <a
-        href="/embed/guidelines"
+        href={EMBED_GUIDELINES_PATH}
         download="interactive-blocks.md"
         className="text-primary text-sm underline underline-offset-2"
       >
@@ -403,8 +405,10 @@ export function BlockProperties({
 
   const columns = columnsOf(section.layout);
   const labels = registration.propertyLabels ?? `blocks.${block.type}`;
-  // Beside the block's name, so a module's block has its line in its own language files too.
-  const aboutKey = registration.editorLabelKey.replace(/\.label$/, '.about');
+  // Beside the block's name, so a module's block has its line in its own language files too. Every
+  // block has one since PR 3.0a (`app/blockAbout.test.ts`); the guard stays for a build whose
+  // language files are late.
+  const aboutKey = aboutKeyOf(registration);
   const about = i18n.exists(aboutKey) ? t(aboutKey, registration.about?.values ?? {}) : null;
 
   return (

@@ -528,8 +528,11 @@ public sealed class IvaoApiClient(
     /// <summary>
     /// The rows of an answer, whether IVAO sends a bare array or wraps it in an object with an
     /// <c>items</c> property. Both shapes exist across their endpoints.
+    /// <para>Every call that reads it asks for a whole set, which the snapshot then prunes against. A wrapped answer that
+    /// says it is one page of several — <c>pages</c> above one, or <c>totalItems</c> above what came — is no answer: page
+    /// one alone would delete the rest of the snapshot (issue #325, item 3).</para>
     /// </summary>
-    private static IEnumerable<JsonElement> Items(JsonElement root)
+    private IEnumerable<JsonElement> Items(JsonElement root)
     {
         if (root.ValueKind == JsonValueKind.Array)
         {
@@ -540,6 +543,18 @@ public sealed class IvaoApiClient(
             && root.TryGetProperty("items", out var items)
             && items.ValueKind == JsonValueKind.Array)
         {
+            var pages = Number(root, "pages");
+            var total = Number(root, "totalItems");
+            if (pages > 1 || total > items.GetArrayLength())
+            {
+                logger.LogWarning(
+                    "IVAO answered one page of {Pages} ({Total} item(s) in all, {Count} here) where the whole set was asked; it counts as no answer.",
+                    pages,
+                    total,
+                    items.GetArrayLength());
+                return [];
+            }
+
             return items.EnumerateArray();
         }
 

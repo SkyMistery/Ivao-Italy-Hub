@@ -255,7 +255,7 @@ test('the round of an event in person: an activity, a seat taken, given back and
       timeout: 150_000,
       intervals: [5_000],
     })
-    .toContain(`${activity.it}: ${day} 10:00`);
+    .toContain(`${activity.it}: ${day.slice(8, 10)}/${day.slice(5, 7)}/${day.slice(0, 4)} 10:00`);
 });
 
 /** The module's own words, read from the copy `pnpm i18n:sync` keeps at the root. */

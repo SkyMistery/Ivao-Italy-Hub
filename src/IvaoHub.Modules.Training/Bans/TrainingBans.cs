@@ -328,7 +328,7 @@ public sealed class TrainingBans(
             {
                 data["reason"] = ban.Reason;
                 data["until"] = ban.EndsAt is { } end
-                    ? mail.Word(locale, "training:mail.training.bannedUntil", "date", TrainingMail.Moment(end))
+                    ? mail.Word(locale, "training:mail.training.bannedUntil", "date", TrainingMail.Moment(end, mail.Dates))
                     : mail.Word(locale, "training:mail.training.bannedUntilLifted");
                 data["closed"] = closed ? mail.Word(locale, "training:mail.training.bannedClosed") : string.Empty;
             },
@@ -454,7 +454,7 @@ public sealed class TrainingBans(
             {
                 mail.Name(data, locale, "trainee", training.TraineeVid, names);
                 data["session"] = closing.Session is { } start
-                    ? mail.Word(locale, "training:mail.training.closedByBanSession", "session", TrainingMail.Moment(start))
+                    ? mail.Word(locale, "training:mail.training.closedByBanSession", "session", TrainingMail.Moment(start, mail.Dates))
                     : string.Empty;
             },
             cancellationToken);

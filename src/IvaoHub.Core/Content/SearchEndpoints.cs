@@ -98,8 +98,7 @@ public static class SearchEndpoints
                         ? locale
                         : user.Locale;
 
-                var requestedSize = pageSize is > 0 ? Math.Min(pageSize.Value, MaxPageSize) : DefaultPageSize;
-                var requestedPage = page is > 0 ? page.Value : 1;
+                var (requestedPage, requestedSize) = Paging.Read(page, pageSize, DefaultPageSize, MaxPageSize);
 
                 if (string.IsNullOrWhiteSpace(q))
                 {
@@ -124,7 +123,7 @@ public static class SearchEndpoints
                 // rather than in SQL: it is twenty strings, and MariaDB has no idea what a word is
                 // in the language the reader is using.
                 var rows = await matches
-                    .Skip((requestedPage - 1) * requestedSize)
+                    .Skip(Paging.Skip(requestedPage, requestedSize))
                     .Take(requestedSize)
                     .Select(entry => new
                     {

@@ -62,6 +62,7 @@ public sealed record ContentDetailDto(
     DateTime? RetiredAt,
     long? SupersededById,
     bool ShowFooter,
+    bool DraftFromFile,
     long? PublishedVersionId,
     DateTime? PublishedAt,
     DateTime CreatedAt,
@@ -106,7 +107,10 @@ public sealed record ContentWriteDto(
     // it off on every page it saves.
     bool ShowFooter = true,
     // The page this one sits under (note 2026-09-13-contenuti-centralizzati, 3.7); null at the top.
-    long? ParentId = null);
+    long? ParentId = null,
+    // Whether the draft came from a file; absent says nothing, so that a save that never heard of it — the autosave, a
+    // press on «save draft» — cannot take it away (decisions/2026-11-04-la-bozza-che-viene-da-un-file.md).
+    bool? DraftFromFile = null);
 
 /// <summary>
 /// What the public site is given: the published version and nothing about the draft behind it.
@@ -208,8 +212,21 @@ internal sealed partial class ContentMapper
 
     public partial ContentListDto ToList(ContentEntry content);
 
+    /// <summary>The payload on the row. A <see cref="ContentWriteDto.DraftFromFile"/> left out leaves the row as it is.</summary>
+    public void Apply(ContentWriteDto payload, ContentEntry content)
+    {
+        Copy(payload, content);
+
+        if (payload.DraftFromFile is { } fromFile)
+        {
+            content.DraftFromFile = fromFile;
+        }
+    }
+
     [MapProperty(nameof(ContentWriteDto.Body), nameof(ContentEntry.BodyJson))]
-    public partial void Apply(ContentWriteDto payload, ContentEntry content);
+    [MapperIgnoreSource(nameof(ContentWriteDto.DraftFromFile))]
+    [MapperIgnoreTarget(nameof(ContentEntry.DraftFromFile))]
+    private partial void Copy(ContentWriteDto payload, ContentEntry content);
 
     /// <summary>An empty column is an empty document, never a null the renderer would trip on.</summary>
     private static JsonNode ParseBody(string json) => JsonNode.Parse(json) ?? new JsonObject();

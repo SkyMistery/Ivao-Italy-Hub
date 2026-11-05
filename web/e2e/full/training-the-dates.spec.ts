@@ -189,7 +189,7 @@ test('the trainer proposes two dates, the trainee chooses the one warned of anot
   }
 
   // ---------------------------------------------------------------- the mails of the date fixed, to both
-  const session = `${day} 16:00`;
+  const session = `${day.slice(8, 10)}/${day.slice(5, 7)}/${day.slice(0, 4)} 16:00`;
   for (const address of [TRAINEE_ADDRESS, TRAINER_ADDRESS]) {
     await expect
       .poll(

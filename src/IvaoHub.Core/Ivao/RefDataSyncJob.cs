@@ -116,8 +116,23 @@ public sealed class RefDataSyncJob(
 
     private async Task<int> SyncCentersAsync(string countryId, CancellationToken cancellationToken)
     {
-        var incoming = await ivao.GetCentersAsync(countryId, cancellationToken);
-        if (incoming.Count == 0)
+        var answered = await ivao.GetCentersAsync(countryId, cancellationToken);
+
+        // Only the country's: the set is what a FIR staff position is recognised by, and a centre of another country
+        // stored here would make its chief one of ours (issue #325, item 2). The directory filters the same way when it reads.
+        var incoming = answered
+            .Where(center => string.Equals(center.CountryId, countryId, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        if (incoming.Length < answered.Count)
+        {
+            logger.LogWarning(
+                "IVAO answered {Count} centre(s) of another country when asked for {Country}; they are left out: {Foreign}.",
+                answered.Count - incoming.Length,
+                countryId,
+                string.Join(", ", answered.Except(incoming).Select(center => $"{center.Id} ({center.CountryId})")));
+        }
+
+        if (incoming.Length == 0)
         {
             // Nothing came back. Keeping yesterday's airspace beats emptying the table.
             logger.LogWarning("IVAO returned no centre for {Country}; the snapshot is left alone.", countryId);
@@ -131,20 +146,24 @@ public sealed class RefDataSyncJob(
 
         foreach (var center in incoming)
         {
+            // A key the answer repeats lands on the row its first time added, never on a second Add that would fail the
+            // whole snapshot at the save (issue #325, item 3); the same in every loop below.
             if (!existing.TryGetValue(center.Id, out var row))
             {
                 row = new IvaoCenter { Id = center.Id };
                 database.IvaoCenters.Add(row);
+                existing[center.Id] = row;
             }
 
             row.Name = center.Name;
             row.CountryId = center.CountryId;
             row.RawJson = center.RawJson;
             row.SyncedAt = clock.UtcNow;
+            FitsOrLeftOut(row, existing, center.Id, "centre");
         }
 
         Prune(database.IvaoCenters, existing, incoming.Select(center => center.Id), countryId, "centre");
-        return incoming.Count;
+        return incoming.Length;
     }
 
     /// <summary>
@@ -183,6 +202,7 @@ public sealed class RefDataSyncJob(
                 {
                     row = new IvaoAirport { Icao = airport.Icao };
                     database.IvaoAirports.Add(row);
+                    existing[airport.Icao] = row;
                 }
 
                 row.Name = airport.Name;
@@ -202,6 +222,7 @@ public sealed class RefDataSyncJob(
 
                 row.RawJson = airport.RawJson;
                 row.SyncedAt = clock.UtcNow;
+                FitsOrLeftOut(row, existing, airport.Icao, "airport");
             }
 
         }
@@ -244,6 +265,7 @@ public sealed class RefDataSyncJob(
             {
                 row = new IvaoAircraftType { IcaoCode = type.IcaoCode };
                 database.IvaoAircraftTypes.Add(row);
+                existing[type.IcaoCode] = row;
             }
 
             row.IataCode = type.IataCode;
@@ -255,6 +277,7 @@ public sealed class RefDataSyncJob(
             row.Military = type.Military;
             row.RawJson = type.RawJson;
             row.SyncedAt = clock.UtcNow;
+            FitsOrLeftOut(row, existing, type.IcaoCode, "aircraft type");
         }
 
         // A type IVAO stops listing is not pruned: a PIREP of three years ago may name it, and the
@@ -283,12 +306,14 @@ public sealed class RefDataSyncJob(
                 {
                     row = new IvaoAircraftEquipment { Id = equipment.Id };
                     database.IvaoAircraftEquipments.Add(row);
+                    known[equipment.Id] = row;
                 }
 
                 row.Name = equipment.Name;
                 row.Order = equipment.Order;
                 row.IsActive = equipment.IsActive;
                 row.SyncedAt = clock.UtcNow;
+                FitsOrLeftOut(row, known, equipment.Id, "equipment");
             }
         }
 
@@ -308,12 +333,14 @@ public sealed class RefDataSyncJob(
             {
                 row = new IvaoTransponderType { Id = transponder.Id };
                 database.IvaoTransponderTypes.Add(row);
+                existing[transponder.Id] = row;
             }
 
             row.Name = transponder.Name;
             row.Kind = transponder.Kind;
             row.Order = transponder.Order;
             row.SyncedAt = clock.UtcNow;
+            FitsOrLeftOut(row, existing, transponder.Id, "transponder type");
         }
     }
 
@@ -468,6 +495,39 @@ public sealed class RefDataSyncJob(
             codes.Length,
             countryId,
             string.Join(", ", prefixes));
+    }
+
+    /// <summary>
+    /// A row whose text does not fit its column (the lengths of <c>RefSchemaConfiguration</c>, read from the model) is left
+    /// as it was: a new one is not added, a known one keeps yesterday's values. One value IVAO made longer must cost that
+    /// row, never the one save of the whole snapshot (issue #325, item 3) — what the ATC positions' reader already does.
+    /// </summary>
+    private void FitsOrLeftOut<TEntity>(TEntity row, Dictionary<string, TEntity> existing, string key, string what)
+        where TEntity : class
+    {
+        var entry = database.Entry(row);
+        var tooLong = entry.Properties.FirstOrDefault(property =>
+            property.CurrentValue is string text && property.Metadata.GetMaxLength() is { } most && text.Length > most);
+        if (tooLong is null)
+        {
+            return;
+        }
+
+        if (entry.State == EntityState.Added)
+        {
+            entry.State = EntityState.Detached;
+            existing.Remove(key);
+        }
+        else
+        {
+            entry.CurrentValues.SetValues(entry.OriginalValues);
+        }
+
+        logger.LogWarning(
+            "IVAO sent the {What} {Key} with a {Column} longer than the column; it is left out of this run.",
+            what,
+            key,
+            tooLong.Metadata.Name);
     }
 
     /// <summary>

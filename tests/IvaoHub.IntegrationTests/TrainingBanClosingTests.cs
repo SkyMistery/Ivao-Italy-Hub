@@ -128,7 +128,7 @@ public sealed class TrainingBanClosingTests(MariaDbFixture mariaDb) : IAsyncLife
         // The trainer is told of each training of theirs, the date of the dated one in it; nobody is told of the two without a trainer.
         var mails = await MailsAsync(TrainerVid, TrainingNotifications.ClosedByBan, token);
         Assert.Equal(2, mails.Count);
-        Assert.Contains(mails, mail => mail.Contains(TrainingMail.Moment(start), StringComparison.Ordinal) && mail.Contains(TrainingMail.StaffPath(scheduled), StringComparison.Ordinal));
+        Assert.Contains(mails, mail => mail.Contains(TrainingMail.Moment(start, DateOrder.DayMonthYear), StringComparison.Ordinal) && mail.Contains(TrainingMail.StaffPath(scheduled), StringComparison.Ordinal));
         Assert.Contains(mails, mail => mail.Contains(TrainingMail.StaffPath(assigned), StringComparison.Ordinal) && !mail.Contains(" UTC", StringComparison.Ordinal));
         // Each member's mail says their trainings are closed.
         Assert.NotEmpty(Closed(Assert.Single(await MailsAsync(TraineeVid, TrainingNotifications.Banned, token))));
