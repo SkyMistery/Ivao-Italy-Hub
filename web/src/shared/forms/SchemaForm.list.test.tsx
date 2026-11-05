@@ -142,6 +142,7 @@ test('an entry the schema refuses opens by itself, and stays open while the erro
 
   await waitFor(() => expect(box(1)).toBeVisible());
   expect(box(0)).not.toBeVisible();
+  await waitFor(() => expect(box(1)).toHaveFocus());
 
   // Closing it does not hide the error: an error in a closed entry is an error nobody sees.
   await user.click(row('Item 2'));
@@ -212,13 +213,24 @@ test('removing an entry leaves the open one open, whichever side it was on', asy
   const user = userEvent.setup();
   renderList();
 
-  await user.click(row('3 Third'));
+  await user.click(row('2 Second'));
+
+  // One after it: the open one has not moved.
+  await user.click(screen.getAllByRole('button', { name: 'Remove' })[2] as HTMLElement);
+  expect(row('2 Second')).toHaveAttribute('aria-expanded', 'true');
+
+  // One before it: the open one has moved up, and stays open.
+  await user.click(screen.getAllByRole('button', { name: 'Remove' })[0] as HTMLElement);
+  expect(row('1 Second')).toHaveAttribute('aria-expanded', 'true');
+});
+
+test('removing the open entry leaves the next one closed', async () => {
+  const user = userEvent.setup();
+  renderList();
+
+  await user.click(row('1 First'));
   await user.click(screen.getAllByRole('button', { name: 'Remove' })[0] as HTMLElement);
 
-  expect(row('2 Third')).toHaveAttribute('aria-expanded', 'true');
-  expect(row('1 Second')).toHaveAttribute('aria-expanded', 'false');
-
-  await user.click(screen.getAllByRole('button', { name: 'Remove' })[1] as HTMLElement);
   expect(row('1 Second')).toHaveAttribute('aria-expanded', 'false');
 });
 
@@ -268,6 +280,84 @@ test('a closed entry is validated as a drawn one is: a box turns what the server
       { name: 'First', hours: undefined },
       { name: 'Second', hours: undefined },
     ],
+  });
+});
+
+/** A list in a list, as the table block's rows and their cells. */
+const nested = z.object({
+  rows: z.array(z.object({ cells: z.array(z.object({ text: z.string().min(1) })) })),
+});
+const nestedLabels = {
+  test: { fields: { rows: 'Rows', 'rows.cells': 'Cells', 'rows.cells.text': 'Text' } },
+};
+
+function renderNested(
+  defaults: z.infer<typeof nested>,
+  onSubmit: (values: z.infer<typeof nested>) => Promise<unknown> = () => Promise.resolve(),
+) {
+  return renderWithProviders(
+    <SchemaForm
+      schema={nested}
+      defaults={defaults}
+      locales={['en']}
+      labels="test"
+      submitLabel="Save"
+      onSubmit={onSubmit}
+    />,
+    { i18n: createTestI18n(nestedLabels) },
+  );
+}
+
+const cell = (at: number, of: number) =>
+  document.getElementById(`rows.${at}.cells.${of}.text`) as HTMLInputElement;
+
+test('a list inside an entry closes on its own, and the two do not touch each other', async () => {
+  const user = userEvent.setup();
+  renderNested({
+    rows: [{ cells: [{ text: 'A' }, { text: 'B' }] }, { cells: [{ text: 'C' }, { text: 'D' }] }],
+  });
+
+  // The title of a row is not looked for inside its cells, so it says which row it is.
+  await user.click(row('Item 1'));
+  expect(cell(0, 0)).not.toBeVisible();
+
+  await user.click(row('1 A'));
+  expect(cell(0, 0)).toBeVisible();
+  expect(row('Item 1')).toHaveAttribute('aria-expanded', 'true');
+
+  // Opening a cell does not close its row; opening another row does, and its cells keep what was open.
+  await user.click(row('2 B'));
+  expect(cell(0, 0)).not.toBeVisible();
+  expect(cell(0, 1)).toBeVisible();
+
+  await user.click(row('Item 2'));
+  expect(cell(0, 1)).not.toBeVisible();
+  await user.click(row('Item 1'));
+  expect(cell(0, 1)).toBeVisible();
+});
+
+test('a cell the schema refuses inside a closed row opens both, and the rest is sent as it was', async () => {
+  const user = userEvent.setup();
+  const onSubmit = vi.fn(() => Promise.resolve());
+  renderNested(
+    {
+      rows: [{ cells: [{ text: 'A' }, { text: 'B' }] }, { cells: [{ text: 'C' }, { text: '' }] }],
+    },
+    onSubmit,
+  );
+
+  await user.click(row('Save'));
+
+  await waitFor(() => expect(cell(1, 1)).toBeVisible());
+  expect(cell(1, 0)).not.toBeVisible();
+  expect(cell(0, 0)).not.toBeVisible();
+  expect(onSubmit).not.toHaveBeenCalled();
+
+  await user.type(cell(1, 1), 'D');
+  await user.click(row('Save'));
+  await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+  expect(onSubmit).toHaveBeenCalledWith({
+    rows: [{ cells: [{ text: 'A' }, { text: 'B' }] }, { cells: [{ text: 'C' }, { text: 'D' }] }],
   });
 });
 
@@ -401,6 +491,108 @@ test('an optional date is taken off with the button beside it: it leaves the box
   await user.click(screen.getByRole('button', { name: 'Save' }));
   await waitFor(() => expect(onSubmit).toHaveBeenCalled());
   expect(onSubmit).toHaveBeenCalledWith({ when: undefined, until: '2026-01-02T10:30:00Z' });
+});
+
+/** A form whose row moves under it, on a button: another action on the same row, as `useNewerRow` says. */
+function MovingRow<TValues extends { rowVersion: string }>({
+  schema: drawn,
+  row,
+  onSubmit,
+}: {
+  schema: z.ZodType<TValues, TValues>;
+  row: TValues;
+  onSubmit: (values: TValues) => Promise<unknown>;
+}) {
+  const [rowVersion, setRowVersion] = useState('one');
+
+  return (
+    <>
+      <button type="button" onClick={() => setRowVersion('two')}>
+        Another action
+      </button>
+      <SchemaForm
+        schema={drawn}
+        defaults={{ ...row, rowVersion }}
+        locales={['en']}
+        labels="test"
+        submitLabel="Save"
+        onSubmit={onSubmit}
+        division={{ defaultLocale: 'en', timezone: 'Europe/Rome' }}
+      />
+    </>
+  );
+}
+
+test('what is open stays open when the row moves under the form', async () => {
+  const versioned = schema.extend({ rowVersion: z.string() });
+  const user = userEvent.setup();
+  renderWithProviders(
+    <MovingRow schema={versioned} row={{ ...three, rowVersion: 'one' }} onSubmit={() => Promise.resolve()} />,
+    { i18n: createTestI18n(labels) },
+  );
+
+  await user.click(row('2 Second'));
+  await user.click(row('Another action'));
+
+  await waitFor(() => expect(box(1)).toBeVisible());
+  expect(row('2 Second')).toHaveAttribute('aria-expanded', 'true');
+  expect(row('1 First')).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('a date taken off stays off when the row moves under the form', async () => {
+  const versioned = dated.extend({ rowVersion: z.string() });
+  const user = userEvent.setup();
+  const onSubmit = vi.fn(() => Promise.resolve());
+  renderWithProviders(
+    <MovingRow
+      schema={versioned}
+      row={{ when: '2026-01-02T00:00:00Z', until: '2026-01-02T10:30:00Z', rowVersion: 'one' }}
+      onSubmit={onSubmit}
+    />,
+    { i18n: createTestI18n(labels) },
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Remove the date (When)' }));
+  await user.click(screen.getByRole('button', { name: 'Another action' }));
+
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled());
+  expect(screen.getByLabelText('When')).toHaveValue('');
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+  await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+  expect(onSubmit).toHaveBeenCalledWith({
+    when: undefined,
+    until: '2026-01-02T10:30:00Z',
+    rowVersion: 'two',
+  });
+});
+
+test('a date taken off inside an entry stays off when the row moves under the form', async () => {
+  const entries = z.object({
+    rowVersion: z.string(),
+    slots: z.array(z.object({ name: z.string(), when: z.string().optional().meta({ date: true }) })),
+  });
+  const user = userEvent.setup();
+  const onSubmit = vi.fn(() => Promise.resolve());
+  renderWithProviders(
+    <MovingRow
+      schema={entries}
+      row={{ rowVersion: 'one', slots: [{ name: 'Only', when: '2026-01-02T00:00:00Z' }] }}
+      onSubmit={onSubmit}
+    />,
+    { i18n: createTestI18n(labels) },
+  );
+
+  await user.click(screen.getByRole('button', { name: /^Remove the date/ }));
+  await user.click(screen.getByRole('button', { name: 'Another action' }));
+
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled());
+  expect(document.getElementById('slots.0.when')).toHaveValue('');
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+  await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+  expect(onSubmit).toHaveBeenCalledWith({
+    rowVersion: 'two',
+    slots: [{ name: 'Only', when: undefined }],
+  });
 });
 
 test('a date emptied from the keyboard stays empty too, and can be written again', async () => {

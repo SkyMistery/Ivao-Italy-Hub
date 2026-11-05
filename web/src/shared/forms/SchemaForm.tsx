@@ -83,6 +83,8 @@ interface FormEnvironment {
   onSuggestSearch?: ((field: string, typed: string) => void) | undefined;
   /** What a `creatable` field draws under its boxes to make a new value, and tick it (`choose`). */
   createChoice?: ((field: string, choose: (value: string) => void) => React.ReactNode) | undefined;
+  /** How many times the form has taken the row again (`useNewerRow`). */
+  rowsTaken: number;
 }
 
 /**
@@ -191,6 +193,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
     // showed on a submit would never show at all.
     mode: onChange === undefined ? 'onSubmit' : 'onChange',
   });
+  const rowsTaken = useNewerRow(form, defaults, onChange !== undefined);
   const fields = readFields(schema);
   const problem = useProblemDetails(form, (field) => whereDrawn(fields, field, form.getValues()));
   const env: FormEnvironment = {
@@ -201,6 +204,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
     division,
     onSuggestSearch,
     createChoice,
+    rowsTaken,
   };
 
   // What a screen reader is told about Enter, which only a box of one line answers with a save (#224).
@@ -209,7 +213,6 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
 
   useProposedSlugs(form, fields, division?.defaultLocale);
   useLiveValues(form, schema, onChange);
-  useNewerRow(form, defaults, onChange !== undefined);
 
   const submit = form.handleSubmit(async (values) => {
     if (onSubmit === undefined) {
@@ -402,9 +405,14 @@ function useLiveValues<TValues extends Record<string, unknown>>(
  * answered 409, "somebody else changed this", about the person themselves.
  *
  * So when the version in `defaults` changes, the form starts again from them **but keeps what the
- * person has written**: a field whose value differs from the defaults the form last took is set back
- * to what was typed, and stays dirty. A field nobody touched shows what the row now says. Errors
- * stay where they are: a message somebody is reading does not vanish because the row moved.
+ * person has written**: a field whose value differs from the defaults the form last took starts from
+ * what was typed. A field nobody touched shows what the row now says. Errors stay where they are: a
+ * message somebody is reading does not vanish because the row moved.
+ *
+ * ⚠️ What was typed goes in with the reset, never with a `setValue` after it. A field that registers
+ * again finds `undefined` and writes its default over it, without a word: a date taken off came back
+ * and was saved. Nothing reads whether a field of this form is dirty. And a controller stays with the
+ * value it was born with, so the date's is born again on the count this answers.
  *
  * A live form (`onChange`) is left alone: its screen keeps the row itself and adds the version at
  * the moment it saves (the content editor), and taking the defaults again would hand the version
@@ -414,9 +422,10 @@ function useNewerRow<TValues extends Record<string, unknown>>(
   form: UseFormReturn<TValues, unknown, TValues>,
   defaults: TValues,
   live: boolean,
-): void {
+): number {
   const version = live ? undefined : defaults['rowVersion'];
   const taken = useRef({ version, defaults });
+  const [rowsTaken, setRowsTaken] = useState(0);
 
   useEffect(() => {
     if (version === taken.current.version) {
@@ -427,13 +436,14 @@ function useNewerRow<TValues extends Record<string, unknown>>(
     const typed = form.getValues() as Record<string, unknown>;
     taken.current = { version, defaults };
 
-    form.reset(defaults, { keepErrors: true });
-    for (const [field, value] of Object.entries(typed)) {
-      if (JSON.stringify(value) !== JSON.stringify(before[field])) {
-        form.setValue(field as never, value as never, { shouldDirty: true });
-      }
-    }
+    const kept = Object.entries(typed).filter(
+      ([field, value]) => JSON.stringify(value) !== JSON.stringify(before[field]),
+    );
+    form.reset({ ...defaults, ...Object.fromEntries(kept) }, { keepErrors: true });
+    setRowsTaken((count) => count + 1);
   }, [form, version, defaults]);
+
+  return rowsTaken;
 }
 
 /**
@@ -1057,6 +1067,7 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
           error={error}
           locale={i18n.language}
           timezone={env.division?.timezone}
+          rowsTaken={env.rowsTaken}
         />
       );
 
@@ -1349,25 +1360,17 @@ function RepeatableList({
   const closedWithError = fields.flatMap((_, index) =>
     !open.includes(index) && holdsAnError(formState.errors, `${name}.${index}`) ? [index] : [],
   );
-  const [revealed, setRevealed] = useState(0);
+
+  // Nothing here moves the page. On a refused submit the form's own move to the first wrong box gets there
+  // on its second try, after the entry has opened, and the browser brings it into view (measured in
+  // Chromium, by click and by Enter). Anything more would pull somebody back to this entry each time they
+  // open another, for as long as the error is there.
   if (closedWithError.length > 0) {
     setOpen([...open, ...closedWithError]);
-    setRevealed(revealed + 1);
   }
 
-  // And it is shown. The browser's own move to the first wrong box, which the form asks for on a
-  // refused submit, happens before the entry opens and goes nowhere: a box that is hidden takes no focus.
-  const box = useRef<HTMLFieldSetElement>(null);
-  useEffect(() => {
-    const first =
-      revealed === 0 ? null : (box.current?.closest('form')?.querySelector('[role="alert"]') ?? null);
-    if (first !== null && typeof first.scrollIntoView === 'function') {
-      first.scrollIntoView({ block: 'center' });
-    }
-  }, [revealed]);
-
   return (
-    <fieldset ref={box} className="border-border flex flex-col gap-4 rounded-md border p-4">
+    <fieldset className="border-border flex flex-col gap-4 rounded-md border p-4">
       <legend className="px-1">
         <H4>{label}</H4>
       </legend>
@@ -1712,8 +1715,8 @@ function IconOption({
  * ⚠️ What is drawn is read with `useWatch`, and not from `field.value`. A controller's value is watched
  * with the value it was born with as its default, and react-hook-form hands the default back for
  * `undefined`: a date taken off drew itself again, while the form held nothing and saved nothing.
- * Measured: `{ shown: '2026-01-02', sent: {} }`. An empty string is no way out, because the schema of an
- * optional date would have to accept it.
+ * Measured: `{ shown: '2026-01-02', sent: {} }`. An empty string is no way out: `z.string().optional()`
+ * accepts it, so the form would send an empty string where there should be no date at all.
  */
 function Instant({
   node,
@@ -1723,6 +1726,7 @@ function Instant({
   error,
   locale,
   timezone,
+  rowsTaken,
 }: {
   node: Extract<FieldNode, { kind: 'instant' }>;
   name: string;
@@ -1731,6 +1735,7 @@ function Instant({
   error: string | undefined;
   locale: string;
   timezone: string | undefined;
+  rowsTaken: number;
 }) {
   const { t } = useTranslation();
   const { control } = useFormContext();
@@ -1748,6 +1753,9 @@ function Instant({
   return (
     <Row id={name} label={label} hint={hint} error={error}>
       <Controller
+        // Born again when the form takes the row: registering after a reset, a controller writes the value
+        // it was born with over `undefined`, and a date taken off would come back.
+        key={rowsTaken}
         control={control}
         name={name}
         render={({ field }) => {
