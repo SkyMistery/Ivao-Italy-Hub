@@ -152,9 +152,6 @@ export function DataList<TRow, TKey extends readonly unknown[]>({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <SearchBox
-          // Keyed on the parameter so that a back button, which changes the route and not this
-          // component, restarts it on the term the URL now carries.
-          key={search.q ?? ''}
           initial={search.q ?? ''}
           placeholder={t('list.search')}
           onCommit={(q) => onSearchChange({ q: q === '' ? undefined : q, page: 1 })}
