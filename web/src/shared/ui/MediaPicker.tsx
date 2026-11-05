@@ -1,13 +1,16 @@
 import { Button, Subtle } from '@ivao/atmosphere-react';
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { FileText, Upload } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useId, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { resolveLocalized } from '../i18n/localized';
+import { ListFilter } from '../list/ListFilter';
+import { SearchBox } from '../list/SearchBox';
 
 import { EmptyState } from './layout-pieces';
+import { NOTHING_ASKED, type MediaBrowse } from './narrowLibrary';
 
 /**
  * Choosing a file out of the library of a department. It is a custom component of the closed list
@@ -15,8 +18,10 @@ import { EmptyState } from './layout-pieces';
  * and — from G2 onwards — every block property annotated `.meta({ media: true })`, which is eight
  * of the twenty two blocks.
  *
- * It picks and does nothing else. Uploading is the back office screen's job, and a picker that also
- * uploaded would be a second place where a file can enter the library.
+ * It looks for a file (a search, a category, a next page: the same read of the library, design of
+ * the editor's phase 3, §4.4) and it may take a new one where the screen says so, through the same
+ * call the library screen makes: the upload sits next to the search because under two dozen pictures
+ * the staff never saw it.
  *
  * ⚠️ A media is never a number somebody types (design M1 §1.5): a free numeric field produces pages
  * pointing at files that were deleted years ago. That is the whole reason this exists.
@@ -42,6 +47,11 @@ export interface MediaPage<TRow extends PickableMedia = PickableMedia> {
  * The library a picker chooses from, as query options. Named because the form generator carries it
  * from the screen down to whichever field asked for a media: the generator cannot build it itself,
  * since which department's library to show is a fact of the screen and not of the schema.
+ *
+ * What it can do besides answering travels on its `meta`, for the same reason: `libraryHref` and
+ * `fileHref` (where the files live), `narrow` (one category for good: `narrowLibrary`), `browse` (the
+ * same library, asked for a `MediaBrowse`) and `categories` (the ones a person may choose among). A
+ * library that says none of it — the tests' — is a grid, and a grid is still a picker.
  */
 export type MediaLibraryQuery = UseQueryOptions<MediaPage, Error, MediaPage, readonly unknown[]>;
 
@@ -62,8 +72,8 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
   /**
    * Uploads a file into this library and answers its identifier, which is then chosen. Given by a
    * screen that may upload here (Carmine, 11 September 2026: "yes, if it lands in the library of
-   * the department the document belongs to"); the picker still only picks — the upload is the same
-   * call the library screen makes, reached from one more place.
+   * the department the document belongs to"); the upload is the same call the library screen makes,
+   * reached from one more place.
    */
   onUpload?: ((file: File) => Promise<number>) | undefined;
   locale: string;
@@ -71,9 +81,48 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
   disabled?: boolean;
 }) {
   const { t } = useTranslation();
-  const { data, isPending } = useQuery(query);
+  const filterId = useId();
 
-  const items = data?.items ?? [];
+  const browse = query.meta?.browse;
+  const browsable = typeof browse === 'function';
+  const categories = (query.meta?.categories ?? []) as readonly string[];
+  const fileHref = query.meta?.fileHref as ((id: number) => string) | undefined;
+
+  const [asked, setAsked] = useState(NOTHING_ASKED);
+  // The pages already read: "show more" adds to the grid, it does not turn it over.
+  const [earlier, setEarlier] = useState<readonly TRow[]>([]);
+  // Which search box is on screen. A new one is the only way of emptying what somebody typed: the
+  // box holds its own draft, and that is what keeps the focus in it while the grid answers.
+  const [searchBox, setSearchBox] = useState(0);
+
+  const { data, isPending, isPlaceholderData } = useQuery({
+    ...(browsable ? (browse as (asked: MediaBrowse) => typeof query)(asked) : query),
+    // The grid stays while the next answer comes: a grid that empties at every word is a flicker
+    // under the hand of somebody typing.
+    placeholderData: keepPreviousData,
+  });
+
+  // A file uploaded between two pages moves the others down by one, and the last of a page comes
+  // back as the first of the next.
+  const seen = new Set(earlier.map((media) => media.id));
+  const items = [...earlier, ...(data?.items ?? []).filter((media) => !seen.has(media.id))];
+
+  // Also when the last page brought nothing: `total` may have grown since the first page was read,
+  // and a button that answers nothing would stay there for good.
+  const more = data !== undefined && data.items.length > 0 && items.length < data.total;
+  const settled = !isPending && !isPlaceholderData;
+
+  // The grid scrolls by itself, and what it answers next starts from its first row: a file just
+  // uploaded is that row, and it would be chosen above the top of the box.
+  const grid = useRef<HTMLUListElement>(null);
+
+  const ask = (patch: Partial<MediaBrowse>) => {
+    setEarlier([]);
+    setAsked((now) => ({ ...now, ...patch, page: 1 }));
+    if (grid.current !== null) {
+      grid.current.scrollTop = 0;
+    }
+  };
 
   // The file input is hidden and a button opens it: what the browser draws for one is not a thing
   // that reads in every language or theme.
@@ -82,14 +131,19 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
   const [refused, setRefused] = useState<string | null>(null);
 
   const upload = async (file: File | undefined) => {
-    if (file === undefined || onUpload === undefined) {
+    if (file === undefined || onUpload === undefined || uploading) {
       return;
     }
 
     setUploading(true);
     setRefused(null);
     try {
-      onChange(await onUpload(file));
+      const id = await onUpload(file);
+      // Back to the newest files, where the new one is: it would be chosen and out of sight under a
+      // search or a category it does not match.
+      ask(NOTHING_ASKED);
+      setSearchBox((box) => box + 1);
+      onChange(id);
     } catch (error) {
       setRefused(error instanceof Error ? error.message : String(error));
     } finally {
@@ -131,9 +185,8 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
       </div>
     );
 
-  // Where the files come from, when the query says so (`mediaPickerQuery` does): the picker only
-  // picks, and the way to the page that uploads should be one press away and not a thing to know
-  // (Carmine, 11 September 2026).
+  // Where the files come from, when the query says so (`mediaPickerQuery` does): the way to the page
+  // that holds them should be one press away and not a thing to know (Carmine, 11 September 2026).
   const libraryHref = typeof query.meta?.libraryHref === 'string' ? query.meta.libraryHref : null;
   const library =
     libraryHref === null ? null : (
@@ -142,57 +195,124 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
       </Link>
     );
 
-  if (!isPending && items.length === 0) {
+  const droppable = onUpload !== undefined && !disabled;
+
+  // Only a library with nothing in it says so: under a search, the box that took the grid away has
+  // to stay, or there is no way back.
+  if (settled && items.length === 0 && asked.q === '' && asked.category === null) {
     return (
-      <EmptyState
-        title={t('media.picker.empty')}
-        description={t('media.picker.emptyHint')}
-        action={
-          <div className="flex flex-col items-center gap-2">
-            {uploader}
-            {library}
-          </div>
-        }
-      />
+      <FileDrop enabled={droppable} onFile={(file) => void upload(file)}>
+        <EmptyState
+          title={t('media.picker.empty')}
+          description={t('media.picker.emptyHint')}
+          action={
+            <div className="flex flex-col items-center gap-2">
+              {uploader}
+              {library}
+            </div>
+          }
+        />
+      </FileDrop>
     );
   }
 
   return (
     <div className="flex flex-col gap-3">
-      <ul
-        // A grid rather than a list of names: a picture is recognised and a file name is read, and
-        // a coordinator choosing a hero image is recognising.
-        className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"
-        aria-busy={isPending}
-        aria-label={t('media.picker.label')}
-      >
-        {items.map((media) => {
-          const chosen = media.id === value;
-          // A file with no alternative text yet still needs one here, or a screen reader is read
-          // an empty button. The name it was uploaded with is the honest stand in.
-          const written = resolveLocalized(media.alt, locale, defaultLocale);
-          const alt = written === '' ? media.fileName : written;
+      {!browsable && uploader === null ? null : (
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-end gap-3">
+            {browsable ? (
+              <SearchBox
+                key={searchBox}
+                // A line of its own in a block's panel, next to the category where there is room.
+                className="min-w-56 flex-1"
+                initial={asked.q}
+                placeholder={t('media.picker.search')}
+                onCommit={(q) => ask({ q })}
+              />
+            ) : null}
+            {categories.length === 0 ? null : (
+              <ListFilter
+                id={filterId}
+                className="min-w-36"
+                label={t('media.fields.category')}
+                none={t('media.picker.anyCategory')}
+                value={asked.category ?? undefined}
+                onChange={(category) => ask({ category: category ?? null })}
+                items={categories.map((category) => ({
+                  value: category,
+                  label: t(`media.options.category.${category}`),
+                }))}
+              />
+            )}
+            {uploader}
+          </div>
+          {droppable ? <Subtle className="text-xs">{t('media.picker.dropHint')}</Subtle> : null}
+        </div>
+      )}
 
-          return (
-            <li key={media.id}>
-              <button
-                type="button"
-                disabled={disabled}
-                aria-pressed={chosen}
-                onClick={() => onChange(chosen ? null : media.id)}
-                className={`border-border bg-card flex w-full flex-col items-stretch gap-2 rounded-md border p-2 text-left ${
-                  chosen ? 'ring-primary ring-2' : ''
-                }`}
-              >
-                <MediaThumbnail media={media} alt={alt} />
-                <span className="text-foreground truncate text-xs" title={media.fileName}>
-                  {media.fileName}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      <FileDrop enabled={droppable} onFile={(file) => void upload(file)}>
+        {settled && items.length === 0 ? (
+          <Subtle>{t('media.picker.noMatch')}</Subtle>
+        ) : (
+          <ul
+            ref={grid}
+            // A grid rather than a list of names: a picture is recognised and a file name is read, and
+            // a coordinator choosing a hero image is recognising. As many columns as the place it is
+            // in has room for, not the window: a block's panel is narrow on the widest screen. And no
+            // taller than this, or two dozen files push the block's other fields out of reach.
+            className="grid max-h-[28rem] grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] gap-3 overflow-y-auto p-1"
+            aria-busy={!settled}
+            aria-label={t('media.picker.label')}
+          >
+            {items.map((media) => {
+              const chosen = media.id === value;
+              // A file with no alternative text yet still needs one here, or a screen reader is read
+              // an empty button. The name it was uploaded with is the honest stand in.
+              const written = resolveLocalized(media.alt, locale, defaultLocale);
+              const alt = written === '' ? media.fileName : written;
+
+              return (
+                <li key={media.id} className="flex flex-col gap-1">
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    aria-pressed={chosen}
+                    onClick={() => onChange(chosen ? null : media.id)}
+                    className={`border-border bg-card flex w-full flex-col items-stretch gap-2 rounded-md border p-2 text-left ${
+                      chosen ? 'ring-primary ring-2' : ''
+                    }`}
+                  >
+                    <MediaThumbnail media={media} alt={alt} />
+                    <span className="text-foreground truncate text-xs" title={media.fileName}>
+                      {media.fileName}
+                    </span>
+                  </button>
+                  {written === '' ? <AltToWrite href={fileHref?.(media.id)} /> : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </FileDrop>
+
+      {more ? (
+        <div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={!settled}
+            isLoading={isPlaceholderData}
+            onClick={() => {
+              setEarlier(items);
+              setAsked((now) => ({ ...now, page: now.page + 1 }));
+            }}
+          >
+            {t('media.picker.more')}
+          </Button>
+        </div>
+      ) : null}
 
       {value === null ? null : (
         <div className="flex items-center gap-3">
@@ -203,11 +323,78 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        {uploader}
-        {library}
-      </div>
+      {library}
     </div>
+  );
+}
+
+/**
+ * Where a file can be let go. Only a dragged **file** is taken: what the editor's own drag carries, a
+ * block or a section, passes through, and the browser is told to keep its hands off a file dropped
+ * here, or it would leave the page to show it, with the draft in it.
+ */
+function FileDrop({
+  enabled,
+  onFile,
+  children,
+}: {
+  enabled: boolean;
+  onFile: (file: File | undefined) => void;
+  children: ReactNode;
+}) {
+  const [over, setOver] = useState(false);
+
+  const carriesFile = (event: DragEvent) => enabled && event.dataTransfer.types.includes('Files');
+
+  return (
+    <div
+      className={over ? 'outline-primary rounded-md outline-2 outline-offset-2 outline-dashed' : undefined}
+      onDragOver={(event) => {
+        if (carriesFile(event)) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'copy';
+          setOver(true);
+        }
+      }}
+      onDragLeave={(event) => {
+        // Leaving a thumbnail for the one next to it is a leave too, and it is not leaving this.
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setOver(false);
+        }
+      }}
+      onDrop={(event) => {
+        if (carriesFile(event)) {
+          event.preventDefault();
+          setOver(false);
+          onFile(event.dataTransfer.files[0]);
+        }
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
+ * A file with no alternative text, and the way to its page in the library. In another tab: whoever
+ * reads this is in the middle of a page they have not saved. A block's own alternative text stays
+ * the block's (`docs/UI-GUIDELINES.md`, 6 September 2026); this is the one every block inherits.
+ */
+function AltToWrite({ href }: { href: string | undefined }) {
+  const { t } = useTranslation();
+  const words = t('media.picker.altToWrite');
+
+  return href === undefined ? (
+    <span className="text-muted-foreground text-xs">{words}</span>
+  ) : (
+    <Link
+      to={href}
+      target="_blank"
+      rel="noopener"
+      className="text-primary text-xs underline-offset-2 hover:underline"
+    >
+      {words}
+    </Link>
   );
 }
 
