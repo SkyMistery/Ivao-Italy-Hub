@@ -1,10 +1,11 @@
 import { Button, Subtle } from '@ivao/atmosphere-react';
-import { keepPreviousData, useQuery, type UseQueryOptions } from '@tanstack/react-query';
+import { keepPreviousData, useQueries, useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { FileText, Upload } from 'lucide-react';
 import { useId, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { describeProblem } from '../forms/useProblemDetails';
 import { resolveLocalized } from '../i18n/localized';
 import { ListFilter } from '../list/ListFilter';
 import { SearchBox } from '../list/SearchBox';
@@ -80,7 +81,7 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
   defaultLocale: string;
   disabled?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const filterId = useId();
 
   const browse = query.meta?.browse;
@@ -89,14 +90,21 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
   const fileHref = query.meta?.fileHref as ((id: number) => string) | undefined;
 
   const [asked, setAsked] = useState(NOTHING_ASKED);
-  // The pages already read: "show more" adds to the grid, it does not turn it over.
-  const [earlier, setEarlier] = useState<readonly TRow[]>([]);
   // Which search box is on screen. A new one is the only way of emptying what somebody typed: the
   // box holds its own draft, and that is what keeps the focus in it while the grid answers.
   const [searchBox, setSearchBox] = useState(0);
 
-  const { data, isPending, isPlaceholderData } = useQuery({
-    ...(browsable ? (browse as (asked: MediaBrowse) => typeof query)(asked) : query),
+  const pageOf = (page: number) =>
+    browsable ? (browse as (asked: MediaBrowse) => typeof query)({ ...asked, page }) : query;
+
+  // "Show more" adds to the grid, it does not turn it over. The pages already read stay queries and
+  // not a copy, so they follow the library like the last one does.
+  const earlier = useQueries({
+    queries: Array.from({ length: asked.page - 1 }, (_, index) => pageOf(index + 1)),
+  });
+
+  const { data, isPending, isPlaceholderData, isLoadingError, isFetching, refetch } = useQuery({
+    ...pageOf(asked.page),
     // The grid stays while the next answer comes: a grid that empties at every word is a flicker
     // under the hand of somebody typing.
     placeholderData: keepPreviousData,
@@ -104,20 +112,28 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
 
   // A file uploaded between two pages moves the others down by one, and the last of a page comes
   // back as the first of the next.
-  const seen = new Set(earlier.map((media) => media.id));
-  const items = [...earlier, ...(data?.items ?? []).filter((media) => !seen.has(media.id))];
+  const items = [
+    ...new Map(
+      [...earlier.flatMap((page) => page.data?.items ?? []), ...(data?.items ?? [])].map((media) => [
+        media.id,
+        media,
+      ]),
+    ).values(),
+  ];
 
   // Also when the last page brought nothing: `total` may have grown since the first page was read,
   // and a button that answers nothing would stay there for good.
-  const more = data !== undefined && data.items.length > 0 && items.length < data.total;
+  const more = browsable && data !== undefined && data.items.length > 0 && items.length < data.total;
   const settled = !isPending && !isPlaceholderData;
+  // The page asked for has never answered. A later read that fails leaves the rows it had, which are
+  // still true; this one has nothing to show, and "no file matches" would be a false statement.
+  const readFailed = isLoadingError;
 
   // The grid scrolls by itself, and what it answers next starts from its first row: a file just
   // uploaded is that row, and it would be chosen above the top of the box.
   const grid = useRef<HTMLUListElement>(null);
 
   const ask = (patch: Partial<MediaBrowse>) => {
-    setEarlier([]);
     setAsked((now) => ({ ...now, ...patch, page: 1 }));
     if (grid.current !== null) {
       grid.current.scrollTop = 0;
@@ -128,24 +144,32 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
   // that reads in every language or theme.
   const fileInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [refused, setRefused] = useState<string | null>(null);
+  const [refused, setRefused] = useState<unknown>(null);
+  const [onlyFirst, setOnlyFirst] = useState(false);
+  // The file uploaded here. It alone says its alternative text is to be written: whoever uploaded it
+  // can write it, which a tile of somebody else's department could not promise.
+  const [uploaded, setUploaded] = useState<number | null>(null);
 
-  const upload = async (file: File | undefined) => {
+  const refusal = describeProblem(refused, t, i18n.language);
+
+  const upload = async (file: File | undefined, others = false) => {
     if (file === undefined || onUpload === undefined || uploading) {
       return;
     }
 
     setUploading(true);
     setRefused(null);
+    setOnlyFirst(others);
     try {
       const id = await onUpload(file);
+      setUploaded(id);
       // Back to the newest files, where the new one is: it would be chosen and out of sight under a
       // search or a category it does not match.
       ask(NOTHING_ASKED);
       setSearchBox((box) => box + 1);
       onChange(id);
     } catch (error) {
-      setRefused(error instanceof Error ? error.message : String(error));
+      setRefused(error);
     } finally {
       setUploading(false);
       if (fileInput.current !== null) {
@@ -177,11 +201,12 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
             {t(uploading ? 'media.picker.uploading' : 'media.picker.upload')}
           </Button>
         </div>
-        {refused === null ? null : (
+        {refusal === null ? null : (
           <p role="alert" className="text-destructive text-sm">
-            {t('media.picker.uploadRefused')}
+            {refusal}
           </p>
         )}
+        {onlyFirst ? <Subtle className="text-xs">{t('media.picker.onlyFirst')}</Subtle> : null}
       </div>
     );
 
@@ -196,12 +221,14 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
     );
 
   const droppable = onUpload !== undefined && !disabled;
+  // A picker chooses one file, so one is uploaded, and whoever let go of several is told.
+  const takeDropped = (files: ArrayLike<File>) => void upload(files[0], files.length > 1);
 
   // Only a library with nothing in it says so: under a search, the box that took the grid away has
   // to stay, or there is no way back.
-  if (settled && items.length === 0 && asked.q === '' && asked.category === null) {
+  if (settled && !readFailed && items.length === 0 && asked.q === '' && asked.category === null) {
     return (
-      <FileDrop enabled={droppable} onFile={(file) => void upload(file)}>
+      <FileDrop enabled={droppable} onFiles={takeDropped}>
         <EmptyState
           title={t('media.picker.empty')}
           description={t('media.picker.emptyHint')}
@@ -251,9 +278,11 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
         </div>
       )}
 
-      <FileDrop enabled={droppable} onFile={(file) => void upload(file)}>
+      <FileDrop enabled={droppable} onFiles={takeDropped}>
         {settled && items.length === 0 ? (
-          <Subtle>{t('media.picker.noMatch')}</Subtle>
+          readFailed ? null : (
+            <Subtle>{t('media.picker.noMatch')}</Subtle>
+          )
         ) : (
           <ul
             ref={grid}
@@ -288,13 +317,31 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
                       {media.fileName}
                     </span>
                   </button>
-                  {written === '' ? <AltToWrite href={fileHref?.(media.id)} /> : null}
+                  {media.id === uploaded && written === '' ? (
+                    <AltToWrite href={fileHref?.(media.id)} />
+                  ) : null}
                 </li>
               );
             })}
           </ul>
         )}
       </FileDrop>
+
+      {readFailed ? (
+        <div role="alert" className="flex flex-wrap items-center gap-3">
+          <p className="text-destructive text-sm">{t('media.picker.readFailed')}</p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={isFetching}
+            isLoading={isFetching}
+            onClick={() => void refetch()}
+          >
+            {t('media.picker.retry')}
+          </Button>
+        </div>
+      ) : null}
 
       {more ? (
         <div>
@@ -304,10 +351,7 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
             size="sm"
             disabled={!settled}
             isLoading={isPlaceholderData}
-            onClick={() => {
-              setEarlier(items);
-              setAsked((now) => ({ ...now, page: now.page + 1 }));
-            }}
+            onClick={() => setAsked((now) => ({ ...now, page: now.page + 1 }))}
           >
             {t('media.picker.more')}
           </Button>
@@ -335,11 +379,11 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
  */
 function FileDrop({
   enabled,
-  onFile,
+  onFiles,
   children,
 }: {
   enabled: boolean;
-  onFile: (file: File | undefined) => void;
+  onFiles: (files: ArrayLike<File>) => void;
   children: ReactNode;
 }) {
   const [over, setOver] = useState(false);
@@ -366,7 +410,7 @@ function FileDrop({
         if (carriesFile(event)) {
           event.preventDefault();
           setOver(false);
-          onFile(event.dataTransfer.files[0]);
+          onFiles(event.dataTransfer.files);
         }
       }}
     >

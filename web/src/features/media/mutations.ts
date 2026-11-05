@@ -11,6 +11,9 @@ import type { MediaFormValues } from './schema';
  * that is not JSON, and this is the one place that knows it (design M1 §2).
  */
 
+/** Who may put a file in a department's library: asked before offering them to, in any screen. */
+export const MEDIA_EDIT = 'Media.Edit';
+
 /** A translated field with nothing written in it is absent, not an object full of empty strings. */
 function trimLocalized(value: Record<string, string>): LocalizedString | null {
   const written = Object.entries(value).filter(([, text]) => text.trim().length > 0);
