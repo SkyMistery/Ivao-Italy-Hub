@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import { expect } from '@playwright/test';
 
 import { englishCommon } from '../locales';
@@ -26,6 +29,11 @@ import {
 const picker = englishCommon.media.picker;
 const editor = englishCommon.content.editor;
 const blocks = englishCommon.blocks;
+const errors = (
+  JSON.parse(
+    readFileSync(fileURLToPath(new URL('../../../locales/en/errors.json', import.meta.url)), 'utf8'),
+  ) as { errors: { media: { typeNotAllowed: string } } }
+).errors;
 
 /** A name of this run, the one the search looks for. */
 const stamp = Date.now().toString(36);
@@ -69,6 +77,28 @@ test('a file is searched, paged, uploaded from the top and dragged on the grid',
     const mark = String(index).padStart(2, '0');
     await uploadMedia(context, 'WD', named(`file-${mark}`), picture(mark));
   }
+
+  // One logo of this run, and the alternative text of the first file: what the search and the category find.
+  await uploadMedia(context, 'WD', named('logo'), picture('logo'), 'Logo');
+  const altWord = `Altword${stamp}`;
+  const read = (await (await context.request.get(`/api/media/${first}`)).json()) as {
+    ownerDepartment: string;
+    visibility: string;
+    category: string | null;
+    rowVersion: string;
+  };
+  const written = await context.request.put(`/api/media/${first}`, {
+    headers: { 'X-Requested-With': 'hub' },
+    data: {
+      ownerDepartment: read.ownerDepartment,
+      visibility: read.visibility,
+      alt: { en: altWord, it: altWord },
+      title: null,
+      category: read.category,
+      rowVersion: read.rowVersion,
+    },
+  });
+  expect(written.status(), await written.text()).toBeLessThan(300);
 
   const row = await createContent(context, {
     slug: `picker-${stamp}`,
@@ -119,14 +149,27 @@ test('a file is searched, paged, uploaded from the top and dragged on the grid',
 
   await expect(ofThisRun).toHaveCount(24);
   await panel.getByRole('button', { name: picker.more, exact: true }).click();
-  await expect(ofThisRun).toHaveCount(25);
+  await expect(ofThisRun).toHaveCount(26);
   await expect(panel.getByRole('button', { name: picker.more, exact: true })).toBeHidden();
 
+  // On the alternative text as well as on the name: the word is nowhere in a file's name.
+  await search.fill(altWord);
+  await expect(ofThisRun).toHaveCount(1);
+  await expect(tile(named('file-00'))).toBeVisible();
+
+  // Enter asks at once, and the form of the block's panel around the box is not submitted.
   await search.fill(named('file-07'));
+  await search.press('Enter');
   await expect(ofThisRun).toHaveCount(1);
   await expect(tile(named('file-07'))).toBeVisible();
 
-  // ---------------------------------------------------------------- a category with none of them
+  // ---------------------------------------------------------------- the category
+  await search.fill(`picker-${stamp}`);
+  await choose(page, englishCommon.media.fields.category, englishCommon.media.options.category.Logo, panel);
+  await expect(ofThisRun).toHaveCount(1);
+  await expect(tile(named('logo'))).toBeVisible();
+
+  await search.fill(named('file-07'));
   await choose(
     page,
     englishCommon.media.fields.category,
@@ -148,6 +191,10 @@ test('a file is searched, paged, uploaded from the top and dragged on the grid',
   // Chosen, and in sight of the search that was hiding it: the picker went back to the newest files.
   await expect(tile(named('uploaded'))).toHaveAttribute('aria-pressed', 'true');
   await expect(search).toHaveValue('');
+  // The select says what the grid shows: every category again.
+  await expect(panel.getByRole('combobox', { name: englishCommon.media.fields.category })).toHaveText(
+    picker.anyCategory,
+  );
 
   // Nobody has written its alternative text, and the way to write it is its page in the library.
   const uploaded = grid.getByRole('listitem').filter({ hasText: named('uploaded') });
@@ -166,7 +213,7 @@ test('a file is searched, paged, uploaded from the top and dragged on the grid',
   await grid.dispatchEvent('drop', { dataTransfer: dragged });
 
   // Those bytes are not a picture: the library refuses them, and the picker says so where the upload is.
-  await expect(panel.getByRole('alert').filter({ hasText: picker.uploadRefused })).toBeVisible();
+  await expect(panel.getByRole('alert').filter({ hasText: errors.media.typeNotAllowed })).toBeVisible();
 
   const real = await page.evaluateHandle(
     ({ name, base64 }) => {
@@ -186,5 +233,5 @@ test('a file is searched, paged, uploaded from the top and dragged on the grid',
 
   await expect(tile(named('dragged'))).toHaveAttribute('aria-pressed', 'true');
   expect(await grid.evaluate((list) => list.scrollTop)).toBe(0);
-  await expect(panel.getByRole('alert').filter({ hasText: picker.uploadRefused })).toBeHidden();
+  await expect(panel.getByRole('alert').filter({ hasText: errors.media.typeNotAllowed })).toBeHidden();
 });

@@ -74,14 +74,15 @@ interface CommonStrings {
     readonly title: string;
     readonly upload: string;
     readonly fields: { readonly category: string };
-    readonly options: { readonly category: { readonly Document: string } };
+    readonly options: { readonly category: { readonly Document: string; readonly Logo: string } };
     readonly picker: {
       readonly label: string;
       readonly search: string;
       readonly more: string;
       readonly noMatch: string;
       readonly upload: string;
-      readonly uploadRefused: string;
+      readonly dropHint: string;
+      readonly anyCategory: string;
       readonly altToWrite: string;
     };
     readonly replace: { readonly action: string };
