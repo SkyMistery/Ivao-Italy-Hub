@@ -11,14 +11,15 @@ import {
   type DataTableProps,
 } from '@ivao/atmosphere-react';
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Ellipsis, Paperclip, Search } from 'lucide-react';
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { ChevronLeft, ChevronRight, Ellipsis, Paperclip } from 'lucide-react';
+import { useId, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { mediaFileUrl } from '../api/mediaUrl';
 import { resolveLocalized } from '../i18n/localized';
 import { formatMoment } from '../i18n/useMoment';
 import { DepartmentBadge, EmptyState, StatusBadge, personName, useNotice, type NamedPerson } from '../ui';
+import { SearchBox } from './SearchBox';
 import type { ColumnSpec } from './columns';
 import type { ListSearch } from './search';
 
@@ -287,45 +288,6 @@ function Pages({
         </PaginationItem>
       </PaginationContent>
     </PaginationRoot>
-  );
-}
-
-/**
- * The search box waits for the typing to stop. Every keystroke is a round trip to the database
- * otherwise, and a coordinator typing a title would make a dozen of them.
- */
-function SearchBox({
-  initial,
-  placeholder,
-  onCommit,
-}: {
-  initial: string;
-  placeholder: string;
-  onCommit: (value: string) => void;
-}) {
-  const [draft, setDraft] = useState(initial);
-
-  useEffect(() => {
-    if (draft === initial) {
-      return undefined;
-    }
-
-    const timer = setTimeout(() => onCommit(draft), 300);
-    return () => clearTimeout(timer);
-  }, [draft, initial, onCommit]);
-
-  return (
-    <div className="relative max-w-xs flex-1">
-      <Search aria-hidden className="text-muted-foreground absolute top-2.5 left-2 size-4" />
-      <Input
-        type="search"
-        className="pl-8"
-        aria-label={placeholder}
-        placeholder={placeholder}
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-      />
-    </div>
   );
 }
 
