@@ -247,6 +247,37 @@ export function reorderBlocks(body: Body, activeId: string, overId: string): Bod
   };
 }
 
+/** How a block starts: a data block live, because capturing is a decision somebody makes, and only once it is published. */
+export function startingMode(kind: string): 'live' | null {
+  return kind === 'Data' ? 'live' : null;
+}
+
+/**
+ * A block as it is born, by the editor's hand or from a file (PR 3.0b): nothing captured, no width of its own, no code
+ * unless it brings some. One place, so that the two never make different blocks.
+ */
+export function newBlock(fields: {
+  id?: string;
+  type: string;
+  version: number;
+  props: Record<string, unknown>;
+  renderMode: 'live' | 'frozen' | null;
+  column: number | null;
+  source?: string | null;
+}): BlockEnvelope {
+  return {
+    id: fields.id ?? newId('b'),
+    type: fields.type,
+    version: fields.version,
+    props: fields.props,
+    renderMode: fields.renderMode,
+    frozen: null,
+    column: fields.column,
+    source: fields.source ?? null,
+    span: null,
+  };
+}
+
 /**
  * Adds a block to one column of a section — at its end, or at a place in it.
  *
@@ -268,19 +299,10 @@ export function addBlock(
   renderMode: 'live' | 'frozen' | null,
   column = 0,
   at?: number,
+  version = 1,
 ): { body: Body; id: string } {
-  const id = newId('b');
-  const block: BlockEnvelope = {
-    id,
-    type,
-    version: 1,
-    props,
-    renderMode,
-    frozen: null,
-    column,
-    source: null,
-    span: null,
-  };
+  const block = newBlock({ type, version, props, renderMode, column });
+  const { id } = block;
 
   return {
     body: {

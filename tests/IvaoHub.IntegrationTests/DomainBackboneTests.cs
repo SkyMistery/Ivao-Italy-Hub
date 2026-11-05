@@ -1,11 +1,18 @@
 using System.Globalization;
 using System.Security.Claims;
+using System.Text.Json;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
+using IvaoHub.Core.Awards;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
+using IvaoHub.Modules.Events;
+using IvaoHub.Modules.Events.Data;
+using IvaoHub.Modules.FlightOps;
+using IvaoHub.Modules.FlightOps.Data;
+using IvaoHub.Modules.FlightOps.Pireps;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -115,6 +122,124 @@ public sealed class DomainBackboneTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ADeletionIsJudgedOnTheDepartmentTheRowHadWhenItWasLoaded()
+    {
+        // Issue #319, item 1: a row loaded, given a department the writer holds and removed was judged on that department.
+        var token = TestContext.Current.CancellationToken;
+        var id = await SeedAsSuperadminAsync(NewLink(Department.FOD), token);
+
+        _user.Coordinator(StaffVid, Department.ED);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+        var theirs = await database.Links.SingleAsync(row => row.Id == id, token);
+        theirs.OwnerDepartment = Department.ED;
+        database.Links.Remove(theirs);
+        var refused = await Assert.ThrowsAsync<ForbiddenDomainException>(() => database.SaveChangesAsync(token));
+        Assert.Equal(CorePermissions.LinksEdit, refused.Permission);
+
+        database.ChangeTracker.Clear();
+        Assert.True(await database.Links.IgnoreQueryFilters().AnyAsync(row => row.Id == id, token));
+    }
+
+    [Fact]
+    public async Task AMemberWhoChangesTheFirOfTheirOwnRowIsRefused()
+    {
+        // Issue #319, item 4: the exception for a member's own row (T11) asked only for the same departments. A controller's
+        // request moved to another FIR is a move, and the member holds nothing that writes it. The guard answers before the
+        // database: a row attached as if loaded is enough, and a guard that let it through would meet the database instead.
+        var token = TestContext.Current.CancellationToken;
+        const int controller = 931006;
+        _user.Member(controller);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var events = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+        var transfer = new EventAtcTransfer
+        {
+            Id = 931006,
+            EventId = 931006,
+            ShiftId = 931006,
+            ControllerVid = controller,
+            Fir = "LIRR",
+            OwnerDepartment = Department.ED,
+            OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+        };
+        events.AtcTransfers.Attach(transfer);
+
+        transfer.Fir = "LIMM";
+        await Assert.ThrowsAsync<ForbiddenDomainException>(() => events.SaveChangesAsync(token));
+    }
+
+    [Fact]
+    public async Task APilotHoldingTheValidationDoesNotHandTheirReportToSomebodyElse()
+    {
+        // Issue #319, item 4: the alternatives refused the stakeholder only as the row is now. A pilot who also validates rewrote
+        // their report to another pilot and decided it.
+        var token = TestContext.Current.CancellationToken;
+        const int pilot = 931007;
+        _user.MemberHolding(pilot, new EffectivePermission(TourPermissions.Validate, Department.FOD, "grant:test"));
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var tours = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+        var pirep = new Pirep
+        {
+            Id = 931007,
+            TourId = 931007,
+            ScopeTourId = 931007,
+            Vid = pilot,
+            OwnerDepartment = Department.FOD,
+            OwnerDepartmentMask = DepartmentMask.Of(Department.FOD),
+        };
+        tours.Pireps.Attach(pirep);
+
+        pirep.Vid = 931008;
+        await Assert.ThrowsAsync<ForbiddenDomainException>(() => tours.SaveChangesAsync(token));
+    }
+
+    [Fact]
+    public async Task AnAdoptedChildIsJudgedOnItsParentAsItIsNowAndNeverOnADepartmentTheWriterPutIn()
+    {
+        // Note 2026-11-05-la-cura-che-una-riga-prende-dal-genitore: a row of an event stored when the event was ED and FOD's, the
+        // event now ED and TD's. Training deletes it once it took the event's care (RowCare.Adopt); a row given TD by the writer
+        // is still judged on what it was loaded with (issue #319, item 1). The guard answers before the database: a deletion it
+        // lets through meets the database and finds no row, which is the proof it passed.
+        var token = TestContext.Current.CancellationToken;
+        const int training = 931009;
+        _user.MemberHolding(training, new EffectivePermission(EventsPermissions.Edit, Department.TD, "grant:test"));
+        var stored = DepartmentMask.Of([Department.ED, Department.FOD]);
+        var now = DepartmentMask.Of([Department.ED, Department.TD]);
+
+        EventAirport Stale() => new()
+        {
+            Id = 931009,
+            EventId = 931009,
+            OwnerDepartment = Department.ED,
+            OwnerDepartmentMask = stored,
+        };
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var events = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+            var adopted = Stale();
+            events.Airports.Attach(adopted);
+            RowCare.Adopt(events, adopted, Department.ED, now);
+            events.Airports.Remove(adopted);
+            await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => events.SaveChangesAsync(token));
+        }
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var events = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+            var written = Stale();
+            events.Airports.Attach(written);
+            written.OwnerDepartmentMask = now;
+            events.Airports.Remove(written);
+            await Assert.ThrowsAsync<ForbiddenDomainException>(() => events.SaveChangesAsync(token));
+        }
+    }
+
+    [Fact]
     public async Task AuditLogWritten()
     {
         var token = TestContext.Current.CancellationToken;
@@ -156,6 +281,65 @@ public sealed class DomainBackboneTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Assert.DoesNotContain("\"Url\"", rows[1].AfterJson!, StringComparison.Ordinal);
             Assert.Null(rows[2].AfterJson);
             Assert.Contains("Roma", rows[2].BeforeJson!, StringComparison.Ordinal);
+        }
+    }
+
+    /// <summary>
+    /// A creation is audited with the row as it was saved (#412): its key and its foreign keys are the ones the database gave,
+    /// never the temporary values EF holds before the insert — not even for a row that points at another row added in the
+    /// same save.
+    /// </summary>
+    [Fact]
+    public async Task CreatedRowIsAuditedWithTheKeysTheDatabaseGave()
+    {
+        var token = TestContext.Current.CancellationToken;
+        _user.Superadmin(SuperadminVid);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+        var award = new Award { OwnerDepartment = Department.ED, Name = "Audit".L("Audit"), IsActive = true };
+        var assignment = new AwardAssignment { Vid = StaffVid, Reason = "Audit of a created row" };
+        database.Awards.Add(award);
+        database.AwardAssignments.Add(assignment);
+
+        // The assignment points at the award by the temporary key the award has until the insert.
+        database.Entry(assignment).Property(row => row.AwardId).CurrentValue = database.Entry(award).Property(row => row.Id).CurrentValue;
+        await database.SaveChangesAsync(token);
+
+        try
+        {
+            Assert.Equal(award.Id, assignment.AwardId);
+
+            var awardKey = award.Id.ToString(CultureInfo.InvariantCulture);
+            var assignmentKey = assignment.Id.ToString(CultureInfo.InvariantCulture);
+            var created = await database.AuditLog.AsNoTracking()
+                .Where(entry => entry.Action == "created"
+                    && ((entry.Entity == "hub_awards" && entry.EntityId == awardKey)
+                        || (entry.Entity == "hub_award_assignments" && entry.EntityId == assignmentKey)))
+                .ToListAsync(token);
+
+            Assert.Equal(2, created.Count);
+
+            foreach (var entry in created)
+            {
+                using var json = JsonDocument.Parse(entry.AfterJson!);
+
+                Assert.Equal(entry.EntityId, json.RootElement.GetProperty("Id").GetInt64().ToString(CultureInfo.InvariantCulture));
+                Assert.All(
+                    json.RootElement.EnumerateObject().Where(property => property.Value.ValueKind == JsonValueKind.Number),
+                    property => Assert.True(property.Value.GetInt64() >= 0, $"{entry.Entity}.{property.Name} is {property.Value}"));
+            }
+
+            var assigned = created.Single(entry => entry.Entity == "hub_award_assignments");
+            using var assignedJson = JsonDocument.Parse(assigned.AfterJson!);
+            Assert.Equal(award.Id, assignedJson.RootElement.GetProperty("AwardId").GetInt64());
+        }
+        finally
+        {
+            database.AwardAssignments.Remove(assignment);
+            database.Awards.Remove(award);
+            await database.SaveChangesAsync(token);
         }
     }
 

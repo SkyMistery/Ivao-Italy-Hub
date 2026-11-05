@@ -41,7 +41,9 @@ should not start and behave like somebody else's.
 
 1. **`config/division.json`.** `code` and `countryId` are yours, `locales` is the languages you
    publish in, `defaultLocale` is the one a reader gets when theirs is not among them, `timezone`
-   decides when the nightly jobs run, `awardDigestTime` (07:00 when left out) is when, in that
+   decides when the nightly jobs run, `dateFormat` (`dd/mm/yyyy` when left out, or `mm/dd/yyyy` or
+   `yyyy/mm/dd`) is how every date is written in numbers, on the pages and in the mails, whatever the
+   reader's language, `awardDigestTime` (07:00 when left out) is when, in that
    time zone, whoever may assign the awards gets the day's mail about the new signals of the award
    queue, `tagline` and `builtBy` (both optional) are the line in italics under your name in the
    footer and the people the footer credits with a link to their profile, `icaoPrefixes` is validated at start up so a typo is not
@@ -591,6 +593,7 @@ division:
 | --- | --- | --- |
 | `kindPresets` | none | the kinds an event chooses from, each with the switches a new event of that kind starts with |
 | `bookingGapMinutes` | 10 | the least minutes between two bookings of one pilot in the same event, one way or the other |
+| `maxBookingsPerEvent` | 5 | the most bookings any member makes in one event, from 1 to 200: a whole rotation is one, whatever its legs; a private arrival and its linked departure are two |
 | `reminderLeadHours` | 24 | how long before the off block of a booking its pilot is reminded of it |
 | `pilotRetentionMonths` | 24 | how long after an event the bookings and the reports of support of its pilots are kept, and how far back the register of the pilots counts |
 | `inPersonRetentionMonths` | 3 | how long after an event in person its registrations and the seats in its activities are kept; the sums of the answers and the seats taken stay in its statistics |
@@ -720,7 +723,8 @@ environment variables, and the application refuses to start in production withou
 
 A third file is about your server too, but it ships filled in and enabled: **`config/security.json`**,
 the headers every response carries — a content security policy plus `nosniff`, `Referrer-Policy`,
-`X-Frame-Options` and `Cross-Origin-Opener-Policy`. Two reasons to touch it, and only two. If your
+`X-Frame-Options`, `Cross-Origin-Opener-Policy` and a `Permissions-Policy` that turns off camera, microphone,
+location, payment and USB for every page and frame. Two reasons to touch it, and only two. If your
 division frames a host this repository does not know — you added one to the embed allow list in
 `web/src/blocks/allowlist.ts` — add its player origin to `frame-src`, or the block will say "allowed"
 and the browser will show an empty box; a Vitest fails when those two disagree. And if a policy turns

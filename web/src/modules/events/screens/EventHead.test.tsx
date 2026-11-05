@@ -97,7 +97,7 @@ describe('the head of the page of an event', () => {
     await draw(event());
 
     expect(screen.getByRole('heading', { level: 1, name: 'Smoke evening' })).toBeInTheDocument();
-    expect(screen.getByText('Nov 21, 2099 · 17:00–21:00Z')).toBeInTheDocument();
+    expect(screen.getByText('21/11/2099 · 17:00–21:00Z')).toBeInTheDocument();
     expect(screen.getByText('(18:00–22:00 LT)')).toBeInTheDocument();
 
     const line = factsLine();
@@ -148,7 +148,7 @@ describe('the head of the page of an event', () => {
     await draw(event({ bookingOpensAtUtc: '2099-11-14T18:00:00Z', state: 'Announced' }));
 
     const line = factsLine();
-    expect(within(line).getByText('Bookings from Nov 14, 2099, 18:00Z (19:00 LT)')).toBeInTheDocument();
+    expect(within(line).getByText('Bookings from 14/11/2099 18:00Z (19:00 LT)')).toBeInTheDocument();
     expect(within(line).getByRole('timer')).toHaveTextContent(/^In \d+ d \d{2}:\d{2}:\d{2}$/);
   });
 

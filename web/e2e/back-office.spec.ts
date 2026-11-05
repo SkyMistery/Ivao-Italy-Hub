@@ -278,7 +278,7 @@ test('the gallery draws every kind of field the generator learned, and they are 
   // Exact, and for a reason worth remembering: "2:00" is a substring of "12:00", so a loose match
   // here passed happily while the echo was showing UTC twice. Noon UTC on the first of June is
   // 14:00 in Rome.
-  await expect(page.getByText(/Europe\/Rome/).first()).toHaveText('6/1/26, 14:00 Europe/Rome');
+  await expect(page.getByText(/Europe\/Rome/).first()).toHaveText('01/06/2026 14:00 Europe/Rome');
 
   // The icons are a closed set drawn as pictures, and the reason they are a grid and not a select
   // is that a name without its picture is unusable — so the picture has to have a size. jsdom

@@ -98,13 +98,19 @@
         "blockAudience": "La pagina online porta un blocco per meno lettori. Toglilo e pubblica di nuovo, poi cambia chi la legge."
       },
       "tooManyCollections": "Una riga può stare al massimo in venti raccolte.",
-      "collectionInvalid": "Una raccolta si indica con la sua chiave: lettere minuscole, cifre e trattini."
+      "collectionInvalid": "Una raccolta si indica con la sua chiave: lettere minuscole, cifre e trattini.",
+      "settings": {
+        "stylePageNotFound": "Scegli una pagina pubblicata che puoi leggere.",
+        "stylePageTooNarrow": "Questa pagina la legge un solo dipartimento: chi scarica le istruzioni deve poterla leggere, scegline una per tutto lo staff."
+      }
     },
     "maintenance": {
       "title": "Questa parte del sito al momento non accetta modifiche"
     },
     "grant": {
       "unknownPermission": "Questa installazione non ha un permesso con questo nome.",
+      "unknownValue": "Questo non è un valore che l'hub conosce.",
+      "busy": "È in corso un'altra modifica di questi permessi: riprova tra un momento.",
       "globalPermission": "Questo permesso viene solo dalle posizioni dello staff, e non si assegna a mano.",
       "globalDepartment": "Questo permesso non è di un dipartimento e vale ovunque: lascia vuoto il dipartimento.",
       "notStaff": "Quel VID non è staff di questa divisione, o non ha mai fatto login.",
@@ -115,11 +121,13 @@
     },
     "superadmin": {
       "neverLoggedIn": "Quel VID non ha mai fatto login, quindi l’hub non sa ancora nulla di lui.",
-      "lastOne": "L’ultimo super amministratore non si può togliere."
+      "lastOne": "L’ultimo super amministratore non si può togliere.",
+      "busy": "È in corso un'altra modifica dei super amministratori: riprova tra un momento."
     },
     "erasure": {
       "vid": "Questo non è un VID.",
-      "superadmin": "Un super amministratore non si cancella: prima gli si toglie il ruolo."
+      "superadmin": "Un super amministratore non si cancella: prima gli si toglie il ruolo.",
+      "busy": "Un'altra cancellazione sta prendendo il suo numero proprio ora. Riprova tra un momento."
     },
     "notifications": {
       "unknownType": "Questo non è un tipo di notifica che l'hub manda."

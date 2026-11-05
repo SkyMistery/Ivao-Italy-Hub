@@ -512,7 +512,7 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         var told = Assert.Single(await NotificationsAsync(EventsNotifications.EventChanged, Slug("grow"), token));
         Assert.Equal(PilotVid, told.Vid);
-        Assert.Contains(day.AddHours(16).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture), told.DataJson, StringComparison.Ordinal);
+        Assert.Contains(day.AddHours(16).ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture), told.DataJson, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -600,6 +600,56 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         Assert.Equal(
             [slots["XEA800"], slots["XEA801"]],
+            (await BookingsAsync(id, token)).Select(booking => booking.SlotId).Order());
+    }
+
+    /// <summary>
+    /// Three requests of the same pilot at almost the same instant (#322, item 2): the second finds no booking of theirs and waits for the
+    /// row of the event behind the first; the first saves its booking; a third finds it, locks it and writes another. When the first lets
+    /// go of the row of the event, the second locks the pilot's first booking again — and waits for the third, and reads what it saved —
+    /// rather than reading the same bookings as the third at once, under another lock.
+    /// </summary>
+    [Fact]
+    public async Task ARequestThatWaitedForTheEventLocksThePilotsFirstBookingAgain()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var day = Day(days: 30);
+
+        // XEA912 overlaps XEA911; XEA910 goes with both.
+        var id = await PublishedAsync(
+            coordinator,
+            "three-requests",
+            Table(
+                Line("XEA910", string.Empty, TypeA, First, day.AddHours(13), Away, day.AddHours(14)),
+                Line("XEA911", string.Empty, TypeA, First, day.AddHours(17), Away, day.AddHours(18)),
+                Line("XEA912", string.Empty, TypeA, First, day.AddHours(17).AddMinutes(30), Second, day.AddHours(18).AddMinutes(30))),
+            token,
+            starts: day.AddHours(13));
+        var slots = await SlotIdsAsync(id, token);
+
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        // The first request in flight, on the row of the event: the request under test finds no booking of the pilot and waits there.
+        await using var first = await HeldAsync(id, token);
+        await first.LockAsync($"SELECT id AS `Value` FROM evt_events WHERE id = {id} FOR UPDATE", token);
+        var racing = BookAsync(pilot, slots["XEA912"], TypeA, token);
+        await WaitForALockWaitAsync(token);
+
+        // The pilot's first booking, saved meanwhile; a third request finds it, locks it and writes XEA911, not committed yet.
+        var booked = await BookedDirectlyAsync(id, slots["XEA910"], PilotVid, token);
+        await using var third = await HeldAsync(id, token);
+        await third.LockAsync($"SELECT id AS `Value` FROM evt_bookings WHERE id = {booked} FOR UPDATE", token);
+        await third.BookAsync(slots["XEA911"], PilotVid, token);
+
+        // The row of the event let go: the request waits for the third on the pilot's first booking, then reads XEA911.
+        await first.CommitAsync(token);
+        await WaitForALockWaitAsync(token);
+        await third.CommitAsync(token);
+
+        Assert.Equal([BookingRules.IncompatibleKey], (await RefusedAsync(await racing, token))["slotId"]);
+        Assert.Equal(
+            [slots["XEA910"], slots["XEA911"]],
             (await BookingsAsync(id, token)).Select(booking => booking.SlotId).Order());
     }
 
@@ -900,7 +950,7 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await CorrectAsync(coordinator, slots["XEA211"], slot => slot with { OffBlockUtc = day.AddHours(17).AddMinutes(30), OnBlockUtc = day.AddHours(18).AddMinutes(55) }, token);
         var told = Assert.Single(await NotificationsAsync(EventsNotifications.BookingChanged, Slug("corrected"), token));
         Assert.Equal(PilotVid, told.Vid);
-        Assert.Contains(Stamp(day.AddHours(18).AddMinutes(55)), told.DataJson, StringComparison.Ordinal);
+        Assert.Contains(day.AddHours(18).AddMinutes(55).ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture), told.DataJson, StringComparison.Ordinal);
         Assert.Contains("XEA211", told.DataJson, StringComparison.Ordinal);
 
         // Admitted types that leave the pilot's aircraft out: saved, the booking keeps it, and the pilot is told again.

@@ -337,7 +337,8 @@ estensione n.6). Niente esito, niente voto: sono su IVAO.
 
 VID del trainee, motivo, **fino a quando** (vuoto: finché qualcuno non lo toglie), chi l'ha dato, e chi e quando l'ha
 tolto: la forma della tabella `trainee` di PATS. `IOwnedByDepartment` (TD), `[Audited]`, `IHasStakeholder` con il VID
-bannato. Un ban vale per **entrambi i percorsi**. Lista e form generati (§2.9).
+bannato. Un ban vale per **entrambi i percorsi**. Lista e form generati (§2.9). Un ban dato **chiude i training aperti** del membro
+(§2.9, issue #312): `trn_trainings.closed_by_ban` dice quali (nota `2026-11-01-il-ban-chiude-cio-che-e-aperto`).
 
 ### 1.6 Le impostazioni — `TrainingSettings`
 
@@ -440,7 +441,8 @@ proposti:
 Il server ricontrolla il rating all'assegnazione. **Assegnare affida il training al trainer** (`trainer_vid`), che da lì lo
 conduce con il `Training.Conduct` della sua posizione (§3.3), e manda `trainerAssigned` a trainee e trainer. Riassegnare lo
 affida a un altro, e il trainer di prima non lo conduce più. Nessun grant cambia, e nessuno deve rientrare (A7b). Un training
-resta `Accepted` senza trainer quanto serve (d1).
+resta `Accepted` senza trainer quanto serve (d1). **Un cambio di trainer su un training con la data** fa ripartire il promemoria, e le
+due mail dicono la data (dal 1 nov 2026, #431, issue #327, nota `2026-11-01-una-data-passata-non-e-una-scelta`).
 
 ### 2.5 Le date
 
@@ -455,7 +457,10 @@ resta `Accepted` senza trainer quanto serve (d1).
   disponibilità, con gli stessi avvisi; stessa mail.
 - **Senza risposta**: dopo `responseReminderDays` il training compare in evidenza nel blocco del trainer (§4.3). Con
   `maxResponseDays` impostato, un job chiude i training senza scelta (`Closed`, ⚖️ §12 n.9). Lo staff chiude a mano
-  quando vuole (`Training.Approve`), con un motivo.
+  quando vuole (`Training.Approve`), con un motivo. **Dal 1 nov 2026** (#431, issue #327, nota
+  `2026-11-01-una-data-passata-non-e-una-scelta`): la chiusura della notte chiede una data proposta **ancora da venire**; con sole
+  date passate il training non si chiude e torna al trainer.
+- **Una data si propone o si fissa al massimo un anno avanti** (stessa nota).
 
 ### 2.6 Dopo la sessione
 
@@ -490,7 +495,11 @@ non ha toccato resta **N/A** (d4).
 
 Con `Training.Ban` (TC, TAC; HQ e web per il nucleo), dalla pagina del percorso del trainee o dalla lista dei ban: un
 motivo e, se si vuole, una scadenza (d4: «configurabile»). Il trainee riceve `banned` con il motivo e la scadenza; finché
-dura non chiede training, e quelli già aperti vanno avanti (come i PIREP già inviati in M2, §15.2 n.10). **Togli ban**
+dura non chiede training, e **darlo chiude quelli già aperti** (Carmine sulla issue #312, nota
+`2026-11-01-il-ban-chiude-cio-che-e-aperto`): le richieste in attesa, quelle accettate, quelle con il trainer e quelle con la data,
+chiuse da chi dà il ban, senza motivo, nello stesso salvataggio; le date proposte vanno, la sessione datata esce dal calendario e il
+trainer riceve `closedByBan`. Una sessione già cominciata resta al suo trainer, che la registra; rinviata mentre il ban vale si chiude
+(Carmine sulla PR #433: la (A) del §4 della nota). Quando il ban finisce o si toglie **non si riapre niente**: il membro chiede di nuovo. **Togli ban**
 registra chi e quando. I ban restano nello storico. Nessuno si banna da solo (negato all'interessato).
 
 ---
@@ -576,7 +585,9 @@ all'interessato, senza spostare la riga. Le righe figlie non ne hanno bisogno (�
 - **`/training`** (pubblico): i prossimi training e gli esami (il blocco `training.upcomingSessions`) e il pulsante
   «Richiedi training». Una pagina di contenuti che spiega il percorso resta del CMS, con lo stesso blocco.
 - **`/training/sessions/{id}`** (pubblico): postazione, rating, data e ora; **VID e nomi** solo a chi ha fatto il login
-  (R.6-bis; §12 n.4: niente VID ai visitatori). È l'indirizzo delle voci di calendario.
+  (R.6-bis; §12 n.4: niente VID ai visitatori), e **solo fino al giorno della sessione**, nel fuso della divisione: dopo, la pagina
+  resta senza persone, e il trainee e lo staff li leggono dalle loro pagine (dal 1 nov 2026, #430, issue #313, nota
+  `2026-11-01-i-nomi-di-una-sessione-fino-al-suo-giorno`). È l'indirizzo delle voci di calendario.
 - **`/training/request`** (membri): la richiesta del §2.2, con la finestra della domanda sul teorico.
 - **`/training/mine`** (membri): le mie richieste e i miei training, stato, attesa residua, «pronto per…».
 - **`/training/mine/{id}`** (membri): scegliere la data **tra i riquadri** (d1); leggere il report — voti, commenti per
@@ -633,7 +644,8 @@ A un visitatore i blocchi personali rispondono `signedIn: false`, come `myTours`
 | `reminder` | trainee e trainer | `reminderLeadHours` prima (24 ore) |
 | `reportPublished` | trainee | report pubblicato (d4) |
 | `trainingClosed` | trainee | chiuso per nessuna risposta o no-show (d4) |
-| `banned` | trainee | ban dato, con motivo e scadenza |
+| `banned` | trainee | ban dato, con motivo e scadenza, e i training aperti chiusi, se ne ha chiusi (#312) |
+| `closedByBan` | trainer | un training suo chiuso da un ban, con la data della sessione, ora libera (#312) |
 
 Il rifiuto automatico non manda mail: basta il messaggio a schermo (d4).
 
@@ -840,7 +852,8 @@ raccomandazione e la decisione; ognuna entra nella nota della fase A0.
 8. **Group training, GCA, flight briefing** (§0.2). **Deciso** ([r1]): **fuori da M3**, da riprendere se lo staff TD li
    chiede.
 9. **Tempo massimo per scegliere la data** (§2.5). **Deciso** ([r1]): **chiusura automatica** (`Closed`), solo se
-   l'impostazione c'è; di default non c'è.
+   l'impostazione c'è; di default non c'è. **Dal 1 nov 2026** la chiusura chiede una data proposta ancora da venire: con sole date
+   passate il training torna al trainer (#431, nota `2026-11-01-una-data-passata-non-e-una-scelta`).
 10. **Gli esami nel calendario** (§2.8). **Deciso** ([r1]): li inserisce **chi ha l'esame assegnato**, quindi
     `Training.ManageExams` a tutto lo staff del training, e la creazione passa il guardiano con la n.7. **Corretta il 26 settembre
     2026** ([commento sulla #131](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5844102750), nota

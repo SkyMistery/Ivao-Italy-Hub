@@ -304,6 +304,19 @@ public sealed class EffectivePermissionsTests
     }
 
     [Fact]
+    public void ARowThatNamesAVidAndAPositionCountsOnlyThroughThePosition()
+    {
+        // The screen refuses such a row (issue #319, item 3); one written by hand gives nothing to a member without the
+        // position, though every caller loads the position grants for every member.
+        var grant = PositionGrant(CorePermissions.LinksEdit, Department.TD, GrantEffect.Grant, StaffLevel.Coordinator);
+        grant.Vid = 0;
+
+        Assert.False(Holds(Calculate([], [grant]), CorePermissions.LinksEdit, Department.TD));
+        Assert.False(Holds(Calculate([Events()], [grant]), CorePermissions.LinksEdit, Department.TD));
+        Assert.True(Holds(Calculate([Atc(StaffLevel.Coordinator)], [grant]), CorePermissions.LinksEdit, Department.TD));
+    }
+
+    [Fact]
     public void AGrantToAPositionCanNeverConferAGlobalPermission()
     {
         var grant = PositionGrant(CorePermissions.PermissionsManage, scope: null, GrantEffect.Grant, StaffLevel.Coordinator);

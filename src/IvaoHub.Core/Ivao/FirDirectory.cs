@@ -48,8 +48,13 @@ public sealed class FirDirectory(
             return cached;
         }
 
+        // The country's centres, like the airports below: the set is what a FIR staff position is recognised by, and a
+        // centre of another country in the table — an answer of IVAO that ignored the filter, a wrong countryId once in
+        // division.json — would make its chief one of ours (issue #325, item 2).
+        var country = division.Value.CountryId;
         var ids = await database.IvaoCenters
             .AsNoTracking()
+            .Where(center => center.CountryId == country)
             .Select(center => center.Id)
             .ToListAsync(cancellationToken);
 

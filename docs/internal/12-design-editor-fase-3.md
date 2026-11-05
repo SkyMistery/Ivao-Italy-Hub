@@ -370,9 +370,13 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 - **Prima del clic**: i due problemi compaiono anche nell'elenco «che cosa manca per pubblicare» dell'editor (`PublishProblems`, la
   domanda che l'editor fa già al server prima della pubblicazione), accanto al blocco.
 - **Gli indirizzi di fuori** non si controllano: non si sa che cosa c'è dall'altra parte.
+- **Una foto rimasta da scegliere ferma la pubblicazione**, per ogni pagina, importata o scritta a mano (Carmine, in chat al master il
+  5 novembre 2026: «Sì, la ferma»; nota `2026-11-04-le-scelte-dell-import-da-claude`, punto 11). ⚠️ Il server non legge gli schemi, quindi
+  da solo non sa quale `mediaId` è obbligatorio: lo dice la 3.15 nella sua nota, e se serve un meccanismo nuovo è una domanda per Carmine.
 - **È una modifica del nucleo del server**: una PR sua, dopo §4.5, con il test d'integrazione dei due rifiuti.
 - **File del nucleo**: `Core/Content/ContentPublishService.cs`, `Core/Content/BlockDocumentWalker.cs`,
-  `Core/Content/MenuItemWriteDtoValidator.cs` e il servizio nuovo accanto, i file di lingua del nucleo. **Nota sua**: no.
+  `Core/Content/MenuItemWriteDtoValidator.cs` e il servizio nuovo accanto, i file di lingua del nucleo. **Nota sua**: no per i link, sì
+  per la foto rimasta da scegliere (qui sopra).
 
 ## 6. Che cosa non cambia
 
@@ -380,7 +384,7 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 - **Il server non legge le `props`**: gli unici due punti nuovi del server sono un campo della busta (`align`, §5.6) e una chiave per
   convenzione (`href`, §5.9), come `mediaId`.
 - **L'elenco chiuso** resta di ventisei componenti: `MediaPicker`, `MarkdownContent` e `StaffSidebar` cambiano dentro.
-- **La pubblicazione e l'approvazione**: si aggiungono due problemi (§5.9), nient'altro.
+- **La pubblicazione e l'approvazione**: si aggiungono tre problemi (§5.9), nient'altro.
 - **I blocchi già salvati** si disegnano come oggi (immagine, pulsanti); nessuna migrazione dei corpi.
 - **Una migrazione sola**, additiva: la colonna `frequency` delle postazioni (§5.8).
 
@@ -406,7 +410,7 @@ Una PR per riga, ognuna con la sua versione come le altre (`Directory.Build.prop
 | **3.12** | Tabella (§5.1) | `schemas`, `blocks`, `BlockProperties`, `shared/files/`, `legFile` | 3.11 |
 | **3.13** | Domande e risposte (§5.4), etichette dei dati (§5.7) | `schemas`, `blocks` | 3.12 |
 | **3.14** | Frequenze dalle postazioni (§5.8), nucleo del server | `Core/Ivao/`, migrazione, `schemas` | 3.13 |
-| **3.15** | Il controllo dei link alla pubblicazione (§5.9), nucleo del server | `ContentPublishService`, il servizio degli indirizzi | 3.5 |
+| **3.15** | Il controllo dei link alla pubblicazione e la foto rimasta da scegliere (§5.9), nucleo del server | `ContentPublishService`, il servizio degli indirizzi | 3.5 |
 
 Le PR dei blocchi (3.10–3.14) toccano tutte `blocks/schemas.ts` e `blocks/blocks.tsx`: vanno in fila. Quelle segnate «in parallelo»
 toccano file loro e possono correre accanto, in sessioni diverse. Dopo 3.6, 3.10 e 3.12 la parte fissa delle istruzioni per Claude

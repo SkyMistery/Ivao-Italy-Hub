@@ -22,8 +22,14 @@ public sealed class EventsMail(
     LocaleCatalog catalog,
     IOptions<DivisionOptions> division)
 {
-    /// <summary>A moment as a mail writes it, the day and the time in UTC; the sentence around it says UTC.</summary>
-    public static string Moment(DateTime utc) => utc.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+    /// <summary>
+    /// A moment as a mail writes it, the day — in the division's order, the core's <see cref="HubDates"/> — and the time in UTC; the
+    /// sentence around it says UTC.
+    /// </summary>
+    public static string Moment(DateTime utc, DateOrder order) => HubDates.Moment(utc, order);
+
+    /// <summary>The order the division writes a date in, for <see cref="Moment"/>.</summary>
+    public DateOrder Dates => division.Value.ResolveDateOrder();
 
     /// <summary>The page of an event, where a mail about it points.</summary>
     public static string PathOf(Event row)
@@ -48,8 +54,8 @@ public sealed class EventsMail(
 
         return SendAsync(EventsNotifications.EventChanged, row, vids, (data, _) =>
         {
-            data["starts"] = Moment(row.StartsAtUtc);
-            data["ends"] = Moment(row.EndsAtUtc);
+            data["starts"] = Moment(row.StartsAtUtc, Dates);
+            data["ends"] = Moment(row.EndsAtUtc, Dates);
         }, cancellationToken);
     }
 
@@ -98,7 +104,7 @@ public sealed class EventsMail(
             data["callsign"] = flight.Callsign ?? string.Empty;
             data["departure"] = flight.DepartureIcao ?? string.Empty;
             data["arrival"] = flight.ArrivalIcao ?? string.Empty;
-            data["offBlock"] = flight.OffBlockUtc is { } offBlock ? Moment(offBlock) : string.Empty;
+            data["offBlock"] = flight.OffBlockUtc is { } offBlock ? Moment(offBlock, Dates) : string.Empty;
             data["reason"] = reason;
         }, cancellationToken);
     }
@@ -118,8 +124,8 @@ public sealed class EventsMail(
             data["callsign"] = slot.Callsign ?? booking.Callsign ?? string.Empty;
             data["departure"] = slot.DepartureIcao ?? string.Empty;
             data["arrival"] = slot.ArrivalIcao ?? string.Empty;
-            data["offBlock"] = slot.OffBlockUtc is { } offBlock ? Moment(offBlock) : string.Empty;
-            data["onBlock"] = slot.OnBlockUtc is { } onBlock ? Moment(onBlock) : string.Empty;
+            data["offBlock"] = slot.OffBlockUtc is { } offBlock ? Moment(offBlock, Dates) : string.Empty;
+            data["onBlock"] = slot.OnBlockUtc is { } onBlock ? Moment(onBlock, Dates) : string.Empty;
             data["types"] = string.Join('/', slot.AircraftTypes);
             data["aircraft"] = booking.AircraftIcao;
         }, cancellationToken);
@@ -146,7 +152,7 @@ public sealed class EventsMail(
         {
             var turns = seats(locale);
 
-            data["starts"] = Moment(row.StartsAtUtc);
+            data["starts"] = Moment(row.StartsAtUtc, Dates);
             data["venue"] = row.Venue?.Resolve(locale, division.Value.DefaultLocale) ?? string.Empty;
             data["answers"] = string.Join('\n', answers(locale).Select(line => $"- {line}"));
             data["seats"] = turns.Count == 0
@@ -173,7 +179,8 @@ public sealed class EventsMail(
         IReadOnlyList<(EventActivitySeat Seat, EventActivity Activity)> seats,
         string locale,
         string fallback,
-        LocaleCatalog catalog)
+        LocaleCatalog catalog,
+        DateOrder order)
     {
         ArgumentNullException.ThrowIfNull(seats);
         ArgumentNullException.ThrowIfNull(catalog);
@@ -190,7 +197,7 @@ public sealed class EventsMail(
                     return shape
                         .Replace("{{activity}}", entry.Activity.Name.Resolve(locale, fallback) ?? string.Empty, StringComparison.Ordinal)
                         .Replace("{{place}}", place ?? string.Empty, StringComparison.Ordinal)
-                        .Replace("{{from}}", Moment(entry.Seat.StartsAtUtc), StringComparison.Ordinal)
+                        .Replace("{{from}}", Moment(entry.Seat.StartsAtUtc, order), StringComparison.Ordinal)
                         .Replace(
                             "{{to}}",
                             entry.Seat.StartsAtUtc.AddMinutes(entry.Activity.SlotMinutes).ToString("HH:mm", CultureInfo.InvariantCulture),
@@ -214,8 +221,8 @@ public sealed class EventsMail(
     /// One shift as a mail writes it: the callsign and its hours, in UTC — the sentence around it says so —, the day of its end only when it
     /// is not the day it starts.
     /// </summary>
-    public static string Shift(string callsign, DateTime fromUtc, DateTime toUtc) =>
-        $"{callsign} {Moment(fromUtc)} – {(toUtc.Date == fromUtc.Date ? toUtc.ToString("HH:mm", CultureInfo.InvariantCulture) : Moment(toUtc))}";
+    public static string Shift(string callsign, DateTime fromUtc, DateTime toUtc, DateOrder order) =>
+        $"{callsign} {Moment(fromUtc, order)} – {(toUtc.Date == fromUtc.Date ? toUtc.ToString("HH:mm", CultureInfo.InvariantCulture) : Moment(toUtc, order))}";
 
     /// <summary>
     /// A controller's shifts of a roster (§4.4, E12): at its publication, every shift of theirs not told yet in one mail; after it, a shift
@@ -229,7 +236,7 @@ public sealed class EventsMail(
         return SendAsync(EventsNotifications.AtcShiftAssigned, row, [vid], (data, _) =>
         {
             data["count"] = shifts.Count.ToString(CultureInfo.InvariantCulture);
-            data["shifts"] = string.Join('\n', shifts.OrderBy(shift => shift.FromUtc).Select(shift => $"- {Shift(shift.Callsign, shift.FromUtc, shift.ToUtc)}"));
+            data["shifts"] = string.Join('\n', shifts.OrderBy(shift => shift.FromUtc).Select(shift => $"- {Shift(shift.Callsign, shift.FromUtc, shift.ToUtc, Dates)}"));
             data["roster"] = $"https://{division.Value.Domain}{RosterPathOf(row)}";
             data["mine"] = $"https://{division.Value.Domain}{MinePath}";
         }, cancellationToken);
@@ -247,8 +254,8 @@ public sealed class EventsMail(
 
         return SendAsync(EventsNotifications.AtcShiftChanged, row, [vid], (data, _) =>
         {
-            data["before"] = Shift(before.Callsign, before.FromUtc, before.ToUtc);
-            data["after"] = Shift(after.Callsign, after.FromUtc, after.ToUtc);
+            data["before"] = Shift(before.Callsign, before.FromUtc, before.ToUtc, Dates);
+            data["after"] = Shift(after.Callsign, after.FromUtc, after.ToUtc, Dates);
             data["roster"] = $"https://{division.Value.Domain}{RosterPathOf(row)}";
         }, cancellationToken);
     }
@@ -260,7 +267,7 @@ public sealed class EventsMail(
 
         return SendAsync(EventsNotifications.AtcShiftRemoved, row, [vid], (data, _) =>
         {
-            data["shift"] = Shift(shift.Callsign, shift.FromUtc, shift.ToUtc);
+            data["shift"] = Shift(shift.Callsign, shift.FromUtc, shift.ToUtc, Dates);
             data["roster"] = $"https://{division.Value.Domain}{RosterPathOf(row)}";
         }, cancellationToken);
     }
@@ -275,12 +282,15 @@ public sealed class EventsMail(
     /// The staff decided a request to hand a shift over (§4.4-bis, E12): to whoever asked, with the shift, what was decided — in their
     /// language, and for an approval who took the shift (<paramref name="taker"/>, Carmine's answer on #268: the staff may give it to another
     /// member than the one asked) — and the staff's note, as they wrote it.
+    /// <para>The taker's VID goes under <c>takerVid</c> too, a name the erasure reads as a person's (note
+    /// <c>2026-09-25-la-cancellazione-dei-dati-di-una-persona</c> §7), as the training's mails carry theirs: without it, the erasure of the taker
+    /// would leave their name in the mail to whoever asked (#322, item 6).</para>
     /// </summary>
     public Task AtcShiftTransferDecidedAsync(
         Event row,
         int vid,
         (string Callsign, DateTime FromUtc, DateTime ToUtc) shift,
-        string? taker,
+        (int Vid, string Name)? taker,
         string? note,
         CancellationToken cancellationToken)
     {
@@ -288,10 +298,15 @@ public sealed class EventsMail(
 
         return SendAsync(EventsNotifications.AtcShiftTransferDecided, row, [vid], (data, locale) =>
         {
-            data["shift"] = Shift(shift.Callsign, shift.FromUtc, shift.ToUtc);
-            data["decision"] = taker is null
+            data["shift"] = Shift(shift.Callsign, shift.FromUtc, shift.ToUtc, Dates);
+            data["decision"] = taker is not { } took
                 ? catalog.Resolve(locale, TransferRefusedKey)
-                : catalog.Resolve(locale, TransferApprovedKey).Replace("{{taker}}", taker, StringComparison.Ordinal);
+                : catalog.Resolve(locale, TransferApprovedKey).Replace("{{taker}}", took.Name, StringComparison.Ordinal);
+            if (taker is { } named)
+            {
+                data["takerVid"] = named.Vid.ToString(CultureInfo.InvariantCulture);
+            }
+
             data["note"] = string.IsNullOrWhiteSpace(note) ? "-" : note;
             data["mine"] = $"https://{division.Value.Domain}{MinePath}";
         }, cancellationToken);
@@ -380,8 +395,8 @@ public sealed class EventsMail(
         var flight = BookedFlight.Of(slot, booking);
         var number = slot.FlightNumber is { Length: > 0 } flightNumber ? $" ({flightNumber})" : string.Empty;
         var stand = slot.Stand is { Length: > 0 } place ? $", {catalog.Resolve(locale, StandKey)} {place}" : string.Empty;
-        var off = flight.OffBlockUtc is { } offBlock ? Moment(offBlock) : string.Empty;
-        var on = flight.OnBlockUtc is { } onBlock ? Moment(onBlock) : string.Empty;
+        var off = flight.OffBlockUtc is { } offBlock ? Moment(offBlock, Dates) : string.Empty;
+        var on = flight.OnBlockUtc is { } onBlock ? Moment(onBlock, Dates) : string.Empty;
 
         List<string> lines =
         [

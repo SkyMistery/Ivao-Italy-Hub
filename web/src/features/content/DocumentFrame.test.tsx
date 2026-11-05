@@ -63,7 +63,7 @@ test('the strip says when the document comes into force, and nothing when it doe
   const { unmount } = renderWithProviders(<DocumentStrip content={document()} />);
 
   // The date, in the language on screen, and no time beside it: a document comes into force on a day.
-  expect(screen.getByText('Oct 1, 2026')).toBeInTheDocument();
+  expect(screen.getByText('01/10/2026')).toBeInTheDocument();
   unmount();
 
   const { container } = renderWithProviders(<DocumentStrip content={document({ effectiveOn: null })} />);
@@ -74,7 +74,7 @@ test('a document not yet in force says so, and one retired says what replaced it
   const { unmount } = renderWithProviders(
     <DocumentNotice content={document()} now={new Date('2026-09-12T00:00:00Z')} />,
   );
-  expect(screen.getByText('Not in force yet: it applies from Oct 1, 2026.')).toBeInTheDocument();
+  expect(screen.getByText('Not in force yet: it applies from 01/10/2026.')).toBeInTheDocument();
   unmount();
 
   renderWithProviders(
@@ -87,7 +87,7 @@ test('a document not yet in force says so, and one retired says what replaced it
     />,
   );
 
-  expect(screen.getByText('No longer in force since Nov 1, 2026.')).toBeInTheDocument();
+  expect(screen.getByText('No longer in force since 01/11/2026.')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Code of conduct, 2027 edition' })).toHaveAttribute(
     'href',
     '/documents/code-of-conduct-2027',
@@ -98,7 +98,7 @@ test('the footer is the edition: version, date and a name, and a way to paper', 
   renderWithProviders(<DocumentFooter content={document()} />);
 
   expect(screen.getByText('3')).toBeInTheDocument();
-  expect(screen.getByText('Sep 12, 2026')).toBeInTheDocument();
+  expect(screen.getByText('12/09/2026')).toBeInTheDocument();
   expect(screen.getByText('Test User')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Print' })).toBeInTheDocument();
 });

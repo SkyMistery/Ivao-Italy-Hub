@@ -10,6 +10,7 @@ import { ConfirmDialog, Notice, useNotice } from '../../shared/ui';
 import { menuParentsQuery } from '../menu/queries';
 
 import { CHANGELOG_MAX, changeSummary } from './changeSummary';
+import { versionLine } from './claudeFile';
 import { useReviewContent } from './mutations';
 import { contentReviewQuery, pageTreeQuery, type ContentDetailDto } from './queries';
 
@@ -250,7 +251,7 @@ export function ReviewPanel({
               // dialog does (issue #352): the summary above, in words, for the approver to keep or rewrite.
               onOpenChange={(open) => {
                 if (open && changelog === '' && facts !== undefined) {
-                  setChangelog(changeSummary(facts, t, read));
+                  setChangelog(versionLine(content, changeSummary(facts, t, read), t));
                 }
               }}
               onConfirm={() => {

@@ -144,6 +144,12 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
             await AssertRefusedAsync(unknown, "sheet", EvaluationSheet.Changed, token);
         }
 
+        // An entry sent as nothing, which no page sends: required on its own row, never a failure (the review of the code, #327).
+        using (var nothing = await StepAsync(trainer, id, "report", Report(version, [Entry(taxi, grade: 3), null!]), token))
+        {
+            await AssertRefusedAsync(nothing, "sheet[1]", "errors.required", token);
+        }
+
         Assert.Equal(TrainingState.Scheduled, (await StoredAsync(id, token)).State);
 
         // Published: the first item graded, the second marked, the third left not applicable.
@@ -213,7 +219,7 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         // The mail: the page of the training, the box of the exam, until when — nothing reserved.
         var mail = await MailAsync(TraineeVid, TrainingNotifications.ReportPublished, token);
         Assert.Contains($"/training/mine/{id}", mail, StringComparison.Ordinal);
-        Assert.Contains(TrainingMail.Moment(stored.CompletedAt!.Value.AddDays(5)), mail, StringComparison.Ordinal);
+        Assert.Contains(TrainingMail.Moment(stored.CompletedAt!.Value.AddDays(5), DateOrder.DayMonthYear), mail, StringComparison.Ordinal);
         AssertNothingReserved(mail);
 
         // The item a report marked is not deleted any more; one no report marked still is.
@@ -336,8 +342,8 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         Assert.Equal(stored.ClosedAt!.Value.AddDays(9), path.GetProperty("waitUntil").GetDateTime());
 
         var mail = await MailAsync(TraineeVid, TrainingNotifications.TrainingClosed, token);
-        Assert.Contains(TrainingMail.Moment(session), mail, StringComparison.Ordinal);
-        Assert.Contains(TrainingMail.Moment(stored.ClosedAt!.Value.AddDays(9)), mail, StringComparison.Ordinal);
+        Assert.Contains(TrainingMail.Moment(session, DateOrder.DayMonthYear), mail, StringComparison.Ordinal);
+        Assert.Contains(TrainingMail.Moment(stored.ClosedAt!.Value.AddDays(9), DateOrder.DayMonthYear), mail, StringComparison.Ordinal);
         Assert.Contains($"/training/mine/{id}", mail, StringComparison.Ordinal);
     }
 

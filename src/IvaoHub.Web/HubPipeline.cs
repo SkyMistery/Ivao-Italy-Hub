@@ -131,7 +131,13 @@ internal static class HubPipeline
                 correlationId = context.TraceIdentifier;
             }
 
-            context.Response.Headers[CorrelationIdHeader] = correlationId;
+            // As the answer starts, not now: the exception handler clears the headers before it writes its problem, and an
+            // error is the answer that needs the identifier most (issue #320, item 1).
+            context.Response.OnStarting(() =>
+            {
+                context.Response.Headers[CorrelationIdHeader] = correlationId;
+                return Task.CompletedTask;
+            });
 
             using (LogContext.PushProperty("CorrelationId", correlationId))
             {
@@ -316,8 +322,11 @@ internal static class HubPipeline
 
         // The first start of an installation has no airspace yet, and a hub that does not know its
         // own FIRs cannot recognise a FIR staff position. A failure here is a row in hub_jobs_log,
-        // never a site that refuses to come up.
+        // never a site that refuses to come up. Counted as the FIR directory counts them, of the division's country: a table
+        // that holds only another country's centres — a countryId corrected since — is an airspace this hub does not know yet.
+        var country = scope.ServiceProvider.GetRequiredService<IOptions<DivisionOptions>>().Value.CountryId;
         if (!await scope.ServiceProvider.GetRequiredService<HubDbContext>().IvaoCenters.AnyAsync(
+                center => center.CountryId == country,
                 app.Lifetime.ApplicationStopping))
         {
             await scope.ServiceProvider.GetRequiredService<RefDataSyncJob>()

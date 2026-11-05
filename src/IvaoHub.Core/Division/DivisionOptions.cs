@@ -54,6 +54,20 @@ public sealed record DivisionOptions
     }
 
     /// <summary>
+    /// How the hub writes a date, one of <see cref="HubDates.Formats"/>: <c>dd/mm/yyyy</c> when left out, or <c>mm/dd/yyyy</c> or
+    /// <c>yyyy/mm/dd</c> (note 2026-10-31-il-formato-della-data). Every date the hub writes in numbers follows it, on the pages and
+    /// in the mails; a date written with its month in words keeps the language's own order.
+    /// </summary>
+    public string DateFormat { get; init; } = HubDates.DefaultFormat;
+
+    /// <summary>
+    /// <see cref="DateFormat"/> as an order. The validator refuses an unknown one at start up; the default is only so that a
+    /// date can never be the thing that stops a mail, as with the time zone.
+    /// </summary>
+    public DateOrder ResolveDateOrder() =>
+        DateFormat is not null && HubDates.Formats.TryGetValue(DateFormat, out var order) ? order : DateOrder.DayMonthYear;
+
+    /// <summary>
     /// Where the mark of the division is served from, or null for a division that has none.
     /// <para>⚠️ It is configuration and not code, and that is the whole point: the hub draws the
     /// mark of whatever division it is running for, and knows nothing about which one that is. A

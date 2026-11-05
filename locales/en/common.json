@@ -747,6 +747,66 @@
       "publishedBy": "Published by {{name}}",
       "approvedBy": "Approved and published by {{name}}",
       "noLine": "No line written"
+    },
+    "claude": {
+      "download": {
+        "label": "Download for Claude",
+        "hint": "Download the instructions for writing this page with Claude, with the draft as it is now",
+        "notSaved": "The draft was not saved, so the instructions were not downloaded",
+        "failed": "The instructions could not be composed: try again"
+      }
+    },
+    "import": {
+      "label": "Import from Claude",
+      "hint": "Replace the draft with the file Claude wrote from the instructions of this page; Undo takes it back",
+      "done": "The file is in the draft: nothing is published, and Undo takes it back",
+      "failed": "The file could not be imported: try again",
+      "refusedTitle": "This file was not imported",
+      "refused": "The draft has not changed. Tell Claude what is below, and import the file it gives you back.",
+      "notFromInstructions": "This file does not come from the instructions of this page: download them and give them to Claude",
+      "otherContent": "This file is for another page (number {{content}})",
+      "rulesChanged": "The rules of this page have changed since you downloaded the instructions (a block, the template, the languages, the visibility): download them again",
+      "draftChanged": "The draft has changed since you downloaded the instructions: download them again and give them to Claude with the file it gave you, so that it integrates the changes too",
+      "draftNotRead": "Claude did not work on the draft you gave it",
+      "conflict": "Somebody else has saved this page in the meantime, and the file was not imported: reload the page, then download the instructions again",
+      "codeNotTheirs": "The file removes the code of a block «{{type}}», which you may not write: you could not put it back. Ask Claude to keep it, or ask somebody who may write code",
+      "idUnknown": "The identifier «{{id}}» was not in the draft you downloaded, or is used twice",
+      "startedOverTitle": "The page was started over",
+      "startedOver": "Claude has redone the page from nothing: everything in it now will be replaced. Continue?",
+      "startedOverConfirm": "Replace everything",
+      "envelopeInvalid": "This part of the page is not written as the instructions say",
+      "propInvalid": "This value is not what the field takes",
+      "blockNotOffered": "The block «{{type}}» is not offered on this page, or not to you",
+      "blockChangedType": "A block of the draft has become another block («{{type}}»)",
+      "blockNotAllowed": "The template does not take the block «{{type}}» in this section",
+      "sectionRequired": "The section «{{name}}» of the template may not be removed",
+      "sectionLocked": "The section «{{name}}» is locked by the template: only the texts of its blocks may change",
+      "versionLine": "Imported from Claude.",
+      "pending": {
+        "pictureCount_one": "One picture to choose",
+        "pictureCount_other": "{{count}} pictures to choose",
+        "valueCount_one": "One value to complete",
+        "valueCount_other": "{{count}} values to complete",
+        "linkCount_one": "One link to check",
+        "linkCount_other": "{{count}} links to check",
+        "picture": "Claude cannot upload pictures: choose this one from the library",
+        "value": "Claude cannot know this value: choose it",
+        "link": "Claude left this link empty: choose where it leads",
+        "linkUnknown": "«{{address}}» is neither an address of the site nor a whole address beginning with https://"
+      }
+    },
+    "settings": {
+      "open": "Settings",
+      "title": "Settings of the content",
+      "description": "They hold for the whole division.",
+      "fields": {
+        "stylePageId": "Page of the division’s style"
+      },
+      "hints": {
+        "stylePageId": "A published page that describes how the division writes: it goes at the end of the instructions «Download for Claude». The whole staff must be able to read it."
+      },
+      "none": "None",
+      "saved": "Settings saved"
     }
   },
   "templates": {
@@ -781,6 +841,7 @@
     },
     "frequencyTable": {
       "label": "Frequency table",
+      "about": "The stations of an operational document: callsign, frequency, kind, CPDLC and the rating asked for.",
       "fields": {
         "caption": "Caption",
         "stations": "Stations",
@@ -816,6 +877,7 @@
     },
     "coordination": {
       "label": "Coordination",
+      "about": "The coordination agreements of a letter of agreement. No longer added: the agreements live on the ATC site.",
       "fields": {
         "caption": "Caption",
         "agreements": "Agreements",
@@ -844,6 +906,7 @@
     },
     "heading": {
       "label": "Heading",
+      "about": "A heading that opens a part of the page; its level says how deep it sits in the outline (2 is right under the page's title).",
       "fields": {
         "level": "Level",
         "text": "Text"
@@ -859,12 +922,14 @@
     },
     "text": {
       "label": "Text",
+      "about": "The prose of the page: paragraphs, lists and links, written in Markdown.",
       "fields": {
         "markdown": "Text"
       }
     },
     "callout": {
       "label": "Callout",
+      "about": "A coloured box that makes one thing stand out: a piece of information, a confirmation, a warning or a danger.",
       "fields": {
         "tone": "Tone",
         "title": "Title",
@@ -881,6 +946,7 @@
     },
     "cta": {
       "label": "Button",
+      "about": "A single button, leading to an address. No longer added: buttons are the Buttons block.",
       "fields": {
         "label": "Label",
         "href": "Address"
@@ -914,6 +980,7 @@
     "willBeCaptured": "Up to date now, held as it is when you publish",
     "hero": {
       "label": "Hero",
+      "about": "The banner at the top of a page: a large title, a line of text, a picture and up to two buttons.",
       "fields": {
         "eyebrow": "Overline",
         "title": "Title",
@@ -949,6 +1016,7 @@
     },
     "image": {
       "label": "Picture",
+      "about": "A picture from the library, with its alternative text and a caption.",
       "fields": {
         "mediaId": "File",
         "alt": "Alternative text",
@@ -969,6 +1037,7 @@
     },
     "video": {
       "label": "Video",
+      "about": "A video from a site the hub knows how to frame, by its address: the library holds no video.",
       "notAllowed": "This address is not on a site the hub can play a video from.",
       "fields": {
         "url": "Address",
@@ -1002,6 +1071,7 @@
     },
     "interactive": {
       "label": "Interactive drawing",
+      "about": "An interactive drawing or tool written as code, in a frame kept apart from the rest of the page; only whoever may write code adds it.",
       "unavailable": "This interactive block has nothing to show here yet. Save the page and it will draw itself.",
       "refused": "Only you see this: the browser refused this animation something it asked for ({{detail}}). A frame here has no network and no storage — see the guidelines.",
       "threw": "Only you see this: this animation stopped with an error ({{detail}}).",
@@ -1021,6 +1091,7 @@
     },
     "timeline": {
       "label": "Steps",
+      "about": "Steps to follow in order, or moments with their dates.",
       "fields": {
         "variant": "Drawn as",
         "accent": "Accent colour",
@@ -1045,6 +1116,7 @@
     },
     "table": {
       "label": "Table",
+      "about": "A table of rows and columns of text, with a caption.",
       "fields": {
         "caption": "Caption",
         "columns": "Columns",
@@ -1064,6 +1136,7 @@
     },
     "cardGrid": {
       "label": "Cards",
+      "about": "A grid of cards, each with a title, a text, a picture or an icon, and an optional link.",
       "fields": {
         "columns": "Columns",
         "accent": "Accent colour",
@@ -1090,6 +1163,7 @@
     },
     "iconGrid": {
       "label": "Icons",
+      "about": "A grid of icons, each with a title and a line of text: for listing points or features.",
       "fields": {
         "columns": "Columns",
         "accent": "Accent colour",
@@ -1114,6 +1188,7 @@
     },
     "gallery": {
       "label": "Gallery",
+      "about": "A grid of pictures from the library; a click opens the whole picture.",
       "fields": {
         "images": "Pictures",
         "images.mediaId": "File",
@@ -1130,6 +1205,7 @@
     },
     "logoGrid": {
       "label": "Logos",
+      "about": "A row of logos from the library (partners, sponsors), each with its name and an optional link.",
       "fields": {
         "columns": "Columns",
         "items": "Logos",
@@ -1150,6 +1226,7 @@
     },
     "tabs": {
       "label": "Tabs",
+      "about": "Several texts in the same space, one per tab: the reader sees the one of the tab they choose.",
       "fields": {
         "tabs": "Tabs",
         "tabs.label": "Label",
@@ -1161,6 +1238,7 @@
     },
     "accordion": {
       "label": "Questions and answers",
+      "about": "Questions, each with its answer opened by a click: for frequently asked questions.",
       "fields": {
         "allowMultiple": "Several open at once",
         "items": "Entries",
@@ -1170,6 +1248,7 @@
     },
     "testimonial": {
       "label": "Quotation",
+      "about": "A person's words, with their name, their role and an optional photo.",
       "fields": {
         "quote": "Quotation",
         "author": "Who said it",
@@ -1179,6 +1258,7 @@
     },
     "buttonGroup": {
       "label": "Buttons",
+      "about": "One or more buttons in a row, each leading to an address of the site or outside it.",
       "fields": {
         "align": "Alignment",
         "buttons": "Buttons",
@@ -1201,6 +1281,7 @@
     },
     "spacer": {
       "label": "Space",
+      "about": "Empty space between two blocks, where the section's own spacing is not enough.",
       "fields": {
         "size": "How much"
       },
@@ -1215,6 +1296,7 @@
     },
     "divider": {
       "label": "Divider",
+      "about": "A line or dots that separate two parts of the same section.",
       "fields": {
         "variant": "Drawn as",
         "spacing": "Space around it"
@@ -1233,6 +1315,7 @@
     },
     "stats": {
       "label": "Figures",
+      "about": "Figures of the division that the hub counts by itself: members, staff, published news and documents, upcoming entries.",
       "empty": "No figure chosen.",
       "fields": {
         "metrics": "Figures",
@@ -1263,6 +1346,7 @@
     },
     "networkStats": {
       "label": "Live on the network",
+      "about": "How many controllers and pilots are connected right now, in the division and on the whole network.",
       "unavailable": "The network cannot be reached right now.",
       "fields": {
         "figures": "Figures",
@@ -1286,6 +1370,7 @@
     },
     "calendar": {
       "label": "Calendar",
+      "about": "The entries of the site's calendar, of the chosen kinds and department, as a list or a grid.",
       "empty": "Nothing coming up.",
       "retiredKind": "{{key}} (no longer in use)",
       "fields": {
@@ -1329,6 +1414,7 @@
     },
     "newsList": {
       "label": "News",
+      "about": "The latest published news of a collection, as a list or as cards.",
       "empty": "No news to show.",
       "pinned": "Pinned",
       "fields": {
@@ -1359,6 +1445,7 @@
     },
     "documentList": {
       "label": "Documents",
+      "about": "The published documents of a collection, grouped by collection.",
       "empty": "No document to show.",
       "download": "Download",
       "fields": {
@@ -1384,6 +1471,7 @@
     },
     "staffList": {
       "label": "Staff",
+      "about": "The staff of the division or of a department, from the positions of whoever has signed in to the hub.",
       "empty": "Nobody to show yet.",
       "profileUrl": "https://www.ivao.aero/Member.aspx?Id={{vid}}",
       "rosterNote": "Only members who have signed in to this hub at least once appear here.",
@@ -1413,6 +1501,7 @@
     },
     "welcome": {
       "label": "Greeting",
+      "about": "A greeting by name for whoever looks at the dashboard, with a message under it.",
       "greeting": "Hello, {{name}}",
       "anonymous": "Welcome",
       "fields": {
@@ -1421,11 +1510,13 @@
     },
     "myDepartments": {
       "label": "My departments",
+      "about": "The dashboards of the departments whoever is looking works in, one link each.",
       "title": "My departments",
       "empty": "You do not work in any department yet."
     },
     "myWork": {
       "label": "What waits for me",
+      "about": "What waits for whoever is looking: pages to approve, contacts, documents to review or drafts.",
       "sentBack": "Sent back",
       "fields": {
         "what": "What it shows",

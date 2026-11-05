@@ -19,6 +19,10 @@ export function useBodyPathDescription(body: Body): (path: string) => string {
       return t('content.fields.title');
     }
 
+    if (path === 'summary') {
+      return t('content.fields.summary');
+    }
+
     const parts: string[] = [];
     const indices = [...path.matchAll(/sections\[(\d+)\]/g)].map((match) => Number(match[1]));
 

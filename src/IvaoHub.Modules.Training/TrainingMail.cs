@@ -35,14 +35,20 @@ public sealed class TrainingMail(
     /// <summary>The staff's page of one training (A7), where a mail to the trainer points.</summary>
     public static string StaffPath(long id) => string.Create(CultureInfo.InvariantCulture, $"/staff/training/{id}");
 
-    /// <summary>A moment of a session as a mail writes it, the day and the time in UTC; the sentence around it says UTC.</summary>
-    public static string Moment(DateTime utc) => utc.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+    /// <summary>The order the division writes a date in, for <see cref="Moment"/> and <see cref="Span"/>.</summary>
+    public DateOrder Dates => division.Value.ResolveDateOrder();
+
+    /// <summary>
+    /// A moment of a session as a mail writes it, the day — in the division's order, the core's <see cref="HubDates"/> — and the time
+    /// in UTC; the sentence around it says UTC.
+    /// </summary>
+    public static string Moment(DateTime utc, DateOrder order) => HubDates.Moment(utc, order);
 
     /// <summary>A date proposed as a mail writes it: its day and hours, and the day of its end too when it is another.</summary>
-    public static string Span(DateTime startsAtUtc, DateTime endsAtUtc) =>
+    public static string Span(DateTime startsAtUtc, DateTime endsAtUtc, DateOrder order) =>
         startsAtUtc.Date == endsAtUtc.Date
-            ? string.Create(CultureInfo.InvariantCulture, $"{Moment(startsAtUtc)}–{endsAtUtc:HH:mm}")
-            : $"{Moment(startsAtUtc)} – {Moment(endsAtUtc)}";
+            ? string.Create(CultureInfo.InvariantCulture, $"{Moment(startsAtUtc, order)}–{endsAtUtc:HH:mm}")
+            : $"{Moment(startsAtUtc, order)} – {Moment(endsAtUtc, order)}";
 
     /// <summary>
     /// Queues a mail of <paramref name="type"/> to <paramref name="vid"/> about <paramref name="training"/>, pointing at
@@ -132,7 +138,7 @@ public sealed class TrainingMail(
                 data["trainer"] = string.Empty;
             }
 
-            data["session"] = Moment(start);
+            data["session"] = Moment(start, Dates);
             data["next"] = Word(locale, next);
         }
     }

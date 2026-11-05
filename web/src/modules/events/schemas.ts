@@ -37,6 +37,7 @@ export interface KindPreset {
 export interface EventsSettings {
   readonly kindPresets: readonly KindPreset[];
   readonly bookingGapMinutes: number;
+  readonly maxBookingsPerEvent: number;
   readonly pilotRetentionMonths: number;
   readonly inPersonRetentionMonths: number;
   readonly reminderLeadHours: number;
@@ -77,6 +78,8 @@ export function settingsSchema(choices: SettingsChoices) {
       }),
     ),
     bookingGapMinutes: z.number().int(),
+    // The most bookings of a member in an event, for the whole division (issue #314): a rotation is one.
+    maxBookingsPerEvent: z.number().int(),
     pilotRetentionMonths: z.number().int(),
     inPersonRetentionMonths: z.number().int(),
     reminderLeadHours: z.number().int(),
