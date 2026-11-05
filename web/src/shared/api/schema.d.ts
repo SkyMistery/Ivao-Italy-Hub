@@ -5283,6 +5283,7 @@ export interface components {
             /** Format: int64 */
             supersededById: null | number;
             showFooter: boolean;
+            draftFromFile: boolean;
             /** Format: int64 */
             publishedVersionId: null | number;
             /** Format: date-time */
@@ -5545,6 +5546,7 @@ export interface components {
             showFooter: boolean;
             /** Format: int64 */
             parentId?: null | number;
+            draftFromFile?: null | boolean;
         };
         /** @description A controller's own register (§4.5, §7.1): their counts, their penalty, and their shifts of the events over, the latest first. */
         ControllerRecordDto: {

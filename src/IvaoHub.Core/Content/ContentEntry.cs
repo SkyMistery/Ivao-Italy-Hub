@@ -190,6 +190,15 @@ public sealed class ContentEntry
     /// <summary>Whether the footer — version, date, publisher, print — is drawn at the end.</summary>
     public bool ShowFooter { get; set; } = true;
 
+    /// <summary>
+    /// Whether the draft came from a file and has not been published since, for the line of the next version: whoever
+    /// publishes it may not be whoever imported it (<c>decisions/2026-11-04-la-bozza-che-viene-da-un-file.md</c>). Written by a
+    /// save that says so, taken away by publication. Not audited: that a draft came from a file is said in the version's line
+    /// and nowhere else (answer 6 of the note of 30 October 2026).
+    /// </summary>
+    [NotAudited]
+    public bool DraftFromFile { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public int CreatedBy { get; set; }
