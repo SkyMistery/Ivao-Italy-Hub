@@ -124,6 +124,8 @@
     "copyFrom": "Copy from {{language}}",
     "addEntry": "Add",
     "removeEntry": "Remove",
+    "entry": "Item {{number}}",
+    "clearDate": "Remove the date",
     "submitHint": "Press Enter to save.",
     "submitHintOneLine": "Press Enter in a one-line field to save.",
     "moveUp": "Move up",

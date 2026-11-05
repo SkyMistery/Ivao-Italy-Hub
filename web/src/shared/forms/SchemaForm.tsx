@@ -7,6 +7,9 @@ import {
   CommandItem,
   CommandList,
   CommandRoot,
+  CollapsibleContent,
+  CollapsibleRoot,
+  CollapsibleTrigger,
   H4,
   Input,
   Label,
@@ -18,7 +21,7 @@ import {
   Switch,
   Textarea,
 } from '@ivao/atmosphere-react';
-import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   Controller,
@@ -43,7 +46,15 @@ import { narrowLibrary } from '../ui/narrowLibrary';
 import { LocaleFields } from './LocaleFields';
 import { LocaleTabs } from './LocaleTabs';
 import { ProblemAlert } from './ProblemAlert';
-import { NO_CHOICE, blankEntry, readFields, whereDrawn, type FieldNode, type Suggestion } from './schema';
+import {
+  NO_CHOICE,
+  blankEntry,
+  entryTitleField,
+  readFields,
+  whereDrawn,
+  type FieldNode,
+  type Suggestion,
+} from './schema';
 import { slugify } from './slug';
 import { useProblemDetails } from './useProblemDetails';
 
@@ -266,7 +277,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
  * Enter there writes a new line and saves nothing. With no box of one line nothing is said; with both
  * kinds the sentence says which box it means.
  *
- * The boxes of a repeatable list are on the screen only once an entry is added (the review of #238, low
+ * The boxes of a repeatable list are on the screen only while an entry is open (the review of #238, low
  * 1). One of one line there is not counted, because a hint about a box that is not there is worse than
  * none; one of several lines is, because the sentence that names the box of one line stays true either
  * way.
@@ -1281,7 +1292,21 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
   }
 }
 
-/** A list of objects: add, remove, reorder, and the same generator again for each entry. */
+/**
+ * A list of objects: add, remove, reorder, and the same generator again for each entry.
+ *
+ * An entry is a closed row — its number, its title, the arrows and "remove" — and one click opens it and
+ * closes the one open before (Carmine's staff round, IX; design of the editor, phase 3, §4.3): the steps
+ * of a timeline stood open one under the other, and in a panel a third of the screen wide the sixth
+ * could not be found. Which ones are open is held by position, because a position is what `move` and
+ * `remove` say, and what survives the form taking a newer row (`useNewerRow`), where the identifiers of
+ * the entries are born again.
+ *
+ * ⚠️ A closed entry stays **mounted**, hidden. What a mounted field does to its value is part of what a
+ * form validates: a box of text turns an absent value into an empty one, a box for a number turns a
+ * null into nothing. An entry never drawn would hold what the server sent, and the schema would refuse
+ * it — in a form that applies as it is written, silently, for the whole block.
+ */
 function RepeatableList({
   node,
   name,
@@ -1296,68 +1321,155 @@ function RepeatableList({
   /** What is wrong with the list as a whole — none, too many — said under its title (#331). */
   error: string | undefined;
 }) {
-  const { t } = useTranslation();
-  const { control } = useFormContext();
+  const { t, i18n } = useTranslation();
+  const { control, formState, getValues } = useFormContext();
   const { fields, append, remove, move } = useFieldArray({ control, name });
 
+  // The titles follow what is typed in the entry that is open.
+  useWatch({ control, name });
+  const titleField = entryTitleField(node.children);
+  const title = (index: number) =>
+    titleField === null
+      ? ''
+      : titleOf(titleField, getValues(`${name}.${index}${titleField.path.slice(node.path.length)}`), {
+          locale: i18n.language,
+          labels: env.labels,
+          t,
+        });
+
+  const [open, setOpen] = useState<readonly number[]>([]);
+
+  // An entry holding an error is open, because an error in a closed entry is an error nobody sees: it
+  // opens by itself, and whoever closes it finds it open again until the error is gone. Added to what
+  // is open rather than worked out from the errors on every draw, or the entry would close under the
+  // hands of whoever is typing the letter that ends the error.
+  const closedWithError = fields.flatMap((_, index) =>
+    !open.includes(index) && holdsAnError(formState.errors, `${name}.${index}`) ? [index] : [],
+  );
+  const [revealed, setRevealed] = useState(0);
+  if (closedWithError.length > 0) {
+    setOpen([...open, ...closedWithError]);
+    setRevealed(revealed + 1);
+  }
+
+  // And it is shown. The browser's own move to the first wrong box, which the form asks for on a
+  // refused submit, happens before the entry opens and goes nowhere: a box that is hidden takes no focus.
+  const box = useRef<HTMLFieldSetElement>(null);
+  useEffect(() => {
+    const first =
+      revealed === 0 ? null : (box.current?.closest('form')?.querySelector('[role="alert"]') ?? null);
+    if (first !== null && typeof first.scrollIntoView === 'function') {
+      first.scrollIntoView({ block: 'center' });
+    }
+  }, [revealed]);
+
   return (
-    <fieldset className="border-border flex flex-col gap-4 rounded-md border p-4">
+    <fieldset ref={box} className="border-border flex flex-col gap-4 rounded-md border p-4">
       <legend className="px-1">
         <H4>{label}</H4>
       </legend>
       <FieldError error={error} />
 
-      {fields.map((entry, index) => (
-        <div key={entry.id} className="border-border flex flex-col gap-4 rounded-md border p-3">
-          {node.children.map((child) => (
-            <Field
-              key={child.path}
-              node={child}
-              name={`${name}.${index}${child.path.slice(node.path.length)}`}
-              env={env}
-            />
-          ))}
-          <div className="flex flex-wrap items-center gap-1">
-            {/* Up and down rather than dragging, and they stay when dragging arrives in G11: this
-                is the pair that works from a keyboard, and reordering is something an editor does
-                far more often than adding. */}
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={index === 0}
-              aria-label={t('form.moveUp')}
-              onClick={() => move(index, index - 1)}
-            >
-              <ChevronUp aria-hidden className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={index === fields.length - 1}
-              aria-label={t('form.moveDown')}
-              onClick={() => move(index, index + 1)}
-            >
-              <ChevronDown aria-hidden className="size-4" />
-            </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>
-              <Trash2 aria-hidden className="mr-2 size-4" />
-              {t('form.removeEntry')}
-            </Button>
-          </div>
-        </div>
-      ))}
+      {fields.map((entry, index) => {
+        const written = title(index);
+
+        return (
+          <CollapsibleRoot
+            key={entry.id}
+            open={open.includes(index)}
+            onOpenChange={(opening) => setOpen(opening ? [index] : open.filter((at) => at !== index))}
+            className="border-border rounded-md border"
+          >
+            <div className="flex flex-wrap items-center gap-1 p-1">
+              <CollapsibleTrigger className="group hover:bg-accent focus-visible:ring-ring flex min-w-0 flex-1 basis-40 items-center gap-2 rounded-sm px-2 py-1 text-left text-sm font-medium focus-visible:ring-2 focus-visible:outline-none">
+                <ChevronRight
+                  aria-hidden
+                  className="size-4 shrink-0 transition-transform group-data-[state=open]:rotate-90"
+                />
+                {written === '' ? (
+                  <span className="text-muted-foreground truncate">
+                    {t('form.entry', { number: index + 1 })}
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-muted-foreground tabular-nums">{index + 1}</span>{' '}
+                    <span className="truncate">{written}</span>
+                  </>
+                )}
+              </CollapsibleTrigger>
+
+              {/* Up and down rather than dragging, and they stay when dragging arrives in G11: this
+                  is the pair that works from a keyboard, and reordering is something an editor does
+                  far more often than adding. */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={index === 0}
+                aria-label={t('form.moveUp')}
+                onClick={() => {
+                  move(index, index - 1);
+                  setOpen(open.map((at) => swapped(at, index, index - 1)));
+                }}
+              >
+                <ChevronUp aria-hidden className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={index === fields.length - 1}
+                aria-label={t('form.moveDown')}
+                onClick={() => {
+                  move(index, index + 1);
+                  setOpen(open.map((at) => swapped(at, index, index + 1)));
+                }}
+              >
+                <ChevronDown aria-hidden className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  remove(index);
+                  setOpen(open.filter((at) => at !== index).map((at) => (at > index ? at - 1 : at)));
+                }}
+              >
+                <Trash2 aria-hidden className="mr-2 size-4" />
+                {t('form.removeEntry')}
+              </Button>
+            </div>
+
+            <CollapsibleContent forceMount hidden={!open.includes(index)}>
+              <div className="border-border flex flex-col gap-4 border-t p-3">
+                {node.children.map((child) => (
+                  <Field
+                    key={child.path}
+                    node={child}
+                    name={`${name}.${index}${child.path.slice(node.path.length)}`}
+                    env={env}
+                  />
+                ))}
+              </div>
+            </CollapsibleContent>
+          </CollapsibleRoot>
+        );
+      })}
 
       <div>
         {/* A new entry starts at what its own fields say they hold when empty, and never at `{}`:
             a translated field with no value is an input React cannot control, and the coordinator
-            would be typing into a box that forgets what they wrote. */}
+            would be typing into a box that forgets what they wrote. And it starts open: it is there
+            to be written in. */}
         <Button
           type="button"
           variant="secondary"
           size="sm"
-          onClick={() => append(blankEntry(node.children, node.path, env.locales))}
+          onClick={() => {
+            append(blankEntry(node.children, node.path, env.locales));
+            setOpen([fields.length]);
+          }}
         >
           <Plus aria-hidden className="mr-2 size-4" />
           {t('form.addEntry')}
@@ -1365,6 +1477,64 @@ function RepeatableList({
       </div>
     </fieldset>
   );
+}
+
+/** Where an open entry at a position ends up when the entries at `from` and `to` change places. */
+function swapped(position: number, from: number, to: number): number {
+  return position === from ? to : position === to ? from : position;
+}
+
+/**
+ * The words of an entry's title, out of the value of its title field, in the language on screen — or
+ * the first language that has anything written in it, as the address of a page does (`readSource`): an
+ * entry written only in Italian is still named by that on a screen in English. Empty when nothing is
+ * written, and a value that a choice offers is called what the choice calls it.
+ */
+function titleOf(
+  node: FieldNode,
+  value: unknown,
+  { locale, labels, t }: { locale: string; labels: string; t: (key: string) => string },
+): string {
+  if (node.kind === 'localized') {
+    return readSource(value, locale).trim();
+  }
+
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    return '';
+  }
+
+  const written = String(value).trim();
+  if (written === '') {
+    return '';
+  }
+
+  switch (node.kind) {
+    case 'enum':
+      return t(`${labels}.options.${node.path}.${written}`);
+    case 'text':
+      return node.choices?.find((choice) => choice.value === written)?.label ?? written;
+    case 'suggest':
+      return node.suggestions.find((suggestion) => suggestion.value === written)?.label ?? written;
+    // In UTC, like the box it comes from.
+    case 'instant':
+      return formatMoment(locale, written, { dateStyle: 'short', time: node.withTime });
+    default:
+      return written;
+  }
+}
+
+/** Whether react-hook-form holds an error anywhere under that path. */
+function holdsAnError(errors: FieldErrors, path: string): boolean {
+  let current: unknown = errors;
+
+  for (const segment of path.split('.')) {
+    if (current === null || typeof current !== 'object') {
+      return false;
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+
+  return current !== null && typeof current === 'object' && Object.keys(current).length > 0;
 }
 
 /**
@@ -1528,6 +1698,15 @@ function IconOption({
  * A **day** shows no second line. "The same day, elsewhere" is not a fact a date has, and echoing
  * one would only ever be a chance to read the wrong day. An **instant** does show the division's
  * local time under it, which is the rule `DateCell` follows in every list.
+ *
+ * An optional one can be taken off, with a button beside it: a date picker has no gesture of its own
+ * for it (the staff's round, IX).
+ *
+ * ⚠️ What is drawn is read with `useWatch`, and not from `field.value`. A controller's value is watched
+ * with the value it was born with as its default, and react-hook-form hands the default back for
+ * `undefined`: a date taken off drew itself again, while the form held nothing and saved nothing.
+ * Measured: `{ shown: '2026-01-02', sent: {} }`. An empty string is no way out, because the schema of an
+ * optional date would have to accept it.
  */
 function Instant({
   node,
@@ -1546,7 +1725,9 @@ function Instant({
   locale: string;
   timezone: string | undefined;
 }) {
+  const { t } = useTranslation();
   const { control } = useFormContext();
+  const held: unknown = useWatch({ control, name });
 
   if (node.withTime && timezone === undefined) {
     throw new Error(
@@ -1563,23 +1744,37 @@ function Instant({
         control={control}
         name={name}
         render={({ field }) => {
-          const iso = typeof field.value === 'string' ? field.value : '';
+          const iso = typeof held === 'string' ? held : '';
 
           return (
             <div className="flex flex-col gap-1">
-              <Input
-                id={name}
-                type={node.withTime ? 'datetime-local' : 'date'}
-                className="max-w-xs"
-                value={iso.slice(0, width)}
-                onBlur={field.onBlur}
-                onChange={(event) => {
-                  const written = event.target.value;
-                  field.onChange(
-                    written === '' ? undefined : node.withTime ? `${written}:00Z` : `${written}T00:00:00Z`,
-                  );
-                }}
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  id={name}
+                  type={node.withTime ? 'datetime-local' : 'date'}
+                  className="max-w-xs"
+                  value={iso.slice(0, width)}
+                  onBlur={field.onBlur}
+                  onChange={(event) => {
+                    const written = event.target.value;
+                    field.onChange(
+                      written === '' ? undefined : node.withTime ? `${written}:00Z` : `${written}T00:00:00Z`,
+                    );
+                  }}
+                />
+                {node.optional && iso !== '' ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    // Two dates side by side, a start and an end, are two buttons: the name says which.
+                    aria-label={`${t('form.clearDate')} (${label})`}
+                    onClick={() => field.onChange(undefined)}
+                  >
+                    {t('form.clearDate')}
+                  </Button>
+                ) : null}
+              </div>
               {node.withTime && iso !== '' && timezone !== undefined ? (
                 <Subtle className="tabular-nums">{localTime(iso, locale, timezone)}</Subtle>
               ) : null}
