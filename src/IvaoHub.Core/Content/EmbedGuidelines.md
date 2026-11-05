@@ -59,7 +59,7 @@ sees around your drawing, so never paint a ground of your own.
 
 The height is measured for you: the frame tells the page how tall your fragment is, what you drew
 out of the flow included, and the page gives it that room, between 80 and 2000 px. Up to 2000 px the
-frame **has no scroll bar**, and what you draw has no way of asking for one. Do not set a height on
+frame **has no scroll bar**, and nothing in your CSS brings one. Do not set a height on
 `body`. ⚠️ **Past 2000 px the frame stops growing and a scroll bar appears**, on the reader's page: all
 of your fragment can still be reached, and a block with a scroll bar in the middle of a document is
 still something to fix, by splitting it or by making the drawing shorter.
