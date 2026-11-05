@@ -549,22 +549,41 @@ export function EmbedBlock({ props }: BlockComponentProps) {
 /** The most a frame is given, however tall it says it is. Past this it scrolls (Carmine, 5 November 2026). */
 const TALLEST_FRAME = 2000;
 
-/** Rather more than a scroll bar takes on any desktop. */
-const ROOM_OF_A_BAR = 20;
+/** A bar coming back this soon after it went is the answer to its going, and not somebody's choice. */
+const A_BAR_BACK_AT_ONCE = 1000;
+
+interface FrameBar {
+  readonly on: boolean;
+  /** When it last went. */
+  readonly wentAt: number;
+  /** The width of the frame at which it came back at once: there it stays. */
+  readonly staysAt: number | null;
+}
+
+const NO_BAR: FrameBar = { on: false, wentAt: Number.NEGATIVE_INFINITY, staysAt: null };
 
 /**
- * Whether a frame asking for this height has a scroll bar.
+ * The scroll bar of a frame, after it asked for this height.
  *
  * ⚠️ A bar takes width, a drawing scaled by its `viewBox` is then shorter, and what it says with the bar
  * is less than what it would need without it. That is the fault this exists for, in both directions: left
  * to the browser below the limit, the bar stays for good on any drawing taller than the room it was first
  * given (the guidelines' own example did it, at every width); taken at its word around the limit, a
- * drawing of 2005 px would say 1977 with the bar, lose the bar, say 2005, and so on for ever. So once it
- * has a bar, the bar goes only when what it says would fit at the width the bar was taking.
+ * drawing of 2005 px would say 1977 with the bar, lose the bar, say 2005, and so on for ever.
+ *
+ * So the bar goes whenever what the frame says fits, and only what comes next tells whether that was
+ * true: back at once means it did not fit without it, and at that width the bar stays. This knows nothing
+ * about how wide a bar is (a fragment can style its own, and the browser's zoom changes it) nor about how
+ * the content scales.
  */
-function hasTheBar(asked: number, width: number, hadIt: boolean): boolean {
-  const without = hadIt && width > ROOM_OF_A_BAR ? (asked * width) / (width - ROOM_OF_A_BAR) : asked;
-  return without > TALLEST_FRAME;
+function barAfter(bar: FrameBar, asked: number, width: number, now: number): FrameBar {
+  if (asked > TALLEST_FRAME) {
+    return bar.on
+      ? bar
+      : { ...bar, on: true, staysAt: now - bar.wentAt < A_BAR_BACK_AT_ONCE ? width : bar.staysAt };
+  }
+
+  return !bar.on || bar.staysAt === width ? bar : { ...bar, on: false, wentAt: now };
 }
 
 /**
@@ -591,7 +610,7 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
   const frame = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState(() => count(props, 'minHeight', 320));
   const [refused, setRefused] = useState<{ kind: string; detail: string } | null>(null);
-  const [scrolls, setScrolls] = useState(false);
+  const [bar, setBar] = useState(NO_BAR);
 
   const title = read(text(props, 'title'));
   const description = read(text(props, 'description'));
@@ -644,7 +663,8 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
 
       const asked = Math.round(message.height);
       setHeight(Math.min(Math.max(asked, 80), TALLEST_FRAME));
-      setScrolls((had) => hasTheBar(asked, element.clientWidth, had));
+      const now = performance.now();
+      setBar((was) => barAfter(was, asked, element.clientWidth, now));
     };
 
     window.addEventListener('message', onMessage);
@@ -659,7 +679,9 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
       element.removeEventListener('load', tellTheTheme);
       theme.disconnect();
     };
-  }, [address]);
+    // ⚠️ `printing` because the frame is taken out of the page and what comes back is a new one, and a
+    // cancelled print does it too: listening to the old one, the page would never hear it again.
+  }, [address, printing]);
 
   const caption = description === '' ? null : <p className="text-muted-foreground text-sm">{description}</p>;
 
@@ -709,7 +731,7 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
         // has it in one place. And the frame of a public page is kept for a year: a version already in
         // somebody's cache has the shell it was published with, and it obeys this all the same. An old
         // attribute, and every engine applies a change to it on a frame already loaded (5 November 2026).
-        scrolling={scrolls ? 'auto' : 'no'}
+        scrolling={bar.on ? 'auto' : 'no'}
         loading="lazy"
         // ⚠️ `print:hidden` as well as the context above, and the two are not the same thing. The
         // context is how a **document** prints — `PrintContext` takes the frame out of the page

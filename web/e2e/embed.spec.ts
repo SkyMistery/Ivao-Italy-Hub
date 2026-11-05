@@ -394,6 +394,149 @@ test('a panel opened by a choice gets its room, with no box around it changing',
   await expectItFits(page);
 });
 
+/**
+ * ⚠️ What a choice changes without moving any box and without touching an attribute the shell watches: a
+ * rule of the fragment's own decides, and only the click knows. The guidelines ask for `aria-pressed`.
+ */
+const PANEL_OF_A_RULE = `style>html,body{height:100%}.panel{display:none;height:900px;${FILLED}}`;
+
+const WHAT_OPENS_A_PANEL = {
+  'aria-pressed': `<${PANEL_OF_A_RULE}[aria-pressed=true]~.panel{display:block}</style>
+     <button type="button" id="more" aria-pressed="false">more</button><div class="panel"></div>
+     <script>
+       document.getElementById('more').addEventListener('click', function () {
+         this.setAttribute('aria-pressed', 'true');
+       });
+     </script>`,
+  'a data attribute': `<${PANEL_OF_A_RULE}[data-open]~.panel{display:block}</style>
+     <button type="button" id="more">more</button><div class="panel"></div>
+     <script>
+       document.getElementById('more').addEventListener('click', function () {
+         this.setAttribute('data-open', '');
+       });
+     </script>`,
+  ':checked': `<${PANEL_OF_A_RULE}:checked~.panel{display:block}</style>
+     <input type="checkbox" id="more" aria-label="more"><div class="panel"></div>`,
+};
+
+for (const [what, source] of Object.entries(WHAT_OPENS_A_PANEL)) {
+  test(`a panel opened through ${what} gets its room`, async ({ page }) => {
+    await showInAPage(page, source);
+
+    await page.frameLocator('iframe').locator('#more').click();
+
+    await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBeGreaterThan(900);
+    await expectItFits(page);
+  });
+}
+
+/** Every height the frame says, kept by the page: what a block that throbs cannot hide. */
+async function keepTheHeights(page: Page) {
+  await page.addInitScript(() => {
+    const told: number[] = [];
+    Object.assign(window, { told });
+    window.addEventListener('message', (event: MessageEvent<{ hub?: string; height?: number }>) => {
+      if (event.data?.hub === 'embed-height') {
+        told.push(event.data.height ?? 0);
+      }
+    });
+  });
+}
+
+/** Waits, then waits again: a frame that has settled has said nothing more, and has not moved. */
+async function expectItSettles(page: Page) {
+  const seen = async () => ({
+    said: await page.evaluate(() => (window as unknown as { told: number[] }).told.length),
+    frame: await frameHeight(page),
+    scrolling: await page.locator('iframe').getAttribute('scrolling'),
+  });
+
+  await page.waitForTimeout(1000);
+  const settled = await seen();
+  await page.waitForTimeout(700);
+
+  expect(await seen()).toEqual(settled);
+
+  return settled;
+}
+
+test('a flow that follows the frame, with something spilling out of it, settles', async ({ page }) => {
+  await keepTheHeights(page);
+
+  // ⚠️ The guidelines forbid `vh`, and fragments that use it are already saved. The height of the flow
+  // changes because the page answered, so it says nothing about what spills.
+  await showInAPage(
+    page,
+    `<div style="height:50vh"></div><div style="position:absolute;top:0;height:500px;width:50px;${FILLED}"></div>`,
+  );
+
+  expect((await expectItSettles(page)).frame).toBe(500);
+
+  // And again from a change of width, which does forget what spilled.
+  await page.setViewportSize({ width: 768, height: 800 });
+  expect((await expectItSettles(page)).frame).toBe(500);
+});
+
+test('after a print, even a cancelled one, the frame is still heard', async ({ page }) => {
+  await stubTheFrame(
+    page,
+    `<button type="button" id="more">more</button>
+     <div id="panel" hidden style="height:900px;${FILLED}"></div>
+     <script>
+       document.getElementById('more').addEventListener('click', function () {
+         document.getElementById('panel').hidden = false;
+       });
+     </script>`,
+  );
+  await stubThePublishedPage(page, 'animated', { schemaVersion: 1, sections: [] });
+
+  // A document, because only a document and a news item print through the context: there the frame is
+  // taken out of the page and what comes back is a new one.
+  await page.route('**/api/content/public/Document/printed', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 22,
+        kind: 'Document',
+        slug: 'printed',
+        path: 'printed',
+        ownerDepartment: 'ED',
+        collections: [],
+        title: { en: 'A printed document', it: 'Un documento stampato' },
+        summary: null,
+        seo: null,
+        coverMediaId: null,
+        fileMediaId: null,
+        media: {},
+        showFooter: false,
+        effectiveOn: null,
+        retiredAt: null,
+        supersededBySlug: null,
+        supersededByTitle: null,
+        body: { schemaVersion: 1, sections: [section('s_light', 'none', 'b_light')] },
+        schemaVersion: 1,
+        version: 1,
+        publishedAt: '2026-09-06T10:00:00Z',
+      }),
+    }),
+  );
+
+  await page.goto('/documents/printed');
+  await expect(page.frameLocator('iframe').getByRole('button', { name: 'more' })).toBeVisible();
+
+  // `afterprint` fires on a print that was cancelled too.
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('beforeprint'));
+    window.dispatchEvent(new Event('afterprint'));
+  });
+
+  await page.frameLocator('iframe').getByRole('button', { name: 'more' }).click();
+
+  await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBeGreaterThan(900);
+  await expectItFits(page);
+});
+
 /** A wheel over the frame, and how far it went: what a reader does, with a bar of any kind. */
 async function wheeled(page: Page): Promise<number> {
   const box = await page.locator('iframe').boundingBox();
@@ -441,46 +584,82 @@ test('and the bar goes when the fragment comes back under the limit', async ({ p
   await expectItFits(page);
 });
 
+/** A drawing exactly this tall at the width it is loaded with, without a bar. */
+function aDrawingOf(tall: number, style = '') {
+  return `<style>${style}</style>
+    <svg id="drawing" width="100%"><rect width="100%" height="100%" fill="var(--line)"></rect></svg>
+    <script>
+      document.getElementById('drawing').setAttribute('viewBox', '0 0 ' + window.innerWidth + ' ${tall}');
+    </script>`;
+}
+
 /**
  * ⚠️ Around the limit a bar changes the answer: it takes width, the drawing is shorter, and if that
- * took the bar away the width would be back, and the drawing too tall again, and so on for ever. Each
- * of these is exactly this tall **at the width it was loaded with**, without a bar.
+ * took the bar away the width would be back, and the drawing too tall again, and so on for ever.
  */
 for (const tall of [1975, 1990, 2000, 2001, 2010, 2030, 2060]) {
   test(`a drawing of ${tall} px scaled by its viewBox settles, and does not go back and forth`, async ({
     page,
   }) => {
-    await page.addInitScript(() => {
-      const told: number[] = [];
-      Object.assign(window, { told });
-      window.addEventListener('message', (event: MessageEvent<{ hub?: string; height?: number }>) => {
-        if (event.data?.hub === 'embed-height') {
-          told.push(event.data.height ?? 0);
-        }
-      });
-    });
+    await keepTheHeights(page);
+    await showInAPage(page, aDrawingOf(tall));
 
-    await showInAPage(
-      page,
-      `<svg id="drawing" width="100%"><rect width="100%" height="100%" fill="var(--line)"></rect></svg>
-       <script>
-         document.getElementById('drawing').setAttribute('viewBox', '0 0 ' + window.innerWidth + ' ${tall}');
-       </script>`,
-    );
+    const settled = await expectItSettles(page);
 
-    const messages = () => page.evaluate(() => (window as unknown as { told: number[] }).told.length);
-    const seen = async () => ({
-      said: await messages(),
-      frame: await frameHeight(page),
-      scrolling: await page.locator('iframe').getAttribute('scrolling'),
-    });
-
-    await page.waitForTimeout(1000);
-    const settled = await seen();
-    await page.waitForTimeout(700);
-
-    expect(await seen()).toEqual(settled);
     expect(settled.frame).toBeLessThanOrEqual(2000);
     expect(settled.frame).toBeGreaterThan(1900);
+    expect(settled.scrolling).toBe(tall > 2000 ? 'auto' : 'no');
   });
 }
+
+test('a bar wider than any browser draws one, which a fragment can ask for, settles too', async ({
+  page,
+}) => {
+  await keepTheHeights(page);
+  await showInAPage(page, aDrawingOf(2005, '::-webkit-scrollbar{width:60px}'));
+
+  expect((await expectItSettles(page)).scrolling).toBe('auto');
+});
+
+test('something out of the flow and scaled by its viewBox settles around the limit too', async ({ page }) => {
+  await keepTheHeights(page);
+
+  // ⚠️ The bar takes width, the root's width changes, what spilled is forgotten: with the bar it says the
+  // flow, 100, and without it 2005. No estimate of a bar's width would tell those two apart.
+  await showInAPage(
+    page,
+    `<div style="height:100px"></div>
+     <svg id="drawing" style="position:absolute;top:0;left:0;width:100%"><rect width="100%" height="100%"></rect></svg>
+     <script>
+       document.getElementById('drawing').setAttribute('viewBox', '0 0 ' + window.innerWidth + ' 2005');
+     </script>`,
+  );
+
+  expect((await expectItSettles(page)).scrolling).toBe('auto');
+});
+
+test('a change of width takes a drawing across the limit, and the bar with it', async ({ page }) => {
+  await page.setViewportSize({ width: 1000, height: 800 });
+  // Tall, so that the page has its own bar as it will below: the width of the frame depends on that too.
+  await showInAPage(page, '<div style="height:1500px"></div>');
+  await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBe(1500);
+  const narrow = (await page.locator('iframe').boundingBox())?.width ?? 0;
+
+  // Without a bar this drawing fits at the narrow width, and only just: with a bar's width less, what it
+  // says is lower still. Reached from above, it is the case that would keep a bar if it trusted a sum.
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await showInAPage(
+    page,
+    `<svg viewBox="0 0 ${narrow} 1995" width="100%"><rect width="100%" height="100%" fill="var(--line)"></rect></svg>`,
+  );
+  await expect(page.locator('iframe')).toHaveAttribute('scrolling', 'auto');
+
+  await page.setViewportSize({ width: 1000, height: 800 });
+  await expect(page.locator('iframe')).toHaveAttribute('scrolling', 'no');
+  await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBe(1995);
+  await expectItFits(page);
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(page.locator('iframe')).toHaveAttribute('scrolling', 'auto');
+  await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBe(2000);
+});

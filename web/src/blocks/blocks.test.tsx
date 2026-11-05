@@ -267,7 +267,7 @@ describe('the interactive block', () => {
     expect(frame).toHaveAttribute('src', '/embed/7/3/b_1?lang=en');
   });
 
-  test('the frame starts with no scroll bar, even with an older shell out of a cache', () => {
+  test('the frame starts with no scroll bar: the page says so, on its own attribute', () => {
     drawInteractive(embedding);
 
     expect(screen.getByTitle('A left hand circuit')).toHaveAttribute('scrolling', 'no');
