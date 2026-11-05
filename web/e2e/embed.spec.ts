@@ -26,6 +26,10 @@ const shell = readFileSync(
   'utf8',
 );
 
+// ⚠️ Playwright hides scroll bars by default, and a bar that takes no width is not the fault the height
+// tests below are about: it is those 15 px that kept it there.
+test.use({ launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] } });
+
 /** The animation, in the shape the guidelines teach: `HUB.t` for every word, a real button. */
 const SOURCE = `
 <figure style="display:flex;flex-direction:column;gap:.5rem">
@@ -218,13 +222,11 @@ const NAUGHTY = `
   </script>
 `;
 
-test('an animation that tries to open the network says so, to the staff and to nobody else', async ({
-  page,
-}) => {
-  await stubTheFrame(page, NAUGHTY);
-
-  // The editor, because that is where `staff` is true and where whoever wrote the animation is
-  // standing. A visitor is told nothing: it is not their animation to fix.
+/**
+ * The editor, because that is where `staff` is true and where whoever wrote the animation is
+ * standing. A visitor is told nothing: it is not their animation to fix.
+ */
+async function openInTheEditor(page: Page) {
   await stubTheApiAsStaff(page);
   await page.route('**/api/content/*', (route) =>
     route.fulfill({
@@ -250,6 +252,13 @@ test('an animation that tries to open the network says so, to the staff and to n
   await stubTheAddressOfAPage(page);
 
   await page.goto('/staff/content/1');
+}
+
+test('an animation that tries to open the network says so, to the staff and to nobody else', async ({
+  page,
+}) => {
+  await stubTheFrame(page, NAUGHTY);
+  await openInTheEditor(page);
 
   // The browser refuses the request — `default-src 'none'` — and the refusal, which used to die in a
   // console nobody reads, arrives here as a line naming the directive.
@@ -274,4 +283,126 @@ test('and a visitor reading the same page is told nothing', async ({ page }) => 
   // shown" cannot mean "not drawn yet".
   await page.waitForTimeout(1500);
   await expect(page.getByText(/the browser refused this animation/i)).toHaveCount(0);
+});
+
+/**
+ * The height (design of the editor, §5.5): the frame is as tall as what it holds, and it never scrolls.
+ *
+ * ⚠️ All of these are measured against what the frame says about itself, from inside, because that is
+ * the only place the bar can be seen.
+ */
+async function showInAPage(page: Page, source: string) {
+  await stubTheFrame(page, source);
+  await stubThePublishedPage(page, 'animated', {
+    schemaVersion: 1,
+    sections: [section('s_light', 'none', 'b_light')],
+  });
+
+  await page.goto('/animated');
+  await expect(page.locator('iframe')).toBeVisible();
+}
+
+async function expectItFits(page: Page) {
+  await expect
+    .poll(
+      async () =>
+        page.frames()[1]?.evaluate(() => {
+          const root = document.documentElement;
+          return { bar: window.innerWidth - root.clientWidth, spills: root.scrollHeight > root.clientHeight };
+        }),
+      { timeout: 5000 },
+    )
+    .toEqual({ bar: 0, spills: false });
+}
+
+async function frameHeight(page: Page): Promise<number> {
+  return (await page.locator('iframe').boundingBox())?.height ?? 0;
+}
+
+const FILLED = 'background:var(--line)';
+
+const WHAT_A_FRAGMENT_DOES = {
+  // The one that was seen, and the guidelines' own example did it: taller than the room it was first
+  // given, so a bar comes, so the drawing is narrower and shorter, and the measure agrees with the bar.
+  'a drawing scaled by its viewBox': `<svg viewBox="0 0 400 300" width="100%"><rect width="400" height="300" fill="var(--line)"></rect></svg><p>words</p>`,
+  'something positioned below the flow': `<div style="height:100px"></div><div style="position:absolute;top:100px;height:500px;width:50px;${FILLED}"></div>`,
+  'a negative margin': `<div style="height:600px;margin-bottom:-300px;${FILLED}"></div><p style="margin:0">after</p>`,
+  'a body given the height of the frame': `<style>html,body{height:100%}</style><div style="height:700px;${FILLED}"></div>`,
+};
+
+for (const [what, source] of Object.entries(WHAT_A_FRAGMENT_DOES)) {
+  test(`no scroll bar, on a phone, a tablet and a desktop: ${what}`, async ({ page }) => {
+    await showInAPage(page, source);
+
+    for (const width of [360, 768, 1280]) {
+      await page.setViewportSize({ width, height: 800 });
+      await expectItFits(page);
+    }
+  });
+}
+
+test('a fragment shorter than the room it started with gets less room', async ({ page }) => {
+  await showInAPage(page, '<p style="margin:0">a short line</p>');
+
+  // ⚠️ `scrollHeight` alone could never say this: it is never less than the frame. From 160, `minHeight`.
+  await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBe(80);
+});
+
+test('the frame comes back down when the page gets wider', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await showInAPage(
+    page,
+    `<p style="margin:0">${'words that wrap on a phone and not on a desktop '.repeat(12)}</p>`,
+  );
+  await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBeGreaterThan(300);
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBeLessThan(200);
+});
+
+test('what spills out of the flow keeps its room when the page changes width', async ({ page }) => {
+  await showInAPage(page, WHAT_A_FRAGMENT_DOES['something positioned below the flow']);
+  await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBe(600);
+
+  // The measure starts again from the flow, 100, and the spill says so again: two steps, and then quiet.
+  await page.setViewportSize({ width: 768, height: 800 });
+  await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBe(600);
+  await page.waitForTimeout(300);
+  expect(await frameHeight(page)).toBe(600);
+});
+
+test('a panel opened by a choice gets its room, with no box around it changing', async ({ page }) => {
+  await showInAPage(
+    page,
+    `<style>html,body{height:100%}</style>
+     <button type="button" id="more">more</button>
+     <div id="panel" hidden style="height:900px;${FILLED}"></div>
+     <script>
+       document.getElementById('more').addEventListener('click', function () {
+         document.getElementById('panel').hidden = false;
+       });
+     </script>`,
+  );
+
+  await page.frameLocator('iframe').getByRole('button', { name: 'more' }).click();
+
+  await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBeGreaterThan(900);
+  await expectItFits(page);
+});
+
+const TOO_TALL = '<div style="height:2600px"></div>';
+
+test('a fragment past the limit is cut, and the staff is told', async ({ page }) => {
+  await stubTheFrame(page, TOO_TALL);
+  await openInTheEditor(page);
+
+  await expect(page.getByText(/this animation is 2600 px tall/i).first()).toBeVisible({ timeout: 10000 });
+  await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBe(2000);
+});
+
+test('and a visitor reading a fragment past the limit is told nothing', async ({ page }) => {
+  await showInAPage(page, TOO_TALL);
+
+  await expect.poll(() => frameHeight(page), { timeout: 5000 }).toBe(2000);
+  await expect(page.getByText(/this animation is 2600 px tall/i)).toHaveCount(0);
 });

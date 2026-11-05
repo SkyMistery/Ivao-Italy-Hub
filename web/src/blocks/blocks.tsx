@@ -546,6 +546,9 @@ export function EmbedBlock({ props }: BlockComponentProps) {
 
 // ---- interactive -----------------------------------------------------------------------------
 
+/** The most a frame is given, however tall it says it is. */
+const TALLEST_FRAME = 2000;
+
 /**
  * An animation, or a small thing with choices in it, written by somebody and run **in a frame that
  * can do nothing** (12 September 2026, `decisions/2026-09-12-il-blocco-interattivo.md`).
@@ -570,6 +573,7 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
   const frame = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState(() => count(props, 'minHeight', 320));
   const [refused, setRefused] = useState<{ kind: string; detail: string } | null>(null);
+  const [tooTall, setTooTall] = useState<number | null>(null);
 
   const title = read(text(props, 'title'));
   const description = read(text(props, 'description'));
@@ -620,7 +624,12 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
         return;
       }
 
-      setHeight(Math.min(Math.max(Math.round(message.height), 80), 2000));
+      const asked = Math.round(message.height);
+      setHeight(Math.min(Math.max(asked, 80), TALLEST_FRAME));
+
+      // A frame does not scroll, so what is past the clamp cannot be reached: a mistake nobody would
+      // otherwise hear about, said where the refusals are said.
+      setTooTall(asked > TALLEST_FRAME ? asked : null);
     };
 
     window.addEventListener('message', onMessage);
@@ -654,6 +663,13 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
       </p>
     );
 
+  const cutOff =
+    !staff || tooTall === null ? null : (
+      <p className="text-destructive text-sm">
+        {t('blocks.interactive.tooTall', { height: tooTall, most: TALLEST_FRAME })}
+      </p>
+    );
+
   // On paper the frame is a white rectangle nobody can press, so it goes; what the author wrote
   // about it is prose of the document and stays.
   if (printing) {
@@ -681,6 +697,9 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
         // frame back in our origin and hand a pasted script the reader's session: it is the single
         // line that the whole design rests on, and `blocks.test.tsx` fails if it changes.
         sandbox="allow-scripts"
+        // The shell says it too, and the frame of a public page is kept for a year: a version already
+        // published and in somebody's cache has the old shell, and this is how the fix reaches it.
+        scrolling="no"
         loading="lazy"
         // ⚠️ `print:hidden` as well as the context above, and the two are not the same thing. The
         // context is how a **document** prints — `PrintContext` takes the frame out of the page
@@ -692,6 +711,7 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
       />
       {caption}
       {refusal}
+      {cutOff}
     </figure>
   );
 }

@@ -112,4 +112,21 @@ test('what the hub would refuse, the preview says out loud', async ({ page }) =>
   // And a whole page instead of a fragment, which the editor refuses before it gets anywhere.
   await showFragment(page, '<!doctype html><html><body><svg /></body></html>');
   await expect(page.locator('#refusals')).toContainText('whole page, not a fragment');
+
+  // And a fragment past the limit of a frame, where nothing would otherwise say why its bottom is gone.
+  await showFragment(page, '<div style="height:2600px"></div>');
+  await expect(page.locator('#refusals')).toContainText('Too tall');
+});
+
+test('the two widths the guidelines ask for are one press away', async ({ page }) => {
+  await page.goto(previewFile());
+  await showFragment(page, PROBE);
+
+  const frame = page.locator('#frame');
+
+  await page.getByRole('button', { name: 'Tablet, 768 px' }).click();
+  await expect.poll(async () => (await frame.boundingBox())?.width).toBe(768);
+
+  await page.getByRole('button', { name: 'Phone, 360 px' }).click();
+  await expect.poll(async () => (await frame.boundingBox())?.width).toBe(360);
 });

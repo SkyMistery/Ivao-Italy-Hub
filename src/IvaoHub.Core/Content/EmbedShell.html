@@ -94,6 +94,19 @@
         line-height: 1.5;
       }
 
+      /*
+        The frame never scrolls: it is as tall as its content because the height travels (below).
+
+        ⚠️ This is not tidiness, it is the fault itself. A scroll bar takes 15 px of width on a desktop,
+        a drawing scaled by its `viewBox` is then shorter, the measure says the shorter height, and at
+        that height the full width would not fit: so the bar stays for good, on every drawing taller
+        than the room it was first given. The worked example of the guidelines did it, at every width
+        (5 November 2026). `!important` because a fragment is free to write `html { overflow: auto }`.
+      */
+      html {
+        overflow: hidden !important;
+      }
+
       /* The frame is as wide as the page gives it and as tall as its content: the height travels. */
       body > * {
         max-width: 100%;
@@ -218,22 +231,74 @@
       })();
 
       /*
-        The height, and it is the only thing that ever leaves this frame: one number, to the page
-        that framed it. The page accepts it only from this frame and clamps it, so nothing here can
-        make a document taller than a document.
+        The height: one number, to the page that framed it. The page accepts it only from this frame
+        and clamps it, so nothing here can make a document taller than a document.
+
+        The measure is the larger of two. The rectangle of the root is the flow; `scrollHeight` also
+        sees what the rectangle does not count: something positioned out of the flow, a negative
+        margin, a `body` that was given the frame's height and overflows it.
+
+        ⚠️ But `scrollHeight` is never less than the frame, so taken as it is the frame could only ever
+        grow: a fragment shorter than the room it started with would keep that room, and so would a
+        drawing after a phone is turned on its side. It says something only when it is beyond the
+        frame, then, and what it said is kept (`spill`) because at the new height it will have nothing
+        to add. It is forgotten when the root changes shape: the next measure is the flow alone, and
+        if something still spills out of that, it says so again.
       */
       (function () {
+        var root = document.documentElement;
         var last = 0;
+        var shape = '';
+        var spill = 0;
+
         var tell = function () {
-          var height = Math.ceil(document.documentElement.getBoundingClientRect().height);
+          var box = root.getBoundingClientRect();
+          var now = box.width + ' ' + box.height;
+
+          if (now !== shape) {
+            shape = now;
+            spill = 0;
+          }
+
+          if (root.scrollHeight > root.clientHeight) {
+            spill = root.scrollHeight;
+          }
+
+          var height = Math.ceil(Math.max(box.height, spill));
           if (height !== last && height > 0) {
             last = height;
             parent.postMessage({ hub: 'embed-height', height: height }, '*');
           }
         };
 
-        new ResizeObserver(tell).observe(document.documentElement);
+        new ResizeObserver(tell).observe(root);
         window.addEventListener('load', tell);
+
+        // The page answering with a new height: the root's box may be the same as before, and only
+        // now can the spill be seen again.
+        window.addEventListener('resize', tell);
+
+        /*
+          ⚠️ A panel shown out of the flow changes no box the observer above is watching, and in a frame
+          that does not scroll what is not measured cannot be reached at all. So a change to the
+          document asks for a measure too, once per frame at most. The filter leaves out what a drawing
+          changes sixty times a second (`transform`, `d`, `cx`): it moves inside its `svg`.
+        */
+        var asked = false;
+        new MutationObserver(function () {
+          if (!asked) {
+            asked = true;
+            requestAnimationFrame(function () {
+              asked = false;
+              tell();
+            });
+          }
+        }).observe(document.body, {
+          subtree: true,
+          childList: true,
+          characterData: true,
+          attributeFilter: ['style', 'class', 'hidden', 'open'],
+        });
       })();
     </script>
 

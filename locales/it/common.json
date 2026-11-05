@@ -1075,6 +1075,7 @@
       "unavailable": "Questo blocco interattivo non ha ancora niente da mostrare qui. Salva la pagina e si disegnera' da se'.",
       "refused": "Lo vedi solo tu: il browser ha rifiutato a questa animazione qualcosa che ha chiesto ({{detail}}). Un frame qui non ha rete ne' storage — vedi le linee guida.",
       "threw": "Lo vedi solo tu: questa animazione si e' fermata con un errore ({{detail}}).",
+      "tooTall": "Lo vedi solo tu: questa animazione è alta {{height}} px e un frame si ferma a {{most}}, quindi la parte in fondo resta tagliata — vedi le linee guida.",
       "fields": {
         "title": "Nome",
         "description": "Descrizione",
