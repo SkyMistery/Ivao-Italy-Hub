@@ -4,6 +4,8 @@ import { ArrowDown, ArrowUp, Copy, GripVertical, Plus, Trash2 } from 'lucide-rea
 import {
   createContext,
   useContext,
+  useEffect,
+  useState,
   type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
@@ -348,6 +350,73 @@ function InsertGap({
   );
 }
 
+/** Whether the typefaces of the page have finished loading. A browser with no `document.fonts` has nothing to wait for. */
+function useTypefacesLoaded(): boolean {
+  const [loaded, setLoaded] = useState(() => !('fonts' in document));
+
+  useEffect(() => {
+    const settle = () => setLoaded(true);
+
+    if ('fonts' in document) {
+      void document.fonts.ready.then(settle, settle);
+    }
+  }, []);
+
+  return loaded;
+}
+
+/**
+ * Where a section or a row can be inserted while composing: before this one, among its siblings, and
+ * after the last row inside it. The end of the page has its own invitation.
+ *
+ * ⚠️ Drawn only once the typefaces have loaded (`decisions/2026-11-05-le-fessure-e-l-anteprima-vuota.md`).
+ * With these inside the sections from the first draw, the trap of the empty preview is back: on a slow
+ * machine the typefaces finish a moment after that draw, and every section of the preview is left in the
+ * document with no box, for good. Nothing is lost by waiting: a place to insert is out of sight until the
+ * pointer or the keyboard reaches it. A component of its own so that a visitor has no state for it at all.
+ */
+function SectionInsertions({ section, place }: { section: SectionEnvelope; place: SectionPlace }) {
+  const picking = usePicking();
+  const { t } = useTranslation();
+  const typefacesLoaded = useTypefacesLoaded();
+  const insert = picking?.onAddSection;
+
+  if (insert === undefined || !typefacesLoaded) {
+    return null;
+  }
+
+  const isRow = place.parent !== null;
+  const before = !isRow || takesRows(picking, place.parent);
+
+  return (
+    <>
+      {before ? (
+        <InsertGap
+          label={t(isRow ? 'content.editor.insertRow' : 'content.editor.insertSection')}
+          hint={t(isRow ? 'content.editor.insertRowHint' : 'content.editor.insertSectionHint', {
+            number: place.number,
+          })}
+          // Astride the edge between two; inside the first section of the page, which the frame would cut.
+          placement={!isRow && place.index === 0 ? 'top-0' : '-top-2'}
+          onInsert={() => insert(place.parent ?? undefined, place.index)}
+        />
+      ) : null}
+
+      {takesRows(picking, section.id) ? (
+        <InsertGap
+          label={t('content.editor.insertRow')}
+          hint={t('content.editor.insertRowHint', {
+            number: `${place.number}.${section.sections.length + 1}`,
+          })}
+          // Clear of the strip on the edge below, which belongs to the next section.
+          placement="bottom-2.5"
+          onInsert={() => insert(section.id)}
+        />
+      ) : null}
+    </>
+  );
+}
+
 function SectionView({
   section,
   staff,
@@ -372,16 +441,6 @@ function SectionView({
   ]
     .filter(Boolean)
     .join(' ');
-
-  // Where a section or a row can be inserted while composing: before this one, among its siblings, and
-  // after the last row inside it. The end of the page has its own invitation.
-  const insert = picking?.onAddSection;
-  const insertsBefore =
-    insert !== undefined && (place.parent === null || takesRows(picking, place.parent))
-      ? () => insert(place.parent ?? undefined, place.index)
-      : null;
-  const insertsRowAtEnd =
-    insert !== undefined && takesRows(picking, section.id) ? () => insert(section.id) : null;
 
   // The one place a style is written rather than a class: which picture it is only exists at
   // runtime, and Tailwind reads the source rather than the page.
@@ -417,33 +476,7 @@ function SectionView({
           })}
     >
       {picking !== null ? <SectionLabel section={section} place={place} /> : null}
-
-      {insertsBefore === null ? null : (
-        <InsertGap
-          label={t(place.parent === null ? 'content.editor.insertSection' : 'content.editor.insertRow')}
-          hint={t(
-            place.parent === null ? 'content.editor.insertSectionHint' : 'content.editor.insertRowHint',
-            {
-              number: place.number,
-            },
-          )}
-          // Astride the edge between two; inside the first section of the page, which the frame would cut.
-          placement={place.parent === null && place.index === 0 ? 'top-0' : '-top-2'}
-          onInsert={insertsBefore}
-        />
-      )}
-
-      {insertsRowAtEnd === null ? null : (
-        <InsertGap
-          label={t('content.editor.insertRow')}
-          hint={t('content.editor.insertRowHint', {
-            number: `${place.number}.${section.sections.length + 1}`,
-          })}
-          // Clear of the strip on the edge below, which belongs to the next section.
-          placement="bottom-2.5"
-          onInsert={insertsRowAtEnd}
-        />
-      )}
+      {picking !== null ? <SectionInsertions section={section} place={place} /> : null}
 
       {picking !== null && picking.selected === section.id ? (
         <PickedBar

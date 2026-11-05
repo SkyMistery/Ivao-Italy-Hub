@@ -470,6 +470,35 @@ test('"+ section" inserts at the place it stands, among the sections of the page
   expect(added).toHaveBeenCalledWith(undefined, 1);
 });
 
+test('the places to insert wait for the typefaces, and the labels do not', async () => {
+  // Drawn with the page, they leave a slow machine's preview without a box (`SectionInsertions`): what
+  // jsdom can keep is when they arrive. `preview.spec.ts` measures the fault itself.
+  let finish = () => undefined as void;
+  const ready = new Promise<void>((resolve) => {
+    finish = resolve;
+  });
+  Object.defineProperty(document, 'fonts', { configurable: true, value: { ready } });
+
+  try {
+    renderWithProviders(
+      <PickingContext.Provider value={editing({ onAddSection: vi.fn() })}>
+        <ContentRenderer body={tree} />
+      </PickingContext.Provider>,
+    );
+
+    expect(labels()).toHaveLength(4);
+    expect(document.querySelectorAll('[data-insert-gap]')).toHaveLength(0);
+    // The invitation stands outside what the sections measure, so it has nothing to wait for.
+    expect(screen.getByRole('button', { name: 'Add a section' })).toBeInTheDocument();
+
+    finish();
+
+    expect(await screen.findAllByRole('button', { name: '+ section' })).toHaveLength(2);
+  } finally {
+    Reflect.deleteProperty(document, 'fonts');
+  }
+});
+
 test('"+ row" inserts among the rows of a section, and at their end, where the editor offers a row', async () => {
   const user = userEvent.setup();
   const added = vi.fn();
