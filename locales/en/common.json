@@ -1074,7 +1074,8 @@
       "about": "An interactive drawing or tool written as code, in a frame kept apart from the rest of the page; only whoever may write code adds it.",
       "unavailable": "This interactive block has nothing to show here yet. Save the page and it will draw itself.",
       "refused": "Only you see this: the browser refused this animation something it asked for ({{detail}}). A frame here has no network and no storage — see the guidelines.",
-      "threw": "Only you see this: this animation stopped with an error ({{detail}}).",      "fields": {
+      "threw": "Only you see this: this animation stopped with an error ({{detail}}).",
+      "fields": {
         "title": "Name",
         "description": "Description",
         "minHeight": "Height to start with"
