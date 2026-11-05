@@ -1384,7 +1384,9 @@ function RepeatableList({
             className="border-border rounded-md border"
           >
             <div className="flex flex-wrap items-center gap-1 p-1">
-              <CollapsibleTrigger className="group hover:bg-accent focus-visible:ring-ring flex min-w-0 flex-1 basis-40 items-center gap-2 rounded-sm px-2 py-1 text-left text-sm font-medium focus-visible:ring-2 focus-visible:outline-none">
+              {/* `grow`, never `flex-1`: its basis of 0% wins over `basis-40`, and the row never wraps. In the
+                  block's panel the title would be left a few pixels wide, next to the buttons. */}
+              <CollapsibleTrigger className="group hover:bg-accent focus-visible:ring-ring flex min-w-0 grow basis-40 items-center gap-2 rounded-sm px-2 py-1 text-left text-sm font-medium focus-visible:ring-2 focus-visible:outline-none">
                 <ChevronRight
                   aria-hidden
                   className="size-4 shrink-0 transition-transform group-data-[state=open]:rotate-90"
