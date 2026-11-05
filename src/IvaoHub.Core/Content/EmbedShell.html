@@ -268,9 +268,9 @@
         /*
           ⚠️ A panel shown out of the flow changes no box the observer above is watching, and in a frame
           the page does not let scroll (`scrolling`, on its side) what is not measured cannot be reached
-          at all. So a change to the
-          document asks for a measure too, once per frame at most. The filter leaves out what a drawing
-          changes sixty times a second (`transform`, `d`, `cx`): it moves inside its `svg`.
+          at all. So a change to the document asks for a measure too, once per frame at most. The filter
+          leaves out what a drawing changes sixty times a second (`transform`, `d`, `cx`): it moves
+          inside its `svg`.
         */
         var asked = false;
         new MutationObserver(function () {
