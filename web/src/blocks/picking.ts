@@ -61,8 +61,14 @@ export interface Picking {
    * one — and the page draws exactly that list, so a rule lives in one place.
    */
   readonly actions?: (target: { kind: 'section' | 'block'; id: string }) => readonly PickAction[];
-  /** A section at the end of the page, offered after the last one, the way an empty column offers a block. */
-  readonly onAddSection?: () => void;
+  /**
+   * A section where it is wanted: with nothing said, at the end of the page, offered after the last
+   * one the way an empty column offers a block; with a place, between two others — `parentId` the
+   * section whose row it is, none for one of the page, and `at` its place among its siblings. Absent
+   * on a body nothing may be added to. Rows are offered only inside a section whose `actions` answer
+   * `addRow`, so the template's rules and the depth the server accepts stay in the editor.
+   */
+  readonly onAddSection?: (parentId?: string, at?: number) => void;
   /**
    * The name to draw a block by while nothing has been written into it, or `null` once something
    * has (Carmine, 11 September 2026). A heading without words draws nothing, and nothing is what

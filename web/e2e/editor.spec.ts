@@ -122,6 +122,92 @@ test('a component from the palette lands in the section that was selected', asyn
   await expect(page.getByRole('button', { name: editor.removeSection })).toHaveCount(2);
 });
 
+test('a section is inserted between two others, by the pointer or the keyboard, and a row among rows', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/staff/content/1');
+
+  const frame = page.getByRole('region', { name: editor.preview });
+  const labels = frame.locator('[data-section-label]');
+  const section = frame.locator('[data-pickable="section"]');
+
+  // Two sections from the end of the page, with their names, the first one on a ground.
+  const named = async (name: string) => {
+    await page.getByRole('button', { name: editor.addSection, exact: true }).click();
+    await page.locator('#content-properties input:visible').first().fill(name);
+    // Applied a moment after the typing stops, and on the section's label as soon as it is.
+    await expect(labels.filter({ hasText: name })).toBeVisible();
+  };
+  await named('First');
+  await page
+    .getByRole('button', { name: englishCommon.content.section.options.background.accent, exact: true })
+    .click();
+  await named('Second');
+  await expect(labels).toHaveText(['1 · First · pale blue background', '2 · Second']);
+
+  // ⚠️ Nothing on the page moves for any of this, which is the rule of composing on the page: the
+  // label and the gap stand out of the flow.
+  const before = await section.nth(1).boundingBox();
+  const insert = section.nth(1).getByRole('button', { name: editor.insertSection, exact: true });
+
+  // Out of sight until the pointer reaches the place between the two.
+  await expect(insert).toHaveCSS('opacity', '0');
+  await section.nth(1).locator('[data-insert-gap]').first().hover();
+  await expect(insert).toHaveCSS('opacity', '1');
+  expect(await section.nth(1).boundingBox()).toEqual(before);
+
+  await insert.click();
+  await expect(labels).toHaveText([
+    '1 · First · pale blue background',
+    '2 · Section without a name',
+    '3 · Second',
+  ]);
+
+  // The one just inserted is picked, and the panel says what its name is for.
+  await expect(section.nth(1)).toHaveAttribute('data-picked', '');
+  await expect(page.getByText(englishCommon.content.section.fields.title, { exact: true })).toBeVisible();
+  await expect(page.getByText(englishCommon.content.section.howToDivide)).toBeVisible();
+
+  // The keyboard reaches the same button, and the focus shows it: Tab, because a focus that comes from
+  // a mouse or a script is not one the browser shows.
+  const reached = section.nth(2).getByRole('button', { name: editor.insertSection, exact: true });
+  await reached.focus();
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  await expect(reached).toBeFocused();
+  await expect(reached).toHaveCSS('opacity', '1');
+
+  // A row inside the second, then one inside that: the number says where each one stands.
+  await section.nth(1).getByRole('button', { name: editor.insertRow, exact: true }).first().focus();
+  await page.keyboard.press('Enter');
+  await expect(labels).toHaveText([
+    '1 · First · pale blue background',
+    '2 · Section without a name',
+    'Row 2.1',
+    '3 · Second',
+  ]);
+
+  // The row is what is picked: its own air takes the click, not the section around it.
+  const row = section.nth(2);
+  await expect(row).toHaveAttribute('data-picked', '');
+  await labels.nth(1).click();
+  await expect(section.nth(1)).toHaveAttribute('data-picked', '');
+  await labels.nth(2).click();
+  await expect(row).toHaveAttribute('data-picked', '');
+
+  // The second of the row's two: the first stands before it, among the rows of its section.
+  await row.getByRole('button', { name: editor.insertRow, exact: true }).nth(1).focus();
+  await page.keyboard.press('Enter');
+  await expect(labels).toHaveText([
+    '1 · First · pale blue background',
+    '2 · Section without a name',
+    'Row 2.1',
+    'Row 2.1.1',
+    '3 · Second',
+  ]);
+});
+
 test("a calendar block's kinds are chosen from the calendar's own, not typed (issue #360)", async ({
   page,
 }) => {

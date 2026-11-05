@@ -195,6 +195,26 @@ test('a section with no parent named still goes to the top, as it always did', (
   expect(added.body.sections.at(-1)!.padding).toBe('md');
 });
 
+test('a section can be inserted at a place among the sections of the page', () => {
+  const first = addSection(body(), LOCALES, undefined, 0);
+  expect(first.body.sections.map((section) => section.id)).toEqual([first.id, 's_1', 's_2']);
+
+  const between = addSection(body(), LOCALES, undefined, 1);
+  expect(between.body.sections.map((section) => section.id)).toEqual(['s_1', between.id, 's_2']);
+  expect(between.body.sections[1]!.padding).toBe('md');
+});
+
+test('a row can be inserted at a place among the rows of its section, still without a frame', () => {
+  const two = addSection(addSection(body(), LOCALES, 's_1').body, LOCALES, 's_1');
+  const rows = two.body.sections[0]!.sections;
+
+  const between = addSection(two.body, LOCALES, 's_1', 1);
+  const after = between.body.sections[0]!.sections;
+
+  expect(after.map((row) => row.id)).toEqual([rows[0]!.id, between.id, rows[1]!.id]);
+  expect(after[1]!.padding).toBe('none');
+});
+
 test('a new block starts with the properties its own schema describes', () => {
   const added = addBlock(body(), 's_2', 'callout', defaultProps(calloutSchema, LOCALES), null);
   const block = findBlock(added.body, added.id)!.block;

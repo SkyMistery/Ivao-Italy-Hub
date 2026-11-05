@@ -374,3 +374,165 @@ test('a visitor is offered no section and sees no bar', () => {
   expect(document.querySelectorAll('[data-chrome]')).toHaveLength(0);
   expect(screen.queryByText(/nothing written yet/u)).not.toBeInTheDocument();
 });
+
+/** A section around nothing, for the tree below. */
+const framed = (id: string, title: string, sections: Body['sections'] = []): Body['sections'][number] => ({
+  id,
+  key: null,
+  title: { en: title, it: title },
+  layout: 'stacked',
+  background: 'none',
+  padding: 'md',
+  width: 'default',
+  mediaId: null,
+  required: null,
+  locked: null,
+  allowedBlocks: null,
+  blocks: [],
+  sections,
+});
+
+/** Two sections; the second, on a pale blue ground, has two rows, and the first of them no name. */
+const tree: Body = {
+  schemaVersion: 1,
+  sections: [
+    framed('s1', 'Opening'),
+    {
+      ...framed('s2', 'Rules', [framed('r1', ''), framed('r2', 'Annex')]),
+      background: 'accent',
+    },
+  ],
+};
+
+const labels = () => [...document.querySelectorAll('[data-section-label]')].map((label) => label.textContent);
+
+test('while composing every section says its number, its name and its ground, and a row says it is one', () => {
+  renderWithProviders(
+    <PickingContext.Provider value={editing()}>
+      <ContentRenderer body={tree} />
+    </PickingContext.Provider>,
+  );
+
+  expect(labels()).toEqual(['1 · Opening', '2 · Rules · pale blue background', 'Row 2.1', 'Row 2.2 · Annex']);
+});
+
+test('a section with no name is said to have none', () => {
+  renderWithProviders(
+    <PickingContext.Provider value={editing()}>
+      <ContentRenderer body={{ schemaVersion: 1, sections: [framed('s1', '')] }} />
+    </PickingContext.Provider>,
+  );
+
+  expect(labels()).toEqual(['1 · Section without a name']);
+});
+
+test('a visitor reads no label and no outline, and nothing to insert', () => {
+  renderWithProviders(<ContentRenderer body={tree} />);
+
+  expect(document.querySelectorAll('[data-section-label]')).toHaveLength(0);
+  expect(document.querySelectorAll('[data-insert-gap]')).toHaveLength(0);
+  expect(document.querySelector('section')?.className).not.toContain('outline');
+  expect(screen.queryByText(/Opening|Rules|Annex/u)).not.toBeInTheDocument();
+});
+
+test('every section has an outline, dashed until it is the one picked', () => {
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ selected: 's2' })}>
+      <ContentRenderer body={tree} />
+    </PickingContext.Provider>,
+  );
+
+  const [first, second] = document.querySelectorAll('[data-pickable="section"]');
+  expect(first).toHaveClass('outline-dashed');
+  expect(second).not.toHaveClass('outline-dashed');
+  expect(second).toHaveClass('outline-primary');
+});
+
+test('"+ section" inserts at the place it stands, among the sections of the page', async () => {
+  const user = userEvent.setup();
+  const added = vi.fn();
+
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ onAddSection: added })}>
+      <ContentRenderer body={tree} />
+    </PickingContext.Provider>,
+  );
+
+  // One before each section of the page: no actions answered here, so no row is offered.
+  const inserts = screen.getAllByRole('button', { name: '+ section' });
+  expect(inserts).toHaveLength(2);
+  expect(screen.queryByRole('button', { name: '+ row' })).not.toBeInTheDocument();
+  expect(inserts[1]).toHaveAccessibleDescription('Insert a section here: it becomes number 2');
+
+  await user.click(inserts[1]!);
+
+  expect(added).toHaveBeenCalledTimes(1);
+  expect(added).toHaveBeenCalledWith(undefined, 1);
+});
+
+test('"+ row" inserts among the rows of a section, and at their end, where the editor offers a row', async () => {
+  const user = userEvent.setup();
+  const added = vi.fn();
+  const picked = vi.fn();
+
+  renderWithProviders(
+    <PickingContext.Provider
+      value={editing({
+        onAddSection: added,
+        onPick: picked,
+        // A row in the second section only; the rows themselves are as deep as they go.
+        actions: ({ id }) => (id === 's2' ? [{ key: 'addRow', run: () => {} }] : []),
+      })}
+    >
+      <ContentRenderer body={tree} />
+    </PickingContext.Provider>,
+  );
+
+  const inserts = screen.getAllByRole('button', { name: '+ row' });
+  expect(inserts.map((insert) => insert.getAttribute('title'))).toEqual([
+    'Insert a row here: it becomes number 2.3',
+    'Insert a row here: it becomes number 2.1',
+    'Insert a row here: it becomes number 2.2',
+  ]);
+
+  await user.click(inserts[2]!);
+  expect(added).toHaveBeenLastCalledWith('s2', 1);
+
+  await user.click(inserts[0]!);
+  expect(added).toHaveBeenLastCalledWith('s2');
+
+  // A press on the button is not a click on the section it stands in.
+  expect(picked).not.toHaveBeenCalled();
+});
+
+test('nothing is offered where nothing may be added', () => {
+  renderWithProviders(
+    <PickingContext.Provider value={editing()}>
+      <ContentRenderer body={tree} />
+    </PickingContext.Provider>,
+  );
+
+  expect(document.querySelectorAll('[data-insert-gap]')).toHaveLength(0);
+});
+
+test('the air of a row picks the row, and not the section around it', async () => {
+  const user = userEvent.setup();
+  const picked = vi.fn();
+  const opened = vi.fn();
+
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ onPick: picked, onOpen: opened })}>
+      <ContentRenderer body={tree} />
+    </PickingContext.Provider>,
+  );
+
+  const row = screen.getByText('Row 2.2 · Annex');
+
+  await user.click(row);
+  expect(picked).toHaveBeenCalledTimes(1);
+  expect(picked).toHaveBeenCalledWith('section', 'r2');
+
+  await user.dblClick(row);
+  expect(opened).toHaveBeenCalledTimes(1);
+  expect(opened).toHaveBeenCalledWith('section', 'r2');
+});

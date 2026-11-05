@@ -160,6 +160,105 @@ test('a block whose content comes from elsewhere says where, above its propertie
   expect(screen.getByText(/youtube\.com, vimeo\.com, twitch\.tv/)).toBeInTheDocument();
 });
 
+test('a section is inserted where it is asked for, and picked, and undo takes it back', async () => {
+  const user = userEvent.setup();
+  const { last } = draw();
+
+  await user.click(screen.getByRole('button', { name: editor.insertSection }));
+
+  // Before the only section there was, which is what that place on the page means.
+  const inserted = last()!.sections;
+  expect(inserted.map((section) => section.id)).toHaveLength(2);
+  expect(inserted[1]!.id).toBe('s1');
+  expect(document.querySelector('[data-picked]')).toHaveTextContent('1 · Section without a name');
+
+  // And a row inside it, from the place the section offers at its end: the bar and the outline do
+  // the same, and the depth and the template are read in one place.
+  await user.click(screen.getAllByRole('button', { name: editor.insertRow })[0]!);
+  expect(last()!.sections[0]!.sections).toHaveLength(1);
+
+  await user.click(screen.getByRole('button', { name: editor.undo }));
+  expect(last()!.sections[0]!.sections).toHaveLength(0);
+});
+
+test('a row is not offered where the server would refuse one', () => {
+  const deep = (id: string, sections: Body['sections']) =>
+    ({ ...initial.sections[0], id, sections }) as unknown as Body['sections'][number];
+  const bottom: Body = {
+    schemaVersion: 1,
+    // Four levels, the last the server takes: a row is offered inside the first three, and nothing inside the fourth.
+    sections: [deep('a', [deep('b', [deep('c', [deep('d', [])])])])],
+  };
+
+  renderWithProviders(
+    <BodyEditor
+      initial={bottom}
+      onChange={vi.fn()}
+      toolbar={(tools) => <div role="toolbar">{tools}</div>}
+      locales={['en']}
+      division={{ defaultLocale: 'en', timezone: 'UTC' }}
+      mediaLibrary={mediaLibrary}
+      holds={() => false}
+    />,
+  );
+
+  const hints = screen
+    .getAllByRole('button', { name: editor.insertRow })
+    .map((button) => button.getAttribute('title'));
+
+  // Three inside the first three at their end, and three before each row: never a 1.1.1.1.1.
+  expect(hints).toHaveLength(6);
+  expect(hints.filter((hint) => hint?.endsWith('1.1.1.1'))).toHaveLength(1);
+  expect(hints.filter((hint) => hint?.endsWith('1.1.1.1.1'))).toHaveLength(0);
+});
+
+test('a section a template locks takes no row, and its neighbours take a section', () => {
+  const page: Body = {
+    schemaVersion: 1,
+    sections: [{ ...initial.sections[0], id: 'p1', key: 'fixed' }],
+  } as unknown as Body;
+  const template = {
+    schemaVersion: 1,
+    sections: [{ ...initial.sections[0], id: 't1', key: 'fixed', locked: true }],
+  } as unknown as Body;
+
+  renderWithProviders(
+    <BodyEditor
+      initial={page}
+      onChange={vi.fn()}
+      toolbar={(tools) => <div role="toolbar">{tools}</div>}
+      locales={['en']}
+      division={{ defaultLocale: 'en', timezone: 'UTC' }}
+      mediaLibrary={mediaLibrary}
+      holds={() => false}
+      template={{ body: template, title: { en: 'Template' }, department: 'WD', canManage: false }}
+    />,
+  );
+
+  expect(screen.queryByRole('button', { name: editor.insertRow })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: editor.insertSection })).toBeInTheDocument();
+});
+
+test('a locked body offers no place to insert anything', () => {
+  renderWithProviders(
+    <BodyEditor
+      initial={initial}
+      onChange={vi.fn()}
+      toolbar={(tools) => <div role="toolbar">{tools}</div>}
+      locales={['en']}
+      division={{ defaultLocale: 'en', timezone: 'UTC' }}
+      mediaLibrary={mediaLibrary}
+      holds={() => false}
+      locked
+    />,
+  );
+
+  expect(document.querySelectorAll('[data-insert-gap]')).toHaveLength(0);
+  expect(screen.queryByRole('button', { name: editor.addSection })).not.toBeInTheDocument();
+  // What a section is stays said: reading a page waiting for approval needs it as much.
+  expect(document.querySelector('[data-section-label]')).toHaveTextContent('1 · Intro');
+});
+
 test('a locked body is not changed by a key, by the way back, or by the template (issue #332, item 7)', async () => {
   const user = userEvent.setup();
   const onChange = vi.fn<(body: Body) => void>();

@@ -8,6 +8,7 @@ import {
   type KeyboardEvent,
   type PointerEvent,
   type ReactNode,
+  type SyntheticEvent,
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -37,9 +38,9 @@ import { usePicking, type PickAction, type Picking, type SortableBinding } from 
  * decides whether its blocks follow one another or stand in columns. A block decides nothing about
  * the page: it is handed its properties and draws them.
  *
- * A section's `title` is not drawn. It is the name the editor puts in the tree, which is why the
- * seeded templates spell it "Hero" and "Body": what a visitor reads is a `heading` block, which is
- * a block an editor can move, translate and delete.
+ * A section's `title` is not drawn for a visitor. It is the name the editor puts in the tree and on
+ * the section's label while composing, which is why the seeded templates spell it "Hero" and "Body":
+ * what a visitor reads is a `heading` block, which is a block an editor can move, translate and delete.
  *
  * Since 9 September 2026 the same component is also **what the editor composes in** — see
  * `picking.ts`. That is one context read in two places; with no provider, which is the public path,
@@ -170,7 +171,7 @@ export function ContentRenderer({
     // on the public site is the window and in the editor's preview is the width that was chosen.
     <DashboardContext.Provider value={dashboard}>
       <div className="@container flex flex-col">
-        <Siblings sections={body.sections} staff={staff} />
+        <Siblings sections={body.sections} staff={staff} parent={null} />
       </div>
 
       {/* ⚠️ After the container and not inside it (6 October 2026). Inside, the editor's preview
@@ -196,12 +197,39 @@ export function ContentRenderer({
  * The sections of one parent — the page's, or the rows of a section — drawn in order, and while
  * composing wrapped in what lets them be dragged among themselves (`Picking.SortableGroup`).
  */
-function Siblings({ sections, staff }: { sections: SectionEnvelope[]; staff: boolean }) {
+function Siblings({
+  sections,
+  staff,
+  parent,
+}: {
+  sections: SectionEnvelope[];
+  staff: boolean;
+  /** The section these are the rows of, and the number it goes by; `null` for the page's own. */
+  parent: { id: string; number: string } | null;
+}) {
   const picking = usePicking();
-  const views = sections.map((section) => <SectionView key={section.id} section={section} staff={staff} />);
+  const views = sections.map((section, index) => (
+    <SectionView
+      key={section.id}
+      section={section}
+      staff={staff}
+      place={{
+        parent: parent?.id ?? null,
+        index,
+        number: parent === null ? `${index + 1}` : `${parent.number}.${index + 1}`,
+      }}
+    />
+  ));
   const Group = picking?.SortableGroup;
 
   return Group === undefined ? views : <Group ids={sections.map((section) => section.id)}>{views}</Group>;
+}
+
+/** Where a section stands among its siblings: what its label says, and what an insertion there asks for. */
+interface SectionPlace {
+  readonly parent: string | null;
+  readonly index: number;
+  readonly number: string;
 }
 
 /**
@@ -211,8 +239,9 @@ function Siblings({ sections, staff }: { sections: SectionEnvelope[]; staff: boo
 function AddSectionInvitation() {
   const picking = usePicking();
   const { t } = useTranslation();
+  const add = picking?.onAddSection;
 
-  if (picking?.onAddSection === undefined) {
+  if (add === undefined) {
     return null;
   }
 
@@ -220,7 +249,7 @@ function AddSectionInvitation() {
     <div className="px-4 py-4">
       <button
         type="button"
-        onClick={picking.onAddSection}
+        onClick={() => add()}
         className="border-border text-muted-foreground hover:border-primary hover:text-foreground flex min-h-12 w-full items-center justify-center rounded-md border border-dashed text-sm transition-colors"
       >
         {t('content.editor.addSection')}
@@ -229,7 +258,105 @@ function AddSectionInvitation() {
   );
 }
 
-function SectionView({ section, staff }: { section: SectionEnvelope; staff: boolean }) {
+/** Whether the editor offers a row inside this section: it answers `addRow` where the template and the depth allow one. */
+function takesRows(picking: Picking | null, id: string): boolean {
+  return picking?.actions?.({ kind: 'section', id }).some((action) => action.key === 'addRow') === true;
+}
+
+/**
+ * What a section is, on the section, while composing (design of phase 3, §4.1): its number among its
+ * siblings, its name, and its background when it has one — "2 · Rules · pale blue background", and
+ * "Row 2.1" for a row. A row with no name says no more than that: "Row 2.1 · Untitled row" would say it
+ * twice. Out of the flow, so that nothing on the page moves: the label of a section sits in its
+ * corner, and the label of a row stands in the air above it, which the section's own gap gives it.
+ *
+ * Left to the click: on it the section is picked, by the section's own handler, which is also the
+ * way to a row whose blocks leave no air around them.
+ */
+function SectionLabel({ section, place }: { section: SectionEnvelope; place: SectionPlace }) {
+  const { t } = useTranslation();
+  const read = useLocalized();
+  const isRow = place.parent !== null;
+  const name = read(section.title) || section.key || (isRow ? null : t('content.editor.untitledSection'));
+
+  const label = [
+    isRow ? t('content.editor.sectionLabel.row', { number: place.number }) : place.number,
+    name,
+    section.background === 'none'
+      ? null
+      : t('content.editor.sectionLabel.background', {
+          name: t(`content.section.options.background.${section.background}`).toLocaleLowerCase(),
+        }),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  return (
+    <div
+      data-section-label=""
+      title={label}
+      className={`bg-body text-muted-foreground absolute left-0 z-30 max-w-[60%] cursor-pointer truncate rounded-sm px-1.5 text-xs/5 ${
+        isRow ? '-top-5' : 'top-0'
+      }`}
+    >
+      {label}
+    </div>
+  );
+}
+
+/**
+ * "+ section" or "+ row" where one would land, while composing (design of phase 3, §4.1): shown when
+ * the pointer reaches the strip or the keyboard reaches the button, and out of the flow, so that
+ * nothing on the page moves to make room for it. The strip is what the pointer has to reach, the line
+ * says where the new one would go.
+ *
+ * A click beside the button lands on the section around it, like any click on its air.
+ */
+function InsertGap({
+  label,
+  hint,
+  placement,
+  onInsert,
+}: {
+  label: string;
+  hint: string;
+  placement: string;
+  onInsert: () => void;
+}) {
+  return (
+    <div
+      data-chrome=""
+      data-insert-gap=""
+      className={`group/gap absolute inset-x-0 z-20 flex h-4 items-center justify-center ${placement}`}
+    >
+      <span
+        aria-hidden
+        className="bg-primary absolute inset-x-0 top-1/2 h-px opacity-0 transition-opacity group-focus-within/gap:opacity-100 group-hover/gap:opacity-100"
+      />
+      <button
+        type="button"
+        title={hint}
+        onClick={(event) => {
+          event.stopPropagation();
+          onInsert();
+        }}
+        className="bg-body text-primary border-primary relative rounded-full border px-2 text-xs/4 opacity-0 shadow-sm transition-opacity group-hover/gap:opacity-100 focus-visible:opacity-100"
+      >
+        {label}
+      </button>
+    </div>
+  );
+}
+
+function SectionView({
+  section,
+  staff,
+  place,
+}: {
+  section: SectionEnvelope;
+  staff: boolean;
+  place: SectionPlace;
+}) {
   const dashboard = useContext(DashboardContext);
   const mediaFileUrl = useMediaFileUrl();
   const picking = usePicking();
@@ -241,10 +368,20 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
     // A section is picked by its own space — the air around its blocks — because clicking a block
     // picks the block. `outline` and not `border`: a border would move everything by two pixels and
     // the point of composing here is that what you see is what a reader gets.
-    picking === null ? '' : `relative ${ring(picking, section.id)}`,
+    picking === null ? '' : `relative ${sectionRing(picking, section.id)}`,
   ]
     .filter(Boolean)
     .join(' ');
+
+  // Where a section or a row can be inserted while composing: before this one, among its siblings, and
+  // after the last row inside it. The end of the page has its own invitation.
+  const insert = picking?.onAddSection;
+  const insertsBefore =
+    insert !== undefined && (place.parent === null || takesRows(picking, place.parent))
+      ? () => insert(place.parent ?? undefined, place.index)
+      : null;
+  const insertsRowAtEnd =
+    insert !== undefined && takesRows(picking, section.id) ? () => insert(section.id) : null;
 
   // The one place a style is written rather than a class: which picture it is only exists at
   // runtime, and Tailwind reads the source rather than the page.
@@ -267,11 +404,47 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
             ...(picking.selected === section.id ? { 'data-picked': '' } : {}),
             // The bubble phase, while a block takes the capture phase and stops there: outer
             // handlers capture first, so a section that captured would always win and a block could
-            // never be picked.
-            onClick: () => picking.onPick('section', section.id),
-            onDoubleClick: () => picking.onOpen?.('section', section.id),
+            // never be picked. Stopped here, or the section around a row would take it next and a
+            // row could never be picked by its own air.
+            onClick: (event: SyntheticEvent) => {
+              event.stopPropagation();
+              picking.onPick('section', section.id);
+            },
+            onDoubleClick: (event: SyntheticEvent) => {
+              event.stopPropagation();
+              picking.onOpen?.('section', section.id);
+            },
           })}
     >
+      {picking !== null ? <SectionLabel section={section} place={place} /> : null}
+
+      {insertsBefore === null ? null : (
+        <InsertGap
+          label={t(place.parent === null ? 'content.editor.insertSection' : 'content.editor.insertRow')}
+          hint={t(
+            place.parent === null ? 'content.editor.insertSectionHint' : 'content.editor.insertRowHint',
+            {
+              number: place.number,
+            },
+          )}
+          // Astride the edge between two; inside the first section of the page, which the frame would cut.
+          placement={place.parent === null && place.index === 0 ? 'top-0' : '-top-2'}
+          onInsert={insertsBefore}
+        />
+      )}
+
+      {insertsRowAtEnd === null ? null : (
+        <InsertGap
+          label={t('content.editor.insertRow')}
+          hint={t('content.editor.insertRowHint', {
+            number: `${place.number}.${section.sections.length + 1}`,
+          })}
+          // Clear of the strip on the edge below, which belongs to the next section.
+          placement="bottom-2.5"
+          onInsert={insertsRowAtEnd}
+        />
+      )}
+
       {picking !== null && picking.selected === section.id ? (
         <PickedBar
           name={read(section.title) || section.key || t('content.editor.untitledSection')}
@@ -287,7 +460,11 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
       <div className={`${dashboard ? WIDTH.full : WIDTH[section.width]} flex flex-col gap-6`}>
         <SectionBlocks section={section} staff={staff} />
 
-        <Siblings sections={section.sections} staff={staff} />
+        <Siblings
+          sections={section.sections}
+          staff={staff}
+          parent={{ id: section.id, number: place.number }}
+        />
       </div>
     </section>
   );
@@ -655,6 +832,18 @@ function ring(picking: Picking, id: string): string {
     : 'hover:outline-border hover:outline-2 hover:outline-offset-2';
 }
 
+/**
+ * A section's outline is there the whole time while composing, so that the page reads as the sections
+ * it is made of (design of phase 3, §4.1): thin and dashed, solid when it is the one picked. Drawn
+ * inside its edge, because the first section of a page sits against the preview's frame, which clips,
+ * and in the colour of the ground it is on: a dark section is a piece of the dark theme.
+ */
+function sectionRing(picking: Picking, id: string): string {
+  return picking.selected === id
+    ? 'outline-primary outline-2 -outline-offset-2'
+    : 'outline-muted-foreground/50 hover:outline-muted-foreground outline-1 -outline-offset-1 outline-dashed';
+}
+
 const ACTION_LABEL: Record<PickAction['key'], { label: string; Icon: typeof Trash2 }> = {
   moveUp: { label: 'content.editor.moveUp', Icon: ArrowUp },
   moveDown: { label: 'content.editor.moveDown', Icon: ArrowDown },
@@ -687,7 +876,7 @@ function PickedBar({
   return (
     <div
       data-chrome
-      className={`bg-body text-foreground border-primary absolute right-2 z-10 flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs shadow-sm ${
+      className={`bg-body text-foreground border-primary absolute right-2 z-40 flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs shadow-sm ${
         placement === 'inside' ? 'top-2' : '-top-3'
       }`}
       onClick={(event) => event.stopPropagation()}

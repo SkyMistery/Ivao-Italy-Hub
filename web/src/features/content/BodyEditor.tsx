@@ -543,8 +543,8 @@ export function BodyEditor({
   // What may be done to a section or a block, written once and reached from two places: the rows
   // of the outline, and the bar on the picked thing itself on the page (Carmine, 11 September
   // 2026). The rules of the template are read here, so the page and the outline offer the same.
-  const addSectionAt = (parentId?: string) => {
-    const added = addSection(body, locales, parentId);
+  const addSectionAt = (parentId?: string, at?: number) => {
+    const added = addSection(body, locales, parentId, at);
     change(added.body);
     setSelection({ kind: 'section', id: added.id });
   };
@@ -654,7 +654,8 @@ export function BodyEditor({
       focusWanted.current = true;
       setSelection({ kind, id });
     },
-    onAddSection: () => addSectionAt(),
+    // Nowhere on a locked body: the page offers what the bar on the picked thing would.
+    ...(locked ? {} : { onAddSection: addSectionAt }),
     // What to draw a block by while nothing is written in it. A data block is never blank: it
     // draws an answer, or its own empty state.
     blank: (candidate: BlockEnvelope) => {

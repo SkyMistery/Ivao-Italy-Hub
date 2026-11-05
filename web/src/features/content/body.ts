@@ -106,10 +106,12 @@ export function findBlock(
   return walk(body.sections);
 }
 
-/** A new section, at the end, with the frame a section has when nobody has chosen one. */
 /**
- * A section, at the top of the page or **inside another one** — which is what the editor calls a
- * *row*.
+ * A new section with the frame a section has when nobody has chosen one, at the top of the page or
+ * **inside another one** — which is what the editor calls a *row*.
+ *
+ * `at` is the place among its siblings, for one inserted between two others (design of phase 3,
+ * §4.1); with none it goes after the last.
  *
  * ⚠️ Nesting is not new: `MaxDepth` in the envelope validator has been 3 since M1, the renderer
  * draws a nested section inside its parent's width container, and `removeSection` prunes
@@ -125,6 +127,7 @@ export function addSection(
   body: Body,
   locales: readonly string[],
   parentId?: string,
+  at?: number,
 ): { body: Body; id: string } {
   const id = newId('s');
   const section: SectionEnvelope = {
@@ -138,8 +141,11 @@ export function addSection(
     sections: [],
   };
 
+  const placed = (siblings: SectionEnvelope[], added: SectionEnvelope) =>
+    siblings.toSpliced(at ?? siblings.length, 0, added);
+
   if (parentId === undefined) {
-    return { body: { ...body, sections: [...body.sections, section] }, id };
+    return { body: { ...body, sections: placed(body.sections, section) }, id };
   }
 
   // A row is born without a frame of its own: the section around it already draws one, and a second
@@ -150,7 +156,7 @@ export function addSection(
     body: {
       ...body,
       sections: mapSections(body.sections, (candidate) =>
-        candidate.id === parentId ? { ...candidate, sections: [...candidate.sections, row] } : candidate,
+        candidate.id === parentId ? { ...candidate, sections: placed(candidate.sections, row) } : candidate,
       ),
     },
     id,
