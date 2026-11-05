@@ -42,6 +42,16 @@ export function SearchBox({
         placeholder={placeholder}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
+        // Enter is "search now", and only that. The box may be drawn inside a form (`MediaPicker` in
+        // a field of `SchemaForm`), where the browser would take it as submitting the whole form.
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            if (draft !== initial) {
+              onCommit(draft);
+            }
+          }
+        }}
       />
     </div>
   );

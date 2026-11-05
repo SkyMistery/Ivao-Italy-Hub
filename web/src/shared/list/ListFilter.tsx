@@ -1,6 +1,6 @@
 import { Label, Select } from '@ivao/atmosphere-react';
 
-import { NO_CHOICE } from '../forms';
+import { NO_CHOICE } from '../forms/schema';
 
 /**
  * One filter over a list: a select with a way back to "everything", the same gesture an optional
@@ -39,7 +39,9 @@ export function ListFilter({
         // makes the label above actually name it. Without it the label points at nothing and the
         // control is a button a screen reader reads as its placeholder and nothing else.
         id={id}
-        {...(value === undefined ? {} : { value })}
+        // Always the value, the way back included. Left out, the select keeps what it last held by
+        // itself, and says "Document" over a list the page has put back to everything.
+        value={value ?? NO_CHOICE}
         onValueChange={(chosen) => onChange(chosen === NO_CHOICE ? undefined : chosen)}
         placeholder={none}
         items={[{ value: NO_CHOICE, label: none }, ...items]}
