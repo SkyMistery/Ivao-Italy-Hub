@@ -1398,7 +1398,9 @@ function RepeatableList({
                 ) : (
                   <>
                     <span className="text-muted-foreground tabular-nums">{index + 1}</span>{' '}
-                    <span className="truncate">{written}</span>
+                    {/* `w-0`: cut or not, the whole text counts for how narrow the list can get, and a
+                        fieldset never goes below that. A long title would widen the block's panel. */}
+                    <span className="w-0 grow truncate">{written}</span>
                   </>
                 )}
               </CollapsibleTrigger>

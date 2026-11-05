@@ -324,6 +324,13 @@ test('the title of a list entry keeps its width: in a narrow column the buttons 
     expect(narrow.width).toBeGreaterThanOrEqual(160);
     expect((await remove.boundingBox())!.y).toBeGreaterThanOrEqual(narrow.y + narrow.height);
   }).toPass();
+
+  // A long title is cut, and it is no reason for the list to come out of the column.
+  const list = form.getByRole('group', { name: 'Cards' });
+  await title.click();
+  await list.getByRole('textbox').first().fill('A name far too long to fit in the column of a panel');
+  await expect(list.getByRole('button', { name: /^1 A name far too long/ })).toBeVisible();
+  expect((await list.boundingBox())!.width).toBeLessThanOrEqual(304);
 });
 
 /**
