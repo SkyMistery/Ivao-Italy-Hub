@@ -194,6 +194,7 @@ interface CommonStrings {
       readonly properties: string;
       readonly preview: string;
       readonly previewWidths: { readonly phone: string; readonly desktop: string };
+      readonly panelWidth: { readonly palette: string; readonly properties: string };
       readonly autosave: {
         readonly title: string;
         readonly saved: string;

@@ -647,6 +647,11 @@
       "redo": "Redo",
       "page": "Page",
       "pickHint": "Pick a section or a block, on the page or in the outline, to change it here.",
+      "panelWidth": {
+        "palette": "Width of the components panel",
+        "properties": "Width of the properties panel",
+        "hint": "Drag it, or use the arrow keys. A double click puts it back."
+      },
       "addRow": "Add row",
       "sectionAbove": "+ section above",
       "sectionBelow": "+ section below",
