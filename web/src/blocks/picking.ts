@@ -61,8 +61,16 @@ export interface Picking {
    * one — and the page draws exactly that list, so a rule lives in one place.
    */
   readonly actions?: (target: { kind: 'section' | 'block'; id: string }) => readonly PickAction[];
-  /** A section at the end of the page, offered after the last one, the way an empty column offers a block. */
-  readonly onAddSection?: () => void;
+  /**
+   * A section where it is wanted: with nothing said, at the end of the page, offered after the last
+   * one the way an empty column offers a block; with a place, between two others — `parentId` the
+   * section whose row it is, none for one of the page, and `at` its place among its siblings. Absent
+   * on a body nothing may be added to. Rows are offered only inside a section whose `actions` answer
+   * `addRow`, so the template's rules and the depth the server accepts stay in the editor. `byKeyboard`
+   * says the press came from the keyboard: the button it was on is about to mean something else, and
+   * where the cursor goes next is the editor's, which owns the panel.
+   */
+  readonly onAddSection?: (parentId?: string, at?: number, byKeyboard?: boolean) => void;
   /**
    * The name to draw a block by while nothing has been written into it, or `null` once something
    * has (Carmine, 11 September 2026). A heading without words draws nothing, and nothing is what
@@ -109,8 +117,18 @@ export interface SortableBinding {
 }
 
 export interface PickAction {
-  readonly key: 'moveUp' | 'moveDown' | 'remove' | 'duplicate' | 'addRow';
-  readonly run: () => void;
+  readonly key:
+    | 'moveUp'
+    | 'moveDown'
+    | 'remove'
+    | 'duplicate'
+    | 'addRow'
+    | 'sectionAbove'
+    | 'sectionBelow'
+    | 'rowAbove'
+    | 'rowBelow';
+  /** `byKeyboard` as in `Picking.onAddSection`: told by the bar, read by what inserts. */
+  readonly run: (byKeyboard?: boolean) => void;
 }
 
 export const PickingContext = createContext<Picking | null>(null);
