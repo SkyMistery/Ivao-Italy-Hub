@@ -39,7 +39,10 @@ export function ListFilter({
         // makes the label above actually name it. Without it the label points at nothing and the
         // control is a button a screen reader reads as its placeholder and nothing else.
         id={id}
-        {...(value === undefined ? {} : { value })}
+        // ⚠️ Always a value, `''` for nothing: that is what draws the placeholder. Without one Radix goes
+        // uncontrolled and draws the last choice it held, so a list back to "all" kept naming the old
+        // filter, and choosing that same one again changed nothing (note 2026-11-06-il-filtro-rimesso-a-tutti).
+        value={value ?? ''}
         onValueChange={(chosen) => onChange(chosen === NO_CHOICE ? undefined : chosen)}
         placeholder={none}
         items={[{ value: NO_CHOICE, label: none }, ...items]}
