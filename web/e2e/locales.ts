@@ -56,7 +56,7 @@ interface CommonStrings {
     readonly fields: { readonly awardId: string };
   };
   readonly dashboard: { readonly edit: string };
-  readonly list: { readonly file: string };
+  readonly list: { readonly file: string; readonly search: string };
   readonly calendar: {
     readonly title: string;
     readonly create: string;

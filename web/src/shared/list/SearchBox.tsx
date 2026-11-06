@@ -9,6 +9,16 @@ import { useEffect, useState } from 'react';
  * In a file of its own because two things search a list of the server: `DataList` and the grid of
  * `MediaPicker`. Like `ListFilter`, it is a piece of the lists and not one more entry of the closed
  * list of components.
+ *
+ * `initial` is what is being searched for now, and the box may change it from outside: the back button
+ * brings back the term the address carries. It follows only when it is at rest, when what it shows is
+ * what was being searched for. A box that shows anything else has somebody's typing in it, and the term
+ * that has just arrived is most likely the one they sent a moment ago (`tow`, while they have written
+ * `towe`): that typing is not thrown away, it goes on to its own search.
+ *
+ * ⚠️ So no `key` on the search term, which is how the box used to follow the address: a new box at every
+ * search takes the focus away from whoever is typing in it. To empty a box whatever it holds, as
+ * `MediaPicker` does after an upload, a `key` that changes only then is still the way.
  */
 export function SearchBox({
   initial,
@@ -22,6 +32,15 @@ export function SearchBox({
   className?: string;
 }) {
   const [draft, setDraft] = useState(initial);
+
+  // Adjusted while rendering rather than in an effect, like the editable cells of `DataList`.
+  const [seen, setSeen] = useState(initial);
+  if (seen !== initial) {
+    setSeen(initial);
+    if (draft === seen) {
+      setDraft(initial);
+    }
+  }
 
   useEffect(() => {
     if (draft === initial) {

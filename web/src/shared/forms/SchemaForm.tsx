@@ -30,6 +30,7 @@ import {
   useForm,
   useFormContext,
   useWatch,
+  type ControllerRenderProps,
   type FieldErrors,
   type UseFormReturn,
 } from 'react-hook-form';
@@ -1038,16 +1039,16 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
 
       return (
         <Row id={name} label={label} hint={hint} error={error}>
-          <Controller
-            control={control}
+          <HeldField
             name={name}
-            render={({ field }) => (
+            rowsTaken={env.rowsTaken}
+            render={(held, field) => (
               <MediaPicker
                 query={library}
                 onUpload={
                   upload === undefined || category === null ? upload : (file: File) => upload(file, category)
                 }
-                value={typeof field.value === 'number' ? field.value : null}
+                value={typeof held === 'number' ? held : null}
                 // Undefined and not null when nothing is chosen: an optional field that is absent
                 // is absent, and a null would be a value the contract does not have.
                 onChange={(chosen) => field.onChange(chosen ?? undefined)}
@@ -1061,7 +1062,17 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
     }
 
     case 'icon':
-      return <IconChoice node={node} name={name} none={none} label={label} hint={hint} error={error} />;
+      return (
+        <IconChoice
+          node={node}
+          name={name}
+          none={none}
+          label={label}
+          hint={hint}
+          error={error}
+          rowsTaken={env.rowsTaken}
+        />
+      );
 
     case 'instant':
       return (
@@ -1092,7 +1103,7 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
                 <Select
                   // The label of the row points at this id: see the note on the enum above.
                   id={name}
-                  {...(typeof field.value === 'string' && field.value !== '' ? { value: field.value } : {})}
+                  value={typeof field.value === 'string' ? field.value : ''}
                   // Back to "nothing chosen", the same gesture an optional enum has: without it the
                   // first category somebody picks could never be taken off again.
                   onValueChange={(chosen) => field.onChange(chosen === NO_CHOICE ? '' : chosen)}
@@ -1194,17 +1205,17 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
     case 'enum':
       return (
         <Row id={name} label={label} hint={hint} error={error}>
-          <Controller
-            control={control}
+          <HeldField
             name={name}
-            render={({ field }) => (
+            rowsTaken={env.rowsTaken}
+            render={(held, field) => (
               <Select
                 // ⚠️ The label of a row points at this id, and without it the select has no
                 // accessible name at all — `getByLabel` finds nothing, and neither does a screen
                 // reader. Every generated select was missing it until G13; the public filters had
                 // it right, which is where the shape was copied from.
                 id={name}
-                {...(typeof field.value === 'string' ? { value: field.value } : {})}
+                value={typeof held === 'string' ? held : ''}
                 // An optional enum needs a way back to "nothing chosen", and a select has no such
                 // gesture: leaving it out would make the first choice permanent.
                 onValueChange={(chosen) => field.onChange(chosen === NO_CHOICE ? undefined : chosen)}
@@ -1611,6 +1622,37 @@ function LocalizedObject({
 }
 
 /**
+ * A field that can go back to nothing: what it holds is `undefined`, and that has to be what it draws.
+ *
+ * ⚠️ What is drawn is read with `useWatch`, and not from `field.value`. A controller's value is watched
+ * with the value it was born with as its default, and react-hook-form hands the default back for
+ * `undefined`: a field taken off drew itself again, while the form held nothing and saved nothing.
+ * Measured on a date: `{ shown: '2026-01-02', sent: {} }`, and on an enum, an icon and a media. A picture
+ * still drawn as chosen could not even be chosen again: pressing a chosen one takes it off. An empty string
+ * is no way out: `z.string().optional()` accepts it, so the form would send an empty string where there
+ * should be nothing at all.
+ *
+ * ⚠️ The controller is born again when the form takes the row: registering after a reset, it writes the
+ * value it was born with over `undefined`, and a field taken off would come back.
+ */
+function HeldField({
+  name,
+  rowsTaken,
+  render,
+}: {
+  name: string;
+  rowsTaken: number;
+  render: (held: unknown, field: ControllerRenderProps) => React.ReactElement;
+}) {
+  const { control } = useFormContext();
+  const held: unknown = useWatch({ control, name });
+
+  return (
+    <Controller key={rowsTaken} control={control} name={name} render={({ field }) => render(held, field)} />
+  );
+}
+
+/**
  * An icon, out of the allow list. It is drawn as a grid of pictures rather than as a select, and
  * for a reason worth writing down: Atmosphere's `Select` takes a plain string per option, so a
  * select could only ever list the names — and a name without its picture is exactly the choice
@@ -1624,6 +1666,7 @@ function IconChoice({
   label,
   hint,
   error,
+  rowsTaken,
 }: {
   node: Extract<FieldNode, { kind: 'icon' }>;
   name: string;
@@ -1632,9 +1675,8 @@ function IconChoice({
   label: string;
   hint: string | undefined;
   error: string | undefined;
+  rowsTaken: number;
 }) {
-  const { control } = useFormContext();
-
   return (
     <fieldset className="flex flex-col gap-1">
       <Label asChild>
@@ -1642,14 +1684,14 @@ function IconChoice({
       </Label>
       <FieldHint hint={hint} />
 
-      <Controller
-        control={control}
+      <HeldField
         name={name}
-        render={({ field }) => (
+        rowsTaken={rowsTaken}
+        render={(held, field) => (
           <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
             {node.optional ? (
               <IconOption
-                chosen={typeof field.value !== 'string' || field.value === ''}
+                chosen={typeof held !== 'string' || held === ''}
                 label={none}
                 onChoose={() => field.onChange(undefined)}
               />
@@ -1658,7 +1700,7 @@ function IconChoice({
             {ICON_NAMES.map((iconName) => (
               <IconOption
                 key={iconName}
-                chosen={field.value === iconName}
+                chosen={held === iconName}
                 label={iconName}
                 icon={iconName}
                 onChoose={() => field.onChange(iconName)}
@@ -1720,12 +1762,6 @@ function IconOption({
  *
  * An optional one can be taken off, with a button beside it: a date picker has no gesture of its own
  * for it (the staff's round, IX).
- *
- * ⚠️ What is drawn is read with `useWatch`, and not from `field.value`. A controller's value is watched
- * with the value it was born with as its default, and react-hook-form hands the default back for
- * `undefined`: a date taken off drew itself again, while the form held nothing and saved nothing.
- * Measured: `{ shown: '2026-01-02', sent: {} }`. An empty string is no way out: `z.string().optional()`
- * accepts it, so the form would send an empty string where there should be no date at all.
  */
 function Instant({
   node,
@@ -1747,8 +1783,6 @@ function Instant({
   rowsTaken: number;
 }) {
   const { t } = useTranslation();
-  const { control } = useFormContext();
-  const held: unknown = useWatch({ control, name });
 
   if (node.withTime && timezone === undefined) {
     throw new Error(
@@ -1761,13 +1795,10 @@ function Instant({
 
   return (
     <Row id={name} label={label} hint={hint} error={error}>
-      <Controller
-        // Born again when the form takes the row: registering after a reset, a controller writes the value
-        // it was born with over `undefined`, and a date taken off would come back.
-        key={rowsTaken}
-        control={control}
+      <HeldField
         name={name}
-        render={({ field }) => {
+        rowsTaken={rowsTaken}
+        render={(held, field) => {
           const iso = typeof held === 'string' ? held : '';
 
           return (
