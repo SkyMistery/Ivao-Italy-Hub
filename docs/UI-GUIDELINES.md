@@ -831,7 +831,7 @@ every January, in every language at once.
 
 ## The editor of a page, and what it may not do
 
-Five rules M1 settled by using the editor rather than by designing it. They are here because they
+Rules settled by using the editor rather than by designing it. They are here because they
 are the ones a contributor is most likely to break by improving something.
 
 **Three columns, and the middle one is the only one that changes.** Components on the left, the page
@@ -840,6 +840,21 @@ page itself — the same renderer the public gets, clicked to select — and one
 outline, which is the road for anybody without a mouse. The two side columns do not move when it
 does: an editor whose panels jump when you change how you are looking at the page is one you have to
 re-find your place in every time.
+
+**While composing, the page says what it is made of, and a visitor never reads any of it.** Every
+section has a thin dashed outline, solid when it is the one picked, and a label with its number among
+its siblings, its name and its background ("2 · Rules · pale blue background"; a row says "Row 2.1").
+The name is a section's `title`, which only who writes sees. The way to insert is the bar of what is
+picked: "+ section above" and "+ section below", "+ row above" and "+ row below" on a row, which needs
+no air and works with a finger. Between two sections, when the pointer or the keyboard reaches the
+place, "+ section" does the same as a shortcut, and "+ row" for the rows of a section. A place to insert
+stands under what the section holds, so a block is picked up to its edge and the place answers only in
+the air: where two sections with no padding touch there is none, and that is what the bar is for. A row
+inside a row comes from the row's bar. All of it stands
+out of the flow, so nothing on the page moves to make room, and all of it reads the composing context
+(`blocks/picking.ts`), which the public site does not mount. Rows are
+the only subsections there are: for things side by side there are the columns, and for things grouped
+the Tabs and the Questions blocks.
 
 **There is one place a block is added from.** The palette is the bar on the left, and adding a block
 puts it in the section that is selected — the section itself, or the one holding the selected block.

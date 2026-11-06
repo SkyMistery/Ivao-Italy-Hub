@@ -486,7 +486,7 @@
     },
     "section": {
       "fields": {
-        "title": "Nome",
+        "title": "Nome della sezione (lo vede solo chi scrive)",
         "layout": "Disposizione",
         "background": "Sfondo",
         "padding": "Spaziatura",
@@ -533,7 +533,8 @@
         "locked": "Una pagina può comunque modificare le proprietà dei blocchi che ci sono — non può aggiungerne, spostarne o toglierne.",
         "allowedBlocks": "Nessuna casella spuntata vuol dire qualunque blocco."
       },
-      "keyIs": "Chiave: {{key}} — si scrive una volta sola, così le pagine nate da questo template continuano a corrispondere a questa sezione."
+      "keyIs": "Chiave: {{key}} — si scrive una volta sola, così le pagine nate da questo template continuano a corrispondere a questa sezione.",
+      "howToDivide": "Per mettere cose una accanto all'altra usa le colonne; per una parte dentro questa sezione, una riga; per raggruppare, le Schede o le Domande."
     },
     "editor": {
       "structure": "Di cosa e' fatta questa pagina",
@@ -541,6 +542,14 @@
       "noSections": "Questa pagina non ha ancora sezioni.",
       "untitledSection": "Sezione senza nome",
       "addSection": "Aggiungi una sezione",
+      "insertSection": "+ sezione",
+      "insertSectionHint": "Inserisci qui una sezione: diventa la {{number}}",
+      "insertRow": "+ riga",
+      "insertRowHint": "Inserisci qui una riga: diventa la {{number}}",
+      "sectionLabel": {
+        "row": "Riga {{number}}",
+        "background": "sfondo {{name}}"
+      },
       "addBlock": "Aggiungi:",
       "outline": "Struttura",
       "onThePage": "Sulla pagina",
@@ -638,6 +647,10 @@
       "page": "Pagina",
       "pickHint": "Scegli una sezione o un blocco, sulla pagina o nella struttura, per modificarlo qui.",
       "addRow": "Aggiungi riga",
+      "sectionAbove": "+ sezione sopra",
+      "sectionBelow": "+ sezione sotto",
+      "rowAbove": "+ riga sopra",
+      "rowBelow": "+ riga sotto",
       "untitledRow": "Riga senza titolo",
       "addHere": "+ Aggiungi qui",
       "blankBlock": "{{block}}: ancora vuoto. Compilalo nel pannello a destra.",

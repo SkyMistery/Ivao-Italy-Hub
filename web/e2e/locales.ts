@@ -151,7 +151,17 @@ interface CommonStrings {
       readonly kind: { readonly Page: string; readonly Document: string };
     };
     readonly section: {
-      readonly fields: { readonly key: string; readonly allowedBlocks: string };
+      readonly fields: {
+        readonly title: string;
+        readonly key: string;
+        readonly allowedBlocks: string;
+        readonly padding: string;
+      };
+      readonly options: {
+        readonly background: { readonly accent: string };
+        readonly padding: { readonly none: string };
+      };
+      readonly howToDivide: string;
     };
     readonly editor: {
       readonly saveDraft: string;
@@ -165,6 +175,13 @@ interface CommonStrings {
       readonly setKey: string;
       readonly addBlock: string;
       readonly addSection: string;
+      readonly insertSection: string;
+      readonly insertRow: string;
+      readonly addRow: string;
+      readonly sectionAbove: string;
+      readonly sectionBelow: string;
+      readonly rowAbove: string;
+      readonly rowBelow: string;
       readonly components: string;
       readonly outline: string;
       readonly undo: string;
