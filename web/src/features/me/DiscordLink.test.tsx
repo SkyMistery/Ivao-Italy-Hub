@@ -83,6 +83,59 @@ test('leaving asks the server, and draws what the server says afterwards', async
   expect(screen.queryByText('member.on.discord')).not.toBeInTheDocument();
 });
 
+test.each([429, 409])('a %i on leaving says so, and the name and the button stay', async (status) => {
+  answer(linked);
+  api.delete.mockResolvedValue({
+    error: { title: 'Refused', status },
+    response: new Response(null, { status }),
+  });
+  draw();
+
+  await userEvent.click(await screen.findByRole('button', { name: 'discord.unlink' }));
+
+  expect(await screen.findByRole('alert')).toBeInTheDocument();
+  expect(screen.getByText('member.on.discord')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'discord.unlink' })).toBeEnabled();
+});
+
+test('a refusal still shows when the link could not be read', async () => {
+  api.get.mockResolvedValue({
+    error: { title: 'Down', status: 500 },
+    response: new Response(null, { status: 500 }),
+  });
+  draw('failed');
+
+  expect(await screen.findByText('discord.refused.failed')).toBeInTheDocument();
+  await waitFor(() => {
+    expect(api.get).toHaveBeenCalled();
+  });
+  expect(screen.getByText('discord.refused.failed')).toBeInTheDocument();
+  expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button')).not.toBeInTheDocument();
+});
+
+test('with the link not read and nothing to say, it draws nothing', async () => {
+  api.get.mockResolvedValue({
+    error: { title: 'Down', status: 500 },
+    response: new Response(null, { status: 500 }),
+  });
+  const { container } = draw();
+
+  await waitFor(() => {
+    expect(api.get).toHaveBeenCalled();
+  });
+  expect(container).toBeEmptyDOMElement();
+});
+
+test('on an installation without Discord an address that names a refusal says nothing', async () => {
+  answer({ available: false, username: null, linkedAt: null });
+  const { container } = draw('failed');
+
+  await waitFor(() => {
+    expect(container).toBeEmptyDOMElement();
+  });
+});
+
 test('a refused round trip says why, until the member has left the account they had', async () => {
   answer(linked);
   api.delete.mockResolvedValue({ response: new Response(null, { status: 204 }) });
@@ -91,7 +144,7 @@ test('a refused round trip says why, until the member has left the account they 
   expect(await screen.findByText('discord.refused.taken')).toBeInTheDocument();
 
   answer({ available: true, username: null, linkedAt: null });
-  await userEvent.click(screen.getByRole('button', { name: 'discord.unlink' }));
+  await userEvent.click(await screen.findByRole('button', { name: 'discord.unlink' }));
 
   await waitFor(() => {
     expect(screen.queryByText('discord.refused.taken')).not.toBeInTheDocument();

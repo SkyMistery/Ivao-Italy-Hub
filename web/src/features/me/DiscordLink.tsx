@@ -2,7 +2,7 @@ import { Button, H4, Subtle } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
-import { ProblemAlert } from '../../shared/forms';
+import { ProblemAlert, describeProblem } from '../../shared/forms';
 import { useMoment } from '../../shared/i18n/useMoment';
 
 import { discordLinkQuery, useUnlinkDiscord } from './queries';
@@ -18,12 +18,13 @@ export type DiscordRefusal = 'taken' | 'failed';
  * Linking is a full navigation, not a router link: `/auth/discord` is a Kestrel endpoint that leaves for Discord.
  */
 export function DiscordLink({ refusal }: { refusal?: DiscordRefusal | undefined }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const moment = useMoment();
   const { data: link } = useQuery(discordLinkQuery);
   const unlink = useUnlinkDiscord();
 
-  if (!link || (!link.available && !link.username)) {
+  // With the link not read, the refusal still has something to say; an installation that offers none does not.
+  if (link ? !link.available && !link.username : refusal === undefined) {
     return null;
   }
 
@@ -36,7 +37,10 @@ export function DiscordLink({ refusal }: { refusal?: DiscordRefusal | undefined 
         <ProblemAlert summary={t(`discord.refused.${refusal}`)} />
       )}
 
-      {link.username ? (
+      {/* A limit reached, or the row changed by a sign in: the button comes back, and it must say why. */}
+      <ProblemAlert summary={describeProblem(unlink.error, t, i18n.language)} />
+
+      {!link ? null : link.username ? (
         <>
           <div>
             <p className="text-sm font-medium">{link.username}</p>
