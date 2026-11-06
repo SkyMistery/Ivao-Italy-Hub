@@ -414,12 +414,18 @@ What the schema may say about how a field is drawn:
   is always ISO in UTC**, whatever the browser's own time zone is. An instant shows the division's
   local time underneath, which is the rule every list follows; a day does not, because "the same day
   elsewhere" is not a fact a day has, and echoing one is only ever a chance to read the wrong day.
-  Both need `division` on `SchemaForm`;
+  An optional one has a button beside it that takes it off. Both need `division` on `SchemaForm`;
 - `localizedObject({ ... })` is a small object per language: language tabs, and inside each of them
   the generator again. `seo` is the first, and it is how a translated JSON column becomes fields a
   coordinator can fill in rather than JSON they have to write;
 - a **list** of objects can be reordered with the up and down buttons beside add and remove. They
-  are what a keyboard reaches, and they stay when dragging arrives;
+  are what a keyboard reaches, and they stay when dragging arrives. An entry is a closed row, its
+  number and its title, and a click opens it and closes the one open before; a new entry is born
+  open, a list that opens with one entry shows it, and an entry holding an error opens by itself.
+  The title is the first text of the entry, in the language on screen — or the first choice, or the
+  first date, in a list that has no text — and `.meta({ entryTitle: true })` on another field says
+  otherwise. A closed entry stays mounted, hidden: its fields keep doing to their values what a
+  drawn field does;
 - `.meta({ slugFrom: 'title' })` proposes a field from another one while the other is being typed,
   and stops for ever the moment somebody writes in it. `slugPrefix: '/'` puts the leading slash of a
   menu path in front. An address outlives the page it was made for, so a row that already has one

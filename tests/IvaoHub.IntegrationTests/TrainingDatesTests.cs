@@ -22,6 +22,7 @@ using IvaoHub.Modules.Training.Staff;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Quartz;
 using Xunit;
 
 namespace IvaoHub.IntegrationTests;
@@ -70,6 +71,11 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
     {
         _factory = new HubWebApplicationFactory(mariaDb.ConnectionString);
         var token = TestContext.Current.CancellationToken;
+
+        // The host runs the reminders by itself every quarter of an hour, and a run of its own in the middle of a test would mark a
+        // session the test has just dated, and queue its mail: paused, the only runs are the test's.
+        var scheduler = await _factory.Services.GetRequiredService<ISchedulerFactory>().GetScheduler(token);
+        await scheduler.PauseJob(new JobKey(TrainingRemindersJob.JobName), token);
 
         // A run that failed half way leaves its trainings, entries, grants and positions.
         await CleanAsync(token);
