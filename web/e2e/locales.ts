@@ -140,6 +140,7 @@ interface CommonStrings {
       readonly change: { readonly Changed: string; readonly Unchanged: string };
       readonly approve: string;
       readonly approveDialog: { readonly confirm: string };
+      readonly menu: { readonly label: string; readonly parent: string; readonly top: string };
     };
     readonly address: {
       readonly label: string;
