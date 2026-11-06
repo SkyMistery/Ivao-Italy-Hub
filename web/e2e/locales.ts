@@ -56,7 +56,7 @@ interface CommonStrings {
     readonly fields: { readonly awardId: string };
   };
   readonly dashboard: { readonly edit: string };
-  readonly list: { readonly file: string };
+  readonly list: { readonly file: string; readonly search: string };
   readonly calendar: {
     readonly title: string;
     readonly create: string;
@@ -74,6 +74,17 @@ interface CommonStrings {
     readonly title: string;
     readonly upload: string;
     readonly fields: { readonly category: string };
+    readonly options: { readonly category: { readonly Document: string; readonly Logo: string } };
+    readonly picker: {
+      readonly label: string;
+      readonly search: string;
+      readonly more: string;
+      readonly noMatch: string;
+      readonly upload: string;
+      readonly dropHint: string;
+      readonly anyCategory: string;
+      readonly altToWrite: string;
+    };
     readonly replace: { readonly action: string };
     readonly archive: { readonly notice: string; readonly restore: string };
   };
@@ -129,6 +140,7 @@ interface CommonStrings {
       readonly change: { readonly Changed: string; readonly Unchanged: string };
       readonly approve: string;
       readonly approveDialog: { readonly confirm: string };
+      readonly menu: { readonly label: string; readonly parent: string; readonly top: string };
     };
     readonly address: {
       readonly label: string;
@@ -140,7 +152,17 @@ interface CommonStrings {
       readonly kind: { readonly Page: string; readonly Document: string };
     };
     readonly section: {
-      readonly fields: { readonly key: string; readonly allowedBlocks: string };
+      readonly fields: {
+        readonly title: string;
+        readonly key: string;
+        readonly allowedBlocks: string;
+        readonly padding: string;
+      };
+      readonly options: {
+        readonly background: { readonly accent: string };
+        readonly padding: { readonly none: string };
+      };
+      readonly howToDivide: string;
     };
     readonly editor: {
       readonly saveDraft: string;
@@ -154,6 +176,13 @@ interface CommonStrings {
       readonly setKey: string;
       readonly addBlock: string;
       readonly addSection: string;
+      readonly insertSection: string;
+      readonly insertRow: string;
+      readonly addRow: string;
+      readonly sectionAbove: string;
+      readonly sectionBelow: string;
+      readonly rowAbove: string;
+      readonly rowBelow: string;
       readonly components: string;
       readonly outline: string;
       readonly undo: string;

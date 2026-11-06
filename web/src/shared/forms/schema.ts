@@ -156,6 +156,11 @@ export interface FieldMeta {
    * value it is handed back; what a new value *is* and how it is made stays the screen's.
    */
   creatable?: boolean;
+  /**
+   * The field that names an entry of a repeatable list on its closed row (design of the editor, phase
+   * 3, §4.3), for a list that does not want its first text there: see `entryTitleField`.
+   */
+  entryTitle?: boolean;
 }
 
 /**
@@ -418,6 +423,35 @@ function pruneEntry(children: FieldNode[], path: string, entry: unknown): unknow
   }
 
   return kept;
+}
+
+/**
+ * The field whose value is the title of an entry of a repeatable list, on the row it is closed to: the
+ * one annotated `entryTitle`, or the first that somebody writes text into, or — a list of choices, like
+ * the metrics of a block — the first closed choice, or — a list of dates, like the proposal of a training
+ * — the first date. Null when nothing would name it, a list of pictures for one, and the row then says
+ * only which entry it is. Inside a group too, never inside a list of its own, and never a hidden field: a
+ * title nobody could have written is not a title.
+ */
+export function entryTitleField(children: readonly FieldNode[]): FieldNode | null {
+  const readable = (nodes: readonly FieldNode[]): FieldNode[] =>
+    nodes.flatMap((node) =>
+      node.meta.hidden === true ? [] : node.kind === 'object' ? readable(node.children) : [node],
+    );
+  const fields = readable(children);
+
+  return (
+    fields.find((node) => node.meta.entryTitle === true) ??
+    fields.find(
+      (node) =>
+        node.kind === 'localized' ||
+        node.kind === 'suggest' ||
+        (node.kind === 'text' && node.choices === null),
+    ) ??
+    fields.find((node) => node.kind === 'enum' || node.kind === 'text') ??
+    fields.find((node) => node.kind === 'instant') ??
+    null
+  );
 }
 
 /**

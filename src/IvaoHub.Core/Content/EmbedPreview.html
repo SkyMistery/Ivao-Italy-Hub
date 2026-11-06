@@ -179,12 +179,13 @@
         <div class="row" role="group" aria-label="Width">
           <span class="label">Width</span>
           <button type="button" data-width="full" aria-pressed="true">Reading column</button>
+          <button type="button" data-width="768" aria-pressed="false">Tablet, 768 px</button>
           <button type="button" data-width="360" aria-pressed="false">Phone, 360 px</button>
         </div>
       </div>
 
       <div class="stage" id="stage" data-ground="light">
-        <iframe id="frame" sandbox="allow-scripts" title="The animation"></iframe>
+        <iframe id="frame" sandbox="allow-scripts" scrolling="no" title="The animation"></iframe>
       </div>
 
       <ul class="refusals" id="refusals" aria-live="polite"></ul>
@@ -254,7 +255,10 @@
           }
 
           frame.style.height = '160px';
-          frame.style.width = state.width === '360' ? '360px' : '100%';
+          frame.style.width = state.width === 'full' ? '100%' : state.width + 'px';
+          frame.setAttribute('scrolling', 'no');
+          barWentAt = -Infinity;
+          barStaysAt = null;
           stage.setAttribute('data-ground', state.ground);
           frame.srcdoc = compose(source);
         }
@@ -264,6 +268,9 @@
           frame.contentWindow.postMessage({ hub: 'embed-theme', dark: state.ground !== 'light' }, '*');
         });
 
+        var barWentAt = -Infinity;
+        var barStaysAt = null;
+
         // What the frame tells the page, heard only from this frame.
         window.addEventListener('message', function (event) {
           if (event.source !== frame.contentWindow || !event.data) {
@@ -271,7 +278,25 @@
           }
 
           if (event.data.hub === 'embed-height' && typeof event.data.height === 'number') {
-            frame.style.height = Math.min(Math.max(Math.round(event.data.height), 80), 2000) + 'px';
+            var asked = Math.round(event.data.height);
+            frame.style.height = Math.min(Math.max(asked, 80), 2000) + 'px';
+
+            // As the hub does: no bar up to 2000 px; past them a bar, which goes whenever what the fragment
+            // says fits, and if it comes back at once, at that width it stays.
+            var now = performance.now();
+            var width = frame.clientWidth;
+            var on = frame.getAttribute('scrolling') === 'auto';
+
+            if (asked > 2000) {
+              if (!on && now - barWentAt < 1000) {
+                barStaysAt = width;
+              }
+
+              frame.setAttribute('scrolling', 'auto');
+            } else if (on && barStaysAt !== width) {
+              barWentAt = now;
+              frame.setAttribute('scrolling', 'no');
+            }
           }
 
           if (event.data.hub === 'embed-refused') {

@@ -160,6 +160,209 @@ test('a block whose content comes from elsewhere says where, above its propertie
   expect(screen.getByText(/youtube\.com, vimeo\.com, twitch\.tv/)).toBeInTheDocument();
 });
 
+test('a section is inserted where it is asked for, and picked, and undo takes it back', async () => {
+  const user = userEvent.setup();
+  const { last } = draw();
+
+  await user.click(screen.getByRole('button', { name: editor.insertSection }));
+
+  // Before the only section there was, which is what that place on the page means.
+  const inserted = last()!.sections;
+  expect(inserted.map((section) => section.id)).toHaveLength(2);
+  expect(inserted[1]!.id).toBe('s1');
+  expect(document.querySelector('[data-picked]')).toHaveTextContent('1 · Section without a name');
+
+  // And a row inside it, from the place the section offers at its end: the bar and the outline do
+  // the same, and the depth and the template are read in one place.
+  await user.click(screen.getAllByRole('button', { name: editor.insertRow })[0]!);
+  expect(last()!.sections[0]!.sections).toHaveLength(1);
+
+  await user.click(screen.getByRole('button', { name: editor.undo }));
+  expect(last()!.sections[0]!.sections).toHaveLength(0);
+});
+
+test('a row is not offered where the server would refuse one', () => {
+  const deep = (id: string, sections: Body['sections']) =>
+    ({ ...initial.sections[0], id, sections }) as unknown as Body['sections'][number];
+  const bottom: Body = {
+    schemaVersion: 1,
+    // Four levels, the last the server takes: a row is offered inside the first three, and nothing inside the fourth.
+    sections: [deep('a', [deep('b', [deep('c', [deep('d', [])])])])],
+  };
+
+  renderWithProviders(
+    <BodyEditor
+      initial={bottom}
+      onChange={vi.fn()}
+      toolbar={(tools) => <div role="toolbar">{tools}</div>}
+      locales={['en']}
+      division={{ defaultLocale: 'en', timezone: 'UTC' }}
+      mediaLibrary={mediaLibrary}
+      holds={() => false}
+    />,
+  );
+
+  const hints = screen
+    .getAllByRole('button', { name: editor.insertRow })
+    .map((button) => button.getAttribute('title')?.split(' ').at(-1));
+
+  // Before each of the three rows, and after the last one of the section of the page: never a 1.1.1.1.1.
+  expect(hints).toEqual(['1.1', '1.1.1', '1.1.1.1', '1.2']);
+});
+
+/** A section with rows, for the bar's tests; its title is what its label says. */
+const framed = (id: string, sections: unknown[] = [], extra: object = {}) => ({
+  ...initial.sections[0],
+  id,
+  title: { en: id },
+  sections,
+  ...extra,
+});
+
+function drawBody(body: unknown, template?: unknown) {
+  const onChange = vi.fn<(changed: Body) => void>();
+
+  renderWithProviders(
+    <BodyEditor
+      initial={body as Body}
+      onChange={onChange}
+      toolbar={(tools) => <div role="toolbar">{tools}</div>}
+      locales={['en']}
+      division={{ defaultLocale: 'en', timezone: 'UTC' }}
+      mediaLibrary={mediaLibrary}
+      holds={() => false}
+      {...(template === undefined
+        ? {}
+        : {
+            template: {
+              body: template as Body,
+              title: { en: 'Template' },
+              department: 'WD',
+              canManage: false,
+            },
+          })}
+    />,
+  );
+
+  return { last: () => onChange.mock.lastCall![0] };
+}
+
+const ids = (sections: Body['sections']) => sections.map((section) => section.id);
+
+test('the bar inserts a section above and below, first and last, and picks the new one', async () => {
+  const user = userEvent.setup();
+  const { last } = drawBody({ schemaVersion: 1, sections: [framed('a'), framed('b')] });
+
+  // Above the first.
+  await user.click(screen.getByText('1 · a'));
+  await user.click(screen.getByRole('button', { name: editor.sectionAbove }));
+  expect(last().sections).toHaveLength(3);
+  expect(ids(last().sections).slice(1)).toEqual(['a', 'b']);
+  expect(document.querySelector('[data-picked]')).toHaveTextContent('1 · Section without a name');
+
+  // Below the last.
+  await user.click(screen.getByText('3 · b'));
+  await user.click(screen.getByRole('button', { name: editor.sectionBelow }));
+  expect(last().sections).toHaveLength(4);
+  expect(ids(last().sections).slice(1, 3)).toEqual(['a', 'b']);
+  expect(document.querySelector('[data-picked]')).toHaveTextContent('4 · Section without a name');
+
+  // Below one in the middle: between it and the next.
+  await user.click(screen.getByText('2 · a'));
+  await user.click(screen.getByRole('button', { name: editor.sectionBelow }));
+  expect(ids(last().sections)[1]).toBe('a');
+  expect(ids(last().sections)[3]).toBe('b');
+});
+
+test('on a row the bar says row, and inserts among the rows of its parent', async () => {
+  const user = userEvent.setup();
+  const { last } = drawBody({ schemaVersion: 1, sections: [framed('a', [framed('r1'), framed('r2')])] });
+
+  await user.click(screen.getByText('Row 1.2 · r2'));
+  expect(screen.queryByRole('button', { name: editor.sectionAbove })).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: editor.rowBelow }));
+  expect(ids(last().sections[0]!.sections).slice(0, 2)).toEqual(['r1', 'r2']);
+  expect(last().sections[0]!.sections).toHaveLength(3);
+
+  await user.click(screen.getByText('Row 1.1 · r1'));
+  await user.click(screen.getByRole('button', { name: editor.rowAbove }));
+  expect(last().sections[0]!.sections).toHaveLength(4);
+  expect(ids(last().sections[0]!.sections).slice(1, 3)).toEqual(['r1', 'r2']);
+  // On the page's section around them, nothing has moved.
+  expect(ids(last().sections)).toEqual(['a']);
+});
+
+test('a section a template locks takes neighbours from its bar, and a row in it does not', async () => {
+  const user = userEvent.setup();
+  const { last } = drawBody(
+    { schemaVersion: 1, sections: [framed('fixed', [framed('r1')], { key: 'fixed' })] },
+    { schemaVersion: 1, sections: [framed('t1', [], { key: 'fixed', locked: true })] },
+  );
+
+  await user.click(screen.getByText('Row 1.1 · r1'));
+  expect(screen.queryByRole('button', { name: editor.rowAbove })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: editor.rowBelow })).not.toBeInTheDocument();
+
+  await user.click(screen.getByText('1 · fixed'));
+  expect(screen.queryByRole('button', { name: editor.moveUp })).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: editor.sectionAbove }));
+  expect(ids(last().sections)[1]).toBe('fixed');
+  expect(last().sections).toHaveLength(2);
+});
+
+test('a section a template locks takes no row, and its neighbours take a section', () => {
+  const page: Body = {
+    schemaVersion: 1,
+    sections: [{ ...initial.sections[0], id: 'p1', key: 'fixed' }],
+  } as unknown as Body;
+  const template = {
+    schemaVersion: 1,
+    sections: [{ ...initial.sections[0], id: 't1', key: 'fixed', locked: true }],
+  } as unknown as Body;
+
+  renderWithProviders(
+    <BodyEditor
+      initial={page}
+      onChange={vi.fn()}
+      toolbar={(tools) => <div role="toolbar">{tools}</div>}
+      locales={['en']}
+      division={{ defaultLocale: 'en', timezone: 'UTC' }}
+      mediaLibrary={mediaLibrary}
+      holds={() => false}
+      template={{ body: template, title: { en: 'Template' }, department: 'WD', canManage: false }}
+    />,
+  );
+
+  expect(screen.queryByRole('button', { name: editor.insertRow })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: editor.insertSection })).toBeInTheDocument();
+});
+
+test('a locked body offers no place to insert anything', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(
+    <BodyEditor
+      initial={initial}
+      onChange={vi.fn()}
+      toolbar={(tools) => <div role="toolbar">{tools}</div>}
+      locales={['en']}
+      division={{ defaultLocale: 'en', timezone: 'UTC' }}
+      mediaLibrary={mediaLibrary}
+      holds={() => false}
+      locked
+    />,
+  );
+
+  expect(document.querySelectorAll('[data-insert-gap]')).toHaveLength(0);
+  expect(screen.queryByRole('button', { name: editor.addSection })).not.toBeInTheDocument();
+  // Nor from the bar, on a section picked to be read.
+  await user.click(screen.getByText('1 · Intro'));
+  expect(screen.queryByRole('button', { name: editor.sectionAbove })).not.toBeInTheDocument();
+  // What a section is stays said: reading a page waiting for approval needs it as much.
+  expect(document.querySelector('[data-section-label]')).toHaveTextContent('1 · Intro');
+});
+
 test('a locked body is not changed by a key, by the way back, or by the template (issue #332, item 7)', async () => {
   const user = userEvent.setup();
   const onChange = vi.fn<(body: Body) => void>();

@@ -4,7 +4,15 @@ import type { Department } from '../../shared/api/bootstrap';
 import { api, unwrap } from '../../shared/api/client';
 import type { components } from '../../shared/api/schema';
 import { listQuerySerializer, toQuery, listSearchSchema, type ListSearch } from '../../shared/list';
-import type { MediaLibraryQuery, MediaPage, PickableMedia } from '../../shared/ui';
+import {
+  NOTHING_ASKED,
+  type MediaBrowse,
+  type MediaLibraryQuery,
+  type MediaPage,
+  type PickableMedia,
+} from '../../shared/ui';
+
+import { MEDIA_CATEGORIES } from './schema';
 
 /**
  * Every call the media library makes, as query options. A component never fetches: it asks for
@@ -61,7 +69,7 @@ export function mediaQuery(id: number) {
   });
 }
 
-/** How many files a picker shows before it needs a page of its own. */
+/** How many files a picker shows before somebody asks for more. */
 const PICKER_PAGE_SIZE = 24;
 
 /**
@@ -72,14 +80,36 @@ const PICKER_PAGE_SIZE = 24;
  * the same list engine as the back office screen, asked for a smaller page and narrowed to what a
  * picker actually draws — which is also what lets the form generator carry it without knowing that
  * `/api/media` exists.
+ *
+ * `only` is the category a field asks for (the logos): that one for good, and no choice to offer.
+ * `browse` is what the person has asked in the picker: the search the server already has, on the
+ * name and on the alternative text (`CrudOptions.SearchFields`), the category, and the page.
  */
-export function mediaPickerQuery(department: Department, category?: string): MediaLibraryQuery {
-  const search = listSearchSchema.parse({ pageSize: PICKER_PAGE_SIZE, sort: 'createdAt', dir: 'desc' });
+export function mediaPickerQuery(
+  department: Department,
+  only?: string,
+  browse: MediaBrowse = NOTHING_ASKED,
+): MediaLibraryQuery {
+  const search = listSearchSchema.parse({
+    page: browse.page,
+    pageSize: PICKER_PAGE_SIZE,
+    sort: 'createdAt',
+    dir: 'desc',
+    q: browse.q,
+  });
+  const category = only ?? browse.category;
 
   // Typed as the loose key the generator's prop declares: a picker is carried around by a
   // component that cannot know which resource it came from, so the key has to stop being specific
   // right here rather than at every place that passes it on.
-  const queryKey: readonly unknown[] = [...mediaKey, 'picker', PICKER_PAGE_SIZE, category ?? null];
+  const queryKey: readonly unknown[] = [
+    ...mediaKey,
+    'picker',
+    PICKER_PAGE_SIZE,
+    category,
+    browse.q,
+    browse.page,
+  ];
 
   return queryOptions({
     queryKey,
@@ -87,21 +117,24 @@ export function mediaPickerQuery(department: Department, category?: string): Med
       const page = unwrap(
         await api.GET('/api/media', {
           params: { query: toQuery(search) },
-          // Only the files of one category, when a field asks for them (#359): the same filter the
-          // library's own list declares.
-          querySerializer: listQuerySerializer(category === undefined ? {} : { category }),
+          // Only the files of one category, when a field asks for them (#359) or the person does:
+          // the same filter the library's own list declares.
+          querySerializer: listQuerySerializer(category === null ? {} : { category }),
         }),
       );
 
       return { items: page.items, total: page.total };
     },
     // Where this library lives, for the picker to point at (Carmine, 11 September 2026: "a link to
-    // the page where the files are uploaded"), and how it offers one category only (`narrowLibrary`).
-    // Carried on the query, because the query is the one thing about the library that reaches the
-    // picker through the form generator.
+    // the page where the files are uploaded"), how it offers one category only (`narrowLibrary`),
+    // and how it looks for a file. Carried on the query, because the query is the one thing about
+    // the library that reaches the picker through the form generator.
     meta: {
       libraryHref: `/staff/media?department=${department}`,
-      narrow: (only: string) => mediaPickerQuery(department, only),
+      fileHref: (id: number) => `/staff/media/${id}`,
+      narrow: (category: string) => mediaPickerQuery(department, category),
+      browse: (asked: MediaBrowse) => mediaPickerQuery(department, only, asked),
+      categories: only === undefined ? MEDIA_CATEGORIES : [],
     },
   });
 }
