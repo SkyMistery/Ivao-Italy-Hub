@@ -6,7 +6,14 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 1 novembre 2026 — **la correzione dell'issue #314** (fase di test: il tetto delle prenotazioni di un membro
+**Ultimo aggiornamento:** 5 novembre 2026 — **la metà eventi dell'issue #427** (le azioni di un evento e di una postazione dette dal
+server, la (A) di [Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/427#issuecomment-6555197465)), sul branch
+`fix/events-actions-from-server`, **PR #439** verso `main`: nata `--no-track` dalla testa della #438 `5fc9d536` (il nucleo:
+`CrudOptions.ToDetailPage` e la rotta `unscoped`), con la #429 della #311 unita, che tocca lo stesso endpoint; entrate la #429 e la #438, ha
+unito `main` a `8755eb9f`. Nessuna nota nuova (la decisione è la nota della #438), nessuna migrazione («Che cosa ha lasciato la #427»,
+sotto).
+
+**L'aggiornamento della correzione dell'issue #314:** 1 novembre 2026 — **la correzione dell'issue #314** (fase di test: il tetto delle prenotazioni di un membro
 in un evento, `maxBookingsPerEvent`, 5, una rotazione una), sul branch `fix/events-booking-cap`, PR verso `main` con «Closes #314», nata
 `--no-track` da `main` a `b12ec725`. La nota `2026-11-01-il-tetto-delle-prenotazioni` è decisa da Carmine, i punti 7–8 il 1 novembre
 con la (A) di tutti e due («Che cosa ha lasciato la correzione dell'issue #314», sotto).
@@ -380,6 +387,33 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato la #427, metà eventi (1°–5 novembre 2026, branch `fix/events-actions-from-server`, PR #439; nata sulla #438 del nucleo con la #429 della #311 unita, poi `main` a `8755eb9f` con entrambe)
+
+- **Che cosa c'è** (non è una fase di `10`: la metà eventi dell'issue #427, la (A) di Carmine; la nota è quella della #438,
+  `2026-11-01-le-azioni-di-un-evento-dal-server`; nessuna migrazione, nessun file del nucleo):
+  - **`EventDetailDto.Actions`** (`EventActionsDto`, `Staff/EventActions.cs`): modifica, elimina, pubblica, annulla, duplica, e per le
+    schede leggere e scrivere le rotte e le prenotazioni, leggere l'ATC e i report. Ognuna è la risposta dell'unico handler sulla riga,
+    in **`EventDetails`** (scoped): `Events.Edit`/`Delete` e le aree sull'evento, «Duplica» sull'evento non ancora nato (come chiede il verbo:
+    un grant su un evento non duplica), l'ATC con `AtcPositionEndpoints.ReachesAsync` (lo stesso della testa dell'ATC, ora `internal`).
+    «Pubblica» e «Annulla» dicono anche quello che i verbi rifiutano per lo stato (una bozza non annullata; un evento non annullato e non
+    finito). Il dettaglio passa da `CrudOptions.ToDetailPage` (della #438), e la pubblicazione, l'annullamento e la duplicazione rispondono
+    con lo stesso dettaglio;
+  - **`EventAtcPositionDto.Editable` anche sul dettaglio**: `ToDetailPage` della postazione è `StaffAvailability.PositionsAsync` su una riga
+    sola, quindi dice anche il nome e i candidati come la lista;
+  - **`AtcEventDto.CanAddPositions`** («Nuova postazione»): sì se una postazione della divisione passa `EventAtc.Edit` come sarebbe sull'evento
+    (`MayOpenAsync`, la stessa prova di `division-positions`), sulla testa di un evento e su ogni riga della lista;
+  - **le pagine** (`screens/events.tsx`, `stats.tsx`, `atc.tsx`) leggono quei flag, mai `holdsPermission`; «Nuovo evento» chiede
+    `holdsPermissionUnscoped` con un dipartimento raggiungibile (un evento nuovo non è mai la riga di un grant);
+  - **le quattro rotte dei registri** in `index.ts` hanno `unscoped: true` (della #438).
+- **Che cosa deve sapere chi viene dopo**:
+  - un pulsante nuovo sulla pagina di un evento si aggiunge a `EventActionsDto` e si chiede all'handler in `EventDetails.ActionsAsync`, mai
+    dal bootstrap; `ToDetail` resta per il motore e dice `EventActionsDto.None`;
+  - ⚠️ `CanAddPositions` scorre le postazioni della divisione finché una passa: per lo staff del dipartimento è la prima, per una squadra di
+    FIR la prima del suo FIR, per chi legge e basta tutte (in memoria, nessuna query per prova);
+  - ⚠️ i test d'integrazione sono `EventsActionsTests` (VID 761410–761414 del range 761410–761429 dato da dalberone per la #427); il test
+    delle pagine `screens/actionsFromServer.test.tsx` dà alla pagina un bootstrap che dice il contrario del server; quello dei registri
+    (`registerRoutes.test.ts`) legge le rotte dal `registry`, perché il manifest importato da solo arriva prima del registry che lo compone.
 
 ### Che cosa ha lasciato la correzione dell'issue #314 (1 novembre 2026, branch `fix/events-booking-cap`, fase di test; da `main` a `b12ec725`)
 

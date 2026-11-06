@@ -124,6 +124,8 @@
     "copyFrom": "Copy from {{language}}",
     "addEntry": "Add",
     "removeEntry": "Remove",
+    "entry": "Item {{number}}",
+    "clearDate": "Remove the date",
     "submitHint": "Press Enter to save.",
     "submitHintOneLine": "Press Enter in a one-line field to save.",
     "moveUp": "Move up",
@@ -484,7 +486,7 @@
     },
     "section": {
       "fields": {
-        "title": "Name",
+        "title": "Name of the section (only who writes sees it)",
         "layout": "Layout",
         "background": "Background",
         "padding": "Spacing",
@@ -531,7 +533,8 @@
         "locked": "A page can still edit the properties of the blocks that are here — it cannot add, move or remove any.",
         "allowedBlocks": "Nothing ticked means any block."
       },
-      "keyIs": "Key: {{key}} — written once, so that the pages made from this template keep matching this section."
+      "keyIs": "Key: {{key}} — written once, so that the pages made from this template keep matching this section.",
+      "howToDivide": "To put things side by side, use the columns; for a part inside this section, a row; to group things, the Tabs or the Questions."
     },
     "editor": {
       "structure": "What this page is made of",
@@ -539,6 +542,14 @@
       "noSections": "This page has no sections yet.",
       "untitledSection": "Section without a name",
       "addSection": "Add a section",
+      "insertSection": "+ section",
+      "insertSectionHint": "Insert a section here: it becomes number {{number}}",
+      "insertRow": "+ row",
+      "insertRowHint": "Insert a row here: it becomes number {{number}}",
+      "sectionLabel": {
+        "row": "Row {{number}}",
+        "background": "{{name}} background"
+      },
       "addBlock": "Add:",
       "outline": "Outline",
       "onThePage": "On the page",
@@ -636,6 +647,10 @@
       "page": "Page",
       "pickHint": "Pick a section or a block, on the page or in the outline, to change it here.",
       "addRow": "Add row",
+      "sectionAbove": "+ section above",
+      "sectionBelow": "+ section below",
+      "rowAbove": "+ row above",
+      "rowBelow": "+ row below",
       "untitledRow": "Untitled row",
       "addHere": "+ Add here",
       "blankBlock": "{{block}} — nothing written yet. Fill it in on the right.",

@@ -10,9 +10,9 @@ import { readBody } from '../../../blocks';
 import { BodyEditor } from '../../../features/content/BodyEditor';
 import { mediaPickerQuery } from '../../../features/media/queries';
 import {
-  holdsPermission,
-  holdsPermissionAnywhere,
+  holdsPermissionUnscoped,
   writableDepartments,
+  type Bootstrap,
   type Department,
 } from '../../../shared/api/bootstrap';
 import { ApiError } from '../../../shared/api/problem';
@@ -34,16 +34,7 @@ import {
   type EventDetailDto,
   type EventListDto,
 } from '../api';
-import {
-  EVENTS_DELETE,
-  EVENTS_EDIT,
-  EVENT_ATC_VIEW,
-  EVENT_BOOKINGS_EDIT,
-  EVENT_BOOKINGS_VIEW,
-  EVENT_REPORTS_VIEW,
-  EVENT_ROUTES_EDIT,
-  EVENT_ROUTES_VIEW,
-} from '../permissions';
+import { EVENTS_EDIT } from '../permissions';
 import {
   EVENT_VIEWS,
   cancelSchema,
@@ -90,6 +81,16 @@ import { StatsTab } from './stats';
 
 export const EVENTS = '/staff/events';
 
+/**
+ * Whether the reader may create an event: `Events.Edit` held without a row scope, on a department they reach. A new event is never a row
+ * a grant names (E10i), so a grant on one event does not draw «New event» (#427).
+ */
+function mayCreateEvents(bootstrap: Bootstrap): boolean {
+  return (
+    holdsPermissionUnscoped(bootstrap, EVENTS_EDIT) && writableDepartments(bootstrap, EVENTS_EDIT).length > 0
+  );
+}
+
 const columns: readonly ColumnSpec<EventListDto>[] = [
   col.localized('title'),
   col.localized('kindLabel'),
@@ -124,7 +125,8 @@ export function EventsPage() {
       to: '.',
     });
 
-  const create = writableDepartments(bootstrap, EVENTS_EDIT).length > 0 ? <NewEventButton /> : null;
+  // A new event is never a row a grant names (E10i): «New event» asks the permission held without a row scope (#427).
+  const create = mayCreateEvents(bootstrap) ? <NewEventButton /> : null;
 
   return (
     <PageShell
@@ -386,22 +388,19 @@ function PublishProblems({ error }: { error: unknown }) {
  * then, the form would be drawn again on the published row and the changes lost without a word (E3b's ⚠️). And it is asked once
  * more (E6b, dalberone after the bench): a published event is on the site, in the calendar and in the search, and never goes back
  * to a draft — it can only be cancelled. Blue, not red: nothing is lost. «Duplicate» is offered in every state: last year's event,
- * ended, is the one it exists for.
+ * ended, is the one it exists for. Which of them the reader has is the server's answer on the event (`actions`, #427): a grant on one event
+ * draws them on that event alone.
  */
 function EventActions({ event, edited }: { event: EventDetailDto; edited: boolean }) {
   const { t, i18n } = useTranslation();
-  const { bootstrap } = useRouteContext({ from: '/_staff' });
   const navigate = useNavigate();
   const publish = usePublishEvent(event.id);
   const remove = useDeleteEvent();
 
-  const writer = holdsPermission(bootstrap, EVENTS_EDIT, event.ownerDepartment);
-  // A draft is published once; a cancelled one never — its state is Cancelled, not Draft (§2.1).
-  const publishable = writer && event.state === 'Draft';
-  // An event cancelled stays cancelled, and one that is over happened: the server refuses both, so neither is offered.
-  const cancellable = writer && event.state !== 'Cancelled' && event.state !== 'Ended';
+  // A draft is published once; a cancelled one never; one cancelled or over is not cancelled again — the server says so with the rest.
+  const { canPublish: publishable, canCancel: cancellable, canDuplicate: duplicable } = event.actions;
   // Deleting asks for Events.Delete on the event, which only the base department's heads hold (§6.3).
-  const deletable = holdsPermission(bootstrap, EVENTS_DELETE, event.ownerDepartment);
+  const deletable = event.actions.canDelete;
   // What «Publish» still needs is listed below the bar; any other answer is one sentence.
   const refusal = describeProblem(
     remove.error ?? (publishProblems(publish.error) === null ? publish.error : null),
@@ -409,7 +408,7 @@ function EventActions({ event, edited }: { event: EventDetailDto; edited: boolea
     i18n.language,
   );
 
-  if (!publishable && !cancellable && !writer && !deletable) {
+  if (!publishable && !cancellable && !duplicable && !deletable) {
     return null;
   }
 
@@ -435,7 +434,7 @@ function EventActions({ event, edited }: { event: EventDetailDto; edited: boolea
             </RouterAnchor>
           </Button>
         ) : null}
-        {writer ? (
+        {duplicable ? (
           <Button asChild variant="outline">
             <RouterAnchor href={`${EVENTS}/${event.id}/duplicate`}>
               {t('events:events.actions.duplicate')}
@@ -478,8 +477,9 @@ export function EventEditor() {
   const [edited, setEdited] = useState(false);
 
   const event = useQuery({ ...eventQuery(Number(id)), enabled: !isNew }).data ?? null;
-  // The presets are read by whoever writes events, the only ones whose form follows a change of kind.
-  const writer = holdsPermissionAnywhere(bootstrap, EVENTS_EDIT);
+  // The presets are read by whoever writes the event, the only ones whose form follows a change of kind: on an event, the server's answer
+  // on it (#427); on a new one, the permission held without a row scope.
+  const writer = isNew ? mayCreateEvents(bootstrap) : event?.actions.canEdit === true;
   const presets = useQuery({ ...kindPresetsQuery(), enabled: writer }).data;
 
   const department = event?.ownerDepartment ?? writableDepartments(bootstrap, EVENTS_EDIT)[0];
@@ -488,7 +488,7 @@ export function EventEditor() {
     return null;
   }
 
-  const editable = event === null || holdsPermission(bootstrap, EVENTS_EDIT, event.ownerDepartment);
+  const editable = event === null || event.actions.canEdit;
   const title = event === null ? t('events:events.create') : read(event.title) || t('events:events.edit');
 
   const settings = (
@@ -594,16 +594,13 @@ export function EventEditor() {
                   }),
               // The routes are an area of their own (§1.4, E4): whoever reads them — the flight operations, from a grant on the
               // events department — has the tab, and whoever writes them its button, whether or not they write the event.
-              ...(holdsPermission(bootstrap, EVENT_ROUTES_VIEW, event.ownerDepartment)
+              ...(event.actions.canReadRoutes
                 ? {
                     routes: {
                       trigger: t('events:events.tabs.routes'),
                       content: (
                         <div className="pt-4">
-                          <RoutesTab
-                            event={event}
-                            editable={holdsPermission(bootstrap, EVENT_ROUTES_EDIT, event.ownerDepartment)}
-                          />
+                          <RoutesTab event={event} editable={event.actions.canWriteRoutes} />
                         </div>
                       ),
                     },
@@ -627,16 +624,13 @@ export function EventEditor() {
               // bookings has the tab, whoever writes them its buttons.
               ...(!event.wholeDivision &&
               (event.publicSlots || event.privateSlots) &&
-              holdsPermission(bootstrap, EVENT_BOOKINGS_VIEW, event.ownerDepartment)
+              event.actions.canReadBookings
                 ? {
                     slots: {
                       trigger: t('events:events.tabs.slots'),
                       content: (
                         <div className="pt-4">
-                          <SlotsTab
-                            event={event}
-                            editable={holdsPermission(bootstrap, EVENT_BOOKINGS_EDIT, event.ownerDepartment)}
-                          />
+                          <SlotsTab event={event} editable={event.actions.canWriteBookings} />
                         </div>
                       ),
                     },
@@ -645,16 +639,13 @@ export function EventEditor() {
               // The bookings of its slots (§7.2, E6b), the same area: who booked what, and «take away» for whoever writes them.
               ...(!event.wholeDivision &&
               (event.publicSlots || event.privateSlots) &&
-              holdsPermission(bootstrap, EVENT_BOOKINGS_VIEW, event.ownerDepartment)
+              event.actions.canReadBookings
                 ? {
                     bookings: {
                       trigger: t('events:events.tabs.bookings'),
                       content: (
                         <div className="pt-4">
-                          <BookingsTab
-                            event={event}
-                            editable={holdsPermission(bootstrap, EVENT_BOOKINGS_EDIT, event.ownerDepartment)}
-                          />
+                          <BookingsTab event={event} editable={event.actions.canWriteBookings} />
                         </div>
                       ),
                     },
@@ -674,16 +665,13 @@ export function EventEditor() {
                     },
                   }
                 : {}),
-              ...(event.inPerson && holdsPermission(bootstrap, EVENT_BOOKINGS_VIEW, event.ownerDepartment)
+              ...(event.inPerson && event.actions.canReadBookings
                 ? {
                     registrations: {
                       trigger: t('events:events.tabs.registrations'),
                       content: (
                         <div className="pt-4">
-                          <RegistrationsTab
-                            event={event}
-                            editable={holdsPermission(bootstrap, EVENT_BOOKINGS_EDIT, event.ownerDepartment)}
-                          />
+                          <RegistrationsTab event={event} editable={event.actions.canWriteBookings} />
                         </div>
                       ),
                     },
@@ -691,16 +679,13 @@ export function EventEditor() {
                 : {}),
               // Its parallel activities and their seats (§4-bis, E17), the bookings' area as its registrations: whoever reads them has
               // the tabs, whoever writes them the activities.
-              ...(event.inPerson && holdsPermission(bootstrap, EVENT_BOOKINGS_VIEW, event.ownerDepartment)
+              ...(event.inPerson && event.actions.canReadBookings
                 ? {
                     activities: {
                       trigger: t('events:events.tabs.activities'),
                       content: (
                         <div className="pt-4">
-                          <ActivitiesTab
-                            event={event}
-                            editable={holdsPermission(bootstrap, EVENT_BOOKINGS_EDIT, event.ownerDepartment)}
-                          />
+                          <ActivitiesTab event={event} editable={event.actions.canWriteBookings} />
                         </div>
                       ),
                     },
@@ -716,7 +701,7 @@ export function EventEditor() {
                 : {}),
               // An event with a roster (§4, E11a): its positions and who is available on them, the ATC's area — the ATC operations
               // and the staff of the FIRs hold it, the latter on their FIR, as the server says.
-              ...(event.hasRoster && holdsPermission(bootstrap, EVENT_ATC_VIEW, event.ownerDepartment)
+              ...(event.hasRoster && event.actions.canReadAtc
                 ? {
                     atc: {
                       trigger: t('events:events.tabs.atc'),
@@ -744,8 +729,7 @@ export function EventEditor() {
                 : {}),
               // After the end (§5.3, §7.2, E14a): the members' reports of support with the check of each item, to whoever reads them on the
               // event's care — the members' department validates them —; «Decide» where the server says the reader may.
-              ...(event.state === 'Ended' &&
-              holdsPermission(bootstrap, EVENT_REPORTS_VIEW, event.ownerDepartment)
+              ...(event.state === 'Ended' && event.actions.canReadReports
                 ? {
                     reports: {
                       trigger: t('events:events.tabs.reports'),
