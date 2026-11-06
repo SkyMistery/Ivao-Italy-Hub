@@ -67,10 +67,13 @@ Prese dalla sessione perché non cambiano che cosa vede nessuno; il revisore le 
 - **`AddOAuth` di ASP.NET Core**, che porta `state`, cookie di correlazione e PKCE. ⚠️ Lo schema è **sempre registrato**, e senza
   configurazione non risponde a niente (`DiscordLinkHandler`): un gestore remoto senza `ClientId` fallisce a ogni richiesta, e quali schemi
   esistono si decide prima che le impostazioni siano definitive, come il commento di `Program.cs` dice per la divisione. Il token si usa
-  una volta per leggere `/users/@me` e si butta. Il VID è quello del cookie dell'hub, mai un dato che arriva dal giro.
+  una volta per leggere `/users/@me` e si butta. **Il VID che comincia il giro viaggia nello stato protetto**, e al ritorno deve coincidere
+  con quello del cookie dell'hub: su un browser condiviso, una sessione cambiata nel frattempo non riceve l'account di un altro (revisione
+  del master). ⚠️ Il framework alza `TicketReceived` fuori dal `try` che porta a `OnRemoteFailure` (letto nel sorgente di .NET 10), quindi
+  l'evento prende da sé gli errori del database e finisce su `?discord=failed`.
 - **Il giro parte da un link (`GET /auth/discord`)**, non da un form: `form-action 'self'` in `config/security.json` blocca un form che
-  finisce in un redirect verso Discord. `/auth` è già in `web/backendPaths.ts`. Lo stato lo tiene il cookie: niente memoria del processo
-  da perdere quando Passenger lo ferma.
+  finisce in un redirect verso Discord. `/auth` è già in `web/backendPaths.ts`. Lo stato protetto viaggia nell'indirizzo e il nonce di
+  correlazione in un cookie: niente memoria del processo da perdere quando Passenger lo ferma.
 - **`GET` e `DELETE /api/me/discord`**, fuori da `/api/me` come le notifiche: serve solo a questa schermata. Il `DELETE` ha
   `HubRateLimits.MemberWrites`. Senza configurazione la risposta dice che non è disponibile, e la sezione non si disegna, tranne per chi
   era già collegato: quello può ancora scollegarsi. Il `GET` non porta l'`id`: al membro non serve.

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
@@ -13,10 +14,13 @@ namespace IvaoHub.Core.Auth;
 
 /// <summary>
 /// The round trip a member makes to Discord to prove an account is theirs. It signs nobody in: the identity is the hub's
-/// cookie, the VID comes from there and never from the round trip, and what Discord says ends in three columns of
-/// <c>hub_users</c> (<see cref="DiscordLinks"/>). The access token reads one profile and is thrown away.
-/// <para>State, correlation cookie and PKCE are the framework's, as for the sign in; the state lives in the cookie, so a host
-/// that stops the process between the two hops loses nothing (note 2026-11-05-il-collegamento-con-discord §5).</para>
+/// cookie, and what Discord says ends in three columns of <c>hub_users</c> (<see cref="DiscordLinks"/>). The account goes to
+/// the VID that started the round trip and only if the cookie still says that VID when it comes back: on a shared browser, a
+/// session that changed in between must not receive somebody else's account. The access token reads one profile and is thrown
+/// away.
+/// <para>State, correlation cookie and PKCE are the framework's, as for the sign in. The protected state travels in the address
+/// and the correlation nonce in a cookie, so a host that stops the process between the two hops loses nothing (note
+/// 2026-11-05-il-collegamento-con-discord §5).</para>
 /// </summary>
 public static class DiscordLinkAuthentication
 {
@@ -34,8 +38,15 @@ public static class DiscordLinkAuthentication
 
     private const string UsernameClaim = "discord:username";
 
+    /// <summary>Who started the round trip, inside the protected state, so nobody can write it from outside.</summary>
+    private const string StartedByItem = "discord.started-by";
+
     /// <summary>Where a round trip ends. A failure says which one through the search, and the page draws it.</summary>
     private const string Profile = "/me";
+
+    /// <summary>What the round trip of this member carries with it: see <see cref="StartedByItem"/>.</summary>
+    public static AuthenticationProperties StartedBy(int vid) =>
+        new(new Dictionary<string, string?> { [StartedByItem] = vid.ToString(CultureInfo.InvariantCulture) });
 
     public static IServiceCollection AddDiscordLink(this IServiceCollection services)
     {
@@ -119,25 +130,49 @@ public static class DiscordLinkAuthentication
     {
         // Answered here, always: the framework would otherwise sign the principal in.
         context.HandleResponse();
+        context.Response.Redirect(Ended(await TryLinkAsync(context)));
+    }
 
+    private static async Task<DiscordLinkOutcome> TryLinkAsync(TicketReceivedContext context)
+    {
         var http = context.HttpContext;
-        var signedIn = await http.AuthenticateAsync(HubClaims.CookieScheme);
-        if (!signedIn.Succeeded)
+        try
         {
-            // The session ended while the member was on Discord's page; the profile's guard sends them to sign in again.
-            context.Response.Redirect(Ended(DiscordLinkOutcome.Failed));
-            return;
+            var signedIn = await http.AuthenticateAsync(HubClaims.CookieScheme);
+            if (!signedIn.Succeeded)
+            {
+                // The session ended while the member was on Discord's page; the profile's guard sends them to sign in again.
+                return DiscordLinkOutcome.Failed;
+            }
+
+            // The remote handlers run before the middleware has set the identity, and whoever writes below asks for it.
+            http.User = signedIn.Principal;
+            var vid = http.RequestServices.GetRequiredService<ICurrentUser>().Vid;
+
+            string? startedBy = null;
+            if (context.Properties?.Items.TryGetValue(StartedByItem, out startedBy) != true
+                || startedBy != vid.ToString(CultureInfo.InvariantCulture))
+            {
+                return DiscordLinkOutcome.Failed;
+            }
+
+            return await http.RequestServices.GetRequiredService<DiscordLinks>().LinkAsync(
+                vid,
+                context.Principal?.FindFirstValue(AccountIdClaim) ?? string.Empty,
+                context.Principal?.FindFirstValue(UsernameClaim) ?? string.Empty,
+                http.RequestAborted);
         }
-
-        // The remote handlers run before the middleware has set the identity, and whoever writes below asks for it.
-        http.User = signedIn.Principal;
-        var outcome = await http.RequestServices.GetRequiredService<DiscordLinks>().LinkAsync(
-            http.RequestServices.GetRequiredService<ICurrentUser>().Vid,
-            context.Principal?.FindFirstValue(AccountIdClaim) ?? string.Empty,
-            context.Principal?.FindFirstValue(UsernameClaim) ?? string.Empty,
-            http.RequestAborted);
-
-        context.Response.Redirect(Ended(outcome));
+#pragma warning disable CA1031 // Whatever failed, the member gets the profile that says so, and the log the exception.
+        catch (Exception exception) when (!http.RequestAborted.IsCancellationRequested)
+#pragma warning restore CA1031
+        {
+            // ⚠️ The framework raises this event outside the try that leads to OnRemoteFailure (RemoteAuthenticationHandler,
+            // read in its source for .NET 10): a database that fails here would end the member's navigation on a page of JSON.
+            http.RequestServices.GetRequiredService<ILoggerFactory>()
+                .CreateLogger(typeof(DiscordLinkAuthentication))
+                .LogWarning(exception, "A Discord link could not be written.");
+            return DiscordLinkOutcome.Failed;
+        }
     }
 
     private static string Ended(DiscordLinkOutcome outcome) => outcome switch

@@ -26,8 +26,9 @@ internal static class AuthEndpoints
             [HubClaims.IvaoScheme]));
 
         // Starts the round trip that links a member's Discord account. A link and not a form: `form-action 'self'` refuses a
-        // form whose redirect ends on another site. Another site linking here costs nothing: the account linked is the one
-        // the member themselves authorises, and to their own VID (note 2026-11-05-il-collegamento-con-discord §5).
+        // form whose redirect ends on another site. Another site linking here costs nothing: the account linked is the one the
+        // member themselves authorises, and only on the VID that started the round trip, if the cookie still says that VID
+        // when it comes back (note 2026-11-05-il-collegamento-con-discord §5).
         group.MapGet("/discord", (ICurrentUser user, IOptions<DiscordOAuthOptions> discord) =>
         {
             if (!discord.Value.IsConfigured)
@@ -36,7 +37,7 @@ internal static class AuthEndpoints
             }
 
             return user.IsAuthenticated
-                ? Results.Challenge(new AuthenticationProperties(), [HubClaims.DiscordScheme])
+                ? Results.Challenge(DiscordLinkAuthentication.StartedBy(user.Vid), [HubClaims.DiscordScheme])
                 : Results.Redirect($"/auth/login?returnUrl={Uri.EscapeDataString("/me")}");
         });
 

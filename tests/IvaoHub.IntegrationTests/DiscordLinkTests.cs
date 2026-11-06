@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -38,12 +40,13 @@ public sealed class DiscordLinkTests(MariaDbFixture mariaDb) : IAsyncLifetime
     private static readonly Uri Mine = new(DiscordLinkEndpoints.Pattern, UriKind.Relative);
 
     private readonly DiscordDouble _discord = new();
+    private readonly DatabaseFaults _faults = new();
     private HubWebApplicationFactory _factory = null!;
     private WebApplicationFactory<Program> _host = null!;
 
     public async ValueTask InitializeAsync()
     {
-        _factory = new HubWebApplicationFactory(mariaDb.ConnectionString);
+        _factory = new HubWebApplicationFactory(mariaDb.ConnectionString, extraInterceptor: _faults);
         _host = _factory.WithWebHostBuilder(builder =>
         {
             builder.UseSetting("Discord:ClientId", "discord-client");
@@ -296,9 +299,69 @@ public sealed class DiscordLinkTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NoContent, unlinked.StatusCode);
         Assert.Null((await RowAsync(MemberVid, token)).DiscordId);
 
-        // The handler answers nothing on this host: no round trip ends here.
+        // The handler answers nothing on this host: the callback is one more address nobody knows.
         using var callback = await member.GetAsync(Callback("anything"), token);
-        Assert.NotEqual("/me?discord=failed", callback.Headers.Location?.OriginalString);
+        Assert.Equal(HttpStatusCode.NotFound, callback.StatusCode);
+    }
+
+    [Fact]
+    public async Task ASessionThatChangedOnDiscordsPageGivesTheAccountToNobody()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await SeedAsync(MemberVid, token);
+        await SeedAsync(OtherVid, token);
+        using var browser = await SignedInAsync(MemberVid, token);
+
+        // One browser, two people: the first leaves for Discord, and the second signs in while the first's page is open.
+        var query = await LeaveForDiscordAsync(browser, token);
+        using (var other = await browser.PostAsync(new Uri($"{TestSignInStartupFilter.Path}?vid={OtherVid}", UriKind.Relative), content: null, token))
+        {
+            other.EnsureSuccessStatusCode();
+        }
+
+        using var back = await browser.GetAsync(Callback(query["state"]!), token);
+
+        Assert.Equal("/me?discord=failed", back.Headers.Location!.OriginalString);
+        Assert.Null((await RowAsync(MemberVid, token)).DiscordId);
+        Assert.Null((await RowAsync(OtherVid, token)).DiscordId);
+    }
+
+    [Fact]
+    public async Task ADatabaseThatFailsOnTheWayBackEndsOnTheProfileAndNotOnAnError()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await SeedAsync(MemberVid, token);
+        using var member = await SignedInAsync(MemberVid, token);
+        var query = await LeaveForDiscordAsync(member, token);
+
+        // The read of who else holds the account, before any save: the event runs outside the framework's own try.
+        _faults.Fail("`discord_id`", new InvalidOperationException("The database is gone."));
+        using var back = await member.GetAsync(Callback(query["state"]!), token);
+        _faults.Clear();
+
+        Assert.Equal(HttpStatusCode.Redirect, back.StatusCode);
+        Assert.Equal("/me?discord=failed", back.Headers.Location!.OriginalString);
+        Assert.Null((await RowAsync(MemberVid, token)).DiscordId);
+    }
+
+    [Fact]
+    public async Task AConflictOnUnlinkingIsAnAnswerAndNotARawError()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await SeedAsync(MemberVid, token);
+        using var member = await SignedInAsync(MemberVid, token);
+        await LinkAsync(member, token);
+
+        _faults.Fail("UPDATE `hub_users`", new DbUpdateConcurrencyException("A sign in changed the row."));
+        using var unlinked = await member.DeleteAsync(Mine, token);
+        _faults.Clear();
+
+        Assert.Equal(HttpStatusCode.Conflict, unlinked.StatusCode);
+        Assert.Equal("application/problem+json", unlinked.Content.Headers.ContentType?.MediaType);
+
+        // And nothing was lost: pressing it again works.
+        using var again = await member.DeleteAsync(Mine, token);
+        Assert.Equal(HttpStatusCode.NoContent, again.StatusCode);
     }
 
     [Fact]
@@ -389,6 +452,35 @@ public sealed class DiscordLinkTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
         await database.Users.Where(row => Vids.Contains(row.Vid)).ExecuteDeleteAsync(cancellationToken);
+    }
+
+    /// <summary>A database that fails on demand, on the commands whose text holds a given fragment.</summary>
+    private sealed class DatabaseFaults : DbCommandInterceptor
+    {
+        private string? _fragment;
+        private Exception? _exception;
+
+        public void Fail(string fragment, Exception exception)
+        {
+            _exception = exception;
+            _fragment = fragment;
+        }
+
+        public void Clear() => _fragment = null;
+
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+            DbCommand command,
+            CommandEventData eventData,
+            InterceptionResult<DbDataReader> result,
+            CancellationToken cancellationToken = default)
+        {
+            if (_fragment is { } fragment && command.CommandText.Contains(fragment, StringComparison.Ordinal))
+            {
+                throw _exception!;
+            }
+
+            return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
+        }
     }
 
     /// <summary>Discord at the far end of the backchannel: the token endpoint and the profile, and what it was asked.</summary>
