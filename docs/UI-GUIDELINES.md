@@ -90,8 +90,10 @@ the top of `Toaster.tsx`.
 
 `MediaPicker` chooses a file out of the library of a department, and it is on the list because two
 very different screens mount it: the library itself, and every block property that names a file. It
-picks and nothing else — uploading belongs to the library screen, and a picker that also uploaded
-would be a second way for a file to enter the hub.
+looks for a file (a search, a category unless the field asks for one, a next page: the same read of
+the library), and where a screen allows it, it takes a new one, through the same call the library
+screen makes: by the button at the top or by dragging a file on the grid. A file uploaded there is
+chosen, and it says it has no alternative text yet, with the way to its page in the library.
 
 `CalendarView` draws the one calendar of the division as an agenda, a week or a month, and it is on
 the list for the same reason: two screens mount it, the public calendar and the `calendar` block
