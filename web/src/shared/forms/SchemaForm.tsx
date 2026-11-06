@@ -981,9 +981,15 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
   const label = node.meta.label ?? t(`${labels}.fields.${node.path}`);
 
   // What an optional select says for "nothing chosen". Its own key beside the field's, as it always
-  // was; for a field with a name of its own there is no key beside it, so the core says it with one
-  // word that fits any field.
-  const none = node.meta.label === undefined ? t(`${labels}.options.${node.path}.none`) : t('form.none');
+  // was; a field with a name of its own has no key beside it, and neither has a field that never needed
+  // a word of its own, so the core says it with one word that fits any field.
+  const noneKey = `${labels}.options.${node.path}.none`;
+  const none = node.meta.label === undefined && i18n.exists(noneKey) ? t(noneKey) : t('form.none');
+
+  // What a closed select says while nothing is chosen. ⚠️ Left out, Atmosphere says "Select an option"
+  // in English, whatever the language on screen. An optional field is in the state its "none" names, so
+  // it says that, as a list's filter and the template picker do; a required one asks for a choice.
+  const nothingChosen = node.optional ? none : t('form.choose');
 
   // The sentence under a field, drawn only when the language files carry one. It is a convention
   // rather than a schema flag on purpose: a hint is words, and words live in `locales/`.
@@ -1090,6 +1096,7 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
                   // Back to "nothing chosen", the same gesture an optional enum has: without it the
                   // first category somebody picks could never be taken off again.
                   onValueChange={(chosen) => field.onChange(chosen === NO_CHOICE ? '' : chosen)}
+                  placeholder={nothingChosen}
                   // The labels are the caller's, already in the language on screen. For a set only
                   // known at runtime — the permission catalogue, which depends on the modules
                   // installed — the label *is* the value, and that is what `choices` hands over.
@@ -1152,6 +1159,7 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
                 <Select
                   {...(typeof field.value === 'number' ? { value: String(field.value) } : {})}
                   onValueChange={(chosen) => field.onChange(Number(chosen))}
+                  placeholder={nothingChosen}
                   items={node.choices!.map((choice) => ({
                     value: String(choice),
                     label: t(`${labels}.options.${node.path}.${choice}`),
@@ -1200,6 +1208,7 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
                 // An optional enum needs a way back to "nothing chosen", and a select has no such
                 // gesture: leaving it out would make the first choice permanent.
                 onValueChange={(chosen) => field.onChange(chosen === NO_CHOICE ? undefined : chosen)}
+                placeholder={nothingChosen}
                 items={[
                   ...(node.optional ? [{ value: NO_CHOICE, label: none }] : []),
                   ...node.options.map((option) => ({
