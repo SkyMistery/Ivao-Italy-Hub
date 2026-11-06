@@ -1599,7 +1599,16 @@
         "Deny": "Deny"
       },
       "department": {
-        "none": "Every department"
+        "none": "Every department",
+        "HQ": "HQ",
+        "SOD": "SOD",
+        "FOD": "FOD",
+        "AOD": "AOD",
+        "TD": "TD",
+        "MD": "MD",
+        "ED": "ED",
+        "PRD": "PRD",
+        "WD": "WD"
       },
       "positionLevels": {
         "Coordinator": "Coordinator",
@@ -1608,7 +1617,16 @@
         "Member": "Member"
       },
       "positionDepartment": {
-        "none": "No position — a member, by VID"
+        "none": "No position — a member, by VID",
+        "HQ": "HQ",
+        "SOD": "SOD",
+        "FOD": "FOD",
+        "AOD": "AOD",
+        "TD": "TD",
+        "MD": "MD",
+        "ED": "ED",
+        "PRD": "PRD",
+        "WD": "WD"
       }
     },
     "hints": {

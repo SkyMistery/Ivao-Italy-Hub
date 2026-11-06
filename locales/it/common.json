@@ -1599,7 +1599,16 @@
         "Deny": "Vieta"
       },
       "department": {
-        "none": "Tutti i dipartimenti"
+        "none": "Tutti i dipartimenti",
+        "HQ": "HQ",
+        "SOD": "SOD",
+        "FOD": "FOD",
+        "AOD": "AOD",
+        "TD": "TD",
+        "MD": "MD",
+        "ED": "ED",
+        "PRD": "PRD",
+        "WD": "WD"
       },
       "positionLevels": {
         "Coordinator": "Coordinator",
@@ -1608,7 +1617,16 @@
         "Member": "Membro"
       },
       "positionDepartment": {
-        "none": "Nessuna posizione — un membro, per VID"
+        "none": "Nessuna posizione — un membro, per VID",
+        "HQ": "HQ",
+        "SOD": "SOD",
+        "FOD": "FOD",
+        "AOD": "AOD",
+        "TD": "TD",
+        "MD": "MD",
+        "ED": "ED",
+        "PRD": "PRD",
+        "WD": "WD"
       }
     },
     "hints": {
