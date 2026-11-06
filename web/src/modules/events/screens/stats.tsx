@@ -5,7 +5,6 @@ import { useRouteContext } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { holdsPermission } from '../../../shared/api/bootstrap';
 import { SchemaForm, describeProblem } from '../../../shared/forms';
 import { useMoment } from '../../../shared/i18n/useMoment';
 import { DataList, col, listSearchSchema, type ColumnSpec, type ListSearch } from '../../../shared/list';
@@ -20,7 +19,6 @@ import {
   type EventDetailDto,
   type EventStatsDto,
 } from '../api';
-import { EVENT_ATC_VIEW, EVENT_BOOKINGS_VIEW } from '../permissions';
 import { statsSchema, statsToFormValues } from '../schemas';
 
 /**
@@ -28,12 +26,11 @@ import { statsSchema, statsToFormValues } from '../schemas';
  * numbers in a generated form that saves nothing — the words of each are the page's —, when they were worked out and whether the checks after
  * the event are done, «Recalculate» for whoever writes the event, and two generated lists with what the checks found: the bookings — flown,
  * not flown, still to check — to whoever reads the bookings, and the shifts — how each went, and who covered the position next to a no-show
- * proposed — to whoever reads the ATC. Who flew without booking is a number only: nobody of them is listed.
+ * proposed — to whoever reads the ATC, as the server says of the event (`actions`, #427). Who flew without booking is a number only: nobody of them is listed.
  */
 export function StatsTab({ event, editable }: { event: EventDetailDto; editable: boolean }) {
   const { t, i18n } = useTranslation();
   const moment = useMoment();
-  const { bootstrap } = useRouteContext({ from: '/_staff' });
   const stats = useQuery(eventStatsQuery(event.id));
   const recalculate = useRecalculateStats(event.id);
   const refusal = describeProblem(recalculate.error, t, i18n.language);
@@ -81,12 +78,8 @@ export function StatsTab({ event, editable }: { event: EventDetailDto; editable:
           labels="events:stats"
         />
       )}
-      {slots && holdsPermission(bootstrap, EVENT_BOOKINGS_VIEW, event.ownerDepartment) ? (
-        <CheckedBookings event={event} />
-      ) : null}
-      {event.hasRoster && holdsPermission(bootstrap, EVENT_ATC_VIEW, event.ownerDepartment) ? (
-        <ShiftOutcomes event={event} />
-      ) : null}
+      {slots && event.actions.canReadBookings ? <CheckedBookings event={event} /> : null}
+      {event.hasRoster && event.actions.canReadAtc ? <ShiftOutcomes event={event} /> : null}
     </div>
   );
 }

@@ -124,6 +124,8 @@
     "copyFrom": "Copia da {{language}}",
     "addEntry": "Aggiungi",
     "removeEntry": "Rimuovi",
+    "entry": "Voce {{number}}",
+    "clearDate": "Togli la data",
     "submitHint": "Premi Invio per salvare.",
     "submitHintOneLine": "Premi Invio in un campo di una riga per salvare.",
     "moveUp": "Sposta su",

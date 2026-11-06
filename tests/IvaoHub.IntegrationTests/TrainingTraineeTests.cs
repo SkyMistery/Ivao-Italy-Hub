@@ -11,6 +11,7 @@ using IvaoHub.Core.Services;
 using IvaoHub.Modules.Training;
 using IvaoHub.Modules.Training.Bans;
 using IvaoHub.Modules.Training.Data;
+using IvaoHub.Modules.Training.Dates;
 using IvaoHub.Modules.Training.Exams;
 using IvaoHub.Modules.Training.Reference;
 using IvaoHub.Modules.Training.Requests;
@@ -20,6 +21,7 @@ using IvaoHub.Modules.Training.Staff;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Quartz;
 using Xunit;
 
 namespace IvaoHub.IntegrationTests;
@@ -72,6 +74,11 @@ public sealed partial class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyn
     {
         _factory = new HubWebApplicationFactory(mariaDb.ConnectionString);
         var token = TestContext.Current.CancellationToken;
+
+        // The host runs the reminders by itself every quarter of an hour, and a run of its own in the middle of a test would mark a
+        // session, queue its mail, and leave that mail for an erasure to take away: paused, the only runs are the test's.
+        var scheduler = await _factory.Services.GetRequiredService<ISchedulerFactory>().GetScheduler(token);
+        await scheduler.PauseJob(new JobKey(TrainingRemindersJob.JobName), token);
 
         // A run that failed half way leaves its trainings, bans, items, grants and positions.
         await CleanAsync(token);
