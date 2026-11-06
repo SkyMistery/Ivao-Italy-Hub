@@ -113,3 +113,34 @@ test('what the hub would refuse, the preview says out loud', async ({ page }) =>
   await showFragment(page, '<!doctype html><html><body><svg /></body></html>');
   await expect(page.locator('#refusals')).toContainText('whole page, not a fragment');
 });
+
+test('a scroll bar comes as it does in the hub: past 2000 px and not before', async ({ page }) => {
+  await page.goto(previewFile());
+  const frame = page.locator('#frame');
+
+  await showFragment(page, '<div style="height:1900px"></div>');
+  await expect.poll(async () => (await frame.boundingBox())?.height).toBe(1900);
+  await expect(frame).toHaveAttribute('scrolling', 'no');
+
+  await showFragment(page, '<div style="height:2600px"></div>');
+  await expect.poll(async () => (await frame.boundingBox())?.height).toBe(2000);
+  await expect(frame).toHaveAttribute('scrolling', 'auto');
+
+  // A new fragment starts over.
+  await showFragment(page, '<div style="height:400px"></div>');
+  await expect.poll(async () => (await frame.boundingBox())?.height).toBe(400);
+  await expect(frame).toHaveAttribute('scrolling', 'no');
+});
+
+test('the two widths the guidelines ask for are one press away', async ({ page }) => {
+  await page.goto(previewFile());
+  await showFragment(page, PROBE);
+
+  const frame = page.locator('#frame');
+
+  await page.getByRole('button', { name: 'Tablet, 768 px' }).click();
+  await expect.poll(async () => (await frame.boundingBox())?.width).toBe(768);
+
+  await page.getByRole('button', { name: 'Phone, 360 px' }).click();
+  await expect.poll(async () => (await frame.boundingBox())?.width).toBe(360);
+});

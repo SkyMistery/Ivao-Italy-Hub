@@ -57,8 +57,12 @@ The colours are CSS variables, and they are the division's own — use them and 
 `--stop`. The background is **transparent on purpose**: the section behind the frame is what a reader
 sees around your drawing, so never paint a ground of your own.
 
-The height is measured for you: the frame tells the page how tall your fragment is and the page
-gives it that room. Do not set a height on `body`.
+The height is measured for you: the frame tells the page how tall your fragment is, what you drew
+out of the flow included, and the page gives it that room, between 80 and 2000 px. Up to 2000 px the
+frame **has no scroll bar**, and nothing in your CSS brings one. Do not set a height on
+`body`. ⚠️ **Past 2000 px the frame stops growing and a scroll bar appears**, on the reader's page: all
+of your fragment can still be reached, and a block with a scroll bar in the middle of a document is
+still something to fix, by splitting it or by making the drawing shorter.
 
 ## Seeing it before you publish
 
@@ -79,9 +83,9 @@ There are two ways to see it, and neither of them is to build something of your 
    paste the fragment or choose its file, and press Show. It is generated from the same shell as the
    hub, so it runs the fragment in the same sandboxed frame under the same policy, and it lets you
    switch what the hub would switch for you: **Italian or English**, a **light page, a dark page or a
-   dark section**, a reader who asked for **reduced movement**, and a **360 px** phone. Anything the
-   browser refuses, and any error the fragment throws, is listed underneath — the same lines the hub
-   shows the staff.
+   dark section**, a reader who asked for **reduced movement**, a **768 px** tablet and a **360 px**
+   phone. Anything the browser refuses, and any error the fragment throws, is listed underneath — the
+   same lines the hub shows the staff.
 
 If you are an assistant writing a fragment for somebody: produce the fragment only, and tell them to
 open it in the local preview or in a draft. Do not make a second, standalone page that recreates the
@@ -105,7 +109,8 @@ and saying so.
    asked for less movement; anything you animate from JavaScript must check `HUB.reducedMotion` and
    draw the final state instead. An animation that runs for more than a few seconds needs a way to
    stop it.
-4. **It must read at 360 pixels wide.** Use `viewBox` and let the SVG scale; do not set pixel widths.
+4. **It must read at 360 and at 768 pixels wide.** Use `viewBox` and let the SVG scale; do not set
+   pixel widths. "Tablets and phones", below, says how.
 5. **Say what it is.** The block itself carries a name and a description — fill them in. They are the
    only part of an interactive block that the search index sees, and the only part that survives on
    paper: **printing folds the frame away**, so a document whose meaning depends on the animation
@@ -163,8 +168,8 @@ controller who cannot tell your green from your orange still has to be able to u
 - **One figure per block.** Two ideas are two blocks; the page is what puts them in order.
 - **Controls under the drawing**, in a row, wrapping on a narrow screen. A control is a `<button>`,
   at least 44 px tall including its padding, with `aria-pressed` when it is a choice among several.
-- **Nothing scrolls inside a frame.** If it does not fit, the drawing is too big: make the `viewBox`
-  wider, not the frame taller.
+- **Nothing scrolls inside a frame**, up to the 2000 px above which the page gives it a scroll bar. If it
+  does not fit, the drawing is too big: make the `viewBox` wider, not the frame taller.
 - **A legend only when a symbol is not obvious**, and then as text beside the drawing rather than
   floating on it.
 - **A strip of read-outs is welcome** where the procedure has values that change as the thing moves —
@@ -172,6 +177,24 @@ controller who cannot tell your green from your orange still has to be able to u
   drawing** as plain text in the same tokens, bilingual like everything else, and keep it to three or
   four numbers: what it is worth is telling a reader *where in the procedure* they are looking, which
   a moving dot alone does not say.
+
+### Tablets and phones
+
+The same block is read on a phone, on a tablet and beside a desktop's reading column. The width is
+whatever the page gives, and the height follows from it.
+
+- **No heights in `vh`.** Inside a frame `100vh` is the height of the frame, which is measured from your
+  content: `height: 100vh` says nothing, and `min-height: 100vh` with anything beside it grows with the
+  frame until it reaches 2000 px, with a scroll bar. Let the content decide; the height of an SVG comes
+  from its `viewBox`.
+- **No widths in pixels.** What is wider than the frame is cut off, because there is no bar to reach it:
+  an SVG with a `viewBox`, and percentages or `max-width: 100%` for anything else. A `<figure>` brings 40 px of
+  margin on each side, which a phone cannot spare: write `margin: 0` on it.
+- **`flex-wrap: wrap` on every row**, so that a row of buttons becomes two rows instead of leaving the
+  frame.
+- **Try it at both widths**, 768 and 360 px: the local preview has a button for each. A drawing that
+  reads at 360 can still be enormous at 768, because it scales with the width; if it fills more than a
+  screen, set a `max-width` on it and let it stand in the middle of the frame.
 
 ### Movement
 
@@ -216,7 +239,8 @@ either.
 - [ ] Every word goes through `HUB.t` and exists in both languages.
 - [ ] Every choice is a `<button>`, reachable by tab, marked with `aria-pressed`.
 - [ ] `HUB.reducedMotion` draws a still picture that still makes the point.
-- [ ] It reads at 360 px wide and in the dark (try `HUB.dark`).
+- [ ] It reads at 360 and at 768 px wide, and in the dark (try `HUB.dark`).
+- [ ] No height in `vh`, no width in pixels, and every row wraps.
 - [ ] Four colours at most, each doing the job the table above gives it.
 - [ ] Nothing in it fetches anything.
 - [ ] Under 64 KB.
@@ -254,7 +278,7 @@ This is the whole of a block: it draws a runway, flies a circuit around it, lets
 which side the circuit is on, and stops when asked.
 
 ```html
-<figure style="display: flex; flex-direction: column; gap: 0.75rem">
+<figure style="display: flex; flex-direction: column; gap: 0.75rem; margin: 0">
   <svg viewBox="0 0 400 240" width="100%" aria-labelledby="circuit-title">
     <title id="circuit-title"></title>
 

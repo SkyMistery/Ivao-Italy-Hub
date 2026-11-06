@@ -267,6 +267,12 @@ describe('the interactive block', () => {
     expect(frame).toHaveAttribute('src', '/embed/7/3/b_1?lang=en');
   });
 
+  test('the frame starts with no scroll bar: the page says so, on its own attribute', () => {
+    drawInteractive(embedding);
+
+    expect(screen.getByTitle('A left hand circuit')).toHaveAttribute('scrolling', 'no');
+  });
+
   test('with no page to ask, it says so instead of drawing an empty box', () => {
     // The gallery, and a body that has never been saved: there is no row for the server to build a
     // frame from, and a silent gap would read as a broken picture.
