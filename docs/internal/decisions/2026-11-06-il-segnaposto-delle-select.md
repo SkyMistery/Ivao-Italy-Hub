@@ -1,8 +1,9 @@
 # Una select chiusa parla la lingua dello schermo
 
 **Data:** 6 novembre 2026, branch `fix/select-placeholder-language`, trovato lavorando alla PR #467.
-**Stato:** correzione di un difetto. Le parole e la regola per le select facoltative le propone la sessione di lavoro seguendo i precedenti qui
-sotto: **Carmine può cambiarle**, sono due chiavi e una riga. Nessun suo commento le ha ancora confermate.
+**Stato:** correzione di un difetto. Le parole e la regola per le select facoltative le ha proposte la sessione di lavoro seguendo i precedenti qui
+sotto, e **Carmine le ha confermate**, in chat al master, il 6 novembre 2026: «Confermo 469»
+([il commento sulla PR](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/469#issuecomment-6688464947)).
 **Regola applicata:** `CLAUDE.md` §1 (nessuna stringa visibile fuori dalle chiavi i18n) e §5, caso **(b)**: estende il form generato
 (`shared/forms/SchemaForm.tsx`) senza aggiungere un meccanismo.
 
@@ -41,8 +42,8 @@ Il test `SchemaForm.placeholder.test.tsx` copre le tre specie di select in ingle
 ## Alternative scartate
 
 - **`form.choose` anche sulle facoltative**: è più piccola, ma dice «scegli» su un campo che può restare vuoto. E con la PR #466, che ridisegna il
-  segnaposto dopo un ritorno a niente, chi sceglie «Tutti i dipartimenti» si ritroverebbe davanti «Scegli un’opzione». È il punto su cui Carmine può
-  decidere diversamente: basta una riga, `nothingChosen`.
+  segnaposto dopo un ritorno a niente, chi sceglie «Tutti i dipartimenti» si ritroverebbe davanti «Scegli un’opzione». Era uno dei due punti posti a
+  Carmine, che ha confermato il `none`.
 - **Un componente nostro attorno a `Select`**: vedi sopra.
 - **Patch di Atmosphere**: è una dipendenza, e accetta già il segnaposto dal chiamante.
 
