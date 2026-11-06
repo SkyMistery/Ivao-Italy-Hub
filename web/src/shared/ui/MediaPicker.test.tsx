@@ -314,6 +314,26 @@ test('the upload stands above the grid, and the new file is chosen in sight of t
   expect(asked.at(-1)).toEqual(NOTHING_ASKED);
 });
 
+test('an upload also empties a word that was still being written, which no search has carried yet', async () => {
+  const { query, asked } = libraryOf([file(1, 'runway.png'), file(2, 'tower.png')]);
+  const onChange = vi.fn();
+  renderLibrary(query, { onChange, onUpload: () => Promise.resolve(2) });
+
+  await screen.findByRole('list');
+  await userEvent.type(screen.getByRole('searchbox'), 'run');
+
+  // Nothing to follow here: what is being searched for has not changed, so only a new box empties it.
+  await userEvent.upload(
+    screen.getByLabelText('Upload a file'),
+    new File(['x'], 'new.png', { type: 'image/png' }),
+  );
+
+  await waitFor(() => expect(onChange).toHaveBeenCalledWith(2));
+  expect(screen.getByRole('searchbox')).toHaveValue('');
+  await act(() => new Promise((resolve) => setTimeout(resolve, 350)));
+  expect(asked.at(-1)).toEqual(NOTHING_ASKED);
+});
+
 test('a file dragged onto the grid is uploaded and chosen', async () => {
   const onChange = vi.fn();
   const onUpload = vi.fn(() => Promise.resolve(1));
