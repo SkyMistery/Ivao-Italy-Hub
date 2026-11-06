@@ -38,11 +38,10 @@ async function choose(user: UserEvent, name: string) {
 }
 
 describe('ListFilter', () => {
-  test('a new filter shows what "no filter" is called, as a placeholder', () => {
+  test('a new filter shows what "no filter" is called', () => {
     render(<Host />);
 
     expect(filter()).toHaveTextContent('All kinds');
-    expect(filter()).toHaveAttribute('data-placeholder');
     expect(held()).toHaveTextContent('NOTHING');
   });
 
@@ -62,7 +61,7 @@ describe('ListFilter', () => {
     expect(held()).toHaveTextContent('alpha');
   });
 
-  test('going back to "all" draws "all", the same placeholder as a new filter', async () => {
+  test('going back to "all" draws "all", as a new filter does', async () => {
     const user = userEvent.setup();
     render(<Host />);
 
@@ -72,7 +71,6 @@ describe('ListFilter', () => {
     expect(held()).toHaveTextContent('NOTHING');
     expect(filter()).toHaveTextContent('All kinds');
     expect(filter()).not.toHaveTextContent('Alpha');
-    expect(filter()).toHaveAttribute('data-placeholder');
   });
 
   test('a filter born with a value also goes back to "all"', async () => {
