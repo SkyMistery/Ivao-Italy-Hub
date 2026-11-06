@@ -1,5 +1,15 @@
 import type { MediaLibraryQuery } from './MediaPicker';
 
+/** What somebody has asked of the library in a picker (`meta.browse` of the query). */
+export interface MediaBrowse {
+  q: string;
+  category: string | null;
+  page: number;
+}
+
+/** A picker that has just opened: the first page of everything, which is the newest files. */
+export const NOTHING_ASKED: MediaBrowse = { q: '', category: null, page: 1 };
+
 /**
  * The same library, offering only the files of one category (#359): the logos of a `logoGrid`. The
  * query says how it narrows itself, on its `meta` like the way to the library page, because the

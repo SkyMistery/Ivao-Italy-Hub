@@ -7,7 +7,7 @@ import { useLocalized } from '../../shared/i18n/useLocalized';
 import { PageShell, useNotice } from '../../shared/ui';
 import { NewCollection } from '../categories/NewCollection';
 import { categoriesOfKindQuery } from '../categories/queries';
-import { useUploadMedia } from '../media/mutations';
+import { MEDIA_EDIT, useUploadMedia } from '../media/mutations';
 import { mediaPickerQuery } from '../media/queries';
 
 import { ContentEditor } from './ContentEditor';
@@ -254,14 +254,17 @@ export function ContentFormScreen({
             })}
         // A file already in the library is the file chosen, and the picker says nothing about it:
         // that is exactly what whoever uploaded it was after.
-        uploadMedia={async (file, category) =>
-          (
-            await upload.mutateAsync({
-              file,
-              ownerDepartment: department,
-              ...(category === undefined ? {} : { category }),
-            })
-          ).media.id
+        uploadMedia={
+          holdsPermission(bootstrap, MEDIA_EDIT, department)
+            ? async (file, category) =>
+                (
+                  await upload.mutateAsync({
+                    file,
+                    ownerDepartment: department,
+                    ...(category === undefined ? {} : { category }),
+                  })
+                ).media.id
+            : undefined
         }
         // Asked of the template's department and not of this page's: a page of one department can
         // be made from the template of another (design M1 §9.4).

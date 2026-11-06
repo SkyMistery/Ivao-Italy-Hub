@@ -64,6 +64,8 @@ const bookingsKey = ['events', 'bookings'] as const;
 
 export type EventListDto = components['schemas']['EventListDto'];
 export type EventDetailDto = components['schemas']['EventDetailDto'];
+/** What the reader may do on an event, the server's answer on the row (#427): the page draws its buttons and its tabs from it. */
+export type EventActionsDto = components['schemas']['EventActionsDto'];
 export type EventDuplicatedDto = components['schemas']['EventDuplicatedDto'];
 export type EventAirportDto = components['schemas']['EventAirportDto'];
 export type EventRouteDto = components['schemas']['EventRouteDto'];

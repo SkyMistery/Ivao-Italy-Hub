@@ -138,6 +138,8 @@ export function SectionProperties({
         onLayout={(layout) => onFrame({ layout })}
       />
 
+      <p className="text-muted-foreground text-sm">{t('content.section.howToDivide')}</p>
+
       {isTemplate && named ? (
         // Written once, then shown. Changing it would break the match with every page already made
         // from this template, silently (decision `2026-09-07-scrivere-un-template.md`).

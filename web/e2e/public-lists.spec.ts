@@ -225,3 +225,29 @@ test('choosing a shelf puts it in the address, and clearing it takes it out', as
 
   await expect(page).not.toHaveURL(/category=/);
 });
+
+test('a filter back to everything says so, and takes the same shelf again', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/news');
+
+  const filter = page.getByLabel('Category', { exact: true });
+  await expect(filter).toHaveText('Every category');
+
+  await filter.click();
+  await page.getByRole('option', { name: 'Operations' }).click();
+  await expect(filter).toHaveText('Operations');
+
+  await filter.click();
+  await page.getByRole('option', { name: 'Every category' }).click();
+  await expect(page).not.toHaveURL(/category=/);
+
+  // The whole list under a filter that named one shelf was the defect, and it was silent: only the
+  // drawing was wrong (note 2026-11-06-il-filtro-rimesso-a-tutti).
+  await expect(filter).toHaveText('Every category');
+
+  // And the select had kept the old choice, so choosing it again was no change and did nothing.
+  await filter.click();
+  await page.getByRole('option', { name: 'Operations' }).click();
+  await expect(page).toHaveURL(/category=operations/);
+  await expect(filter).toHaveText('Operations');
+});

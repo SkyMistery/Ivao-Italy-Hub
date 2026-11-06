@@ -90,8 +90,10 @@ the top of `Toaster.tsx`.
 
 `MediaPicker` chooses a file out of the library of a department, and it is on the list because two
 very different screens mount it: the library itself, and every block property that names a file. It
-picks and nothing else — uploading belongs to the library screen, and a picker that also uploaded
-would be a second way for a file to enter the hub.
+looks for a file (a search, a category unless the field asks for one, a next page: the same read of
+the library), and where a screen allows it, it takes a new one, through the same call the library
+screen makes: by the button at the top or by dragging a file on the grid. A file uploaded there is
+chosen, and it says it has no alternative text yet, with the way to its page in the library.
 
 `CalendarView` draws the one calendar of the division as an agenda, a week or a month, and it is on
 the list for the same reason: two screens mount it, the public calendar and the `calendar` block
@@ -412,12 +414,18 @@ What the schema may say about how a field is drawn:
   is always ISO in UTC**, whatever the browser's own time zone is. An instant shows the division's
   local time underneath, which is the rule every list follows; a day does not, because "the same day
   elsewhere" is not a fact a day has, and echoing one is only ever a chance to read the wrong day.
-  Both need `division` on `SchemaForm`;
+  An optional one has a button beside it that takes it off. Both need `division` on `SchemaForm`;
 - `localizedObject({ ... })` is a small object per language: language tabs, and inside each of them
   the generator again. `seo` is the first, and it is how a translated JSON column becomes fields a
   coordinator can fill in rather than JSON they have to write;
 - a **list** of objects can be reordered with the up and down buttons beside add and remove. They
-  are what a keyboard reaches, and they stay when dragging arrives;
+  are what a keyboard reaches, and they stay when dragging arrives. An entry is a closed row, its
+  number and its title, and a click opens it and closes the one open before; a new entry is born
+  open, a list that opens with one entry shows it, and an entry holding an error opens by itself.
+  The title is the first text of the entry, in the language on screen — or the first choice, or the
+  first date, in a list that has no text — and `.meta({ entryTitle: true })` on another field says
+  otherwise. A closed entry stays mounted, hidden: its fields keep doing to their values what a
+  drawn field does;
 - `.meta({ slugFrom: 'title' })` proposes a field from another one while the other is being typed,
   and stops for ever the moment somebody writes in it. `slugPrefix: '/'` puts the leading slash of a
   menu path in front. An address outlives the page it was made for, so a row that already has one
@@ -824,7 +832,7 @@ every January, in every language at once.
 
 ## The editor of a page, and what it may not do
 
-Five rules M1 settled by using the editor rather than by designing it. They are here because they
+Rules settled by using the editor rather than by designing it. They are here because they
 are the ones a contributor is most likely to break by improving something.
 
 **Three columns, and the middle one is the only one that changes.** Components on the left, the page
@@ -833,6 +841,21 @@ page itself — the same renderer the public gets, clicked to select — and one
 outline, which is the road for anybody without a mouse. The two side columns do not move when it
 does: an editor whose panels jump when you change how you are looking at the page is one you have to
 re-find your place in every time.
+
+**While composing, the page says what it is made of, and a visitor never reads any of it.** Every
+section has a thin dashed outline, solid when it is the one picked, and a label with its number among
+its siblings, its name and its background ("2 · Rules · pale blue background"; a row says "Row 2.1").
+The name is a section's `title`, which only who writes sees. The way to insert is the bar of what is
+picked: "+ section above" and "+ section below", "+ row above" and "+ row below" on a row, which needs
+no air and works with a finger. Between two sections, when the pointer or the keyboard reaches the
+place, "+ section" does the same as a shortcut, and "+ row" for the rows of a section. A place to insert
+stands under what the section holds, so a block is picked up to its edge and the place answers only in
+the air: where two sections with no padding touch there is none, and that is what the bar is for. A row
+inside a row comes from the row's bar. All of it stands
+out of the flow, so nothing on the page moves to make room, and all of it reads the composing context
+(`blocks/picking.ts`), which the public site does not mount. Rows are
+the only subsections there are: for things side by side there are the columns, and for things grouped
+the Tabs and the Questions blocks.
 
 **There is one place a block is added from.** The palette is the bar on the left, and adding a block
 puts it in the section that is selected — the section itself, or the one holding the selected block.
