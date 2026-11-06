@@ -801,6 +801,24 @@ export async function stubTheApiAsStaff(page: Page, bootstrap: unknown = staffBo
  * answer both with a row — and a tree that is an object is a screen that throws.
  */
 export async function stubTheAddressOfAPage(page: Page): Promise<void> {
+  // What an address field of a block offers (`GET /api/content/addresses`): a page of another department, published.
+  await page.route('**/api/content/addresses', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([
+        {
+          id: 20,
+          kind: 'Page',
+          url: '/about/team',
+          title: { en: 'Team', it: 'Squadra' },
+          ownerDepartment: 'WD',
+          visibility: 'Public',
+        },
+      ]),
+    }),
+  );
+
   await page.route('**/api/content/pages', (route) =>
     route.fulfill({
       status: 200,

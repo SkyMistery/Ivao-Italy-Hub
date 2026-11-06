@@ -125,6 +125,14 @@ export interface FieldMeta {
    */
   collectionOf?: 'News' | 'Document';
   /**
+   * An address a block leads to (design of the editor, phase 3, §4.5): the property is called `href`,
+   * and this says what it holds. A block schema is code and the addresses of the site are rows, so
+   * whoever draws the form turns it into `suggestions` with `suggestAddresses`. Still free text, on
+   * purpose (Carmine, 31 October 2026, answer 5 of the design): a page of the site is chosen from the
+   * list, and an address of somewhere else is written in full.
+   */
+  address?: boolean;
+  /**
    * A key of the calendar's kinds (`cms_calendar_kinds`), chosen and never typed (issue #360): the
    * kinds are rows, so whoever draws the form turns it into `choices` with `chooseCalendarKinds`, out
    * of the kinds `/api/me` lists. Closed in the form only: the server keeps reading a block's
@@ -593,50 +601,70 @@ export function suggestCollections<T>(schema: T, suggestions: readonly Suggestio
 }
 
 /**
+ * The same schema, with every `address` property — at any depth: the buttons of a hero are in an
+ * optional object, those of a group in a list — offering these suggestions. A new schema, like
+ * `suggestCollections`: what a block stores is still read with the schema of the registry.
+ */
+export function suggestAddresses<T>(schema: T, suggestions: readonly Suggestion[]): T {
+  return withMeta(schema, (meta) => meta.address === true, { suggestions: [...suggestions] }) as T;
+}
+
+/** Whether a property of this schema, at any depth, is an `address`. */
+export function namesAddresses(schema: unknown): boolean {
+  return names(schema, (meta) => meta.address === true);
+}
+
+/**
  * The same schema, with every `calendarKind` property — at any depth: the calendar block holds its
  * kinds as a list of `{ kind }` — choosing among these. A new schema, like `suggestCollections`.
  */
 export function chooseCalendarKinds<T>(schema: T, choices: readonly ChoiceOption[]): T {
-  return withChoices(schema, (meta) => meta.calendarKind === true, choices) as T;
+  return withMeta(schema, (meta) => meta.calendarKind === true, { choices: [...choices] }) as T;
 }
 
 /** Whether a property of this schema, at any depth, is a `calendarKind`. */
 export function namesCalendarKinds(schema: unknown): boolean {
-  if (schema instanceof z.ZodObject) {
-    return Object.values(schema.shape).some(namesCalendarKinds);
-  }
+  return names(schema, (meta) => meta.calendarKind === true);
+}
 
+function names(schema: unknown, annotated: (meta: FieldMeta) => boolean): boolean {
   const { inner, meta } = unwrap(schema);
-  if (meta.calendarKind === true) {
+  if (annotated(meta)) {
     return true;
   }
 
-  return inner instanceof z.ZodArray ? namesCalendarKinds(inner.element) : false;
+  if (inner instanceof z.ZodObject) {
+    return Object.values(inner.shape).some((field) => names(field, annotated));
+  }
+
+  return inner instanceof z.ZodArray ? names(inner.element, annotated) : false;
 }
 
-function withChoices(
-  schema: unknown,
-  annotated: (meta: FieldMeta) => boolean,
-  choices: readonly ChoiceOption[],
-): unknown {
+function withMeta(schema: unknown, annotated: (meta: FieldMeta) => boolean, patch: FieldMeta): unknown {
   if (schema instanceof z.ZodObject) {
     return schema.extend(
       Object.fromEntries(
-        Object.entries(schema.shape).map(([name, field]) => [name, withChoices(field, annotated, choices)]),
+        Object.entries(schema.shape).map(([name, field]) => [name, withMeta(field, annotated, patch)]),
       ),
     );
   }
 
-  if (annotated(annotation(schema))) {
-    return (schema as z.ZodType).meta({ ...annotation(schema), choices: [...choices] });
+  if (annotated(unwrap(schema).meta)) {
+    return (schema as z.ZodType).meta({ ...annotation(schema), ...patch });
   }
 
   // A list of objects is rebuilt around its patched element, its own annotations kept. Only a bare
   // list: a wrapped one has no case today, and would be one more branch when it does.
   if (schema instanceof z.ZodArray && schema.element instanceof z.ZodObject) {
-    return z
-      .array(withChoices(schema.element, annotated, choices) as z.ZodType)
-      .meta({ ...annotation(schema) });
+    return z.array(withMeta(schema.element, annotated, patch) as z.ZodType).meta({ ...annotation(schema) });
+  }
+
+  // An optional object: the two buttons of a hero. Whatever is optional and holds nothing to patch
+  // stays the schema it was.
+  if (schema instanceof z.ZodOptional) {
+    const held = schema.unwrap();
+    const patched = withMeta(held, annotated, patch);
+    return patched === held ? schema : (patched as z.ZodType).optional().meta({ ...annotation(schema) });
   }
 
   return schema;
