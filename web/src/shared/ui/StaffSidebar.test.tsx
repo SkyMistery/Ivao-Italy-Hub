@@ -1,3 +1,4 @@
+import { SidebarProvider } from '@ivao/atmosphere-react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CalendarDays, FileText, KeyRound, LayoutDashboard, Newspaper, ShieldCheck } from 'lucide-react';
@@ -68,7 +69,9 @@ const prefixOf = (here: string) => (href: string) => here === href || here.start
 function mount(here = '/staff/ed/content') {
   return render(
     <I18nextProvider i18n={i18n}>
-      <StaffSidebar groups={groups} isActiveCheck={prefixOf(here)} />
+      <SidebarProvider>
+        <StaffSidebar groups={groups} isActiveCheck={prefixOf(here)} />
+      </SidebarProvider>
     </I18nextProvider>,
   );
 }

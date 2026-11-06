@@ -1,3 +1,4 @@
+import { SidebarProvider } from '@ivao/atmosphere-react';
 import { Outlet, useLocation } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
@@ -47,43 +48,48 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
           Why it is ours since 10 September 2026 rather than the library's: the collapse button had
           to move to the top and lose its label, and neither is reachable from outside. The reasons
           are in the component. */}
-      <div className="flex flex-1 items-stretch">
-        <StaffSidebar
-          groups={groups}
-          asLink={RouterAnchor}
-          isActiveCheck={(href) => {
-            // Since 13 September 2026 an entry may carry a query (`/staff/content?kind=News`): it is
-            // this page when the path is its path and the address holds every parameter it names.
-            // The list of one department holds the parameters of the list of all of them as well,
-            // and the sidebar lights the longer of the two, which is the one that says more.
-            const { to, search } = linkTarget(href);
-            if (search === undefined) {
-              return location.pathname === to || location.pathname.startsWith(`${to}/`);
-            }
+      {/* ⚠️ The provider around the row and not inside the sidebar (design of phase 3, §4.2): whether the
+          panel is open is still Atmosphere's state, and the page editor, under the `<Outlet />`, reaches
+          it with `useSidebar()` to shut the panel while somebody writes. */}
+      <SidebarProvider>
+        <div className="flex flex-1 items-stretch">
+          <StaffSidebar
+            groups={groups}
+            asLink={RouterAnchor}
+            isActiveCheck={(href) => {
+              // Since 13 September 2026 an entry may carry a query (`/staff/content?kind=News`): it is
+              // this page when the path is its path and the address holds every parameter it names.
+              // The list of one department holds the parameters of the list of all of them as well,
+              // and the sidebar lights the longer of the two, which is the one that says more.
+              const { to, search } = linkTarget(href);
+              if (search === undefined) {
+                return location.pathname === to || location.pathname.startsWith(`${to}/`);
+              }
 
-            const current = location.search as Record<string, unknown>;
-            return (
-              location.pathname === to &&
-              Object.entries(search).every(([key, value]) => String(current[key]) === value)
-            );
-          }}
-          // ⚠️ In the sidebar and no longer above the content (Carmine, 11 September 2026). It could not
-          // go there while the sidebar was Atmosphere's, which had no slot; it can now that the sidebar
-          // is ours, and it sits beside the collapse button. It is still everywhere in the back office,
-          // because a palette that only opens on one screen is a palette nobody learns (design M1 §7).
-          top={(collapsed) => <SearchPalette bootstrap={bootstrap} compact={collapsed} />}
-        />
-        {/* ⚠️ Every screen of the back office in the one-line frame, said here once rather than on
-            thirty screens (Carmine, 11 September 2026), and with less room above it: `py-8` was a
-            band the width of the window above every title. */}
-        {/* `@container` for the same reason the public `<main>` has one (`Chrome.tsx`): a block drawn
-            outside a page — the ui-kit gallery — measures this column. */}
-        <main className="@container flex min-w-0 flex-1 flex-col gap-6 px-6 py-5">
-          <CompactPageShells>
-            <Outlet />
-          </CompactPageShells>
-        </main>
-      </div>
+              const current = location.search as Record<string, unknown>;
+              return (
+                location.pathname === to &&
+                Object.entries(search).every(([key, value]) => String(current[key]) === value)
+              );
+            }}
+            // ⚠️ In the sidebar and no longer above the content (Carmine, 11 September 2026). It could not
+            // go there while the sidebar was Atmosphere's, which had no slot; it can now that the sidebar
+            // is ours, and it sits beside the collapse button. It is still everywhere in the back office,
+            // because a palette that only opens on one screen is a palette nobody learns (design M1 §7).
+            top={(collapsed) => <SearchPalette bootstrap={bootstrap} compact={collapsed} />}
+          />
+          {/* ⚠️ Every screen of the back office in the one-line frame, said here once rather than on
+              thirty screens (Carmine, 11 September 2026), and with less room above it: `py-8` was a
+              band the width of the window above every title. */}
+          {/* `@container` for the same reason the public `<main>` has one (`Chrome.tsx`): a block drawn
+              outside a page — the ui-kit gallery — measures this column. */}
+          <main className="@container flex min-w-0 flex-1 flex-col gap-6 px-6 py-5">
+            <CompactPageShells>
+              <Outlet />
+            </CompactPageShells>
+          </main>
+        </div>
+      </SidebarProvider>
 
       <AppFooter bootstrap={bootstrap} />
     </div>
