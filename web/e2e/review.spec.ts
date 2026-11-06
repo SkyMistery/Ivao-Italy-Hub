@@ -207,3 +207,60 @@ test('whoever may approve reads what changed and corrects the address while appr
     .poll(() => sent)
     .toEqual([{ action: 'Approve', changelog: line, slug: 'airshow-2026', parentId: 1 }]);
 });
+
+test('a parent put back to nothing says so, can be chosen again, and what is approved is what is drawn', async ({
+  page,
+}) => {
+  const sent: unknown[] = [];
+  await stubTheApiAsStaff(page, approverBootstrap);
+  await stubThePage(page, { ...aPage, parentId: null, status: 'Ready' }, sent);
+
+  await page.goto('/staff/content/20');
+  await page.getByRole('button', { name: review.approve, exact: true }).click();
+
+  const dialog = page.getByRole('alertdialog');
+  const pageParent = dialog.getByLabel(englishCommon.content.fields.parentId, { exact: true });
+  const menuParent = dialog.getByLabel(review.menu.parent, { exact: true });
+  const top = englishCommon.content.options.parentId.none;
+
+  await expect(pageParent).toHaveText(top);
+  await expect(menuParent).toHaveText(review.menu.top);
+
+  // A menu entry is proposed only once it has a label.
+  await dialog.getByLabel(review.menu.label.replace('{{locale}}', 'EN')).fill('Airshow');
+
+  const choose = async (select: typeof pageParent, name: string) => {
+    await select.click();
+    await page.getByRole('option', { name, exact: true }).click();
+  };
+
+  // There and back: the select drew the old choice under nothing held, silently
+  // (note 2026-11-06-il-pannello-rimesso-a-niente).
+  await choose(pageParent, '/about — About');
+  await expect(pageParent).toHaveText('/about — About');
+  await choose(pageParent, top);
+  await expect(pageParent).toHaveText(top);
+
+  await choose(menuParent, 'Pilots');
+  await expect(menuParent).toHaveText('Pilots');
+  await choose(menuParent, review.menu.top);
+  await expect(menuParent).toHaveText(review.menu.top);
+
+  // And the select had kept the old choice, so choosing it again was no change and the approval sent nothing.
+  await choose(pageParent, '/about — About');
+  await expect(pageParent).toHaveText('/about — About');
+  await choose(menuParent, 'Pilots');
+  await expect(menuParent).toHaveText('Pilots');
+
+  await dialog.getByRole('button', { name: review.approveDialog.confirm }).click();
+
+  await expect
+    .poll(() => sent)
+    .toEqual([
+      expect.objectContaining({
+        action: 'Approve',
+        parentId: 1,
+        menu: expect.objectContaining({ parentId: 3 }),
+      }),
+    ]);
+});
