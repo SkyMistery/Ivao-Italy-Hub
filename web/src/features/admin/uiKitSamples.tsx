@@ -22,11 +22,13 @@ import {
   Notice,
   PageShell,
   MessageThread,
+  NOTHING_ASKED,
   RouteMap,
   SectionHeader,
   StaffSidebar,
   StatTile,
   useNotice,
+  type MediaBrowse,
   type MediaLibraryQuery,
   type PickableMedia,
   type CalendarItem,
@@ -126,17 +128,42 @@ const sampleMedia: PickableMedia[] = [
     alt: { en: 'Briefing', it: 'Briefing' },
     url: '#',
   },
+  {
+    // Just uploaded: nobody has written its alternative text yet, and the picker says so.
+    id: 3,
+    fileName: 'new-logo.png',
+    contentType: 'image/png',
+    alt: {},
+    url:
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk' +
+      'YPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  },
 ];
 
-// The key is typed as the loose one the picker's prop declares: a library is carried around by a
-// component that cannot know which resource it came from.
-const sampleMediaKey: readonly unknown[] = ['ui-kit', 'sample-media'];
+/**
+ * The sample library looks for a file like the real one, in memory: the gallery is where the toolbar
+ * of the picker is checked. Its "categories" go by the type of the file.
+ */
+function sampleLibrary(asked: MediaBrowse): MediaLibraryQuery {
+  // The key is typed as the loose one the picker's prop declares: a library is carried around by a
+  // component that cannot know which resource it came from.
+  const queryKey: readonly unknown[] = ['ui-kit', 'sample-media', asked.q, asked.category];
+  const items = sampleMedia.filter(
+    (media) =>
+      media.fileName.includes(asked.q) &&
+      (asked.category === null ||
+        media.contentType.startsWith(asked.category === 'Image' ? 'image/' : 'application/')),
+  );
 
-const sampleMediaQuery: MediaLibraryQuery = queryOptions({
-  queryKey: sampleMediaKey,
-  queryFn: () => Promise.resolve({ items: sampleMedia, total: sampleMedia.length }),
-  staleTime: Number.POSITIVE_INFINITY,
-});
+  return queryOptions({
+    queryKey,
+    queryFn: () => Promise.resolve({ items, total: items.length }),
+    staleTime: Number.POSITIVE_INFINITY,
+    meta: { browse: sampleLibrary, categories: ['Image', 'Document'] },
+  });
+}
+
+const sampleMediaQuery = sampleLibrary(NOTHING_ASKED);
 
 const blank = (locales: readonly string[]) => Object.fromEntries(locales.map((locale) => [locale, '']));
 
@@ -340,6 +367,9 @@ export function MediaPickerSample({ bootstrap }: { bootstrap: Bootstrap }) {
       query={sampleMediaQuery}
       value={chosen}
       onChange={setChosen}
+      // Nothing is written from the gallery: "uploading" here chooses the file with no alternative
+      // text, which is what a real upload ends in.
+      onUpload={() => Promise.resolve(3)}
       locale={i18n.language}
       defaultLocale={bootstrap.division.defaultLocale}
     />

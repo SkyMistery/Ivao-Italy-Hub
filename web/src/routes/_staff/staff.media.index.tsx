@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { mediaColumns } from '../../features/media/list';
-import { useUploadMedia } from '../../features/media/mutations';
+import { MEDIA_EDIT, useUploadMedia } from '../../features/media/mutations';
 import { mediaListQuery, type MediaListDto } from '../../features/media/queries';
 import {
   holdsPermission,
@@ -19,7 +19,6 @@ import { DataList, ListFilter, col, departmentListSearchSchema } from '../../sha
 import { PageShell, useNotice } from '../../shared/ui';
 
 /** What changing a file asks for, on the department of the row. */
-const MEDIA_EDIT = 'Media.Edit';
 
 /**
  * The library: every file this person may use — their departments' and the public ones of the others
