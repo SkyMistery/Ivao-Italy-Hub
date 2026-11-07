@@ -1,11 +1,6 @@
-import {
-  SidebarContext,
-  SidebarItem,
-  SidebarProvider,
-  type SidebarAsLinkProps,
-} from '@ivao/atmosphere-react';
+import { SidebarItem, useSidebar, type SidebarAsLinkProps } from '@ivao/atmosphere-react';
 import { ChevronRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { useContext, useState, type ComponentType, type ReactNode } from 'react';
+import { useState, type ComponentType, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -25,6 +20,11 @@ import { useTranslation } from 'react-i18next';
  * header are ours, because those are the two pieces the library does not let anybody reach —
  * `SidebarGroup` is not exported, only its props are.
  *
+ * ⚠️ The `SidebarProvider` is the caller's, and in the back office it is `StaffLayout`'s (design of
+ * phase 3, §4.2): that is what lets the page editor, further down the same tree, shut the panel while
+ * somebody writes. A second sidebar on a page — the gallery's sample — brings a provider of its own,
+ * or its button would fold the real one.
+ *
  * ⚠️ And what this is not: wrapping their `Sidebar` in a container of ours. That was tried once and
  * drew the whole back office inside a 288 pixel `aside` with two collapse buttons (HANDOFF §13).
  * This replaces the aside; it does not nest inside one.
@@ -41,30 +41,6 @@ export interface StaffSidebarGroup {
   readonly title: string;
   readonly Icon: ComponentType<{ className?: string }>;
   readonly items: readonly StaffSidebarEntry[];
-}
-
-export function StaffSidebar({
-  groups,
-  asLink,
-  isActiveCheck,
-  top,
-}: {
-  groups: readonly StaffSidebarGroup[];
-  asLink?: ComponentType<SidebarAsLinkProps> | undefined;
-  isActiveCheck: (href: string) => boolean;
-  /**
-   * What sits at the top of the panel beside the collapse button — the search, in the back office.
-   * A slot and not an import, because this is a shared component and the search is a feature: the
-   * shared side may never reach into `features/` (design M0 §6.5). It is told whether the panel is
-   * collapsed, because what fits in 288 pixels does not fit in 68.
-   */
-  top?: ((collapsed: boolean) => ReactNode) | undefined;
-}) {
-  return (
-    <SidebarProvider>
-      <Frame groups={groups} asLink={asLink} isActiveCheck={isActiveCheck} top={top} />
-    </SidebarProvider>
-  );
 }
 
 /**
@@ -107,7 +83,7 @@ interface OpenGroup {
   readonly title: string | null;
 }
 
-function Frame({
+export function StaffSidebar({
   groups,
   asLink,
   isActiveCheck,
@@ -116,10 +92,16 @@ function Frame({
   groups: readonly StaffSidebarGroup[];
   asLink?: ComponentType<SidebarAsLinkProps> | undefined;
   isActiveCheck: (href: string) => boolean;
+  /**
+   * What sits at the top of the panel beside the collapse button — the search, in the back office.
+   * A slot and not an import, because this is a shared component and the search is a feature: the
+   * shared side may never reach into `features/` (design M0 §6.5). It is told whether the panel is
+   * collapsed, because what fits in 288 pixels does not fit in 68.
+   */
   top?: ((collapsed: boolean) => ReactNode) | undefined;
 }) {
   const { t } = useTranslation();
-  const { isSidebarOpen, setIsSidebarOpen, toggleSidebar } = useContext(SidebarContext);
+  const { isSidebarOpen, setIsSidebarOpen, toggleSidebar } = useSidebar();
 
   const current = currentEntry(groups, isActiveCheck);
   const holding = groups.find((group) => group.items.some((item) => item.href === current))?.title ?? null;

@@ -9,9 +9,9 @@ import {
   type CollisionDetection,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { Button } from '@ivao/atmosphere-react';
+import { Button, useSidebar } from '@ivao/atmosphere-react';
 import { ChevronLeft, Eye, List, Redo2, Undo2 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
@@ -62,6 +62,7 @@ import {
   updateSection,
 } from './body';
 import type { PageVisibility } from './palette';
+import { PanelColumns } from './PanelSplitter';
 import { PreviewFrame, type PublishedView } from './PreviewFrame';
 import { MAX_ROW_DEPTH, SectionTree, type Selection } from './SectionTree';
 import { useBodyHistory, useHistoryShortcuts, useSelectionShortcuts } from './useBodyHistory';
@@ -90,6 +91,55 @@ export interface BodyTemplate {
   readonly department: Department;
   /** Whether this member may change that template, for the note on a locked section. */
   readonly canManage: boolean;
+}
+
+/**
+ * The staff sidebar shut while somebody writes, and put back as it was when they leave (design of phase 3, §4.2). Only on
+ * the way in: whoever opens it by hand while writing keeps it open, because nothing closes it again.
+ *
+ * ⚠️ Read through the updater, and not from what `useSidebar` says at render. Going from one editor straight to another
+ * (a new row saved, opening on its own address), the second is drawn while the bar is still shut by the first: read at
+ * render it would remember "shut", and the bar would stay shut after leaving both. The updater runs after the first
+ * editor's restoring, and sees the truth.
+ *
+ * ⚠️ Before the first paint, or the bar draws open for a frame and the whole page jumps sideways as it shuts.
+ *
+ * ⚠️ It answers whether that has happened, and **the page is not drawn until it has** (`preview.spec.ts`). The sections
+ * measure a container, and that container narrowing under them while the page is being born brought back the fault of
+ * `decisions/2026-10-06-l-anteprima-vuota-dell-editor.md`: on a slow machine every section in the document, with no box,
+ * for good. Measured with the processor slowed: main 0 empty out of 16, the bar shut after the page was there 11 out of
+ * 28, the bar shut before it 0 (the counts are in the pull request). Both happen before a paint, so nobody sees the wait.
+ *
+ * Outside the staff layout (a test, a future host) there is no provider and Atmosphere's default setter throws: there is
+ * no bar to shut, so nothing happens and there is nothing to put back.
+ */
+function useSidebarShutWhileWriting(): boolean {
+  const { setIsSidebarOpen } = useSidebar();
+  const [settled, setSettled] = useState(false);
+
+  useLayoutEffect(() => {
+    let before: boolean | undefined;
+
+    try {
+      setIsSidebarOpen((open) => {
+        before = open;
+        return false;
+      });
+    } catch {
+      // No bar here.
+    }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- a second draw before the paint is the point: the page is born after the bar has shut, which nothing at render can say
+    setSettled(true);
+
+    return () => {
+      if (before !== undefined) {
+        setIsSidebarOpen(before);
+      }
+    };
+  }, [setIsSidebarOpen]);
+
+  return settled;
 }
 
 export function BodyEditor({
@@ -164,6 +214,8 @@ export function BodyEditor({
 }) {
   const { t, i18n } = useTranslation();
   const read = useLocalized();
+
+  const roomSettled = useSidebarShutWhileWriting();
 
   // The body, and the way back from the last thing that happened to it. A section moved by mistake
   // was one of the frictions the hand copy of `/about` recorded (HANDOFF §27).
@@ -784,62 +836,64 @@ export function BodyEditor({
               onDragCancel={() => setDragging(null)}
               onDragEnd={onDragEnd}
             >
-              <div className="grid grid-cols-1 gap-6 xl:grid-cols-[13rem_minmax(0,1fr)_19rem]">
-                <BlockPalette
-                  target={paletteTarget}
-                  rule={paletteRule}
-                  draggable={preview}
-                  holds={holds}
-                  visibility={visibility}
-                  onAdd={(type) => {
-                    if (paletteTarget !== null) {
-                      addBlockTo(paletteTarget.id, type, targetColumn);
-                    }
-                  }}
-                />
-
-                {preview ? (
-                  // ⚠️ The preview is not a place you go to and come back from any more. It is one of the two
-                  // ways of composing — the page itself — and it keeps the same panel beside it, so a block
-                  // clicked here and the same block clicked in the outline lead to exactly the same fields
-                  // (decided 9 Sep 2026, `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
-                  <PickingContext.Provider value={picking}>
-                    <PreviewFrame
-                      dashboard={dashboard}
-                      body={body}
-                      locales={locales}
-                      locale={previewLocale}
-                      onLocale={setPreviewLocale}
-                      published={published}
-                      comparing={comparing}
-                      onCompare={onCompare}
-                    />
-                  </PickingContext.Provider>
-                ) : (
-                  <div className="flex flex-col gap-4">
-                    <SectionHeader title={t('content.editor.structure')} />
-                    <SectionTree
-                      body={body}
-                      rules={rules}
-                      selection={selection}
-                      onSelect={setSelection}
-                      onAddSection={addSectionAt}
-                      onMoveSection={(id, delta) => change(moveSection(body, id, delta))}
-                      onMoveBlock={(id, delta) => change(moveBlock(body, id, delta))}
-                      onReorderSections={(activeId, overId) =>
-                        change(reorderSections(body, activeId, overId))
+              <PanelColumns
+                palette={
+                  <BlockPalette
+                    target={paletteTarget}
+                    rule={paletteRule}
+                    draggable={preview}
+                    holds={holds}
+                    visibility={visibility}
+                    onAdd={(type) => {
+                      if (paletteTarget !== null) {
+                        addBlockTo(paletteTarget.id, type, targetColumn);
                       }
-                      onReorderBlocks={(activeId, overId) => change(reorderBlocks(body, activeId, overId))}
-                      onDuplicateBlock={duplicateBlockById}
-                      onDuplicateSection={duplicateSectionById}
-                      onRemoveSection={removeSectionById}
-                      onRemoveBlock={removeBlockById}
-                    />
-                  </div>
-                )}
-
-                {properties}
-              </div>
+                    }}
+                  />
+                }
+                page={
+                  !roomSettled ? null : preview ? (
+                    // ⚠️ The preview is not a place you go to and come back from any more. It is one of the two
+                    // ways of composing — the page itself — and it keeps the same panel beside it, so a block
+                    // clicked here and the same block clicked in the outline lead to exactly the same fields
+                    // (decided 9 Sep 2026, `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
+                    <PickingContext.Provider value={picking}>
+                      <PreviewFrame
+                        dashboard={dashboard}
+                        body={body}
+                        locales={locales}
+                        locale={previewLocale}
+                        onLocale={setPreviewLocale}
+                        published={published}
+                        comparing={comparing}
+                        onCompare={onCompare}
+                      />
+                    </PickingContext.Provider>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      <SectionHeader title={t('content.editor.structure')} />
+                      <SectionTree
+                        body={body}
+                        rules={rules}
+                        selection={selection}
+                        onSelect={setSelection}
+                        onAddSection={addSectionAt}
+                        onMoveSection={(id, delta) => change(moveSection(body, id, delta))}
+                        onMoveBlock={(id, delta) => change(moveBlock(body, id, delta))}
+                        onReorderSections={(activeId, overId) =>
+                          change(reorderSections(body, activeId, overId))
+                        }
+                        onReorderBlocks={(activeId, overId) => change(reorderBlocks(body, activeId, overId))}
+                        onDuplicateBlock={duplicateBlockById}
+                        onDuplicateSection={duplicateSectionById}
+                        onRemoveSection={removeSectionById}
+                        onRemoveBlock={removeBlockById}
+                      />
+                    </div>
+                  )
+                }
+                properties={properties}
+              />
 
               {/* What travels under the pointer: a copy of the entry, not the entry itself, which sits in a
           panel that scrolls and would clip it. */}

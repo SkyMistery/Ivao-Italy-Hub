@@ -1,4 +1,4 @@
-import { Button } from '@ivao/atmosphere-react';
+import { Button, SidebarProvider } from '@ivao/atmosphere-react';
 import { queryOptions } from '@tanstack/react-query';
 import { CalendarDays, FileText, KeyRound, Newspaper, Plane, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
@@ -598,41 +598,44 @@ export function MessageThreadSample({ timezone }: { timezone: string }) {
 export function StaffSidebarSample() {
   return (
     <div className="border-border h-96 overflow-hidden rounded-lg border">
-      <StaffSidebar
-        groups={[
-          {
-            title: 'Events',
-            Icon: CalendarDays,
-            items: [
-              {
-                title: 'Pages',
-                description: 'What this department publishes.',
-                href: '/ui-kit/pages',
-                Icon: FileText,
-              },
-              {
-                title: 'News',
-                description: 'What it announces.',
-                href: '/ui-kit/news',
-                Icon: Newspaper,
-              },
-            ],
-          },
-          {
-            title: 'Administration',
-            Icon: ShieldCheck,
-            items: [
-              {
-                title: 'Permissions',
-                description: 'Who holds what.',
-                href: '/ui-kit/permissions',
-                Icon: KeyRound,
-              },
-            ],
-          },
-        ]}
-        isActiveCheck={(href) => href === '/ui-kit/pages'}
-      />
+      {/* Its own provider, or this sample's button would fold the real sidebar around it. */}
+      <SidebarProvider>
+        <StaffSidebar
+          groups={[
+            {
+              title: 'Events',
+              Icon: CalendarDays,
+              items: [
+                {
+                  title: 'Pages',
+                  description: 'What this department publishes.',
+                  href: '/ui-kit/pages',
+                  Icon: FileText,
+                },
+                {
+                  title: 'News',
+                  description: 'What it announces.',
+                  href: '/ui-kit/news',
+                  Icon: Newspaper,
+                },
+              ],
+            },
+            {
+              title: 'Administration',
+              Icon: ShieldCheck,
+              items: [
+                {
+                  title: 'Permissions',
+                  description: 'Who holds what.',
+                  href: '/ui-kit/permissions',
+                  Icon: KeyRound,
+                },
+              ],
+            },
+          ]}
+          isActiveCheck={(href) => href === '/ui-kit/pages'}
+        />
+      </SidebarProvider>
     </div>
   );
 }
