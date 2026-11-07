@@ -59,28 +59,45 @@ const aPage = {
 };
 
 /**
- * The row as the server holds it, for the page and every tab it opens: a save is answered with what it wrote. `hold` keeps a
+ * The row as the server holds it, one for the page and every tab it opens: a save is answered with what it wrote. `hold` keeps a
  * save waiting until the test lets it go.
+ *
+ * ⚠️ On each page, after `stubTheApiAsStaff`, and not on the context: a route of the page wins over one of its context, and the
+ * staff's own `**\/api/content/*` would answer this row with a template.
  */
 async function stubTheRow(page: Page, hold?: Promise<void>) {
   const writes: Written[] = [];
-  const reads: string[] = [];
+  const reads: number[] = [];
   const row = { current: aPage as Record<string, unknown> };
 
-  await page.context().route('**/api/content/7', async (route) => {
-    if (route.request().method() === 'PUT') {
-      const written = route.request().postDataJSON() as Written;
-      writes.push(written);
-      await hold;
-      row.current = { ...row.current, ...written, rowVersion: `2026-11-07T10:00:0${writes.length}` };
-    } else {
-      reads.push(route.request().frame().page().url());
-    }
+  const serve = (target: Page) =>
+    target.route('**/api/content/7', async (route) => {
+      if (route.request().method() === 'PUT') {
+        const written = route.request().postDataJSON() as Written;
+        writes.push(written);
+        await hold;
+        row.current = { ...row.current, ...written, rowVersion: `2026-11-07T10:00:0${writes.length}` };
+      } else {
+        reads.push(Date.now());
+      }
 
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(row.current) });
-  });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(row.current),
+      });
+    });
 
-  return { writes, reads, row };
+  await serve(page);
+
+  return { writes, reads, row, serve };
+}
+
+/** A row answered with a refusal, after the staff's own routes so that it wins. */
+async function refuse(page: Page, id: number, status: number) {
+  await page.route(`**/api/content/${id}`, (route) =>
+    route.fulfill({ status, contentType: 'application/problem+json', body: JSON.stringify({ status }) }),
+  );
 }
 
 test.beforeEach(({ page }) => {
@@ -96,7 +113,7 @@ test('the draft on screen is saved first, then opens in a new tab in the languag
 
   let release: () => void = () => {};
   const held = new Promise<void>((resolve) => (release = resolve));
-  const { writes } = await stubTheRow(page, held);
+  const { writes, serve } = await stubTheRow(page, held);
 
   await page.goto('/staff/content/7');
   await page.locator('input[name="title.en"]').fill('Written by hand');
@@ -112,6 +129,7 @@ test('the draft on screen is saved first, then opens in a new tab in the languag
   await page.getByRole('button', { name: editor.openPreview.label }).click();
   const tab = await opening;
   await stubTheApiAsStaff(tab);
+  await serve(tab);
 
   // ⚠️ Open, and empty, for as long as the save is on its way: it is sent to the draft only once the draft is stored.
   await expect.poll(() => writes.length).toBe(1);
@@ -134,16 +152,17 @@ test('the draft on screen is saved first, then opens in a new tab in the languag
 
 test('a draft that could not be saved opens nothing', async ({ page }) => {
   await stubTheApiAsStaff(page);
-  await page
-    .context()
-    .route('**/api/content/7', (route) =>
-      route.request().method() === 'PUT'
-        ? route.fulfill({ status: 500, contentType: 'application/problem+json', body: '{"status":500}' })
-        : route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(aPage) }),
-    );
+  await page.route('**/api/content/7', (route) =>
+    route.request().method() === 'PUT'
+      ? route.fulfill({ status: 500, contentType: 'application/problem+json', body: '{"status":500}' })
+      : route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(aPage) }),
+  );
 
   await page.goto('/staff/content/7');
   await page.locator('input[name="title.en"]').fill('Not to be kept');
+  // ⚠️ The form hands its fields to the autosave once they are validated, a moment after the keystroke; a press inside that
+  // moment finds nothing to store, as every button that stores first does (the download for Claude, publication).
+  await expect(page.getByText(editor.autosave.unsaved)).toBeVisible();
 
   const opened: Page[] = [];
   page.on('popup', (popup) => opened.push(popup));
@@ -195,16 +214,8 @@ test('the draft is read again on «refresh», and when the tab comes back into f
 
 test('a row this member may not read is refused inside the frame of the site', async ({ page }) => {
   await stubTheApiAsStaff(page);
-  await page
-    .context()
-    .route('**/api/content/8', (route) =>
-      route.fulfill({ status: 403, contentType: 'application/problem+json', body: '{"status":403}' }),
-    );
-  await page
-    .context()
-    .route('**/api/content/9', (route) =>
-      route.fulfill({ status: 404, contentType: 'application/problem+json', body: '{"status":404}' }),
-    );
+  await refuse(page, 8, 403);
+  await refuse(page, 9, 404);
 
   await page.goto('/staff/content/8/preview');
   await expect(page.getByText(englishCommon.forbidden.title)).toBeVisible();
