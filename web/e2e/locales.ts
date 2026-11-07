@@ -47,7 +47,20 @@ interface CommonStrings {
     readonly linksGroup: string;
     readonly screens: Readonly<Record<string, string>>;
   };
-  readonly form: { readonly addEntry: string; readonly suggest: { readonly emptyClosed: string } };
+  readonly form: {
+    readonly addEntry: string;
+    readonly suggest: { readonly emptyClosed: string };
+    readonly markdown: {
+      readonly bar: string;
+      readonly bold: string;
+      readonly strike: string;
+      readonly link: string;
+      readonly linkAddress: string;
+      readonly linkApply: string;
+      readonly colour: string;
+      readonly colours: { readonly brand: string; readonly ocean: string };
+    };
+  };
   readonly awards: { readonly create: string; readonly fields: { readonly name: string } };
   readonly awardAssignments: {
     readonly create: string;

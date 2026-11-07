@@ -32,6 +32,26 @@ import { Suggest } from './Suggest';
 const MARK_KEYS: Readonly<Record<string, InlineMark>> = { b: '**', i: '*' };
 
 /**
+ * ⚠️ A key pressed in one of the bar's two lists belongs to the list. The editor listens on the document for what acts on the
+ * block picked, outside a field (`useSelectionShortcuts`), and a colour is a button: Escape closed the list and let go of the
+ * block too, and Delete would have removed it. Radix hears Escape first, on the way down, so the list still closes.
+ */
+const keepKeysInside = (event: KeyboardEvent) => event.stopPropagation();
+
+/**
+ * Where the focus goes when one of the two lists closes: back in the box, unless it has already gone somewhere. ⚠️ The list
+ * finishes closing after its animation, so going from the colours straight to the link, the box took the focus from the link
+ * that had just opened, and that closed it.
+ */
+function backToTheBox(event: Event, box: HTMLTextAreaElement | null) {
+  event.preventDefault();
+
+  if (document.activeElement === null || document.activeElement === document.body) {
+    box?.focus();
+  }
+}
+
+/**
  * The box of a text the renderer draws with `MarkdownContent`, with the bar that writes the marks (design of the editor, phase
  * 3, §4.6). What is typed stays what is stored: the bar only writes Markdown around the selection, and whoever writes keeps
  * seeing the signs. A piece of the generated form and not a component of the closed list, drawn only by `LocaleFields`.
@@ -192,12 +212,11 @@ function LinkChoice({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="flex w-80 flex-col gap-2"
-        onCloseAutoFocus={(event) => {
-          event.preventDefault();
-          box.current?.focus();
-        }}
+        className="flex w-[28rem] max-w-[90vw] flex-col gap-2"
+        onCloseAutoFocus={(event) => backToTheBox(event, box.current)}
         onKeyDown={(event) => {
+          keepKeysInside(event);
+
           // Enter that chose an option of the list is taken: this is the Enter of an address written in full.
           if (event.key === 'Enter' && !event.defaultPrevented && !event.nativeEvent.isComposing) {
             event.preventDefault();
@@ -206,16 +225,19 @@ function LinkChoice({
         }}
       >
         <Label htmlFor="markdown-link-address">{t('form.markdown.linkAddress')}</Label>
-        <Suggest
-          id="markdown-link-address"
-          value={address}
-          suggestions={addresses}
-          only={false}
-          empty={t('form.suggest.empty')}
-          onChange={setAddress}
-        />
-        <div className="flex justify-end">
-          <Button type="button" size="sm" onClick={write}>
+        {/* Beside the box, because the list of the addresses opens under it and would cover a button below. */}
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <Suggest
+              id="markdown-link-address"
+              value={address}
+              suggestions={addresses}
+              only={false}
+              empty={t('form.suggest.empty')}
+              onChange={setAddress}
+            />
+          </div>
+          <Button type="button" size="sm" className="shrink-0" onClick={write}>
             {t('form.markdown.linkApply')}
           </Button>
         </div>
@@ -252,10 +274,8 @@ function ColourChoice({
       <PopoverContent
         align="start"
         className="flex w-48 flex-col gap-1 p-2"
-        onCloseAutoFocus={(event) => {
-          event.preventDefault();
-          box.current?.focus();
-        }}
+        onKeyDown={keepKeysInside}
+        onCloseAutoFocus={(event) => backToTheBox(event, box.current)}
       >
         {TEXT_COLOURS.map((colour) => (
           <Button
