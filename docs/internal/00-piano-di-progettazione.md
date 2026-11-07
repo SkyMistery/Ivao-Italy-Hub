@@ -59,8 +59,9 @@ fase 3», 6 nov 2026, in chat al master).
   punto 6; design M0 §7.3; design M4 §7.2). Con loro [#426][d151p], i rilievi web del lotto 10.
 - **Fuori dalle note**: [#456][d151q], tre cose che le istruzioni per Claude lasciavano poco chiare; [#465][d151r], i promemoria dell'host di prova
   che scattavano in mezzo a un test di Training.
-- **`CLAUDE.md` §2**, la riga «a permission on one row only», nomina la rotta accanto alla voce del menu (nota del 1° nov): il file è del maintainer, e
-  questa riga la aggiunge il master su suo sì in chat, 7 nov 2026, «Sì, aggiungila».
+- **`CLAUDE.md` §2**, la riga «a permission on one row only», nomina la rotta accanto alla voce del menu (nota del 1° nov), e la regola «never replicates the schemas»
+  dichiara l'eccezione `RequiredMedia` (nota `2026-11-07-la-foto-rimasta-da-scegliere`): il file è del maintainer, e le due righe le aggiunge il master su suo sì in chat, 7 nov
+  2026, «Sì, aggiungila», due volte.
 - ⚠️ **Da fare, e non fatto qui**: un numero con `choices` non ha una via di ritorno a «niente» (riportato da una sessione, non verificato). Due
   righe `prova-claude-*` del 5 nov nel banco locale `ivaohub_e2e`, di nessuno.
 - **Le note di rilascio della 0.24.0**: la migrazione parte da sola all'avvio; le pagine già pubblicate con un interattivo che disegna fuori dal

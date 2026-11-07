@@ -133,7 +133,10 @@ Structural rules:
   the smoke suite runs under the real CSP. `script-src` stays `'self'` with no exceptions.
 - Block schemas exist **only** in TypeScript/zod. The back end stores `body_json` as opaque JSON (checks
   `schema_version` and size), extracts search text with a generic string walker, and never replicates the schemas
-  in C#.
+  in C#. **One declared exception**: `IBlockDescriptor.RequiredMedia`, the files a block cannot do without, in its C# half, so
+  that a picture left to choose stops publication. This one fact and this one purpose, kept to the schema by
+  `web/src/app/blockRequiredMedia.test.ts`; never a way of copying other pieces of a schema
+  (`decisions/2026-11-07-la-foto-rimasta-da-scegliere.md`).
 - Data blocks carry `renderMode: live | frozen`; `frozen` is captured in `frozen_json` at publication. Blocks that
   are live by nature do not expose the toggle.
 - The public site reads only the published version (`cms_content_versions`). Drafts are never public.
