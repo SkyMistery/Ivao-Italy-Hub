@@ -2135,6 +2135,18 @@
     "label": "Mappa delle tratte",
     "noWebgl": "Questo browser non può disegnare la mappa (WebGL2 spento o assente). Le tratte sono elencate qui sotto."
   },
+  "discord": {
+    "title": "Discord",
+    "privacy": "L'hub conserva il tuo nome utente e il tuo id di Discord, e a Discord non chiede altro. Li vedi tu qui e nessun altro membro; la divisione può usare l'id per riconoscerti sul suo server Discord. Puoi scollegarti quando vuoi.",
+    "link": "Collega Discord",
+    "refresh": "Aggiorna il nome utente",
+    "unlink": "Scollega",
+    "linkedAt": "Collegato il {{when}}",
+    "refused": {
+      "taken": "Questo account Discord è collegato a un altro membro. Scollegalo prima da lì.",
+      "failed": "Il collegamento con Discord non è andato a buon fine. Riprova."
+    }
+  },
   "tokens": {
     "title": "I miei token",
     "description": "Un tuo programma — l'agente del validatore — entra con un token invece che con il browser. Apre quello che serve al programma e nient'altro, e vale con i tuoi permessi come sono oggi.",

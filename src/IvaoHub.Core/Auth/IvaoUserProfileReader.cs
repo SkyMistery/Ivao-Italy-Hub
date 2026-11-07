@@ -54,9 +54,8 @@ public static class IvaoUserProfileReader
             // lastName, centerId, countryId, createdAt, divisionId, isStaff, isSupervisor,
             // languageId, email, familyProfile, rating, gcas, hours, userStaffPositions,
             // userStaffDetails, prCreator, ownedVirtualAirlines, groups, sub, given_name,
-            // family_name, nickname, publicNickname and profile. The column stays, empty, for
-            // whenever the hub links Discord itself the way the division's own bot does.
-            DiscordId: null,
+            // family_name, nickname, publicNickname and profile. The member links Discord
+            // themselves (DiscordLinks), and a sign in leaves that alone.
             Email: Text(userInfo, "email"),
             LanguageId: Text(userInfo, "languageId"),
             IvaoIsStaff: Boolean(userInfo, "isStaff"),

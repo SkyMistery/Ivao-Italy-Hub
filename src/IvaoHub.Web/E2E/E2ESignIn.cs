@@ -199,7 +199,6 @@ internal static class E2ESignIn
                     CountryId: null,
                     RatingAtc: who.Person.RatingAtc,
                     RatingPilot: who.Person.RatingPilot,
-                    DiscordId: null,
                     // A member of staff has no mailbox: an invented address would be one the queue would actually try
                     // to write to. The pilot has one, on the bench's Mailpit (T13b), and so has the trainer (M3, A1).
                     Email: who.Email,
