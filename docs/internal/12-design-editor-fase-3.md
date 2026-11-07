@@ -383,7 +383,10 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 - **Gli indirizzi di fuori** non si controllano: non si sa che cosa c'è dall'altra parte.
 - **Una foto rimasta da scegliere ferma la pubblicazione**, per ogni pagina, importata o scritta a mano (Carmine, in chat al master il
   5 novembre 2026: «Sì, la ferma»; nota `2026-11-04-le-scelte-dell-import-da-claude`, punto 11). ⚠️ Il server non legge gli schemi, quindi
-  da solo non sa quale `mediaId` è obbligatorio: lo dice la 3.15 nella sua nota, e se serve un meccanismo nuovo è una domanda per Carmine.
+  da solo non sa quale `mediaId` è obbligatorio: ~~lo dice la 3.15 nella sua nota~~ lo dichiara il blocco in `RequiredMedia` (Carmine, in chat al master il 7 novembre 2026,
+  «A, dichiarato in C#»; nota `2026-11-07-la-foto-rimasta-da-scegliere`).
+- **Com'è andata** (#473, nota `2026-11-07-le-scelte-del-controllo-dei-link`): una schermata è più delle sei del menu, cioè ogni primo segmento riservato; due pagine nuove
+  che si linkano a vicenda non escono insieme, e il controllo ferma anche «Pronta per l'approvazione».
 - **È una modifica del nucleo del server**: una PR sua, dopo §4.5, con il test d'integrazione dei due rifiuti.
 - **File del nucleo**: `Core/Content/ContentPublishService.cs`, `Core/Content/BlockDocumentWalker.cs`,
   `Core/Content/MenuItemWriteDtoValidator.cs` e il servizio nuovo accanto, i file di lingua del nucleo. **Nota sua**: no per i link, sì

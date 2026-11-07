@@ -781,7 +781,8 @@ riempie dall'editor, **mai dal codice**.
 - I seed stanno in `seed/content-pages/*.json`, accanto a `seed/content-templates/`, e si applicano una
   volta sola per file con la stessa chiave in `hub_division_settings` che `ContentTemplateSeeder` usa
   già (`page.system:<slug>`). Un file nuovo in una release successiva aggiunge una pagina senza toccare
-  quelle che lo staff ha modificato.
+  quelle che lo staff ha modificato. **Dal 7 novembre 2026** (#473) le pagine seminate escono a giri, dopo che ci sono tutte: la home porta a `/start`, un file
+  successivo, e un link deve arrivare prima che la sua pagina esca. Quello che resta si dice nel log.
 - ⚠️ **Il Lorem è tradotto e non nomina l'Italia.** Il test di forkabilità «divisione XX» apre queste
   pagine: una frase di riempimento che dice «Benvenuti nella divisione italiana» fa fallire la CI, ed è
   giusto così.
