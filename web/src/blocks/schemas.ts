@@ -33,14 +33,14 @@ export const headingSchema = z.object({
 });
 
 export const textSchema = z.object({
-  markdown: localized().meta({ multiline: true }),
+  markdown: localized().meta({ multiline: true, markdown: true }),
 });
 
 export const calloutSchema = z.object({
   tone: z.enum(CALLOUT_TONES),
   // Optional (issue #358): a callout may be its text alone.
   title: localized().optional(),
-  text: localized().meta({ multiline: true }),
+  text: localized().meta({ multiline: true, markdown: true }),
 });
 
 export const ctaSchema = z.object({
@@ -317,12 +317,16 @@ export const logoGridSchema = z.object({
  * way of getting the depth wrong. What is inside is the same sanitized `MarkdownContent` as `text`.
  */
 export const tabsSchema = z.object({
-  tabs: z.array(z.object({ label: localized(), body: localized().meta({ multiline: true }) })),
+  tabs: z.array(
+    z.object({ label: localized(), body: localized().meta({ multiline: true, markdown: true }) }),
+  ),
 });
 
 export const accordionSchema = z.object({
   allowMultiple: z.boolean().default(false),
-  items: z.array(z.object({ question: localized(), answer: localized().meta({ multiline: true }) })),
+  items: z.array(
+    z.object({ question: localized(), answer: localized().meta({ multiline: true, markdown: true }) }),
+  ),
 });
 
 export const testimonialSchema = z.object({
@@ -449,7 +453,7 @@ export const staffListSchema = z.object({
 export const MY_WORK_KINDS = ['approvals', 'contacts', 'reviews', 'drafts'] as const;
 
 export const welcomeSchema = z.object({
-  message: localized().optional().meta({ multiline: true }),
+  message: localized().optional().meta({ multiline: true, markdown: true }),
 });
 
 export const myDepartmentsSchema = z.object({});

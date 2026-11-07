@@ -357,6 +357,15 @@ describe('the callout', () => {
     expect(screen.getByRole('alert').querySelector('svg + h5')).toHaveTextContent('Heads up');
   });
 
+  test('its text is prose: Markdown is drawn, and the text still follows the icon (design of the editor, §4.6)', () => {
+    draw(<CalloutBlock props={{ tone: 'info', text: en('**Only** the :danger[text].') }} />);
+
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('Only the text.');
+    expect(alert.querySelector('svg + div strong')).toHaveTextContent('Only');
+    expect(alert.querySelector('.text-colour-danger')).toHaveTextContent('text');
+  });
+
   test('«Careful» is yellow and «Important» red', () => {
     const { unmount } = draw(<CalloutBlock props={{ tone: 'warning', title: en('Careful') }} />);
     expect(screen.getByRole('alert')).toHaveClass('bg-semantic-yellow-50');

@@ -68,7 +68,10 @@ const sampleSchema = z.object({
   cards: z.array(z.object({ name: z.string() })),
 });
 
-const localizedOnlySchema = z.object({ title: localized() });
+const localizedOnlySchema = z.object({
+  title: localized(),
+  note: localized().meta({ multiline: true, markdown: true }),
+});
 
 interface SampleRow {
   id: number;
@@ -315,7 +318,7 @@ export function LocaleFieldsSample({ locales }: { locales: readonly string[] }) 
   return (
     <SchemaForm
       schema={localizedOnlySchema}
-      defaults={{ title: blank(locales) }}
+      defaults={{ title: blank(locales), note: blank(locales) }}
       locales={locales}
       labels="uiKit.sample.form"
       submitLabel={t('common.save')}

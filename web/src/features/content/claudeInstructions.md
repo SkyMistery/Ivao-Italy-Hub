@@ -114,12 +114,17 @@ The JSON Schema of the envelope (sections and the frame of a block) is below, af
   written, keyed by the language codes listed under «This page» (`{ "<code>": "…", "<other code>": "…" }`). A page
   with a language missing cannot be published. Write each language as a
   native speaker would, not as a word-for-word translation.
-- Markdown is drawn only in the long text of the blocks `text` (`markdown`), `tabs` (`body`), `accordion` (`answer`)
-  and `welcome` (`message`): paragraphs, **bold**, _italic_, bulleted and numbered lists, and links. Everywhere else —
-  titles, labels, captions, the text of a callout or of a card — write plain text: an asterisk there stays an asterisk.
-- No HTML, no Markdown tables (a table is the `table` block), no strikethrough, no underline.
-- **No colour of your own.** Backgrounds are the eight of the envelope, and the accent of a block is one of its four
-  families; both colour graphics, never a word.
+- Markdown is drawn only in a field marked `"markdown": true`: paragraphs, **bold**, _italic_, ~~strikethrough~~ (two
+  tildes), bulleted and numbered lists, nested lists, and links. Everywhere else — titles, labels, captions, the text of
+  a card — write plain text: an asterisk there stays an asterisk.
+- No HTML, no Markdown tables (a table is the `table` block), no underline: on this site an underlined word reads as a
+  link.
+- **A word may take a colour, in a field marked `"markdown": true` and nowhere else**, written `:ocean[the word]`. The
+  names are a closed set: `brand` (blue), `ocean` (light blue), `aurora` (teal) and `danger` (red, for a warning). A name
+  outside the set draws plain text, so orange is not a colour here. Use a colour rarely, for what must not be missed, and
+  never to say something the words do not: a reader may not see it.
+- **No other colour of your own.** Backgrounds are the eight of the envelope, and the accent of a block is one of its
+  four families; both colour graphics, never a word.
 - One title per page: the page's own. Headings you add start at level 2.
 
 ## Values you cannot know
