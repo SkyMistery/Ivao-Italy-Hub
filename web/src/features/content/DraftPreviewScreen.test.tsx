@@ -157,6 +157,12 @@ test('a news item is drawn the way its public screen draws it, title and summary
   expect(screen.getByRole('link', { name: 'Join' })).toBeInTheDocument();
 });
 
+test('an entry already online is dated as its next publication will be, by the last save', () => {
+  draw({ kind: 'News', publishedAt: '2025-03-02T10:00:00Z', updatedAt: '2026-11-07T11:00:00Z' });
+
+  expect(document.querySelector('time')).toHaveAttribute('dateTime', '2026-11-07T11:00:00Z');
+});
+
 test('a read again that failed is said over the draft read before it', () => {
   renderWithProviders(
     <DraftPreviewScreen row={row} locale="en" refreshing={false} refreshFailed onRefresh={() => {}} />,

@@ -41,7 +41,9 @@ function asPublicEntry(row: ContentDetailDto): PublicContentDto {
     coverMediaId: row.coverMediaId,
     fileMediaId: row.fileMediaId,
     version: 0,
-    publishedAt: row.publishedAt ?? row.updatedAt,
+    // Not the row's `publishedAt` when it is already online: every publication writes its own instant
+    // (`ContentPublishService`), so the date this draft will carry is the next one's, which the last save is nearest to.
+    publishedAt: row.updatedAt,
     effectiveOn: row.effectiveOn,
     reviewOn: row.reviewOn,
     retiredAt: row.retiredAt,
