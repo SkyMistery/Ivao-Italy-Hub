@@ -49,15 +49,16 @@ fase 3», 6 nov 2026, in chat al master).
   punto 6; design M0 §7.3; design M4 §7.2). Con loro [#426][d151p], i rilievi web del lotto 10.
 - **Fuori dalle note**: [#456][d151q], tre cose che le istruzioni per Claude lasciavano poco chiare; [#465][d151r], i promemoria dell'host di prova
   che scattavano in mezzo a un test di Training.
-- ⚠️ **Da fare, e non fatto qui**: `CLAUDE.md` §2, la riga «a permission on one row only», deve nominare la rotta accanto alla voce del menu (nota
-  del 1° nov): il file è del maintainer, e glielo chiede la PR. Un numero con `choices` non ha una via di ritorno a «niente» (riportato da
-  una sessione, non verificato). Due righe `prova-claude-*` del 5 nov nel banco locale `ivaohub_e2e`, di nessuno.
+- **`CLAUDE.md` §2**, la riga «a permission on one row only», nomina la rotta accanto alla voce del menu (nota del 1° nov): il file è del maintainer, e
+  questa riga la aggiunge il master su suo sì in chat, 7 nov 2026, «Sì, aggiungila».
+- ⚠️ **Da fare, e non fatto qui**: un numero con `choices` non ha una via di ritorno a «niente» (riportato da una sessione, non verificato). Due
+  righe `prova-claude-*` del 5 nov nel banco locale `ivaohub_e2e`, di nessuno.
 - **Le note di rilascio della 0.24.0**: la migrazione parte da sola all'avvio; le pagine già pubblicate con un interattivo che disegna fuori dal
   flusso, usa un margine negativo, dà a `body` l'altezza della cornice o apre un pannello con una scelta vanno ripubblicate; i file per Claude si
   riscaricano; il collegamento con Discord resta spento finché `secrets/*.json` non ha la sezione `Discord`.
 - **Le versioni**: `main` dalla 0.22.0 alla **0.24.0** (0.22.1 #456; 0.23.0 #458, #457, #462; 0.23.1 le correzioni; 0.24.0 #464, #472, #471).
 - **Toccati:** intestazione (Versione), §6.1, §7, §9.1, §9.3, §9.7, §13 (righe M4 e M6), §16 punto 6; `12-design-editor-fase-3.md` §4.1, §4.2, §4.3, §5.5;
-  `01-design-m0.md` §7.3; `09-design-m4.md` §7.2; `HANDOFF.md`.
+  `01-design-m0.md` §7.3; `09-design-m4.md` §7.2; `HANDOFF.md`; `CLAUDE.md` §2.
 
 [d151a]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/457
 [d151b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/471
