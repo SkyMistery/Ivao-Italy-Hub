@@ -226,6 +226,9 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 - **File del nucleo**: `shared/ui/MarkdownContent.tsx` (elenco chiuso: cambia), `shared/forms/LocaleFields.tsx`, `shared/forms/schema.ts`,
   `blocks/schemas.ts`, `src/styles/index.css` (le classi dei colori, nessun valore esadecimale), `Core/Content/BlockDocumentWalker.cs`,
   `e2e/contrast.spec.ts`, `web/package.json` (due dipendenze). **Nota sua**: no; la regola cambiata la registra questo documento.
+- **Com'è andata** (#474, nota `2026-11-07-la-barra-di-formattazione`): ogni colore è una coppia di token, **tranne il verde acqua sugli sfondi scuri**, che è `aurora-light` col
+  40 % di bianco (Carmine, in chat al master il 7 novembre 2026, «(a) schiarito col bianco»). Quattro pacchetti al posto di `remark-gfm` e `remark-directive` interi, perché un corpo
+  salvato si disegni come prima (§6). La barra sta su ogni campo disegnato da `MarkdownContent`, anche di un modulo.
 
 ### 4.7 L'anteprima in una scheda nuova (6)
 
