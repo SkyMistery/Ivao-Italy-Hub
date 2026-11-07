@@ -580,7 +580,7 @@ public sealed class SiteMenuAndDashboardTests(MariaDbFixture mariaDb) : IAsyncLi
     /// A payload for a new entry, pointing by default at a <b>screen of the application</b>.
     /// <para>⚠️ It used to point at an invented slug, and since 8 September 2026 that is refused:
     /// a menu entry may only lead where the site owns something
-    /// (<see cref="MenuItemWriteDtoValidator.Screens"/> and the two tables). These tests ask about
+    /// (<see cref="SiteDestinations.Screens"/> and the two tables). These tests ask about
     /// ownership and depth, so where the entry leads is not their question — but it still has to be
     /// somewhere real.</para>
     /// </summary>

@@ -333,6 +333,94 @@ public sealed class BlockDocumentWalkerTests
             result.Errors);
     }
 
+    [Fact]
+    public void ASectionWithAPictureBehindItAndNoPictureIsSaid()
+    {
+        var body = JsonNode.Parse("""
+        {
+          "sections": [
+            { "id": "s1", "background": "image", "blocks": [] },
+            { "id": "s2", "background": "image", "mediaId": null, "blocks": [],
+              "sections": [ { "id": "s3", "background": "image", "mediaId": 7, "blocks": [] } ] },
+            { "id": "s4", "background": "muted", "blocks": [] }
+          ]
+        }
+        """);
+
+        Assert.Equal(["sections[0].mediaId", "sections[1].mediaId"], Walker.SectionsWithoutTheirPicture(body));
+    }
+
+    [Fact]
+    public void APictureABlockCannotDoWithoutAndNobodyChoseIsSaidAndAnOptionalOneIsNot()
+    {
+        var body = JsonNode.Parse("""
+        {
+          "sections": [ { "id": "s1", "blocks": [
+            { "id": "b1", "type": "image", "props": { "width": "full" } },
+            { "id": "b2", "type": "image", "props": { "mediaId": 7 } },
+            { "id": "b3", "type": "image" },
+            { "id": "b4", "type": "hero", "props": { "title": "x" } },
+            { "id": "b5", "type": "gallery", "props": { "images": [ { "mediaId": 7 }, { }, { "mediaId": null } ] } },
+            { "id": "b6", "type": "gallery", "props": { "images": [] } },
+            { "id": "b7", "type": "gallery", "props": { "mediaIds": [ 7 ] } },
+            { "id": "b8", "type": "logoGrid", "props": { "items": [ { "name": "x" } ] } }
+          ] } ]
+        }
+        """);
+
+        Assert.Equal(
+            [
+                "sections[0].blocks[0].props.mediaId",
+                "sections[0].blocks[2].props.mediaId",
+                "sections[0].blocks[4].props.images[1].mediaId",
+                "sections[0].blocks[4].props.images[2].mediaId",
+                "sections[0].blocks[7].props.items[0].mediaId",
+            ],
+            Walker.BlocksWithoutTheirPictures(body, new BlockRegistry(CoreBlocks.All)));
+    }
+
+    [Fact]
+    public void TheLinksOfABodyAreAnHrefAtAnyDepthAndWhatMarkdownLinks()
+    {
+        var body = JsonNode.Parse("""
+        {
+          "sections": [ { "id": "s1", "blocks": [
+            { "id": "b1", "type": "cta", "props": { "href": "/one" } },
+            { "id": "b2", "type": "hero", "props": { "primary": { "href": "https://example.org" } } },
+            { "id": "b3", "type": "cardGrid", "props": { "cards": [ { "title": "x" }, { "href": "/two" } ] } },
+            { "id": "b4", "type": "text", "props": { "markdown": {
+              "it": "[Tre](/three \"Il titolo\") e [quattro](</four>)",
+              "en": "![A picture](/not-a-link.png)" } } },
+            { "id": "b5", "type": "stats", "props": {}, "frozen": { "href": "/what-a-provider-answered" } }
+          ] } ]
+        }
+        """);
+
+        Assert.Equal(
+            [
+                new BlockDocumentLink("sections[0].blocks[0].props.href", "/one"),
+                new BlockDocumentLink("sections[0].blocks[1].props.primary.href", "https://example.org"),
+                new BlockDocumentLink("sections[0].blocks[2].props.cards[1].href", "/two"),
+                new BlockDocumentLink("sections[0].blocks[3].props.markdown.it", "/three"),
+                new BlockDocumentLink("sections[0].blocks[3].props.markdown.it", "/four"),
+            ],
+            Walker.Links(body));
+    }
+
+    [Theory]
+    [InlineData("/about", "/about")]
+    [InlineData("/about/", "/about")]
+    [InlineData("/about?x=1#team", "/about")]
+    [InlineData("/", "/")]
+    [InlineData("/#team", "/")]
+    [InlineData("//elsewhere.example", null)]
+    [InlineData("https://example.org/about", null)]
+    [InlineData("#team", null)]
+    [InlineData("about", null)]
+    [InlineData("", null)]
+    public void AnAddressOfThisSiteIsReadAsTheRouterReadsIt(string written, string? expected) =>
+        Assert.Equal(expected, SiteDestinations.OnThisSite(written));
+
     [Theory]
     [InlineData("stacked", 1)]
     [InlineData("1/2+1/2", 2)]
