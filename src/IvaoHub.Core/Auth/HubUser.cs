@@ -36,9 +36,23 @@ public sealed class HubUser
     /// <summary>Hours connected as a pilot, the same way as <see cref="HoursAtc"/>.</summary>
     public decimal? HoursPilot { get; set; }
 
-    /// <summary>Kept out of the audit (issue #326, item 2), as the address below: a person's datum, not a decision.</summary>
+    /// <summary>
+    /// The Discord account the member proved is theirs (<see cref="DiscordLinks"/>): fixed, unique, null when not linked. IVAO
+    /// does not send it. Kept out of the audit (issue #326, item 2), as the address below: a person's datum, not a decision.
+    /// </summary>
     [NotAudited]
     public string? DiscordId { get; set; }
+
+    /// <summary>
+    /// The account's username when the member linked it, shown to them on their profile and to nobody else. It changes on
+    /// Discord without the hub knowing, until they link again.
+    /// </summary>
+    [NotAudited]
+    public string? DiscordUsername { get; set; }
+
+    /// <summary>When the member said yes, last.</summary>
+    [NotAudited]
+    public DateTime? DiscordLinkedAt { get; set; }
 
     /// <summary>
     /// Where the hub writes to this member, taken from their IVAO profile at every sign in.

@@ -26,6 +26,10 @@ internal sealed class HubUserConfiguration : IEntityTypeConfiguration<HubUser>
         builder.Property(user => user.DivisionCode).HasMaxLength(3);
         builder.Property(user => user.Country).HasMaxLength(3);
         builder.Property(user => user.DiscordId).HasMaxLength(32);
+        builder.Property(user => user.DiscordUsername).HasMaxLength(32);
+
+        // One account, one person: the database says it for two members racing for the same one.
+        builder.HasIndex(user => user.DiscordId).IsUnique();
         builder.Property(user => user.Locale).HasMaxLength(8);
         builder.Property(user => user.Email).HasMaxLength(256);
 

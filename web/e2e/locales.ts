@@ -240,6 +240,14 @@ interface CommonStrings {
       readonly empty: { readonly drafts: string };
     };
     readonly calendar: { readonly label: string; readonly fields: { readonly 'kinds.kind': string } };
+    readonly buttonGroup: {
+      readonly label: string;
+      readonly fields: { readonly 'buttons.href': string; readonly 'buttons.label': string };
+    };
+    readonly cardGrid: { readonly label: string; readonly fields: { readonly 'cards.href': string } };
+    readonly logoGrid: { readonly label: string; readonly fields: { readonly 'items.href': string } };
+    readonly hero: { readonly label: string };
+    readonly cta: { readonly label: string; readonly fields: { readonly href: string } };
     readonly heading: {
       readonly label: string;
       readonly fields: { readonly text: string; readonly level: string };

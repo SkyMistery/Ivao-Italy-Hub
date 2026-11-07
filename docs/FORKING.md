@@ -733,6 +733,12 @@ editing a file, because production is reached by FTP and there is no shell there
 it is measured against this application: `web/e2e/security.spec.ts` walks the screens under the real
 policy and fails on a single refusal, which is the test to run if you change a directive.
 
+A last one is optional: **`Discord`**, also in `secrets/*.json`. With it, a member can connect their
+Discord account on `/me` and sees their username there; nobody else does. Without it, the section does
+not exist and nothing else changes. Create an application in the Discord developer portal, register
+`https://<host>/auth/discord/callback` as its redirect, and fill in all three keys or none: a section
+filled in halfway stops the application at the start. See `docs/DEPLOYING.md`.
+
 One more thing to change before the first start, and it is easy to miss because it is not a secret:
 **`superAdmins` in `config/division.json` still holds the VIDs of the division this repository was
 written for**. That list is read once, when the database holds no super administrator at all — so
