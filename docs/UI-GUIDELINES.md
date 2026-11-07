@@ -555,12 +555,25 @@ colour chosen by hand can promise nothing about the text on it. They are Atmosph
 same reason in reverse: on `aurora-mid` secondary text measures 2.3 : 1 and no grey light enough to
 fix it would still read as secondary.
 
+**A word of prose may take one of four colours, and no other.** "No free colour" stays: the text of a
+field drawn by `MarkdownContent` takes a colour only from the closed set of the formatting bar — `brand`
+(blue), `ocean` (light blue), `aurora` (teal) and `danger` (red, for a warning) — written
+`:ocean[a word]`; a name outside the set draws plain text. Each is a pair of tones in
+`src/styles/index.css`, and a dark ground takes the second by construction, because it carries `dark`.
+Each tone is measured at 4.5 : 1 on every ground in both themes by `e2e/contrast.spec.ts`, which is why
+the brand's orange is left out (the numbers are under the accent, below). `image` is measured on the
+`muted` it stands on before a picture arrives: nothing can promise a colour over a photograph, which is
+one more reason a picture is for a quiet section. ⚠️ A colour never carries a meaning alone: the words
+have to say it too. **There is no underline**, because on this site an underlined word reads as a link,
+and the alignment belongs to the whole block.
+
 **A block's accent is four names, and it colours graphics only.** `hero`, `cardGrid`, `iconGrid` and
 `timeline` carry an `accent` property — `brand`, `ocean`, `aurora`, `artifice` — which draws the icon
 of an item, the 2px rule above a card and the short bar above a hero; in an `iconGrid` the icon also
 stands on a disc of the same colour at 15 %, because a line drawing alone carried too little of the
 colour to tell the four apart (issue #363). The default is `brand`, which is
-what those blocks already looked like, so no page changes by itself. ⚠️ **Never a word.** WCAG asks
+what those blocks already looked like, so no page changes by itself. ⚠️ **Never a word**: the accent and
+the colour of a word are two sets, measured for two thresholds. WCAG asks
 3 : 1 of a graphic and 4.5 : 1 of text, and the brand's orange does not reach the second: `artifice-low`
 is 4.5 : 1 on white but 3.7 : 1 on the `accent` ground, and `artifice-dark` is 3.2 : 1 on white
 already. So a hero's overline stays the secondary grey and the colour becomes a bar beside it. Each
@@ -638,9 +651,16 @@ An alignment or a tone is still a `z.enum` and a column count still a number —
 would otherwise eat them, but because a select is the right control for a closed set. The shape of a
 video is `16x9` and not `16:9`, because a colon is what i18next reads as a namespace separator.
 
-**And prose loses its Markdown on the way in.** A snippet is read by a person, so the asterisks come
-off, a link keeps its text and loses its address, and a heading or a bullet loses its marker.
-Underscores stay: `snake_case` is a word.
+**And prose loses its Markdown on the way in.** A snippet is read by a person, so the asterisks and
+tildes come off, a link keeps its text and loses its address, a colour keeps its words and loses its
+name, and a heading or a bullet loses its marker. Underscores stay: `snake_case` is a word.
+
+**Markdown is CommonMark, plus two tildes and the colours.** `MarkdownContent` reads `~~struck~~` and
+`:ocean[a word]` and nothing else of GFM or of the directives: a table stays the words it was (a table is
+the `table` block), and `10:30` is a time. A field it draws is annotated `.meta({ markdown: true })`, and
+that puts the formatting bar above its box, so the annotation and the renderer are written together.
+`hero`, `timeline`, `cardGrid` and `iconGrid` draw their text plain, because they are short lines inside a
+drawing; a `callout` is prose, and has the bar.
 
 **A block never contains blocks.** `tabs` and `accordion` carry markdown per entry — the same
 sanitized `MarkdownContent` as `text` — and the only nesting in the model is the one sections have
