@@ -122,6 +122,27 @@
   "form": {
     "empty": "Vuoto",
     "copyFrom": "Copia da {{language}}",
+    "markdown": {
+      "bar": "Formattazione del testo",
+      "bold": "Grassetto (Ctrl+B)",
+      "italic": "Corsivo (Ctrl+I)",
+      "strike": "Barrato",
+      "bullets": "Elenco puntato",
+      "numbers": "Elenco numerato",
+      "indent": "Rientra sotto la voce sopra",
+      "outdent": "Esci di un livello",
+      "link": "Link",
+      "linkAddress": "Indirizzo: una pagina del sito, o un indirizzo intero",
+      "linkApply": "Scrivi il link",
+      "colour": "Colore del testo",
+      "colours": {
+        "brand": "Blu",
+        "ocean": "Azzurro",
+        "aurora": "Verde acqua",
+        "danger": "Rosso",
+        "none": "Nessun colore"
+      }
+    },
     "addEntry": "Aggiungi",
     "removeEntry": "Rimuovi",
     "entry": "Voce {{number}}",
@@ -354,7 +375,7 @@
       "statLabel": "Voli questo mese",
       "pageTitle": "Titolo di una pagina",
       "pageBody": "Qui va quello che la pagina mette sotto il titolo.",
-      "markdown": "Un paragrafo con **grassetto**, *corsivo* e un [link](https://www.ivao.aero).\n\n- primo\n- secondo",
+      "markdown": "Un paragrafo con **grassetto**, *corsivo*, ~~barrato~~, :ocean[un colore] e un [link](https://www.ivao.aero).\n\n- primo\n- secondo",
       "problem": "Qualcun altro ha modificato questa riga nel frattempo.",
       "form": {
         "fields": {

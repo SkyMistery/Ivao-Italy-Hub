@@ -27,6 +27,12 @@ export interface FieldMeta {
   localized?: boolean;
   /** A long text: a textarea rather than a single line input. */
   multiline?: boolean;
+  /**
+   * A translated text the renderer draws with `MarkdownContent`, which is what puts the formatting bar above its box (design
+   * of the editor, phase 3, §4.6). Written on the field and never deduced from `multiline`: a plain text wraps too, and an
+   * asterisk there stays an asterisk. With `suggestAddresses`, the bar's link offers the addresses of the site.
+   */
+  markdown?: boolean;
   /** Carried by the form and submitted, never shown. `rowVersion` is the reason this exists. */
   hidden?: boolean;
   /**
@@ -600,18 +606,22 @@ export function suggestCollections<T>(schema: T, suggestions: readonly Suggestio
   return schema.extend(patched) as unknown as T;
 }
 
+/** A field that leads somewhere: an address, or a text whose bar writes links (§4.6). */
+const leadsSomewhere = (meta: FieldMeta) => meta.address === true || meta.markdown === true;
+
 /**
  * The same schema, with every `address` property — at any depth: the buttons of a hero are in an
- * optional object, those of a group in a list — offering these suggestions. A new schema, like
- * `suggestCollections`: what a block stores is still read with the schema of the registry.
+ * optional object, those of a group in a list — offering these suggestions, and every `markdown` one
+ * offering them to the link of its bar. A new schema, like `suggestCollections`: what a block stores is
+ * still read with the schema of the registry.
  */
 export function suggestAddresses<T>(schema: T, suggestions: readonly Suggestion[]): T {
-  return withMeta(schema, (meta) => meta.address === true, { suggestions: [...suggestions] }) as T;
+  return withMeta(schema, leadsSomewhere, { suggestions: [...suggestions] }) as T;
 }
 
-/** Whether a property of this schema, at any depth, is an `address`. */
+/** Whether a property of this schema, at any depth, leads somewhere: an `address`, or a `markdown` text. */
 export function namesAddresses(schema: unknown): boolean {
-  return names(schema, (meta) => meta.address === true);
+  return names(schema, leadsSomewhere);
 }
 
 /**

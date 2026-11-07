@@ -707,8 +707,8 @@ export const ERROR_CATEGORIES = ['Info', 'Warning', 'Dangerous'] as const;
 export const tourErrorSchema = z.object({
   checkKey: z.enum(['none', ...CHECK_KEYS]).meta({ hidden: true }),
   name: localized(),
-  description: localized().meta({ localized: true, multiline: true }),
-  examples: localized().optional().meta({ localized: true, multiline: true }),
+  description: localized().meta({ localized: true, multiline: true, markdown: true }),
+  examples: localized().optional().meta({ localized: true, multiline: true, markdown: true }),
   category: z.enum(ERROR_CATEGORIES),
   // Read only for a warning; the server refuses one on the others.
   yearlyMax: z.number().int().optional(),

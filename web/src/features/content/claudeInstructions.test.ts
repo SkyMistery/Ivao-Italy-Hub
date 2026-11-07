@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 
 import { registry } from '../../app/registry';
 import type { Body } from '../../blocks';
+import { TEXT_COLOURS } from '../../shared/ui/textColours';
 
 import {
   bodyFingerprint,
@@ -240,6 +241,16 @@ describe('what the instructions offer', () => {
 
     expect(markdown).toContain('A field marked `"address": true` holds an address');
     expect(markdown).toContain('"address": true\n');
+  });
+
+  test('a text drawn as Markdown is marked too, and the fixed part names every colour of the set (§4.6)', async () => {
+    const { markdown } = await composeInstructions(input({ blocks: [block('text')] }));
+
+    expect(markdown).toContain('A word may take a colour, in a field marked `"markdown": true`');
+    expect(markdown).toContain('"markdown": true\n');
+    for (const colour of TEXT_COLOURS) {
+      expect(markdown).toContain(`\`${colour}\` (`);
+    }
   });
 
   test('the draft is there with its identifiers, and the header to copy at the end', async () => {

@@ -265,7 +265,7 @@ export function CalloutBlock({ props }: BlockComponentProps) {
       <Icon aria-hidden className="size-4" />
       {title === '' ? null : <AlertTitle>{title}</AlertTitle>}
       <AlertDescription className={title === '' ? 'mt-0' : undefined}>
-        {read(text(props, 'text'))}
+        <MarkdownContent source={read(text(props, 'text'))} />
       </AlertDescription>
     </AlertRoot>
   );

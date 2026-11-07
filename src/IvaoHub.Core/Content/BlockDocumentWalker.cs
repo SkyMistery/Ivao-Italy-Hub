@@ -226,13 +226,14 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     /// shown <c>**IVAO Italia** is the community…</c> — and somebody searching for a word should not
     /// miss it for an asterisk stuck to its front.
     /// <para>It is deliberately small and undoes only what an editor can write: a link keeps its
-    /// text and loses its address, a heading, a quote or a bullet loses its marker, and the
-    /// characters that carry emphasis and code go. Anything cleverer would be a Markdown parser in
+    /// text and loses its address, a colour keeps its words and loses its name, a heading, a quote or
+    /// a bullet loses its marker, and the characters that carry emphasis, strikethrough and code go. Anything cleverer would be a Markdown parser in
     /// the search path, and the renderer already owns the one that matters.</para>
     /// </summary>
     internal static string Prose(string markdown)
     {
         var text = LinkPattern.Replace(markdown, "$1");
+        text = ColourPattern.Replace(text, "$1");
         text = LineMarkerPattern.Replace(text, string.Empty);
         text = EmphasisPattern.Replace(text, string.Empty);
 
@@ -245,6 +246,15 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     /// <summary><c>[text](/somewhere)</c> and <c>![alt](/picture.png)</c> keep the half a reader reads.</summary>
     private static readonly Regex LinkPattern =
         new(@"!?\[([^\]]*)\]\((?<target>[^)]*)\)", RegexOptions.Compiled, OneSecond);
+
+    /// <summary>
+    /// <c>:ocean[parola]</c> keeps its words, whatever the name (design of the editor, phase 3, §4.6): the renderer draws a
+    /// name outside the set as plain text, so the words of both are what a reader reads. Only a name of letters, as the
+    /// renderer reads it: <c>10:30</c> is a time. After the links, so that a link inside a colour has already lost its
+    /// brackets.
+    /// </summary>
+    private static readonly Regex ColourPattern =
+        new(@":[a-z]+\[((?:[^\[\]\n]|\[[^\]\n]*\])*)\]", RegexOptions.Compiled, OneSecond);
 
     /// <summary>
     /// What starts a heading, a quote or a list item, at the start of a line and nowhere else: a

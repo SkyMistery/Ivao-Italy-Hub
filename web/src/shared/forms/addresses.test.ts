@@ -1,12 +1,14 @@
 import { expect, test } from 'vitest';
 
 import {
+  accordionSchema,
   buttonGroupSchema,
   cardGridSchema,
   ctaSchema,
   heroSchema,
   linkListSchema,
   logoGridSchema,
+  textSchema,
 } from '../../blocks/schemas';
 
 import { namesAddresses, readFields, suggestAddresses, type FieldNode } from './schema';
@@ -57,6 +59,19 @@ test('the schema of the registry is left as it was, and what a block stores is r
 
 test('a block with no address names none', () => {
   expect(namesAddresses(linkListSchema)).toBe(false);
+});
+
+test('a text drawn as Markdown offers them to the link of its bar, and stays a translated text (§4.6)', () => {
+  expect(namesAddresses(textSchema)).toBe(true);
+
+  const field = leaf(suggestAddresses(textSchema, addresses), 'markdown');
+  expect(field?.kind).toBe('localized');
+  expect(field?.meta.suggestions).toEqual(addresses);
+
+  // Inside the list of a block too.
+  expect(leaf(suggestAddresses(accordionSchema, addresses), 'items.answer')?.meta.suggestions).toEqual(
+    addresses,
+  );
 });
 
 test('every other field keeps what it was, and an optional button stays optional', () => {

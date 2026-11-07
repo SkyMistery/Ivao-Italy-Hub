@@ -1,4 +1,9 @@
-import Markdown, { type Components } from 'react-markdown';
+import Markdown, { type Components, type Options } from 'react-markdown';
+
+import { hubMarkdown } from './markdownSyntax';
+
+/** Beside `ELEMENTS`, and for the same reason: nothing here is made again at every render. */
+const PLUGINS = [hubMarkdown] as NonNullable<Options['remarkPlugins']>;
 
 /**
  * Prose an editor wrote, rendered as prose. The library builds a React tree and never touches
@@ -12,7 +17,9 @@ import Markdown, { type Components } from 'react-markdown';
 export function MarkdownContent({ source }: { source: string }) {
   return (
     <div className="flex flex-col gap-3 leading-relaxed">
-      <Markdown components={ELEMENTS}>{source}</Markdown>
+      <Markdown components={ELEMENTS} remarkPlugins={PLUGINS}>
+        {source}
+      </Markdown>
     </div>
   );
 }
