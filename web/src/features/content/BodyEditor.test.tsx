@@ -1,7 +1,7 @@
 import { SidebarProvider, useSidebar } from '@ivao/atmosphere-react';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { Profiler, useState } from 'react';
 import { expect, test, vi } from 'vitest';
 
 import englishCommon from '../../../../locales/en/common.json';
@@ -146,7 +146,7 @@ test.each([
  * The staff layout as far as the sidebar goes: its open state, the button that folds it, and an editor that comes and
  * goes under it. "next" draws another editor in the same commit, as a new row saved and opened on its own address does.
  */
-function StaffHost() {
+function StaffHost({ onCommit }: { onCommit?: () => void }) {
   const { isSidebarOpen, toggleSidebar } = useSidebar();
   const [shown, setShown] = useState<number | null>(null);
 
@@ -158,26 +158,28 @@ function StaffHost() {
       <button onClick={() => setShown((current) => (current ?? 0) + 1)}>next</button>
       <button onClick={() => setShown(null)}>leave</button>
       {shown === null ? null : (
-        <BodyEditor
-          key={shown}
-          initial={initial}
-          onChange={() => undefined}
-          toolbar={(tools) => <div role="toolbar">{tools}</div>}
-          locales={['en']}
-          division={{ defaultLocale: 'en', timezone: 'UTC' }}
-          mediaLibrary={mediaLibrary}
-          holds={() => false}
-        />
+        <Profiler id="editor" onRender={() => onCommit?.()}>
+          <BodyEditor
+            key={shown}
+            initial={initial}
+            onChange={() => undefined}
+            toolbar={(tools) => <div role="toolbar">{tools}</div>}
+            locales={['en']}
+            division={{ defaultLocale: 'en', timezone: 'UTC' }}
+            mediaLibrary={mediaLibrary}
+            holds={() => false}
+          />
+        </Profiler>
       )}
     </>
   );
 }
 
-function drawStaffHost() {
+function drawStaffHost(onCommit?: () => void) {
   const user = userEvent.setup();
   renderWithProviders(
     <SidebarProvider>
-      <StaffHost />
+      <StaffHost {...(onCommit === undefined ? {} : { onCommit })} />
     </SidebarProvider>,
   );
 
@@ -196,6 +198,25 @@ test('the sidebar shuts when the editor opens, and is as it was when it closes',
 
   await press('leave');
   expect(bar()).toBe('open');
+});
+
+test('the sections are born with the sidebar already shut, never under a container that then narrows', async () => {
+  // Read at every commit of the editor, the DOM as it stands then. The guard in `e2e/full/preview.spec.ts` needs a slow
+  // machine to catch the empty preview (`decisions/2026-10-06-l-anteprima-vuota-dell-editor.md`); the order that opens it
+  // can be kept here on any machine.
+  const seen: { section: boolean; bar: string | null | undefined }[] = [];
+  const { press } = drawStaffHost(() =>
+    seen.push({
+      section: document.querySelector('[data-pickable="section"]') !== null,
+      bar: screen.queryByTestId('bar')?.textContent,
+    }),
+  );
+
+  await press('enter');
+
+  const withSections = seen.filter((commit) => commit.section);
+  expect(withSections.length).toBeGreaterThan(0);
+  expect(withSections.every((commit) => commit.bar === 'shut')).toBe(true);
 });
 
 test('a sidebar already shut stays shut after the editor', async () => {

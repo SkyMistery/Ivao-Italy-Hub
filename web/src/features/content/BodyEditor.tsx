@@ -104,11 +104,18 @@ export interface BodyTemplate {
  *
  * ⚠️ Before the first paint, or the bar draws open for a frame and the whole page jumps sideways as it shuts.
  *
+ * ⚠️ It answers whether that has happened, and **the page is not drawn until it has** (`preview.spec.ts`). The sections
+ * measure a container, and that container narrowing under them while the page is being born brought back the fault of
+ * `decisions/2026-10-06-l-anteprima-vuota-dell-editor.md`: on a slow machine every section in the document, with no box,
+ * for good. Measured with the processor slowed: main 0 empty out of 16, the bar shut after the page was there 11 out of
+ * 28, the bar shut before it 0 (the counts are in the pull request). Both happen before a paint, so nobody sees the wait.
+ *
  * Outside the staff layout (a test, a future host) there is no provider and Atmosphere's default setter throws: there is
  * no bar to shut, so nothing happens and there is nothing to put back.
  */
-function useSidebarShutWhileWriting() {
+function useSidebarShutWhileWriting(): boolean {
   const { setIsSidebarOpen } = useSidebar();
+  const [settled, setSettled] = useState(false);
 
   useLayoutEffect(() => {
     let before: boolean | undefined;
@@ -119,8 +126,11 @@ function useSidebarShutWhileWriting() {
         return false;
       });
     } catch {
-      return;
+      // No bar here.
     }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- a second draw before the paint is the point: the page is born after the bar has shut, which nothing at render can say
+    setSettled(true);
 
     return () => {
       if (before !== undefined) {
@@ -128,6 +138,8 @@ function useSidebarShutWhileWriting() {
       }
     };
   }, [setIsSidebarOpen]);
+
+  return settled;
 }
 
 export function BodyEditor({
@@ -203,7 +215,7 @@ export function BodyEditor({
   const { t, i18n } = useTranslation();
   const read = useLocalized();
 
-  useSidebarShutWhileWriting();
+  const roomSettled = useSidebarShutWhileWriting();
 
   // The body, and the way back from the last thing that happened to it. A section moved by mistake
   // was one of the frictions the hand copy of `/about` recorded (HANDOFF §27).
@@ -840,7 +852,7 @@ export function BodyEditor({
                   />
                 }
                 page={
-                  preview ? (
+                  !roomSettled ? null : preview ? (
                     // ⚠️ The preview is not a place you go to and come back from any more. It is one of the two
                     // ways of composing — the page itself — and it keeps the same panel beside it, so a block
                     // clicked here and the same block clicked in the outline lead to exactly the same fields
