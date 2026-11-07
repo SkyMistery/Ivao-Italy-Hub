@@ -1661,6 +1661,8 @@ desse `Events.Delete` a un altro dipartimento lo darebbe davvero; è configurazi
 - **`/staff/events/controllers`**: il registro di affidabilità di tutti, con «togli il no-show».
 - **`/staff/events/settings`**: impostazioni generate.
 
+**Le azioni della pagina di un evento e dell'ATC le dice il server** (6 novembre 2026, #439, nota `decisions/2026-11-01-le-azioni-di-un-evento-dal-server.md`, decisa da Carmine).
+
 **Nessun componente nuovo** nell'elenco chiuso: `DataList`, `SchemaForm`, `CalendarView`, `LiveStatusStrip`, `MediaPicker`,
 `StatusBadge`, `RatingBadge`, `ConfirmDialog`. L'`EventTimeline` del piano §8.3 non serve (il roster si legge in lista).
 **Nessuna eccezione dichiarata** al motore CRUD; gli endpoint a mano sono verbi — prenotare, ritirare, incollare, generare,

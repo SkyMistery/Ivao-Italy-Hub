@@ -126,6 +126,9 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   Nessun livello nuovo nel modello.
 - **Meccanismo**: il contesto di composizione. `Picking.onAddSection` prende dove (`parentId`, posizione); `addSection` di `body.ts` un
   indice. Le etichette le disegna `SectionView` quando `usePicking()` non è `null`.
+- **Dalla barra della sezione** (Carmine, in chat al master il 5 novembre 2026; nota `2026-11-05-le-fessure-e-l-anteprima-vuota`): il modo di inserire
+  una sezione o una riga è la barra di quella scelta, sopra e sotto, per ogni sezione e ogni riga. Le strisce fra le sezioni sono la scorciatoia col
+  mouse e non rispondono dove non c'è aria. «+ riga» in fondo solo sulle sezioni della pagina.
 - **File del nucleo**: `blocks/ContentRenderer.tsx`, `blocks/picking.ts`, `features/content/BodyEditor.tsx`, `features/content/body.ts`,
   i file di lingua. Il server non cambia.
 - **Nota sua**: no. **Test**: `blocks.test.tsx` già controlla che la pagina di un visitatore sia inerte — ci si aggiunge che non ha
@@ -147,6 +150,9 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 - **File del nucleo**: `shared/ui/StaffSidebar.tsx` e `app/layouts/StaffLayout.tsx` (cambia dove sta il provider, non che cosa fa: la
   geometria la misura già `e2e/back-office.spec.ts`), `features/content/BodyEditor.tsx` e un pezzo interno nuovo accanto,
   `features/content/PanelSplitter.tsx`. **Nota sua**: no.
+- **Com'è andata** (#471): ⚠️ la barra si chiude **prima** che le sezioni siano nel documento: chiuderla con la pagina già lì riapriva la trappola
+  dell'anteprima vuota (nota `2026-11-07-la-barra-che-si-chiude-e-l-anteprima-vuota`). `localStorage` non è più il primo uso nell'hub: la 3.0b ci
+  tiene gli avanzi di un import; lo è per una comodità di chi guarda.
 
 ### 4.3 Le voci ripetute si chiudono (IX)
 
@@ -155,7 +161,10 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   è il valore, nella lingua sullo schermo, del primo campo di testo della voce («Voce 3» se è vuoto); un blocco che vuole un altro campo
   lo dice con `.meta({ entryTitle: true })`. Una voce **nuova** nasce aperta; una voce con un **errore** si apre da sola, perché un
   errore dentro una voce chiusa è un errore che nessuno vede (i percorsi di `useProblemDetails` dicono già quale voce).
-- **La data che si toglie**: un campo data facoltativo (`Instant`) ha «Togli la data» accanto.
+  **Un elenco che all'apertura del form ha una voce sola la mostra aperta** (Carmine, in chat al master il 5 novembre 2026, «Sì, aperta»; nota
+  `2026-11-05-la-voce-sola-nasce-aperta`).
+- **La data che si toglie**: un campo data facoltativo (`Instant`) ha «Togli la data» accanto. La stessa correzione vale per enum, icona e media
+  (nota `2026-11-06-il-campo-rimesso-a-niente`).
 - **Meccanismo**: il form generato (`SchemaForm`), con `Collapsible` di Atmosphere. **File**: `shared/forms/SchemaForm.tsx`,
   `shared/forms/schema.ts` (l'annotazione), i file di lingua. **Nota sua**: no.
 - ⚠️ **Tocca ogni form di ogni modulo.** Gli e2e che aggiungono una voce e la scrivono continuano a funzionare (la voce nuova è aperta);
@@ -306,7 +315,9 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   stessa (il guscio non dice `overflow: hidden` e un pixel di arrotondamento basta), il contenuto posizionato fuori dal flusso o con
   margini negativi (il rettangolo di `documentElement` non lo conta, `scrollHeight` sì), un frammento che usa `100vh` (dentro una
   cornice cresce con la cornice, fino ai 2000 px), un frammento più alto di 2000 px.
-- **La correzione** nel guscio: la misura è il più grande fra il rettangolo e `scrollHeight`, e la cornice non scorre mai.
+- **La correzione** nel guscio: la misura è il più grande fra il rettangolo e `scrollHeight`, e ~~la cornice non scorre mai~~ **nessuna barra fino a 2000 px;
+  oltre, la cornice si ferma e la barra resta** (Carmine, in chat al master il 5 novembre 2026, «(c) resta la barra»). La barra la decide la pagina con
+  `scrolling`, non il guscio (nota `2026-11-05-l-altezza-dell-interattivo`).
 - **Le istruzioni** (`EmbedGuidelines.md`): un paragrafo «Tablet e telefono» — niente altezze in `vh`, niente larghezze in pixel,
   `viewBox` e `flex-wrap`, una prova a 768 px oltre ai 360 che l'anteprima locale già offre. L'import da Claude rimanda a queste
   istruzioni, quindi le legge anche lui.
