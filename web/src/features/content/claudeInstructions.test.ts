@@ -235,6 +235,13 @@ describe('what the instructions offer', () => {
     expect(markdown).not.toContain('`hero`');
   });
 
+  test('an address is marked in the schema of a block, and the fixed part says what the mark means', async () => {
+    const { markdown } = await composeInstructions(input({ blocks: [block('buttonGroup')] }));
+
+    expect(markdown).toContain('A field marked `"address": true` holds an address');
+    expect(markdown).toContain('"address": true\n');
+  });
+
   test('the draft is there with its identifiers, and the header to copy at the end', async () => {
     const { markdown, header } = await composeInstructions(input());
 

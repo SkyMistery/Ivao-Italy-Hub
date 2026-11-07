@@ -17,14 +17,8 @@ import { composeInstructions, writesWithClaude } from './claudeInstructions';
 import { contentSettingsQuery, styleText } from './contentSettings';
 import { offeredBlocks } from './palette';
 import { publicPageQuery, siteAddressesQuery, type ContentDetailDto, type ContentKind } from './queries';
-import { pagesOfTheSite, siteAddresses } from './siteAddresses';
+import { LINKS_VIEW, pagesOfTheSite, siteAddresses } from './siteAddresses';
 import type { SectionRule } from './templateRules';
-
-/**
- * What the read of the library's links asks at the door. The site's addresses ask `Content.Edit`, which whoever downloads
- * holds (decisions/2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere.md).
- */
-const LINKS_VIEW = 'Links.View';
 
 /** A file of the browser's own making, saved by the browser: nothing is uploaded or stored anywhere. */
 function save(name: string, text: string) {

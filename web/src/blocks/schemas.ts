@@ -45,7 +45,7 @@ export const calloutSchema = z.object({
 
 export const ctaSchema = z.object({
   label: localized(),
-  href: z.string(),
+  href: z.string().meta({ address: true }),
 });
 
 export const linkListSchema = z.object({
@@ -120,7 +120,7 @@ export const DIVIDER_SPACINGS = ['sm', 'md', 'lg'] as const;
  * carry one — the pair of a `hero`, the entries of a `buttonGroup` — and a second description of
  * the same pair is a second place for it to drift.
  */
-const linkFields = { label: localized(), href: z.string() };
+const linkFields = { label: localized(), href: z.string().meta({ address: true }) };
 
 export const heroSchema = z.object({
   eyebrow: localized().optional(),
@@ -247,7 +247,7 @@ export const cardGridSchema = z.object({
       title: localized(),
       text: localized().optional().meta({ multiline: true }),
       mediaId: z.number().int().optional().meta({ media: true }),
-      href: z.string().optional(),
+      href: z.string().optional().meta({ address: true }),
       icon: z.string().optional().meta({ icon: true }),
     }),
   ),
@@ -303,7 +303,7 @@ export const logoGridSchema = z.object({
       // The name of a partner is a name, not a sentence: it reads the same in every language, and
       // it is what a reader who cannot see the logo is told.
       name: z.string(),
-      href: z.string().optional(),
+      href: z.string().optional().meta({ address: true }),
     }),
   ),
 });

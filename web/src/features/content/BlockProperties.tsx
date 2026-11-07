@@ -18,7 +18,9 @@ import {
   SchemaForm,
   chooseCalendarKinds,
   collectionKindOf,
+  namesAddresses,
   namesCalendarKinds,
+  suggestAddresses,
   suggestCollections,
   writtenValues,
 } from '../../shared/forms';
@@ -39,6 +41,7 @@ const MAX_SOURCE_BYTES = 64 * 1024;
 
 import { SectionFrame } from './SectionFrame';
 import { sectionSettingsSchema, type SectionFormValues } from './schema';
+import { asSuggestions, useAddressesToLinkTo } from './siteAddresses';
 import type { SectionRule } from './templateRules';
 
 /**
@@ -363,6 +366,10 @@ export function BlockProperties({
     ...collectionsOfKindQuery(collectionKind ?? 'News'),
     enabled: collectionKind !== null,
   });
+  // Where a button, a card or a logo may lead (design §4.5): a way of not typing, and the field stays open. From the
+  // first drawing, the screens at least, so the field never changes kind under somebody typing.
+  const leadsSomewhere = registration !== undefined && namesAddresses(registration.schema);
+  const addresses = useAddressesToLinkTo(leadsSomewhere);
   // The kinds of the calendar a block chooses from (issue #360): the ones in use, from `/api/me`, and
   // any this block already holds that is no longer among them, said as retired rather than drawn
   // as an empty select — the block keeps it, and the calendar answers it with nothing.
@@ -386,6 +393,10 @@ export function BlockProperties({
       );
     }
 
+    if (leadsSomewhere) {
+      shaped = suggestAddresses(shaped, asSuggestions(addresses));
+    }
+
     if (bootstrap !== undefined && namesCalendarKinds(shaped)) {
       const inUse = bootstrap.calendarKinds.map((kind) => ({
         value: kind.key,
@@ -399,7 +410,7 @@ export function BlockProperties({
     }
 
     return shaped;
-  }, [registration, collections.data, bootstrap, heldKinds, read, t]);
+  }, [registration, collections.data, leadsSomewhere, addresses, bootstrap, heldKinds, read, t]);
 
   if (registration === undefined || schema === undefined) {
     return <p className="text-muted-foreground text-sm">{t('blocks.unknown', { type: block.type })}</p>;

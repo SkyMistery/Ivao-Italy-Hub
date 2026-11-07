@@ -677,6 +677,14 @@ it carries the fingerprint of the file (`/media/{id}/{fingerprint}/file`), which
 year and changes when somebody replaces the file on the same row; elsewhere it is the address of the
 identifier alone, which is always right and checked again at each read.
 
+### How a block names an address
+
+An address a block leads to is a property called **`href`**, wherever it sits, annotated
+`.meta({ address: true })`. The form offers the addresses of the site there, grouped: the pages, news
+items and documents online that the writer can read, the screens of the application and the links of
+the library. It is an offer and not a rule: an address of somewhere else is written in full. A block
+that called it something else would offer nothing, and the import of a file would not check it.
+
 ### How a block sits on a dashboard
 
 A dashboard (`ContentKind.Dashboard`) is drawn across the whole width it is given, and every block

@@ -1,15 +1,18 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { TFunction } from 'i18next';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { LocalizedString } from '../../shared/api/bootstrap';
+import { holdsPermissionAnywhere, type LocalizedString } from '../../shared/api/bootstrap';
 import type { Suggestion } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import type { Visibility } from '../../shared/ui';
 import { activeLinksQuery, type LinkPage } from '../links/queries';
+import { bootstrapQuery } from '../me/queries';
 
 import {
   menuDestinationPagesQuery,
+  siteAddressesQuery,
   type ContentKind,
   type ContentPage,
   type ContentSiteAddressDto,
@@ -29,8 +32,8 @@ import {
  *   (`pagesOfTheMenu`), pages only and drafts included and said so — a menu entry is written before the page
  *   goes out, and waits switched off —; and the site's (`pagesOfTheSite`, `GET /api/content/addresses`), every
  *   page, news item and document online that the reader may read, of every department
- *   (`decisions/2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere.md`), for the instructions for Claude
- *   and the page of the style;
+ *   (`decisions/2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere.md`), for the instructions for Claude,
+ *   the page of the style and the address fields of the blocks;
  * - **the screens of the application**, which are routes and not rows;
  * - **the links of the library**, the only addresses outside the site a menu entry may lead to
  *   (decided 8 September 2026).
@@ -162,6 +165,40 @@ export function siteAddresses(
 /** The list as the suggestions of a field of the form generator. */
 export function asSuggestions(addresses: readonly SiteAddress[]): Suggestion[] {
   return addresses.map((address) => ({ value: address.path, label: address.label, group: address.group }));
+}
+
+/**
+ * What each read of `useAddressesToLinkTo` asks at the door. The site's addresses ask `Content.Edit`, the links of the
+ * library `Links.View`: a read the person may not make is not made, and the list goes on without it.
+ */
+const CONTENT_EDIT = 'Content.Edit';
+export const LINKS_VIEW = 'Links.View';
+
+/**
+ * The addresses a block may lead to, for its address fields (PR 3.5, design §4.5): the site's read, of every department
+ * and unpaged, so the field filters what it holds and has nothing to ask the server while somebody types. A draft is not
+ * offered: it is an address nobody can open yet, and the field stays open to write it in full.
+ *
+ * ⚠️ Whoever writes a page of a module without `Content.Edit` — the briefing of a tour — is offered the screens and, with
+ * `Links.View`, the links. They write the address of a page in full, as they always did.
+ *
+ * Asked only by a block that has such a property (`wanted`). The same array until an answer arrives, so the schema made
+ * from it is not made again at every keystroke.
+ */
+export function useAddressesToLinkTo(wanted: boolean): readonly SiteAddress[] {
+  const { t } = useTranslation();
+  const read = useLocalized();
+  const { data: bootstrap } = useQuery(bootstrapQuery);
+  const mayRead = (permission: string) =>
+    wanted && bootstrap !== undefined && holdsPermissionAnywhere(bootstrap, permission);
+
+  const pages = useQuery({ ...siteAddressesQuery(), enabled: mayRead(CONTENT_EDIT) });
+  const links = useQuery({ ...activeLinksQuery(), enabled: mayRead(LINKS_VIEW) });
+
+  return useMemo(
+    () => siteAddresses(pagesOfTheSite(pages.data), links.data, t, read),
+    [pages.data, links.data, t, read],
+  );
 }
 
 /**
