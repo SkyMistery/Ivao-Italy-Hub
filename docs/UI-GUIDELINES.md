@@ -683,7 +683,14 @@ An address a block leads to is a property called **`href`**, wherever it sits, a
 `.meta({ address: true })`. The form offers the addresses of the site there, grouped: the pages, news
 items and documents online that the writer can read, the screens of the application and the links of
 the library. It is an offer and not a rule: an address of somewhere else is written in full. A block
-that called it something else would offer nothing, and the import of a file would not check it.
+that called it something else would offer nothing, and neither the import of a file nor publication
+would check it.
+
+Publication reads every `href` and every link of a piece of Markdown, without a schema. An address
+that starts with `/` has to arrive: a screen, a first segment the application or a module answers for,
+or a content online. And it has to arrive for the readers of the page: a page for everybody does not
+lead to a page for the staff. An address of somewhere else is not checked, and a draft is free to point
+at a page that comes out later.
 
 ### How a block sits on a dashboard
 

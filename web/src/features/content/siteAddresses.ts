@@ -44,7 +44,7 @@ import {
  * a table and they are written here. A fork that adds a screen adds a line; a fork that removes one
  * removes a line, and nothing of that installation offers an address it does not have.
  *
- * ⚠️ The other half is `MenuItemWriteDtoValidator.Screens`, and the two agree **by hand** — a
+ * ⚠️ The other half is `SiteDestinations.Screens`, and the two agree **by hand** — a
  * route of this client is not something the contract can carry. An integration test posts a screen
  * the server does not know, exactly as one does for the backgrounds of a section.
  */

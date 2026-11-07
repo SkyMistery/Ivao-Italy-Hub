@@ -33,6 +33,12 @@ public sealed record BlockDocumentMissingLocale(string Path, IReadOnlyList<strin
 /// </summary>
 public sealed record BlockDocumentMedia(string Path, long Id);
 
+/// <summary>
+/// An address a block leads to, and the path that names it: a property called <c>href</c>, or a link
+/// inside a piece of Markdown. Publication checks those of this site (design of the editor, phase 3, section 5.9).
+/// </summary>
+public sealed record BlockDocumentLink(string Path, string Address);
+
 /// <summary>The code an interactive block carries on its envelope, and where the block is.</summary>
 /// <param name="Id">The identifier of the block.</param>
 /// <param name="Path">Its path in the body, as the errors of the envelope name it.</param>
@@ -107,6 +113,15 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     /// </summary>
     public static readonly IReadOnlyList<string> Backgrounds =
         ["none", "muted", "accent", "brand", "deep", "dark", "aurora", "image"];
+
+    /// <summary>The background that needs a file of the library, named by the section's own <c>mediaId</c>.</summary>
+    private const string BackgroundImage = "image";
+
+    /// <summary>
+    /// What an address inside a block is called, as a file is called <see cref="JsonQuery.MediaKey"/>
+    /// (<c>docs/UI-GUIDELINES.md</c>, "How a block names an address").
+    /// </summary>
+    private const string HrefKey = "href";
 
     private static readonly string[] TemplateOnlyKeys = ["required", "locked"];
 
@@ -229,7 +244,7 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
 
     /// <summary><c>[text](/somewhere)</c> and <c>![alt](/picture.png)</c> keep the half a reader reads.</summary>
     private static readonly Regex LinkPattern =
-        new(@"!?\[([^\]]*)\]\([^)]*\)", RegexOptions.Compiled, OneSecond);
+        new(@"!?\[([^\]]*)\]\((?<target>[^)]*)\)", RegexOptions.Compiled, OneSecond);
 
     /// <summary>
     /// What starts a heading, a quote or a list item, at the start of a line and nowhere else: a
@@ -361,6 +376,41 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     {
         var found = new List<BlockDocumentMedia>();
         CollectMedia(body, string.Empty, found);
+        return found;
+    }
+
+    /// <summary>
+    /// The sections that ask for a picture behind them and name none. Read off the envelope and not out of
+    /// <c>props</c>, so it needs no schema: <c>background</c> and <c>mediaId</c> are the section's own
+    /// (note 2026-11-07-la-foto-rimasta-da-scegliere). The path is the one <see cref="MediaReferences"/> gives a
+    /// picture that is there.
+    /// </summary>
+    public IReadOnlyList<string> SectionsWithoutTheirPicture(JsonNode? body) =>
+    [
+        .. EnumerateSections(body)
+            .Where(section => section.Node["background"] is JsonValue background
+                && background.TryGetValue<string>(out var name)
+                && string.Equals(name, BackgroundImage, StringComparison.Ordinal)
+                && Identifier(section.Node[JsonQuery.MediaKey]) is null)
+            .Select(section => $"{section.Path}.{JsonQuery.MediaKey}"),
+    ];
+
+    /// <summary>
+    /// Every address the blocks of the body lead to, wherever it is named, inside or outside this site: which ones to
+    /// ask about is for the caller. Nothing here knows what a button is: a string under the name <c>href</c> is an
+    /// address at whatever depth it turns up, as a number under <c>mediaId</c> is a file, and any other string may be
+    /// Markdown. A picture (<c>![alt](/file.png)</c>) is not a link. Only <c>props</c>: a capture of a data block is
+    /// what the provider answered, and nobody wrote it.
+    /// </summary>
+    public IReadOnlyList<BlockDocumentLink> Links(JsonNode? body)
+    {
+        var found = new List<BlockDocumentLink>();
+
+        foreach (var block in EnumerateBlocks(body))
+        {
+            CollectLinks(block.Node["props"], $"{block.Path}.props", found);
+        }
+
         return found;
     }
 
@@ -694,6 +744,59 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
             default:
                 break;
         }
+    }
+
+    private static void CollectLinks(JsonNode? node, string path, List<BlockDocumentLink> found)
+    {
+        switch (node)
+        {
+            case JsonObject obj:
+                foreach (var pair in obj)
+                {
+                    if (string.Equals(pair.Key, HrefKey, StringComparison.Ordinal)
+                        && pair.Value is JsonValue href
+                        && href.TryGetValue<string>(out var address))
+                    {
+                        found.Add(new BlockDocumentLink($"{path}.{pair.Key}", address));
+                        continue;
+                    }
+
+                    CollectLinks(pair.Value, $"{path}.{pair.Key}", found);
+                }
+
+                break;
+
+            case JsonArray array:
+                for (var index = 0; index < array.Count; index++)
+                {
+                    CollectLinks(array[index], $"{path}[{index}]", found);
+                }
+
+                break;
+
+            case JsonValue value when value.TryGetValue<string>(out var text):
+                foreach (Match link in LinkPattern.Matches(text))
+                {
+                    if (!link.Value.StartsWith('!'))
+                    {
+                        found.Add(new BlockDocumentLink(path, TargetOf(link.Groups["target"].Value)));
+                    }
+                }
+
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    /// <summary>What a Markdown link leads to, without its title: <c>/about "About us"</c>, <c>&lt;/about&gt;</c>.</summary>
+    private static string TargetOf(string written)
+    {
+        var target = written.Trim();
+        var space = target.IndexOfAny([' ', '\t']);
+
+        return (space < 0 ? target : target[..space]).Trim('<', '>');
     }
 
     /// <summary>The number under one of the two names, or nothing when it is null or not a number.</summary>

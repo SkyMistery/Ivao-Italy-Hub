@@ -6,7 +6,7 @@ import { registry } from './registry';
 
 /**
  * An address inside a block is called `href`, as a file is called `mediaId` (design of the editor, phase 3,
- * §5.9): it is the name the import of a file checks, and that publication will check, because neither reads a
+ * §5.9): it is the name the import of a file checks, and that publication checks, because neither reads a
  * schema. And `.meta({ address: true })` is what the properties panel offers the pages of the site on (§4.5).
  * So the name and the annotation go together, on every block the build registers: a block that had only one of
  * the two would either offer nothing, or offer addresses nobody ever checks.
