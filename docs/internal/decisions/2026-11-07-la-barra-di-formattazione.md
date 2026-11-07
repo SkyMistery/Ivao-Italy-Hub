@@ -1,8 +1,8 @@
 # La barra di formattazione: che cosa cambia rispetto al design
 
 **Data:** 7 novembre 2026, PR 3.6 della fase 3 (`12-design-editor-fase-3.md` §4.6).
-**Stato:** il punto 1 e il punto 3 sono scelte della sessione, che seguono una regola già decisa dal design. **Il punto 2 è
-«Proposta»**: il tono scuro del verde acqua lo decide Carmine (la domanda è andata al master il 7 novembre).
+**Stato:** il punto 1 e il punto 3 sono scelte della sessione, che seguono una regola già decisa dal design. **Il punto 2 l'ha
+deciso Carmine**, in chat al master il 7 novembre 2026.
 **Classificazione** (`CLAUDE.md` §5): (b), si estende `MarkdownContent` come dice il §4.6. Il design diceva «nota sua: no»; questa
 nota c'è perché tre cose scritte lì, messe alla prova, non reggono così come sono.
 
@@ -32,16 +32,19 @@ un'etichetta e un nome di sole lettere è un colore fuori dall'insieme, e resta 
 ⚠️ Il testo alternativo di un'immagine dentro il Markdown è calcolato prima di quel passo, e `![foto 10:30](/x.png)` usciva «foto 10»:
 se contiene due punti, lo stesso passo lo riprende dal sorgente.
 
-## 2. Il verde acqua sugli sfondi scuri (Proposta) ⚖️
+## 2. Il verde acqua sugli sfondi scuri (deciso da Carmine)
 
 Il §4.6 chiede una coppia chiaro/scuro di token, ognuna a 4,5 : 1 su tutti gli sfondi, e dice che se un tono non ci arriva la PR si
 ferma. Blu (`atmos-700`, `atmos-100`), azzurro (`ocean-600`, `ocean-200`) e rosso (`semantic-red-700`, `semantic-red-200`) ci
 arrivano. Il verde acqua no: la famiglia `product-aurora` ha tre toni, `mid` va bene sugli sfondi chiari (5,09 : 1), e il più chiaro,
 `light`, si ferma a 2,52 : 1 sullo sfondo `brand`.
 
-**Raccomandazione:** `aurora-light` schiarito con il 40 % di bianco (`color-mix`, nessun esadecimale), circa 5,0 : 1 sullo sfondo
-peggiore. È un derivato del token e non un token. Le alternative: `semantic-green-400` (6,0 : 1, ma è verde e cambia tinta fra i due
-temi); il verde acqua solo sugli sfondi chiari, che contraddice la risposta 3 e che non si raccomanda.
+**La risposta di Carmine**, in chat al master il 7 novembre 2026: «(a) schiarito col bianco». Sugli sfondi scuri il verde acqua è
+`aurora-light` con il 40 % di bianco (`color-mix`, nessun esadecimale). È un derivato del token e non un token: **si scosta dalla
+«coppia di token» del §4.6**, e soltanto per questo colore. Misurato nel browser da `e2e/contrast.spec.ts`: 5,04 : 1 sullo sfondo
+`brand`, il peggiore, e fino a 8,15 : 1 sugli altri. I minimi degli altri tre colori, sugli otto sfondi nei due temi: blu 5,78 (`brand`),
+azzurro 4,58 (`muted`, tema chiaro), rosso 5,65 (`muted`, tema chiaro). Le alternative scartate: `semantic-green-400` (6,0 : 1, ma è verde e cambia tinta fra i due temi); il verde
+acqua solo sugli sfondi chiari, che contraddiceva la risposta 3.
 
 ## 3. Ci sono altri due campi
 
@@ -58,5 +61,7 @@ famiglia `ocean` del marchio è un blu spento. Passano la misura e restano così
 
 - **§8.3**: `MarkdownContent` legge il barrato e le direttive di colore con i quattro pacchetti detti sopra, non con `remark-gfm` e
   `remark-directive`.
+- **§4.6 del design e i colori del testo**: ogni colore è una coppia di token, tranne il verde acqua sugli sfondi scuri, che è
+  `aurora-light` con il 40 % di bianco, perché la sua famiglia non ha un tono che arrivi a 4,5 : 1 (Carmine, 7 novembre 2026).
 - **§16**: l'annotazione `markdown` del form generato vale per ogni campo disegnato da `MarkdownContent`, anche di un modulo.
 - **`docs/UI-GUIDELINES.md`**: già cambiata in questa PR, come chiede il §4.6.
