@@ -54,6 +54,7 @@ public static class ContentServiceCollectionExtensions
         services.TryAddScoped<ContentReferenceIndex>();
         services.TryAddScoped<MediaDeletion>();
         services.TryAddScoped<ContentAddresses>();
+        services.TryAddScoped<SiteDestinations>();
         services.TryAddScoped<ContentReviewService>();
         services.TryAddScoped<ContentSeeder>();
 

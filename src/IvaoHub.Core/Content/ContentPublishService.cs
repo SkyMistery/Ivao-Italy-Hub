@@ -36,10 +36,20 @@ public sealed class ContentPublishService(
     BlockRegistry blocks,
     DataBlockProviders providers,
     ContentReferenceIndex references,
+    SiteDestinations destinations,
     ICurrentUser currentUser,
     IClock clock,
     IOptions<DivisionOptions> division)
 {
+    /// <summary>A picture the page needs and nobody has chosen.</summary>
+    public const string MediaToChooseKey = "errors.content.mediaToChoose";
+
+    /// <summary>An address of this site that is neither a screen nor a content online.</summary>
+    public const string LinkNowhereKey = "errors.content.linkNowhere";
+
+    /// <summary>An address that leads to something fewer people may read than this page's readers.</summary>
+    public const string LinkLessVisibleKey = "errors.content.linkLessVisible";
+
     /// <summary>The cover of a news item, named as the form names it.</summary>
     private const string CoverField = "coverMediaId";
 
@@ -77,14 +87,113 @@ public sealed class ContentPublishService(
 
         var body = JsonNode.Parse(content.BodyJson) ?? new JsonObject();
 
-        return Incomplete(content, body)
-            ?? await PicturesTheReaderCannotSeeAsync(
+        // All of them at once, so that the list the editor draws is the whole of what is missing rather
+        // than the first kind of it.
+        return Together(
+            Incomplete(content, body),
+            await PicturesTheReaderCannotSeeAsync(
                 content.Visibility,
                 content.OwnerDepartment,
                 body,
                 content.CoverMediaId,
                 content.FileMediaId,
-                cancellationToken);
+                cancellationToken),
+            PicturesLeftToChoose(body),
+            await LinksThatDoNotArriveAsync(content, body, cancellationToken));
+    }
+
+    /// <summary>What the checks found, in one answer; <c>null</c> when none of them found anything.</summary>
+    private static ContentPublishFailure? Together(params ContentPublishFailure?[] failures)
+    {
+        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        var missing = new Dictionary<string, string[]>(StringComparer.Ordinal);
+
+        foreach (var failure in failures.OfType<ContentPublishFailure>())
+        {
+            foreach (var (path, keys) in failure.Errors)
+            {
+                errors[path] = errors.TryGetValue(path, out var held) ? [.. held.Union(keys)] : keys;
+            }
+
+            foreach (var (path, locales) in failure.MissingLocales)
+            {
+                missing[path] = locales;
+            }
+        }
+
+        return errors.Count == 0 ? null : new ContentPublishFailure(errors, missing);
+    }
+
+    /// <summary>
+    /// A picture nobody has chosen yet stops the page, for every page, imported or written by hand (Carmine,
+    /// 5 November 2026; note 2026-11-07-la-foto-rimasta-da-scegliere). A section's sits on the envelope, which needs
+    /// no schema to read; a block's is where its descriptor says.
+    /// <para>⚠️ What is online is not touched: the public reads the version, and a page that already went out with a
+    /// hole keeps showing what it showed. What stops is the next version of it.</para>
+    /// </summary>
+    private ContentPublishFailure? PicturesLeftToChoose(JsonNode body)
+    {
+        var errors = walker.SectionsWithoutTheirPicture(body)
+            .Concat(walker.BlocksWithoutTheirPictures(body, blocks))
+            .ToDictionary(path => $"body.{path}", _ => new[] { MediaToChooseKey }, StringComparer.Ordinal);
+
+        return errors.Count == 0
+            ? null
+            : new ContentPublishFailure(errors, new Dictionary<string, string[]>(StringComparer.Ordinal));
+    }
+
+    /// <summary>
+    /// Every address of this site the blocks lead to has to arrive, and arrive for the readers of this page (design of
+    /// the editor, phase 3, section 5.9). The rule of who may read what is <see cref="VisibilityCeiling"/>, the one the
+    /// pictures above answer to. An address of somewhere else is not asked about: nobody here knows what is there.
+    /// <para>Asked when the page goes out and never on a save: a draft may point at a page that comes out later.</para>
+    /// </summary>
+    private async Task<ContentPublishFailure?> LinksThatDoNotArriveAsync(
+        ContentEntry content,
+        JsonNode body,
+        CancellationToken cancellationToken)
+    {
+        var links = walker.Links(body)
+            .Select(link => (link.Path, Address: SiteDestinations.OnThisSite(link.Address)))
+            .Where(link => link.Address is not null)
+            .Select(link => (link.Path, Address: link.Address!))
+            .ToList();
+
+        if (links.Count == 0)
+        {
+            return null;
+        }
+
+        var reachable = await destinations.ReachableAsync(
+            [.. links.Select(link => link.Address)],
+            content.Id,
+            cancellationToken);
+
+        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
+
+        foreach (var (path, address) in links)
+        {
+            string? key = !reachable.TryGetValue(address, out var destination)
+                ? LinkNowhereKey
+                : !VisibilityCeiling.Allows(
+                    content.Visibility,
+                    content.OwnerDepartment,
+                    destination.Visibility,
+                    destination.Department)
+                    ? LinkLessVisibleKey
+                    : null;
+
+            if (key is not null)
+            {
+                // A piece of Markdown can hold two links, on one path.
+                var field = $"body.{path}";
+                errors[field] = errors.TryGetValue(field, out var held) ? [.. held.Union([key])] : [key];
+            }
+        }
+
+        return errors.Count == 0
+            ? null
+            : new ContentPublishFailure(errors, new Dictionary<string, string[]>(StringComparer.Ordinal));
     }
 
     /// <summary>

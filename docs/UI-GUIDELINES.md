@@ -694,6 +694,11 @@ the same query and is what an older body may carry.)
 Never draw such a property as a number field. `MediaPicker` is what fills it in, and the reason is
 plain: a free numeric field produces pages pointing at files that were deleted years ago.
 
+A file a block cannot do without — `.meta({ media: true })` that is not `.optional()` — is declared
+again in the block's C# half, `RequiredMedia: ["images[].mediaId"]`, and a page with one left to choose
+is not published. It is the one piece of a schema the server is told, because a key that is not there
+cannot be found by walking a document, and a test fails when the two halves disagree.
+
 A component builds the address of a file with `useMediaFileUrl()`, never by hand. On a published page
 it carries the fingerprint of the file (`/media/{id}/{fingerprint}/file`), which may be cached for a
 year and changes when somebody replaces the file on the same row; elsewhere it is the address of the
@@ -705,7 +710,14 @@ An address a block leads to is a property called **`href`**, wherever it sits, a
 `.meta({ address: true })`. The form offers the addresses of the site there, grouped: the pages, news
 items and documents online that the writer can read, the screens of the application and the links of
 the library. It is an offer and not a rule: an address of somewhere else is written in full. A block
-that called it something else would offer nothing, and the import of a file would not check it.
+that called it something else would offer nothing, and neither the import of a file nor publication
+would check it.
+
+Publication reads every `href` and every link of a piece of Markdown, without a schema. An address
+that starts with `/` has to arrive: a screen, a first segment the application or a module answers for,
+or a content online. And it has to arrive for the readers of the page: a page for everybody does not
+lead to a page for the staff. An address of somewhere else is not checked, and a draft is free to point
+at a page that comes out later.
 
 ### How a block sits on a dashboard
 

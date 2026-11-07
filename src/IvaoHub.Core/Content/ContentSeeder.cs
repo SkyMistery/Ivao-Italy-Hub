@@ -287,6 +287,8 @@ public sealed class ContentSeeder(
             return;
         }
 
+        var seeded = new List<ContentEntry>();
+
         foreach (var file in Files(directory))
         {
             var seed = JsonSerializer.Deserialize<ContentPageSeed>(
@@ -334,12 +336,14 @@ public sealed class ContentSeeder(
                     continue;
                 }
 
-                await SeedOnePageAsync(seed, template, slug, department, cancellationToken);
+                seeded.Add(await SeedOnePageAsync(seed, template, slug, department, cancellationToken));
                 Remember(key);
 
                 logger.LogInformation("Seeded the {Kind} {Slug}.", seed.Kind, slug);
             }
         }
+
+        await PublishSeededAsync(seeded, cancellationToken);
 
         await database.SaveChangesAsync(cancellationToken);
     }
@@ -364,7 +368,7 @@ public sealed class ContentSeeder(
         }
     }
 
-    private async Task SeedOnePageAsync(
+    private async Task<ContentEntry> SeedOnePageAsync(
         ContentPageSeed seed,
         ContentEntry template,
         string slug,
@@ -426,17 +430,51 @@ public sealed class ContentSeeder(
         // Saved before it is published, because a version points at a row that has an identifier.
         await database.SaveChangesAsync(cancellationToken);
 
-        // And published, because a page nobody has published is a page nobody can read: the query
-        // filter stops a draft for the visitor and for the department alike. What the staff then
-        // edits is the draft, and the site keeps showing this version until somebody republishes —
-        // which is the ordinary rule and not a special one for a seed.
-        if (await publication.PublishAsync(page, changelog: null, cancellationToken) is { } failure)
+        return page;
+    }
+
+    /// <summary>
+    /// The seeded pages go online, because a page nobody has published is a page nobody can read: the query
+    /// filter stops a draft for the visitor and for the department alike. What the staff then edits is the
+    /// draft, and the site keeps showing this version until somebody republishes — which is the ordinary rule
+    /// and not a special one for a seed.
+    /// <para>⚠️ In rounds, and after all of them exist: a page may lead to one a later file seeds (the home to
+    /// <c>/start</c>), and a link has to arrive before its page goes out. A round that publishes nothing is the
+    /// end, and what is left is said out loud.</para>
+    /// </summary>
+    private async Task PublishSeededAsync(List<ContentEntry> pages, CancellationToken cancellationToken)
+    {
+        var failures = new Dictionary<ContentEntry, ContentPublishFailure>();
+        var waiting = pages;
+
+        while (waiting.Count > 0)
+        {
+            var left = new List<ContentEntry>();
+
+            foreach (var page in waiting)
+            {
+                if (await publication.PublishAsync(page, changelog: null, cancellationToken) is { } failure)
+                {
+                    failures[page] = failure;
+                    left.Add(page);
+                }
+            }
+
+            if (left.Count == waiting.Count)
+            {
+                break;
+            }
+
+            waiting = left;
+        }
+
+        foreach (var page in waiting)
         {
             logger.LogWarning(
                 "The seeded {Kind} {Slug} could not be published: {Errors}.",
-                seed.Kind,
-                slug,
-                string.Join(", ", failure.Errors.Select(error => $"{error.Key} {string.Join('/', error.Value)}")));
+                page.Kind,
+                page.Slug,
+                string.Join(", ", failures[page].Errors.Select(error => $"{error.Key} {string.Join('/', error.Value)}")));
         }
     }
 
