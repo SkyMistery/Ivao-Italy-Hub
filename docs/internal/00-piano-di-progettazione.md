@@ -38,7 +38,10 @@ fase 3», 6 nov 2026, in chat al master).
   barra si chiudeva con le sezioni già nel documento: ora la colonna della pagina nasce dopo, prima del primo disegno. **Sul banco vero**: senza
   la correzione vuota 10 su 10 già a ×4, con la correzione 0 su 10. ⚠️ La tabella della nota è con l'API simulata, dove la finestra si
   apre solo da ×16: la nota è unita e non si tocca, e vale questa riga. `main` non è stato misurato sul banco vero. Il perché dentro il browser
-  resta non spiegato.
+  resta non spiegato. **La barra mossa a mano mentre la pagina si carica** (misura chiesta da Carmine, 7 nov 2026): 0 anteprime vuote su 90, sul banco vero a ×4, ×8 e
+  ×16, ma **il rischio non è escluso**, perché nessuna corsa valida è caduta nella finestra del guasto: il gesto più precoce arriva a caratteri già arrivati, e trattenerli
+  nasconde il guasto anche nella build difettosa (controprova: `none` 8 su 8 vuote senza la correzione, `held-none` 0 su 8). Non misurati: caratteri ritardati di poco, una rete
+  vera, un clic umano. Nessuno ha visto il caso, quindi nessuna issue: si riapre se qualcuno lo vede.
 - **Una select dice ciò che manda** (note `2026-11-06-il-campo-rimesso-a-niente`, `-il-filtro-rimesso-a-tutti`, `-il-pannello-rimesso-a-niente`;
   [#466][d151h], [#468][d151i], [#470][d151j]; 0.23.1): la `Select` di Radix senza `value` torna non controllata e disegna l'ultima scelta. Nel
   form generato e nei filtri era una stranezza; ⚠️ **nel dialogo di approvazione era un difetto vero**: mostrava un genitore e pubblicava con
