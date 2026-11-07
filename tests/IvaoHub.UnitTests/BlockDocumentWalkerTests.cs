@@ -126,6 +126,17 @@ public sealed class BlockDocumentWalkerTests
     // A picture keeps what a reader would have been told, and loses the address.
     [InlineData("![Il logo](/media/7.png) sopra", "Il logo sopra")]
     [InlineData("1. primo\n2. secondo", "primo secondo")]
+    // The strikethrough and the colour of the formatting bar (design of the editor, phase 3, §4.6): the words stay.
+    [InlineData("un ~~vecchio~~ nuovo", "un vecchio nuovo")]
+    [InlineData("una :ocean[parola] qui", "una parola qui")]
+    [InlineData("una :danger[**parola** forte] qui", "una parola forte qui")]
+    [InlineData("vedi :brand[[la pagina](/about)] sopra", "vedi la pagina sopra")]
+    [InlineData(":ocean[uno [due] tre]", "uno [due] tre")]
+    // A name outside the set is drawn as plain text, and read the same.
+    [InlineData("una :orange[parola] qui", "una parola qui")]
+    // A colon in a sentence is not a colour.
+    [InlineData("alle 10:30 in punto", "alle 10:30 in punto")]
+    [InlineData("Frequenza:LIRF_APP e :ocean senza parole", "Frequenza:LIRF_APP e :ocean senza parole")]
     public void ProseUndoesOnlyWhatAnEditorCanWrite(string markdown, string expected) =>
         Assert.Equal(expected, OneParagraph(markdown));
 
