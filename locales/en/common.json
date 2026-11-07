@@ -122,6 +122,27 @@
   "form": {
     "empty": "Empty",
     "copyFrom": "Copy from {{language}}",
+    "markdown": {
+      "bar": "Text formatting",
+      "bold": "Bold (Ctrl+B)",
+      "italic": "Italic (Ctrl+I)",
+      "strike": "Strikethrough",
+      "bullets": "Bulleted list",
+      "numbers": "Numbered list",
+      "indent": "Nest under the item above",
+      "outdent": "Move out one level",
+      "link": "Link",
+      "linkAddress": "Address: a page of the site, or a whole address",
+      "linkApply": "Write the link",
+      "colour": "Colour of the text",
+      "colours": {
+        "brand": "Blue",
+        "ocean": "Light blue",
+        "aurora": "Teal",
+        "danger": "Red",
+        "none": "No colour"
+      }
+    },
     "addEntry": "Add",
     "removeEntry": "Remove",
     "entry": "Item {{number}}",
@@ -354,7 +375,7 @@
       "statLabel": "Flights this month",
       "pageTitle": "A page title",
       "pageBody": "Whatever the page puts under its title goes here.",
-      "markdown": "A paragraph with **bold**, *italic* and a [link](https://www.ivao.aero).\n\n- first\n- second",
+      "markdown": "A paragraph with **bold**, *italic*, ~~struck~~, :ocean[a colour] and a [link](https://www.ivao.aero).\n\n- first\n- second",
       "problem": "Somebody else changed this in the meantime.",
       "form": {
         "fields": {

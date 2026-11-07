@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import { LocaleTabs } from './LocaleTabs';
+import { MarkdownField } from './MarkdownField';
+import type { Suggestion } from './schema';
 
 /**
  * One translated field, a tab per language of the division. A field is a single JSON column and
@@ -19,6 +21,8 @@ export function LocaleFields({
   hint,
   locales,
   multiline,
+  markdown = false,
+  addresses,
   error,
 }: {
   path: string;
@@ -27,6 +31,10 @@ export function LocaleFields({
   hint?: string | undefined;
   locales: readonly string[];
   multiline: boolean;
+  /** A text the renderer draws as Markdown, and so a box with the formatting bar (`FieldMeta.markdown`). */
+  markdown?: boolean;
+  /** What the link of that bar offers. */
+  addresses?: readonly Suggestion[] | undefined;
   error: string | undefined;
 }) {
   const { t, i18n } = useTranslation();
@@ -49,7 +57,9 @@ export function LocaleFields({
       error={error}
       renderContent={(locale) => (
         <>
-          {multiline ? (
+          {markdown ? (
+            <MarkdownField name={`${path}.${locale}`} addresses={addresses} />
+          ) : multiline ? (
             <Textarea id={`${path}.${locale}`} rows={6} {...register(`${path}.${locale}`)} />
           ) : (
             <Input id={`${path}.${locale}`} {...register(`${path}.${locale}`)} />
