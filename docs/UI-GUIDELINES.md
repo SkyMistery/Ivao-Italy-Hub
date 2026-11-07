@@ -672,6 +672,11 @@ the same query and is what an older body may carry.)
 Never draw such a property as a number field. `MediaPicker` is what fills it in, and the reason is
 plain: a free numeric field produces pages pointing at files that were deleted years ago.
 
+A file a block cannot do without — `.meta({ media: true })` that is not `.optional()` — is declared
+again in the block's C# half, `RequiredMedia: ["images[].mediaId"]`, and a page with one left to choose
+is not published. It is the one piece of a schema the server is told, because a key that is not there
+cannot be found by walking a document, and a test fails when the two halves disagree.
+
 A component builds the address of a file with `useMediaFileUrl()`, never by hand. On a published page
 it carries the fingerprint of the file (`/media/{id}/{fingerprint}/file`), which may be cached for a
 year and changes when somebody replaces the file on the same row; elsewhere it is the address of the

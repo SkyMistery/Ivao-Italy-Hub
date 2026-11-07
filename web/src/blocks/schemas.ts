@@ -66,7 +66,10 @@ export const linkListSchema = z.object({
 // alignment or a column count must not be something a member finds by searching for it.
 //
 // A property that names a file is `.meta({ media: true })` and nothing else: a number to type is a
-// page pointing at a file somebody deleted years ago.
+// page pointing at a file somebody deleted years ago. One that is not `.optional()` stops publication
+// while nobody has chosen it, and is declared too in the block's C# half, `RequiredMedia`: the one piece of
+// a schema the server is told (note 2026-11-07-la-foto-rimasta-da-scegliere), and
+// `app/blockRequiredMedia.test.ts` fails when the two disagree.
 
 /** Where a block sets its content, when it is the kind of block that can be centred. */
 export const ALIGNMENTS = ['left', 'center'] as const;

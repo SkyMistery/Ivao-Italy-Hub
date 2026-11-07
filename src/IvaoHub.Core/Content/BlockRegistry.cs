@@ -61,6 +61,18 @@ public interface IBlockDescriptor
     /// handler's answer inside its provider.</para>
     /// </summary>
     Visibility Audience { get; }
+
+    /// <summary>
+    /// The files the block cannot do without, as paths inside <c>props</c>: <c>mediaId</c>, or <c>images[].mediaId</c> for
+    /// each entry of a list. One left to choose stops publication (Carmine, 5 and 7 November 2026, note
+    /// 2026-11-07-la-foto-rimasta-da-scegliere): in a saved body it is a key that is not there, which no walk of the
+    /// document can tell from a <c>hero</c> that simply has no picture.
+    /// <para>⚠️ <b>A declared exception</b> to "the back end never replicates the schemas in C#" (CLAUDE.md section 2):
+    /// this one fact and this one purpose, not a way of copying other pieces of a schema. The other half is the schema's
+    /// own <c>.optional()</c>, and <c>web/src/app/blockRequiredMedia.test.ts</c> fails when the two disagree, a new block
+    /// that forgets this field included.</para>
+    /// </summary>
+    IReadOnlyList<string> RequiredMedia { get; }
 }
 
 /// <inheritdoc cref="IBlockDescriptor"/>
@@ -71,7 +83,11 @@ public sealed record BlockDescriptor(
     bool AlwaysLive = false,
     string? ProviderKey = null,
     TimeSpan? SharedFor = null,
-    Visibility Audience = Visibility.Public) : IBlockDescriptor;
+    Visibility Audience = Visibility.Public,
+    IReadOnlyList<string>? RequiredMedia = null) : IBlockDescriptor
+{
+    IReadOnlyList<string> IBlockDescriptor.RequiredMedia => RequiredMedia ?? [];
+}
 
 /// <summary>
 /// Every block the installation knows: the ones of the core plus the ones the modules declare. It
@@ -183,7 +199,7 @@ public static class CoreBlocks
         new BlockDescriptor(LinkList, Version: 1, BlockKind.Data, ProviderKey: LinkList),
 
         new BlockDescriptor(Hero, Version: 1, BlockKind.Content),
-        new BlockDescriptor(Image, Version: 1, BlockKind.Content),
+        new BlockDescriptor(Image, Version: 1, BlockKind.Content, RequiredMedia: ["mediaId"]),
         new BlockDescriptor(Video, Version: 1, BlockKind.Content),
         new BlockDescriptor(Embed, Version: 1, BlockKind.Content),
         new BlockDescriptor(Interactive, Version: 1, BlockKind.Content),
@@ -193,8 +209,8 @@ public static class CoreBlocks
         new BlockDescriptor(Coordination, Version: 1, BlockKind.Content),
         new BlockDescriptor(CardGrid, Version: 1, BlockKind.Content),
         new BlockDescriptor(IconGrid, Version: 1, BlockKind.Content),
-        new BlockDescriptor(Gallery, Version: 1, BlockKind.Content),
-        new BlockDescriptor(LogoGrid, Version: 1, BlockKind.Content),
+        new BlockDescriptor(Gallery, Version: 1, BlockKind.Content, RequiredMedia: ["images[].mediaId"]),
+        new BlockDescriptor(LogoGrid, Version: 1, BlockKind.Content, RequiredMedia: ["items[].mediaId"]),
         new BlockDescriptor(Tabs, Version: 1, BlockKind.Content),
         new BlockDescriptor(Accordion, Version: 1, BlockKind.Content),
         new BlockDescriptor(Testimonial, Version: 1, BlockKind.Content),

@@ -179,6 +179,54 @@ public sealed class ContentPublishChecksTests(MariaDbFixture mariaDb) : IAsyncLi
             await ProblemsAsync(page.Id, "body.sections[0].mediaId", token));
     }
 
+    [Theory]
+    [InlineData("""{ "width": "full" }""", "image", "mediaId")]
+    [InlineData("""{ "images": [ { "mediaId": 999999996 }, { } ] }""", "gallery", "images[1].mediaId")]
+    [InlineData("""{ "items": [ { "name": "Partner" } ] }""", "logoGrid", "items[0].mediaId")]
+    public async Task APictureABlockCannotDoWithoutStopsThePageAndAnOptionalOneDoesNot(string props, string type, string field)
+    {
+        var token = TestContext.Current.CancellationToken;
+        var page = await WriteAsync(Visibility.Public, OneBlock(type, props), token);
+
+        Assert.Equal(
+            [ContentPublishService.MediaToChooseKey],
+            await ProblemsAsync(page.Id, $"body.sections[0].blocks[0].props.{field}", token));
+
+        using var refused = await PublishAsync(page.Id, token);
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+
+        var hero = await WriteAsync(Visibility.Public, OneBlock("hero", """{ "title": { "it": "Titolo", "en": "Title" } }"""), token);
+        Assert.Empty(await ProblemsAsync(hero.Id, "body.sections[0].blocks[0].props.mediaId", token));
+    }
+
+    /// <summary>
+    /// What Carmine's decision does to a page that went out before it, with a picture missing: the public keeps reading
+    /// the version, and only what would become the next one stops.
+    /// </summary>
+    [Fact]
+    public async Task APageAlreadyOnlineWithAPictureMissingStaysOnlineAndOnlyItsNextVersionStops()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var page = await WriteAsync(Visibility.Public, OneBlock("image", """{ "width": "full" }"""), token);
+        await PublishWithoutTheChecksAsync(page.Id, token);
+
+        using var anonymous = _factory.CreateApiClient();
+        var publicAddress = new Uri(
+            $"{ContentEndpoints.Pattern}/public/page?path={Uri.EscapeDataString(page.Url.TrimStart('/'))}",
+            UriKind.Relative);
+
+        var read = await anonymous.GetFromJsonAsync<JsonElement>(publicAddress, token);
+        Assert.Equal(page.Id, read.GetProperty("page").GetProperty("id").GetInt64());
+
+        using var refused = await PublishAsync(page.Id, token);
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+
+        // And the refusal took nothing away from what was there.
+        Assert.True(await IsOnlineAsync(page.Id, token));
+        var stillRead = await anonymous.GetFromJsonAsync<JsonElement>(publicAddress, token);
+        Assert.Equal(page.Id, stillRead.GetProperty("page").GetProperty("id").GetInt64());
+    }
+
     [Fact]
     public async Task EveryKindOfProblemIsSaidAtOnce()
     {
@@ -214,6 +262,19 @@ public sealed class ContentPublishChecksTests(MariaDbFixture mariaDb) : IAsyncLi
 
         Assert.Contains("/start", home.BodyJson, StringComparison.Ordinal);
         Assert.NotNull(home.PublishedVersionId);
+    }
+
+    private static string OneBlock(string type, string props) => $$"""
+        { "schemaVersion": 1, "sections": [ { "id": "s_main", "layout": "stacked", "blocks": [
+          { "id": "b_one", "type": "{{type}}", "version": 1, "props": {{props}} } ] } ] }
+        """;
+
+    private async Task PublishWithoutTheChecksAsync(long id, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        var row = await database.Contents.IgnoreQueryFilters().FirstAsync(content => content.Id == id, cancellationToken);
+        await PublishedByHand.PublishAsync(database, row, cancellationToken);
     }
 
     private static string ButtonTo(string address) => $$"""

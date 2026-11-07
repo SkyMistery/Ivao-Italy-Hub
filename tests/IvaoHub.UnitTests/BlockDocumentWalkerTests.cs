@@ -351,6 +351,35 @@ public sealed class BlockDocumentWalkerTests
     }
 
     [Fact]
+    public void APictureABlockCannotDoWithoutAndNobodyChoseIsSaidAndAnOptionalOneIsNot()
+    {
+        var body = JsonNode.Parse("""
+        {
+          "sections": [ { "id": "s1", "blocks": [
+            { "id": "b1", "type": "image", "props": { "width": "full" } },
+            { "id": "b2", "type": "image", "props": { "mediaId": 7 } },
+            { "id": "b3", "type": "image" },
+            { "id": "b4", "type": "hero", "props": { "title": "x" } },
+            { "id": "b5", "type": "gallery", "props": { "images": [ { "mediaId": 7 }, { }, { "mediaId": null } ] } },
+            { "id": "b6", "type": "gallery", "props": { "images": [] } },
+            { "id": "b7", "type": "gallery", "props": { "mediaIds": [ 7 ] } },
+            { "id": "b8", "type": "logoGrid", "props": { "items": [ { "name": "x" } ] } }
+          ] } ]
+        }
+        """);
+
+        Assert.Equal(
+            [
+                "sections[0].blocks[0].props.mediaId",
+                "sections[0].blocks[2].props.mediaId",
+                "sections[0].blocks[4].props.images[1].mediaId",
+                "sections[0].blocks[4].props.images[2].mediaId",
+                "sections[0].blocks[7].props.items[0].mediaId",
+            ],
+            Walker.BlocksWithoutTheirPictures(body, new BlockRegistry(CoreBlocks.All)));
+    }
+
+    [Fact]
     public void TheLinksOfABodyAreAnHrefAtAnyDepthAndWhatMarkdownLinks()
     {
         var body = JsonNode.Parse("""

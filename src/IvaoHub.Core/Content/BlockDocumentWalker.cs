@@ -396,6 +396,28 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     ];
 
     /// <summary>
+    /// The files the blocks of the body declare they cannot do without (<see cref="IBlockDescriptor.RequiredMedia"/>) and
+    /// nobody has chosen, each with the path of the field. Only those paths are looked at, and nothing else of
+    /// <c>props</c>. A list that is empty or absent has no picture to choose; an entry without its file has.
+    /// </summary>
+    public IReadOnlyList<string> BlocksWithoutTheirPictures(JsonNode? body, BlockRegistry blocks)
+    {
+        ArgumentNullException.ThrowIfNull(blocks);
+
+        var found = new List<string>();
+
+        foreach (var block in EnumerateBlocks(body))
+        {
+            foreach (var declared in blocks.Find(block.Type)?.RequiredMedia ?? [])
+            {
+                CollectUnchosen(block.Node["props"], declared.Split('.'), 0, $"{block.Path}.props", found);
+            }
+        }
+
+        return found;
+    }
+
+    /// <summary>
     /// Every address the blocks of the body lead to, wherever it is named, inside or outside this site: which ones to
     /// ask about is for the caller. Nothing here knows what a button is: a string under the name <c>href</c> is an
     /// address at whatever depth it turns up, as a number under <c>mediaId</c> is a file, and any other string may be
@@ -743,6 +765,39 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
 
             default:
                 break;
+        }
+    }
+
+    /// <summary>
+    /// Follows one declared path. The name it ends on has to hold a number; a list is walked entry by entry; an object
+    /// on the way that is not there has nothing to ask, because only what holds it could make the file necessary.
+    /// </summary>
+    private static void CollectUnchosen(JsonNode? node, string[] parts, int at, string path, List<string> found)
+    {
+        var part = parts[at];
+
+        if (part.EndsWith("[]", StringComparison.Ordinal))
+        {
+            var name = part[..^2];
+
+            if ((node as JsonObject)?[name] is JsonArray list)
+            {
+                for (var index = 0; index < list.Count; index++)
+                {
+                    CollectUnchosen(list[index], parts, at + 1, $"{path}.{name}[{index}]", found);
+                }
+            }
+        }
+        else if (at == parts.Length - 1)
+        {
+            if (Identifier((node as JsonObject)?[part]) is null)
+            {
+                found.Add($"{path}.{part}");
+            }
+        }
+        else if ((node as JsonObject)?[part] is JsonObject inner)
+        {
+            CollectUnchosen(inner, parts, at + 1, $"{path}.{part}", found);
         }
     }
 

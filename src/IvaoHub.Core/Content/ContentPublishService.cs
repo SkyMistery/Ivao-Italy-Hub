@@ -126,12 +126,15 @@ public sealed class ContentPublishService(
 
     /// <summary>
     /// A picture nobody has chosen yet stops the page, for every page, imported or written by hand (Carmine,
-    /// 5 November 2026; note 2026-11-07-la-foto-rimasta-da-scegliere). The section's own, here: it sits on the
-    /// envelope, which needs no schema to read.
+    /// 5 November 2026; note 2026-11-07-la-foto-rimasta-da-scegliere). A section's sits on the envelope, which needs
+    /// no schema to read; a block's is where its descriptor says.
+    /// <para>⚠️ What is online is not touched: the public reads the version, and a page that already went out with a
+    /// hole keeps showing what it showed. What stops is the next version of it.</para>
     /// </summary>
     private ContentPublishFailure? PicturesLeftToChoose(JsonNode body)
     {
         var errors = walker.SectionsWithoutTheirPicture(body)
+            .Concat(walker.BlocksWithoutTheirPictures(body, blocks))
             .ToDictionary(path => $"body.{path}", _ => new[] { MediaToChooseKey }, StringComparer.Ordinal);
 
         return errors.Count == 0

@@ -1,7 +1,7 @@
 # La foto rimasta da scegliere: come il server sa che è obbligatoria
 
 - **Data**: 7 novembre 2026
-- **Stato**: **Proposta**, domanda per Carmine. Niente codice sui blocchi finché non ha risposto
+- **Stato**: **decisa da Carmine in chat al master il 7 novembre 2026**: «A, dichiarato in C#». La risposta è in chat e non in un commento, perché la sessione è di Carmine
 - **Chi**: la sessione di lavoro della PR 3.15 (design `12-design-editor-fase-3.md` §5.9, riga 3.15 del §7)
 - **Classificazione** (`CLAUDE.md` §5): **(c)** per i blocchi: serve un fatto nuovo del tipo di blocco. Lo sfondo di una sezione è **(b)**: sta nella busta, e il server la legge già
 - **Completa** il punto 11 di `2026-11-04-le-scelte-dell-import-da-claude.md`, che non si riscrive
@@ -47,10 +47,27 @@ Sono **tre blocchi su quarantasei** (33 del nucleo, 13 dei moduli). Una galleria
 - **Il legame con zod**: un test di `web/` legge i `RequiredMedia` dal C# con un pattern stretto, come già fa `modules/manifest.test.ts` per i blocchi dei moduli, e li confronta con i campi `.meta({ media: true })` non facoltativi degli schemi. Un blocco che dimentica una delle due metà fa fallire la build. Niente in `/api/me`: il browser non ne ha bisogno, perché il problema gli arriva già dal server.
 - ⚠️ **Una pagina già online che oggi ha un'immagine senza file** non cambia finché è online; si ferma quando qualcuno la ripubblica, e l'elenco dice quale blocco. Da scrivere nelle note di rilascio.
 
-## La domanda per Carmine
+## La risposta di Carmine
 
-Come sa il server che una foto è obbligatoria: **A** (raccomandata), B, C o D?
+Alla domanda «come sa il server che una foto è obbligatoria: A, B, C o D?», in chat al master il 7 novembre 2026: **«A, dichiarato in C#»**. Il blocco dichiara le sue foto obbligatorie nella metà C#, accanto ad `Audience`, per `image`, `gallery` e `logoGrid`.
+
+## Un'eccezione dichiarata
+
+`CLAUDE.md` §2 dice che il back end non replica gli schemi in C#. **`RequiredMedia` è un'eccezione a quella regola, dichiarata qui: solo questo dato e solo per questo scopo.** Non è un modo di replicare altri pezzi di schema: un'altra regola di un blocco che il server volesse controllare è una domanda nuova, e non si appoggia a questa.
+
+Il test che confronta il C# con zod è parte della decisione: cade se cambia uno dei due lati, e cade per un blocco nuovo con una foto obbligatoria che il C# non dichiara.
+
+## Che cosa succede a una pagina già online con una foto mancante
+
+Resta online com'è, e si ferma la sua versione successiva. Il controllo non guarda mai quello che è online:
+
+- **Chi legge non vede differenze.** Il sito legge la versione pubblicata (`cms_content_versions`), e nessuna strada di lettura chiede il controllo. Un'immagine senza file continua a non disegnare niente, come oggi.
+- **Si fermano tre gesti, sulla bozza**: «Pubblica», «Pronta per l'approvazione» (`ReadyAsync`) e l'approvazione di una pagina che era già pronta. Vale anche se la modifica riguarda solo un'altra parte della pagina: finché il buco è nella bozza, il testo nuovo non esce. Si esce scegliendo la foto o togliendo il blocco, e l'elenco dice quale.
+- **Non si ferma**: il salvataggio della bozza; il cambio di visibilità o di dipartimento senza ripubblicare (`NewReadersProblemsAsync` non chiede questo controllo); un seme già applicato, che non si ripubblica.
+- **Una foto che c'era e poi è sparita dalla libreria** è un'altra cosa, e non cambia: la chiave c'è, ed è il rifiuto di sempre, `errors.content.mediaMissing`.
 
 ## Da portare nel piano
 
-- **§9.3** (modello dei contenuti) e **§16** (meccanismi generici): una foto rimasta da scegliere ferma la pubblicazione; lo sfondo di una sezione dalla busta. Il meccanismo dei blocchi dopo la risposta di Carmine.
+- **§9.3** (modello dei contenuti) e **§16** (meccanismi generici): una foto rimasta da scegliere ferma la pubblicazione, per ogni pagina, e con lei l'invio all'approvazione; lo sfondo di una sezione si legge dalla busta, un blocco dichiara le sue foto in `IBlockDescriptor.RequiredMedia`.
+- **`CLAUDE.md` §2**, alla regola «the back end never replicates the schemas in C#» e alla riga del blocco registrato in due metà: **l'eccezione dichiarata** di `RequiredMedia`, solo questo dato e solo per questo scopo, tenuta insieme dal test contro zod.
+- **Le note di rilascio**: una pagina già online con una foto mancante resta online com'è; il suo testo nuovo non esce finché la foto non è scelta o il blocco tolto.
