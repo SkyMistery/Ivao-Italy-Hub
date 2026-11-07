@@ -113,6 +113,47 @@ h6 {
 }
 
 /*
+ * The colour of a word (design of the editor, phase 3, §4.6, and Carmine's answer 3): a closed set of four, written
+ * `:ocean[parola]` and drawn by `MarkdownContent` (`shared/ui/textColours.ts`). Each is a pair: the first tone for a light
+ * ground, the second for a dark one, and a dark ground of a section carries `.dark`, so it takes the second by
+ * construction. Each tone reaches 4.5 : 1 on the eight grounds in both themes, measured by `e2e/contrast.spec.ts`; the
+ * brand's orange does not, which is why it is not here. Not the accent of a block: that set colours graphics, at 3 : 1.
+ *
+ * ⚠️ `aurora` has no tone of its own for a dark ground: its family stops at `aurora-light`, 2.52 : 1 on the brand blue.
+ */
+.text-colour-brand {
+  color: var(--ivao-color-atmos-700);
+}
+
+.text-colour-ocean {
+  color: var(--ivao-color-ocean-600);
+}
+
+.text-colour-aurora {
+  color: var(--ivao-color-product-aurora-mid);
+}
+
+.text-colour-danger {
+  color: var(--ivao-color-semantic-red-700);
+}
+
+.dark .text-colour-brand {
+  color: var(--ivao-color-atmos-100);
+}
+
+.dark .text-colour-ocean {
+  color: var(--ivao-color-ocean-200);
+}
+
+.dark .text-colour-aurora {
+  color: color-mix(in srgb, var(--ivao-color-product-aurora-light), white 40%);
+}
+
+.dark .text-colour-danger {
+  color: var(--ivao-color-semantic-red-200);
+}
+
+/*
  * A panel that scrolls on its own — the bar of components and the properties of the editor — with
  * a scrollbar that does not shout (Carmine, 11 September 2026, with a screenshot: two wide, pale
  * bars framing the page being composed). The two standard properties, in the theme's own colours,
