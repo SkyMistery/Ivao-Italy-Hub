@@ -438,6 +438,12 @@
     }
   },
   "content": {
+    "draftPreview": {
+      "notice": "Draft preview — links are disabled",
+      "refresh": "Refresh",
+      "refreshFailed": "The draft could not be read again: this is the last one read",
+      "tabTitle": "Preview: {{title}}"
+    },
     "title": "Pages",
     "description": "What this department publishes on the division site.",
     "create": "New page",
@@ -626,6 +632,12 @@
       "reorder": "Drag to reorder",
       "previewWidth": "Preview width",
       "previewLanguage": "Language of the preview",
+      "openPreview": {
+        "label": "Open the preview",
+        "hint": "Saves the draft and opens it in a new tab, as a visitor will read it",
+        "blocked": "The browser blocked the new tab: allow windows from this site and try again",
+        "notSaved": "The draft was not saved, so the preview did not open"
+      },
       "duplicateSection": "Duplicate this section",
       "compare": {
         "label": "Draft or published",

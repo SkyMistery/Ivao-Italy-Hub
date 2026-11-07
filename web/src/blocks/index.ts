@@ -1,6 +1,6 @@
 export { BlockView, ContentRenderer } from './ContentRenderer';
 export type { PickAction, SortableBinding } from './picking';
-export { PickingContext, usePicking, type Picking } from './picking';
+export { PickingContext, useLinksDisabled, usePicking, type Picking } from './picking';
 export { PrintContext, usePrinting } from './print';
 export {
   EMBED_GUIDELINES_PATH,

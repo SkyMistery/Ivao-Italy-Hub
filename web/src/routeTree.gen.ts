@@ -51,6 +51,7 @@ import { Route as StaffStaffLinksIndexRouteImport } from './routes/_staff/staff.
 import { Route as StaffStaffLinksIdRouteImport } from './routes/_staff/staff.links.$id'
 import { Route as StaffStaffMediaIndexRouteImport } from './routes/_staff/staff.media.index'
 import { Route as StaffStaffMediaIdRouteImport } from './routes/_staff/staff.media.$id'
+import { Route as PublicStaffContentIdPreviewRouteImport } from './routes/_public/staff.content.$id.preview'
 import { Route as StaffStaffDeptCalendarIndexRouteImport } from './routes/_staff/staff.$dept.calendar.index'
 import { Route as StaffStaffDeptCalendarIdRouteImport } from './routes/_staff/staff.$dept.calendar.$id'
 import { Route as StaffStaffDeptCategoriesIndexRouteImport } from './routes/_staff/staff.$dept.categories.index'
@@ -277,6 +278,12 @@ const StaffStaffMediaIdRoute = StaffStaffMediaIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => StaffStaffMediaRoute,
 } as any)
+const PublicStaffContentIdPreviewRoute =
+  PublicStaffContentIdPreviewRouteImport.update({
+    id: '/staff/content/$id/preview',
+    path: '/staff/content/$id/preview',
+    getParentRoute: () => PublicRoute,
+  } as any)
 const StaffStaffDeptCalendarIndexRoute =
   StaffStaffDeptCalendarIndexRouteImport.update({
     id: '/',
@@ -406,6 +413,7 @@ export interface FileRoutesByFullPath {
   '/staff/content/': typeof StaffStaffContentIndexRoute
   '/staff/links/': typeof StaffStaffLinksIndexRoute
   '/staff/media/': typeof StaffStaffMediaIndexRoute
+  '/staff/content/$id/preview': typeof PublicStaffContentIdPreviewRoute
   '/staff/$dept/calendar/$id': typeof StaffStaffDeptCalendarIdRoute
   '/staff/$dept/categories/$id': typeof StaffStaffDeptCategoriesIdRoute
   '/staff/$dept/contacts/$id': typeof StaffStaffDeptContactsIdRoute
@@ -453,6 +461,7 @@ export interface FileRoutesByTo {
   '/staff/content': typeof StaffStaffContentIndexRoute
   '/staff/links': typeof StaffStaffLinksIndexRoute
   '/staff/media': typeof StaffStaffMediaIndexRoute
+  '/staff/content/$id/preview': typeof PublicStaffContentIdPreviewRoute
   '/staff/$dept/calendar/$id': typeof StaffStaffDeptCalendarIdRoute
   '/staff/$dept/categories/$id': typeof StaffStaffDeptCategoriesIdRoute
   '/staff/$dept/contacts/$id': typeof StaffStaffDeptContactsIdRoute
@@ -513,6 +522,7 @@ export interface FileRoutesById {
   '/_staff/staff/content/': typeof StaffStaffContentIndexRoute
   '/_staff/staff/links/': typeof StaffStaffLinksIndexRoute
   '/_staff/staff/media/': typeof StaffStaffMediaIndexRoute
+  '/_public/staff/content/$id/preview': typeof PublicStaffContentIdPreviewRoute
   '/_staff/staff/$dept/calendar/$id': typeof StaffStaffDeptCalendarIdRoute
   '/_staff/staff/$dept/categories/$id': typeof StaffStaffDeptCategoriesIdRoute
   '/_staff/staff/$dept/contacts/$id': typeof StaffStaffDeptContactsIdRoute
@@ -571,6 +581,7 @@ export interface FileRouteTypes {
     | '/staff/content/'
     | '/staff/links/'
     | '/staff/media/'
+    | '/staff/content/$id/preview'
     | '/staff/$dept/calendar/$id'
     | '/staff/$dept/categories/$id'
     | '/staff/$dept/contacts/$id'
@@ -618,6 +629,7 @@ export interface FileRouteTypes {
     | '/staff/content'
     | '/staff/links'
     | '/staff/media'
+    | '/staff/content/$id/preview'
     | '/staff/$dept/calendar/$id'
     | '/staff/$dept/categories/$id'
     | '/staff/$dept/contacts/$id'
@@ -677,6 +689,7 @@ export interface FileRouteTypes {
     | '/_staff/staff/content/'
     | '/_staff/staff/links/'
     | '/_staff/staff/media/'
+    | '/_public/staff/content/$id/preview'
     | '/_staff/staff/$dept/calendar/$id'
     | '/_staff/staff/$dept/categories/$id'
     | '/_staff/staff/$dept/contacts/$id'
@@ -996,6 +1009,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffStaffMediaIdRouteImport
       parentRoute: typeof StaffStaffMediaRoute
     }
+    '/_public/staff/content/$id/preview': {
+      id: '/_public/staff/content/$id/preview'
+      path: '/staff/content/$id/preview'
+      fullPath: '/staff/content/$id/preview'
+      preLoaderRoute: typeof PublicStaffContentIdPreviewRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/_staff/staff/$dept/calendar/': {
       id: '/_staff/staff/$dept/calendar/'
       path: '/'
@@ -1134,6 +1154,7 @@ interface PublicRouteChildren {
   PublicNewsSlugRoute: typeof PublicNewsSlugRoute
   PublicDocumentsIndexRoute: typeof PublicDocumentsIndexRoute
   PublicNewsIndexRoute: typeof PublicNewsIndexRoute
+  PublicStaffContentIdPreviewRoute: typeof PublicStaffContentIdPreviewRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
@@ -1147,6 +1168,7 @@ const PublicRouteChildren: PublicRouteChildren = {
   PublicNewsSlugRoute: PublicNewsSlugRoute,
   PublicDocumentsIndexRoute: PublicDocumentsIndexRoute,
   PublicNewsIndexRoute: PublicNewsIndexRoute,
+  PublicStaffContentIdPreviewRoute: PublicStaffContentIdPreviewRoute,
 }
 
 const PublicRouteWithChildren =

@@ -26,6 +26,7 @@ import {
 } from './claudeFile';
 import { ClaudeImport, ImportLeftovers } from './ClaudeImport';
 import { emptyContent, spreadLocalized, toFormValues, type PublishRequest } from './mutations';
+import { OpenDraftPreview } from './OpenDraftPreview';
 import type { PublishedView } from './PreviewFrame';
 import { PublishProblems } from './publishProblems';
 import {
@@ -596,6 +597,17 @@ export function ContentEditor({
             </Button>
 
             {tools}
+
+            {content === null ? null : (
+              // A page waiting for approval is read too, so `locked` does not stop it. After a conflict the saved draft
+              // is somebody else's, and not what is on screen.
+              <OpenDraftPreview
+                id={content.id}
+                locale={editor.locale}
+                flush={autosave.flush}
+                disabled={busy || autosave.stopped}
+              />
+            )}
 
             <ClaudeDownload
               content={content}
