@@ -621,6 +621,9 @@ sintomo secondario che l'ha confermato: l'URL del dettaglio portava `?page=1&pag
 params della lista, ereditati perché era un figlio. La forma qui sopra è quella corretta; il layout è il posto dove
 la guardia si scrive una volta per entrambe le schermate. Nota `decisions/2026-09-04-rotte-di-dettaglio.md`.
 
+**La guardia di una rotta di modulo** (5 novembre 2026, #438, nota `decisions/2026-11-01-le-azioni-di-un-evento-dal-server.md`): `RouteDefinition.unscoped` chiede
+che il permesso sia tenuto senza ambito di riga, la stessa domanda di `HasUnscoped` e di `NavItemDescriptor(…, Unscoped: true)`.
+
 ⚠️ **E la 2c leggeva la riga dal posto sbagliato, su undici rotte** (trovato il 7 set 2026, in G12,
 ricopiando `/start` a mano). Le schermate prendevano la riga da `Route.useLoaderData()`. Un `loader`
 gira **alla navigazione e mai più**: non osserva la cache di React Query, quindi il `setQueryData`
