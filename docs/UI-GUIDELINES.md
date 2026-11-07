@@ -53,7 +53,9 @@ speak English.
 What it does *not* replace is as important: the open and closed state is still Atmosphere's
 `SidebarProvider` and `SidebarContext`, and every leaf is still its `SidebarItem`. Only the frame
 and the group heading are ours, because those are the two pieces the library exports no way to
-reach. And it **is** the `<aside>` — it is not a panel to wrap in a shell of your own. Wrapping the
+reach. The provider sits in `StaffLayout`, around the row, so that the page editor can reach the same
+state with `useSidebar()`; a second sidebar on a page brings a provider of its own. And it **is** the
+`<aside>` — it is not a panel to wrap in a shell of your own. Wrapping the
 one it replaced once drew the whole back office inside a 288 pixel column with two collapse
 buttons, and `e2e/back-office.spec.ts` measures the geometry so that it cannot happen again.
 
@@ -869,6 +871,14 @@ page itself — the same renderer the public gets, clicked to select — and one
 outline, which is the road for anybody without a mouse. The two side columns do not move when it
 does: an editor whose panels jump when you change how you are looking at the page is one you have to
 re-find your place in every time.
+
+**Only who drags moves them.** Two thin lines between the columns, from `xl` up: real separators, with
+their value for a screen reader, moved by the pointer or the arrow keys, and put back by a double click.
+The palette stays between 10 and 20 rem, the properties between 16 and 36, and the page never goes under
+24: that one is the grid's to keep, with `minmax` tracks, so a narrower window squeezes the side columns
+and never the page. The widths are remembered in the browser, a comfort of whoever is looking and not a
+fact to keep on the server. The staff sidebar shuts when the editor opens and is as it was when the editor
+closes; whoever opens it by hand while writing keeps it open.
 
 **While composing, the page says what it is made of, and a visitor never reads any of it.** Every
 section has a thin dashed outline, solid when it is the one picked, and a label with its number among

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { stubTheApiAsStaff } from './fixtures';
 import { englishCommon } from './locales';
@@ -357,4 +357,110 @@ test("a calendar block's kinds are chosen from the calendar's own, not typed (is
   await expect(page.getByRole('option', { name: 'Deadline' })).toBeVisible();
   await page.getByRole('option', { name: 'Deadline' }).click();
   await expect(kind).toHaveText('Deadline');
+});
+
+const panelWidth = editor.panelWidth;
+const REM = 16;
+
+/** Where a line is, and how wide the columns around it really are: what no unit test can measure. */
+async function dragLine(page: Page, name: string, by: number) {
+  const box = (await page.getByRole('separator', { name }).boundingBox())!;
+  const x = box.x + box.width / 2;
+  const y = box.y + 100;
+
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  // In steps, so the line follows a pointer that travels rather than one that jumps.
+  await page.mouse.move(x + by, y, { steps: 5 });
+  await page.mouse.up();
+}
+
+test('the sidebar shuts on opening the editor, and comes back when you leave it', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/staff/links');
+
+  const expand = page.getByRole('button', { name: englishCommon.nav.sidebar.expand });
+  const collapse = page.getByRole('button', { name: englishCommon.nav.sidebar.collapse });
+  await expect(collapse).toBeVisible();
+
+  // Inside the application and not by loading the page again, which would start the sidebar over.
+  await page.evaluate(() => {
+    window.history.pushState({}, '', '/staff/content/1');
+  });
+  await expect(page.getByRole('heading', { name: editor.components })).toBeVisible();
+  await expect(expand).toBeVisible();
+
+  await page.goBack();
+  await expect(page.getByRole('heading', { name: englishCommon.links.title })).toBeVisible();
+  await expect(collapse).toBeVisible();
+});
+
+test('a line is dragged, stops at the limit, is remembered, and a double click puts it back', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/staff/content/1');
+
+  const line = page.getByRole('separator', { name: panelWidth.palette });
+  await expect(line).toHaveAttribute('aria-valuenow', '13');
+
+  // 3.5 rem to the right, and the panel on the left is as wide as the line says.
+  await dragLine(page, panelWidth.palette, 3.5 * REM);
+  await expect(line).toHaveAttribute('aria-valuenow', '16.5');
+  const heading = (await page.getByRole('heading', { name: editor.components }).boundingBox())!;
+  const moved = (await line.boundingBox())!;
+  expect(moved.x - heading.x).toBeCloseTo(16.5 * REM, -1);
+
+  // Dragged far beyond the limit, it stops there.
+  await dragLine(page, panelWidth.palette, 40 * REM);
+  await expect(line).toHaveAttribute('aria-valuenow', '20');
+
+  // The second line grows its panel to the left.
+  const second = page.getByRole('separator', { name: panelWidth.properties });
+  await dragLine(page, panelWidth.properties, -2 * REM);
+  await expect(second).toHaveAttribute('aria-valuenow', '21');
+
+  await page.reload();
+  await expect(line).toHaveAttribute('aria-valuenow', '20');
+  await expect(second).toHaveAttribute('aria-valuenow', '21');
+
+  await line.dblclick();
+  await expect(line).toHaveAttribute('aria-valuenow', '13');
+  await expect(second).toHaveAttribute('aria-valuenow', '21');
+});
+
+test('the page never goes under its minimum, by dragging or by narrowing the window', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/staff/content/1');
+
+  const pageWidth = async () => {
+    const left = (await page.getByRole('separator', { name: panelWidth.palette }).boundingBox())!;
+    const right = (await page.getByRole('separator', { name: panelWidth.properties }).boundingBox())!;
+    return (right.x - (left.x + left.width)) / REM;
+  };
+
+  // Every panel as wide as it goes, in a window that has no room for both.
+  await dragLine(page, panelWidth.palette, 40 * REM);
+  await dragLine(page, panelWidth.properties, -60 * REM);
+  expect(await pageWidth()).toBeGreaterThanOrEqual(23.9);
+
+  // And the room taken away from under it: the sidebar opened by hand, with the window as it is.
+  await page.getByRole('button', { name: englishCommon.nav.sidebar.expand }).click();
+  await expect(page.getByRole('button', { name: englishCommon.nav.sidebar.collapse })).toBeVisible();
+  expect(await pageWidth()).toBeGreaterThanOrEqual(23.9);
+
+  // The whole page still fits the window: the columns gave way, nothing was pushed off the side.
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+});
+
+test('below the width of three columns there is no line to move', async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 900 });
+  await page.goto('/staff/content/1');
+
+  await expect(page.getByRole('heading', { name: editor.components })).toBeVisible();
+  await expect(page.getByRole('separator', { name: panelWidth.palette })).toBeHidden();
+  await expect(page.getByRole('separator', { name: panelWidth.properties })).toBeHidden();
 });

@@ -668,6 +668,11 @@
       "redo": "Ripeti",
       "page": "Pagina",
       "pickHint": "Scegli una sezione o un blocco, sulla pagina o nella struttura, per modificarlo qui.",
+      "panelWidth": {
+        "palette": "Larghezza del pannello dei componenti",
+        "properties": "Larghezza del pannello delle proprietà",
+        "hint": "Trascinalo, o usa le frecce. Il doppio clic lo rimette com'era."
+      },
       "addRow": "Aggiungi riga",
       "sectionAbove": "+ sezione sopra",
       "sectionBelow": "+ sezione sotto",
