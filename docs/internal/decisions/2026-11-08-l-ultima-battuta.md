@@ -9,11 +9,12 @@
 
 I tasti che salvano la bozza prima di fare qualcosa («Scarica per Claude», «Pubblica», «Pronta per la revisione», «Apri l'anteprima» della #476) chiamano `useAutosave.flush`. `flush` salva lo snapshot che l'editor gli ha già passato. L'editor però lo costruisce da ciò che il form dal vivo **ha applicato**, e il form applica una pausa dopo l'ultima battuta (`LIVE_DELAY` = 150 ms in `SchemaForm.useLiveValues`). La stessa pausa vale per i campi di un blocco (`BlockProperties` usa lo stesso form). Se il tasto arriva dentro la pausa, `flush` trova lo snapshot uguale all'ultimo salvato, risponde `true` e non salva niente: il tasto lavora sulla bozza **senza l'ultima battuta**.
 
-Misure con `pnpm e2e` (Chromium, bundle di produzione, API finta), campo «Indirizzo» del form della pagina. Si scrive con `fill` oppure con `keyboard.type`, poi si fa subito il clic. Lo scarto fra l'ultima battuta e il clic è misurato nella pagina (`input` → `pointerdown`):
+Misure con `pnpm e2e` (Chromium, bundle di produzione, API finta), sul campo «Indirizzo» del form della pagina; per «Apri l'anteprima», sul titolo. Si scrive con `fill` oppure con `keyboard.type`, poi si fa subito il clic. Lo scarto fra l'ultima battuta e il clic è misurato nella pagina (`input` → `pointerdown`):
 
 | Tasto | Scarto battuta → pressione che salva | Battuta persa, prima | Dopo la correzione |
 |---|---|---|---|
 | Scarica per Claude | 35–57 ms | **40 su 40** | 0 su 20 |
+| Apri l'anteprima (#476) | 31–86 ms | **18 su 20** (le 2 salvate: clic a 205 e 225 ms) | 0 su 20 |
 | Pubblica (dialogo, poi Conferma) | 299–389 ms (la Conferma) | 0 su 40 | 0 su 20 |
 | Pronta per la revisione (dialogo, poi Conferma) | 300–356 ms (la Conferma) | 0 su 40 | 0 su 20 |
 
