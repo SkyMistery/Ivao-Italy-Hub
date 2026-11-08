@@ -29,7 +29,7 @@ import {
   type SectionEnvelope,
   type Span,
 } from './envelope';
-import { usePicking, type PickAction, type Picking, type SortableBinding } from './picking';
+import { stopClick, usePicking, type PickAction, type Picking, type SortableBinding } from './picking';
 
 /**
  * Drawing a page. The same component renders the published version for a visitor and the draft in
@@ -866,8 +866,7 @@ export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boole
           return;
         }
 
-        event.preventDefault();
-        event.stopPropagation();
+        stopClick(event);
         picking.onPick('block', block.id);
       }}
     >

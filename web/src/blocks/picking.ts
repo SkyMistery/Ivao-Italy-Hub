@@ -1,4 +1,11 @@
-import { createContext, useContext, type CSSProperties, type ComponentType, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  type CSSProperties,
+  type ComponentType,
+  type ReactNode,
+} from 'react';
 
 import type { BlockEnvelope, Span } from './envelope';
 
@@ -136,4 +143,38 @@ export const PickingContext = createContext<Picking | null>(null);
 /** `null` everywhere the editor has not said otherwise, which is everywhere the public reads. */
 export function usePicking(): Picking | null {
   return useContext(PickingContext);
+}
+
+/** What taking a click means while a page is composed or looked at: its default does not happen, and it goes no further. */
+export function stopClick(event: Pick<Event, 'preventDefault' | 'stopPropagation'>): void {
+  event.preventDefault();
+  event.stopPropagation();
+}
+
+/**
+ * The read-only way of the same thing (design of phase 3, §4.7): the draft looked at in a tab of its own, where a link
+ * must not carry anybody away from what they came to check, and there is nothing to pick. The whole document and not a
+ * block at a time, so that the frame's links keep the promise the strip makes too, with nothing around a block that a
+ * visitor's page does not have. Only the links: an accordion opens and a tab changes, because reading them is what the
+ * preview is for, and no block writes anything from a click.
+ *
+ * `auxclick` is the middle button, which opens a link without a `click`. The frame of an interactive block is another
+ * document, whose clicks do not come through here.
+ */
+export function useLinksDisabled(): void {
+  useEffect(() => {
+    const stopLink = (event: MouseEvent) => {
+      if (event.target instanceof Element && event.target.closest('a') !== null) {
+        stopClick(event);
+      }
+    };
+
+    document.addEventListener('click', stopLink, { capture: true });
+    document.addEventListener('auxclick', stopLink, { capture: true });
+
+    return () => {
+      document.removeEventListener('click', stopLink, { capture: true });
+      document.removeEventListener('auxclick', stopLink, { capture: true });
+    };
+  }, []);
 }

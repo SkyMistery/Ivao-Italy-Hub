@@ -45,14 +45,20 @@ export const EMBED_GUIDELINES_PATH = '/embed/guidelines';
  *
  * `locale` rides as a query so that the document inside the frame is written in the language the
  * reader is reading, which is the only thing the server cannot work out for itself.
+ *
+ * `revision`, which the server does not read, is for a page that looks at a draft from the outside (`DraftPreviewScreen`):
+ * the address of a draft does not change with the draft, and a frame reloads only when its address does.
  */
 export function frameAddress(
   contentId: number,
   version: number | 'draft',
   blockId: string,
   locale: string,
+  revision?: string,
 ): string {
-  return `/embed/${contentId}/${version}/${encodeURIComponent(blockId)}?lang=${encodeURIComponent(locale)}`;
+  const address = `/embed/${contentId}/${version}/${encodeURIComponent(blockId)}?lang=${encodeURIComponent(locale)}`;
+
+  return revision === undefined ? address : `${address}&revision=${encodeURIComponent(revision)}`;
 }
 
 /**

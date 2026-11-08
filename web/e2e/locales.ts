@@ -122,6 +122,7 @@ interface CommonStrings {
     };
     readonly changes: { readonly first: string };
     readonly versions: { readonly title: string };
+    readonly draftPreview: { readonly notice: string; readonly refresh: string };
     readonly claude: {
       readonly download: { readonly label: string; readonly hint: string };
     };
@@ -207,6 +208,8 @@ interface CommonStrings {
       readonly properties: string;
       readonly preview: string;
       readonly previewWidths: { readonly phone: string; readonly desktop: string };
+      readonly previewLanguage: string;
+      readonly openPreview: { readonly label: string; readonly notSaved: string };
       readonly panelWidth: { readonly palette: string; readonly properties: string };
       readonly autosave: {
         readonly title: string;

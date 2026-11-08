@@ -48,3 +48,8 @@ export const contentEditorSearchSchema = z.object({
 });
 
 export type ContentEditorSearch = z.output<typeof contentEditorSearchSchema>;
+
+/** The language the draft is looked at in, in a tab of its own: the one the editor was showing (design of phase 3, §4.7). */
+export const draftPreviewSearchSchema = z.object({
+  lang: z.string().optional(),
+});

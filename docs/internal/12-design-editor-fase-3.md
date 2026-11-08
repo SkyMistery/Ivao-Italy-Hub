@@ -246,6 +246,16 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   larghezza; le tre larghezze restano dentro l'editor.
 - **File del nucleo**: una rotta in `web/src/routes/`, `features/content/ContentEditor.tsx` (il tasto), `blocks/picking.ts` (il modo
   «solo lettura» del contesto). Il server non cambia. **Nota sua**: no.
+- **Com'è andata** (PR 3.7, ramo `feat/editor-preview-tab`): la rotta è `_public/staff.content.$id.preview.tsx`, cioè sotto il layout
+  pubblico, che **è** la cornice (intestazione, striscia del traffico, piè di pagina, e il rifiuto disegnato dentro); la guardia dello
+  staff è una funzione sola per le due rotte (`routes/-staffGuard.tsx`). Quattro scelte della sessione, nel corpo della PR: (1) la
+  scheda si apre **sul clic**, vuota, e va alla bozza dopo `autosave.flush` — una `window.open` dopo un `await` il browser può
+  bloccarla; (2) i link fermati sono quelli **di tutta la scheda**, cornice compresa, e **solo i link**: fisarmonica e schede si aprono,
+  perché leggerle è lo scopo, e nessun blocco scrive con un clic; (3) notizie e documenti si disegnano con la loro schermata pubblica
+  (`PublicEntryScreen`), con la data dell'ultimo salvataggio e senza il piè del documento, che nominerebbe un'edizione che non c'è;
+  (4) la lingua scelta vale per ciò che la riga dice, come nell'anteprima dell'editor; la cornice resta nella lingua del sito. Per la
+  lingua la barra di `BodyEditor` passa anche `locale` al proprietario; l'indirizzo della cornice di un interattivo porta la versione
+  della riga, così si ricarica quando la bozza cambia.
 
 ## 5. I blocchi
 
