@@ -8,6 +8,7 @@ import {
   PrintContext,
   readBody,
   usePublishedEmbedding,
+  type Embedding,
 } from '../../blocks';
 import { mediaFileUrl } from '../../shared/api/mediaUrl';
 import { useLocalized } from '../../shared/i18n/useLocalized';
@@ -32,8 +33,19 @@ import { usePrintMode } from './usePrintMode';
  * is about under the title, the notice when it is not the one to follow, and the footer that says
  * which edition this is. All three are this screen's, none the renderer's (`DocumentFrame`). And
  * while it is being printed the blocks are told so, which is what unfolds the tabs on paper.
+ *
+ * The saved draft of an entry is drawn by this screen too, so that it looks like what it will be (`DraftPreviewScreen`): it says
+ * where the frames of a draft live, and that the reader is staff.
  */
-export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
+export function PublicEntryScreen({
+  content,
+  embedding: draftEmbedding,
+  staff = false,
+}: {
+  content: PublicContentDto;
+  embedding?: Embedding;
+  staff?: boolean;
+}) {
   const { t } = useTranslation();
   const moment = useMoment();
   const read = useLocalized();
@@ -41,7 +53,8 @@ export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
 
   // The frame of an interactive block, addressed by the version being read: a published version
   // never changes, so what comes back is cacheable for a year (`EmbedEndpoints`).
-  const embedding = usePublishedEmbedding(content);
+  const publishedEmbedding = usePublishedEmbedding(content);
+  const embedding = draftEmbedding ?? publishedEmbedding;
 
   const isDocument = content.kind === 'Document';
   const summary = read(content.summary);
@@ -112,7 +125,7 @@ export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
           (`blocks/embedding.ts`). */}
       <PrintContext.Provider value={printing}>
         <EmbeddingContext.Provider value={embedding}>
-          <ContentRenderer body={readBody(content.body)} media={content.media} />
+          <ContentRenderer body={readBody(content.body)} media={content.media} staff={staff} />
         </EmbeddingContext.Provider>
       </PrintContext.Provider>
 

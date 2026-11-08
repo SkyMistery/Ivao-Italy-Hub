@@ -170,9 +170,10 @@ export function BodyEditor({
   onChange: (body: Body) => void;
   /**
    * Where the editor's own buttons go — outline, undo, redo — among the owner's (save, publish…). Handed the way to
-   * replace the whole body as one thing that happened to it, which undo takes back: an import (PR 3.0b).
+   * replace the whole body as one thing that happened to it, which undo takes back: an import (PR 3.0b). And the language
+   * the page is drawn in, which the preview in a tab of its own opens in (design of phase 3, §4.7).
    */
-  toolbar: (tools: ReactNode, editor: { replace: (next: Body) => void }) => ReactNode;
+  toolbar: (tools: ReactNode, editor: { replace: (next: Body) => void; locale: string }) => ReactNode;
   /** What the owner says between its toolbar and the page: problems, the state of the draft, a review. */
   header?: ReactNode;
   /** What the panel on the right shows while nothing is picked: the row's own fields, or nothing. */
@@ -801,6 +802,7 @@ export function BodyEditor({
               change(next);
               setSelection(null);
             },
+            locale: previewLocale,
           })}
 
           {header}

@@ -25,7 +25,7 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-for (const address of ['/staff', '/me/tokens']) {
+for (const address of ['/staff', '/me/tokens', '/staff/content/7/preview']) {
   test(`${address} opened signed out goes to the server's sign-in and comes back to ${address}`, async ({
     page,
   }) => {

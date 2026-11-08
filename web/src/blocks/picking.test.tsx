@@ -6,7 +6,7 @@ import { renderWithProviders } from '../test/harness';
 
 import { ContentRenderer } from './ContentRenderer';
 import type { Body } from './envelope';
-import { PickingContext, type Picking, type SortableBinding } from './picking';
+import { PickingContext, useLinksDisabled, type Picking, type SortableBinding } from './picking';
 
 /**
  * Composing on the page, and the promise that keeps it safe.
@@ -80,6 +80,31 @@ test('the page a visitor reads has nothing to click and nothing to strip', () =>
   const clicked = new MouseEvent('click', { bubbles: true, cancelable: true });
   link.dispatchEvent(clicked);
   expect(clicked.defaultPrevented).toBe(false);
+});
+
+test('a page looked at in a tab of its own follows no link, and picks nothing', async () => {
+  const user = userEvent.setup();
+
+  function LookedAt() {
+    useLinksDisabled();
+    return <ContentRenderer body={body} />;
+  }
+
+  renderWithProviders(<LookedAt />);
+
+  // Read-only and not composing: nothing of the editor's shell is drawn.
+  expect(document.querySelectorAll('[data-pickable]')).toHaveLength(0);
+
+  const link = screen.getByRole('link', { name: 'Join' });
+  const clicked = new MouseEvent('click', { bubbles: true, cancelable: true });
+  link.dispatchEvent(clicked);
+  expect(clicked.defaultPrevented).toBe(true);
+
+  // Taken in the capture phase of the document, so that nothing under it hears the click either.
+  const heard = vi.fn();
+  link.addEventListener('click', heard);
+  await user.click(link);
+  expect(heard).not.toHaveBeenCalled();
 });
 
 test('with the editor behind it, a click picks the block instead of following it', async () => {
