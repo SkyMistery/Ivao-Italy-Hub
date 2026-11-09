@@ -26,7 +26,7 @@ import {
   type FieldErrors,
   type UseFormReturn,
 } from 'react-hook-form';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { z } from 'zod';
 
 import { formatMoment } from '../i18n/useMoment';
@@ -197,7 +197,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   const hint = !enter.oneLine ? null : enter.multiline ? t('form.submitHintOneLine') : t('form.submitHint');
 
   useProposedSlugs(form, fields, division?.defaultLocale);
-  const applyNow = useLiveValues(form, schema, onChange);
+  useLiveValues(form, schema, onChange);
 
   const submit = form.handleSubmit(async (values) => {
     if (onSubmit === undefined) {
@@ -223,9 +223,6 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
           event.stopPropagation();
           void submit(event);
         }}
-        // A live form hands on its last keystroke when the focus leaves it, before the press that took it
-        // is handled (`useLiveValues`). Inside the form, from field to field, it only comes a little early.
-        onBlur={applyNow}
         className="flex flex-col gap-6"
         noValidate
       >
@@ -348,59 +345,59 @@ const LIVE_DELAY = 150;
  * not one per render: the screen hands a fresh lambda every time it draws, and resubscribing on
  * each would throw away the timer of the keystroke it was in the middle of.
  *
- * ⚠️ What it returns applies **at once** what the pause is still holding, and the form calls it when
- * the focus leaves it. A press anywhere else on the screen takes the focus first — the mouse on its
- * way down, Tab on its way to a button — and the screen's state has the last letter before the press
- * is handled. Without it, a press inside the pause read the screen without that letter: «Download for
- * Claude» right after the last keystroke stored nothing and downloaded the draft without it
- * (`decisions/2026-11-08-l-ultima-battuta.md`).
+ * ⚠️ While a keystroke waits for its pause, **a click anywhere on the page applies it at once**, in
+ * the capture phase on the document: before any handler of the click reads the screen, and after the
+ * click has found its target. Without it, a press inside the pause read the screen without that
+ * letter: «Download for Claude» right after the last keystroke stored nothing and downloaded the
+ * draft without it. Not on the focus leaving the form, which was the first way: the focus leaves on
+ * the mouse's way **down**, a screen that answers the change with a line above its buttons moves
+ * them before the mouse comes up, and the click is lost — «Save» of an event pressed right after a
+ * keystroke sent nothing (`decisions/2026-11-08-l-ultima-battuta.md`). A key that presses a button
+ * (Enter, Space) is a click too.
  */
 function useLiveValues<TValues extends Record<string, unknown>>(
   form: UseFormReturn<TValues, unknown, TValues>,
   schema: z.ZodType<TValues, TValues>,
   onChange: ((values: TValues) => void) | undefined,
-): () => void {
+): void {
   const latest = useRef({ schema, onChange });
 
   useEffect(() => {
     latest.current = { schema, onChange };
   });
 
-  // The keystroke waiting for its pause, if there is one.
-  const pending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  const apply = useCallback(() => {
-    clearTimeout(pending.current);
-    pending.current = undefined;
-    const parsed = latest.current.schema.safeParse(form.getValues());
-    if (parsed.success) {
-      latest.current.onChange?.(parsed.data);
-    }
-  }, [form]);
-
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const apply = () => {
+      clearTimeout(timer);
+      timer = undefined;
+      document.removeEventListener('click', apply, true);
+
+      const parsed = latest.current.schema.safeParse(form.getValues());
+      if (parsed.success) {
+        latest.current.onChange?.(parsed.data);
+      }
+    };
+
     const subscription = form.watch((_values, { name }) => {
       // `name` is the field somebody changed. A reset reports none, and is not an edit.
       if (name === undefined || latest.current.onChange === undefined) {
         return;
       }
 
-      clearTimeout(pending.current);
-      pending.current = setTimeout(apply, LIVE_DELAY);
+      clearTimeout(timer);
+      timer = setTimeout(apply, LIVE_DELAY);
+      // Once only, however many letters: the same listener in the same phase is not added twice.
+      document.addEventListener('click', apply, true);
     });
 
     return () => {
-      clearTimeout(pending.current);
-      pending.current = undefined;
+      clearTimeout(timer);
+      document.removeEventListener('click', apply, true);
       subscription.unsubscribe();
     };
-  }, [form, apply]);
-
-  return useCallback(() => {
-    if (pending.current !== undefined) {
-      apply();
-    }
-  }, [apply]);
+  }, [form]);
 }
 
 /**
