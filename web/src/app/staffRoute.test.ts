@@ -21,9 +21,27 @@ const route = (definition: Partial<RouteDefinition>): RouteDefinition => ({
 // Only the permissions are read: the rest of the bootstrap is no business of the guard.
 const holding = (...permissions: BootstrapPermission[]) => ({ permissions }) as Bootstrap;
 
-const onOneRow = { name: 'Sample.View', department: 'ED', resourceScope: 'sample:item:42' };
-const onTheDepartment = { name: 'Sample.View', department: 'ED', resourceScope: null };
-const everywhere = { name: 'Sample.View', department: null, resourceScope: null };
+const onOneRow = {
+  name: 'Sample.View',
+  department: 'ED',
+  resourceScope: 'sample:item:42',
+  fir: null,
+  fromOutside: false,
+};
+const onTheDepartment = {
+  name: 'Sample.View',
+  department: 'ED',
+  resourceScope: null,
+  fir: null,
+  fromOutside: false,
+};
+const everywhere = {
+  name: 'Sample.View',
+  department: null,
+  resourceScope: null,
+  fir: null,
+  fromOutside: false,
+};
 
 test('a route without unscoped opens to the permission held anywhere, a grant on one row included', () => {
   const definition = route({ permission: 'Sample.View' });
