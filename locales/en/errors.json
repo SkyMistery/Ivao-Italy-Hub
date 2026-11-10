@@ -65,6 +65,7 @@
       "sourceNotInteractive": "Only an interactive block carries code.",
       "sourceNotPermitted": "Adding or changing the code of an interactive block needs the permission to embed code.",
       "spanUnknown": "This block has a width a dashboard does not have.",
+      "alignUnknown": "This block asks for an alignment that does not exist: left, centre or right.",
       "blockAudience": "This block is for fewer readers than the page: take it out, or make the page visible to fewer people."
     },
     "content": {
