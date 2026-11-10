@@ -380,7 +380,8 @@ function AlignField({ align, onAlign }: { align: Align; onAlign: (align: Align) 
  * and a live form keeps the values it was born with — the form would write the old width back with the next word typed
  * into the caption. So the form carries the property without drawing it (`withoutDrawing`), and never writes it.
  *
- * One step of the history per gesture: a drag of the thumb, or a key (`onValueCommit` ends it).
+ * One step of the history per gesture: a drag of the thumb, or a key (`onValueCommit` ends it, and so does the next
+ * press).
  */
 function WidthField({
   label,
@@ -416,6 +417,11 @@ function WidthField({
             onResize(next, gesture.current);
           }}
           onValueCommit={() => {
+            gesture.current = null;
+          }}
+          // A new press is a new gesture too: Radix does not commit a drag that ended where it started, even one that
+          // went somewhere on the way.
+          onPointerDown={() => {
             gesture.current = null;
           }}
         >
