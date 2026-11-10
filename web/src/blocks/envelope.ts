@@ -68,7 +68,7 @@ const isAlign = (value: unknown): value is Align => ALIGNS.includes(value as Ali
 /**
  * Whether a block still carries the alignment it had in its own `props` before PR 3.9. Only `buttonGroup` had one, and
  * the only one asked is a block that is `alignable`: whatever `align` its props hold is that old one, because an
- * alignable block may not declare one of its own (`registry.test.ts`). `hero` keeps its own — it places what is inside
+ * alignable block may not declare one of its own (`align.test.tsx`). `hero` keeps its own — it places what is inside
  * its ground, not the block in its column — and is not alignable.
  */
 export function carriesOldAlign(block: Pick<BlockEnvelope, 'props'>): boolean {

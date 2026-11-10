@@ -156,7 +156,7 @@ export interface BlockRegistration {
    * The block does not draw it: the renderer's wrapper sets the alignment of its text and pushes a piece narrower than
    * the column — a picture, say — to that side. A row of pieces laid out by `flex`, which neither of the two moves (the
    * buttons of a group), carries `data-align-row`, and the wrapper justifies it. ⚠️ So an alignable block declares no
-   * `align` among its own properties: one would be a second alignment of the same thing (`registry.test.ts`).
+   * `align` among its own properties: one would be a second alignment of the same thing (`blocks/align.test.tsx`).
    */
   readonly alignable?: boolean;
   /**
