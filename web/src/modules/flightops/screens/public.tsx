@@ -460,7 +460,7 @@ function TourLegs({ tour, mine }: { tour: PublicTourDto; mine: MyTourDto | undef
 
   return (
     <table className="w-full text-sm">
-      <thead className="hidden sm:table-header-group">
+      <thead className="max-sm:hidden">
         <tr className="text-muted-foreground border-b text-left">
           <th className="py-2 pr-3 font-medium">{t('flightops:public.legNumber')}</th>
           <th className="py-2 pr-3 font-medium">{t('flightops:public.route')}</th>
@@ -478,7 +478,7 @@ function TourLegs({ tour, mine }: { tour: PublicTourDto; mine: MyTourDto | undef
       {legGroups(tour).map((group) => (
         <tbody key={group.key}>
           {group.titled ? (
-            <tr className="flex sm:table-row">
+            <tr className="max-sm:flex">
               <th colSpan={columns} scope="colgroup" className="pt-5 pb-2 text-left font-semibold">
                 {group.rotation === null
                   ? t('flightops:public.betweenHubs')
@@ -492,30 +492,30 @@ function TourLegs({ tour, mine }: { tour: PublicTourDto; mine: MyTourDto | undef
           {group.legs.map((leg) => (
             <tr
               key={leg.id}
-              className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b py-3 last:border-0 sm:table-row sm:py-0"
+              className="border-b last:border-0 max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-x-3 max-sm:gap-y-1 max-sm:py-3"
             >
-              <td className="font-semibold tabular-nums sm:py-2 sm:pr-3 sm:font-normal">{leg.number}</td>
-              <td className="sm:py-2 sm:pr-3">
+              <td className="py-2 pr-3 tabular-nums max-sm:p-0 max-sm:font-semibold">{leg.number}</td>
+              <td className="py-2 pr-3 max-sm:p-0">
                 {leg.departureIcao}
                 {leg.departureIata === null ? '' : ` (${leg.departureIata})`}
                 {' → '}
                 {leg.arrivalIcao}
                 {leg.arrivalIata === null ? '' : ` (${leg.arrivalIata})`}
               </td>
-              <td className="tabular-nums sm:py-2 sm:pr-3">
+              <td className="py-2 pr-3 tabular-nums max-sm:p-0">
                 {t('flightops:public.facts.miles', { distance: Math.round(leg.distanceNm) })}
               </td>
-              <td className="tabular-nums sm:py-2 sm:pr-3">
+              <td className="py-2 pr-3 tabular-nums max-sm:p-0">
                 <Clock aria-hidden className="text-muted-foreground mr-1 inline size-3.5 sm:hidden" />
                 {leg.estimatedMinutes === null ? '—' : formatMinutes(leg.estimatedMinutes)}
               </td>
-              <td className="font-mono sm:py-2 sm:pr-3">{leg.callsigns.join(' · ')}</td>
+              <td className="py-2 pr-3 font-mono max-sm:p-0">{leg.callsigns.join(' · ')}</td>
               {mine === undefined ? null : (
-                <td className="sm:py-2 sm:pr-3">
+                <td className="py-2 pr-3 max-sm:p-0">
                   <LegProgressBadge progress={progressOf(leg)} />
                 </td>
               )}
-              <td className="flex w-full flex-wrap gap-1 sm:table-cell sm:w-auto sm:py-2">
+              <td className="py-2 max-sm:flex max-sm:w-full max-sm:flex-wrap max-sm:gap-1 max-sm:p-0">
                 {flyable(leg) ? (
                   <Button asChild size="sm" variant="ghost">
                     <RouterAnchor href={`/tours/${tour.slug}/report?leg=${leg.id}`}>
