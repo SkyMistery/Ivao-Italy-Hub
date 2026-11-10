@@ -346,7 +346,9 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 - **Solo dove vuol dire qualcosa**: una registrazione lo dichiara (`alignable: true`) — titolo, testo, callout, immagine, video,
   pulsanti, testimonianza. Una tabella o una griglia di card prendono già tutta la colonna.
 - **Niente scritto due volte**: l'`align` di `buttonGroup` è la stessa cosa e passa nella busta — il renderer legge ancora quello delle
-  `props` quando la busta non lo ha, il pannello lo sposta aprendo il blocco. Quello di `hero` resta suo: allinea il contenuto dentro il
+  `props` quando la busta non lo ha, il pannello lo sposta ~~aprendo il blocco~~ **alla sua prima scrittura sul blocco**, perché aprire un
+  blocco non è una modifica (Carmine, in chat al master il 10 novembre 2026, «Sì, accetto»; nota `2026-11-10-l-allineamento-nella-busta`,
+  punto 1). Quello di `hero` resta suo: allinea il contenuto dentro il
   suo sfondo, non il blocco nella colonna.
 - **È una modifica del nucleo del server** (la busta): una PR sua, prima dell'immagine (§7), con il test d'integrazione del valore
   rifiutato.
