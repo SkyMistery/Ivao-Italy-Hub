@@ -344,6 +344,16 @@ const LIVE_DELAY = 150;
  * What makes a form live (`onChange` above). One subscription for as long as the form exists —
  * not one per render: the screen hands a fresh lambda every time it draws, and resubscribing on
  * each would throw away the timer of the keystroke it was in the middle of.
+ *
+ * ⚠️ While a keystroke waits for its pause, **a click anywhere on the page applies it at once**, in
+ * the capture phase on the document: before any handler of the click reads the screen, and after the
+ * click has found its target. Without it, a press inside the pause read the screen without that
+ * letter: «Download for Claude» right after the last keystroke stored nothing and downloaded the
+ * draft without it. Not on the focus leaving the form, which was the first way: the focus leaves on
+ * the mouse's way **down**, a screen that answers the change with a line above its buttons moves
+ * them before the mouse comes up, and the click is lost — «Save» of an event pressed right after a
+ * keystroke sent nothing (`decisions/2026-11-08-l-ultima-battuta.md`). A key that presses a button
+ * (Enter, Space) is a click too.
  */
 function useLiveValues<TValues extends Record<string, unknown>>(
   form: UseFormReturn<TValues, unknown, TValues>,
@@ -359,6 +369,17 @@ function useLiveValues<TValues extends Record<string, unknown>>(
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
 
+    const apply = () => {
+      clearTimeout(timer);
+      timer = undefined;
+      document.removeEventListener('click', apply, true);
+
+      const parsed = latest.current.schema.safeParse(form.getValues());
+      if (parsed.success) {
+        latest.current.onChange?.(parsed.data);
+      }
+    };
+
     const subscription = form.watch((_values, { name }) => {
       // `name` is the field somebody changed. A reset reports none, and is not an edit.
       if (name === undefined || latest.current.onChange === undefined) {
@@ -366,16 +387,14 @@ function useLiveValues<TValues extends Record<string, unknown>>(
       }
 
       clearTimeout(timer);
-      timer = setTimeout(() => {
-        const parsed = latest.current.schema.safeParse(form.getValues());
-        if (parsed.success) {
-          latest.current.onChange?.(parsed.data);
-        }
-      }, LIVE_DELAY);
+      timer = setTimeout(apply, LIVE_DELAY);
+      // Once only, however many letters: the same listener in the same phase is not added twice.
+      document.addEventListener('click', apply, true);
     });
 
     return () => {
       clearTimeout(timer);
+      document.removeEventListener('click', apply, true);
       subscription.unsubscribe();
     };
   }, [form]);
