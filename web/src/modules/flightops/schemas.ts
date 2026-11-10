@@ -732,6 +732,27 @@ export function copyRulesSchema(tours: readonly ChoiceOption[] = []) {
 
 export type CopyRulesFormValues = z.output<ReturnType<typeof copyRulesSchema>>;
 
+// ---- the page of a tour (design 11 §4, phase 6) -----------------------------------------------------
+
+/**
+ * The four tabs of the page of a tour, in their order: the briefing, the map and the legs, what the tour asks and its
+ * rules, the pilot's reports. The server opens three of them from its links (`PublicTours.RouteTab` and the two next to
+ * it), so these names are part of the address and do not change.
+ */
+export const TOUR_PAGE_TABS = ['overview', 'route', 'rules', 'reports'] as const;
+
+export type TourPageTab = (typeof TOUR_PAGE_TABS)[number];
+
+/**
+ * `/tours/{slug}`: the open tab (`?tab=`), as the editor of the back office keeps its own. `catch` as `/events` does: an
+ * address edited by hand, or a tab this tour has not got, opens the first one rather than an error.
+ */
+export const tourPageSearchSchema = z.object({
+  tab: z.enum(TOUR_PAGE_TABS).optional().catch(undefined),
+});
+
+export type TourPageSearch = z.output<typeof tourPageSearchSchema>;
+
 // ---- the pilot's report (T11b) ----------------------------------------------------------------------
 
 /**

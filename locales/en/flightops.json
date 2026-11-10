@@ -990,7 +990,6 @@
     "period": "From {{from}} to {{to}}",
     "partOf": "Part of {{title}}",
     "subtours": "Subtours",
-    "legs": "Legs",
     "legNumber": "#",
     "legsAndDistance_one": "{{count}} leg · {{distance}} NM",
     "legsAndDistance_other": "{{count}} legs · {{distance}} NM",
@@ -1000,7 +999,6 @@
     "onLeg": "on leg {{number}}",
     "simbrief": "SimBrief",
     "notReleased": "Not released yet",
-    "total": "Total",
     "facts": {
       "title": "What the tour asks",
       "aircraft": "Aircraft",
@@ -1025,7 +1023,7 @@
       "Pending": "Waiting",
       "Locked": "Locked"
     },
-    "signInToReport": "Sign in to fly the tour and send reports",
+    "signInToReport": "Sign in to fly this tour",
     "pilot": "Your tour",
     "finished": "You have completed this tour.",
     "goalProgress": "Goal: {{done}} of {{target}}",
@@ -1068,6 +1066,35 @@
     "fields": {
       "text": "What should be looked at again",
       "body": "What is wrong"
+    },
+    "signInLead": "Your progress, the next leg and your reports are here once you sign in.",
+    "notStarted": "Not started yet",
+    "nextLeg": "Next leg",
+    "correctReport": "Correct the report",
+    "noBriefing": "This tour has no briefing yet.",
+    "route": "Route",
+    "betweenHubs": "Between hubs",
+    "rotation": "Rotation {{number}} from {{hub}}",
+    "amends": "Amends {{code}}",
+    "tabs": {
+      "overview": "Overview",
+      "route": "Route",
+      "rules": "Rules"
+    },
+    "figures": {
+      "legs": "Legs",
+      "distance": "Distance",
+      "time": "Estimated time",
+      "timeWith": "Reference aircraft: {{type}}",
+      "toComplete_one": "{{count}} to complete",
+      "toComplete_other": "{{count}} to complete",
+      "moreAircraft_one": "and {{count}} more",
+      "moreAircraft_other": "and {{count}} more",
+      "award": "Award"
+    },
+    "ruleGroups": {
+      "division": "Rules of every tour",
+      "tour": "Rules of this tour"
     }
   },
   "report": {

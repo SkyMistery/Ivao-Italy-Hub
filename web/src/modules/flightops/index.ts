@@ -10,6 +10,7 @@ import {
   reportSearchSchema,
   reviewQueueSearchSchema,
   tourEditorSearchSchema,
+  tourPageSearchSchema,
   tourRuleSearchSchema,
   yearSearchSchema,
 } from './schemas';
@@ -68,9 +69,11 @@ export const flightOpsManifest: ModuleManifest = {
       path: '/tours',
       component: PublicToursPage,
     },
+    // The open tab in the address (design 11 §4), so that a link — the server's too — lands on it.
     {
       area: 'public',
       path: '/tours/$slug',
+      validateSearch: tourPageSearchSchema,
       component: PublicTourPage,
     },
     // The pilot's report (T11b): a page of its own, and only signed in — the login brings the pilot back here.
