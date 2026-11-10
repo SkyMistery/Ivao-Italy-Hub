@@ -50,6 +50,7 @@ const body: Body = {
           frozen: null,
           column: null,
           span: null,
+          align: null,
           source: null,
         },
       ],
@@ -178,6 +179,11 @@ describe('the fingerprints', () => {
     ['the blocks offered', { blocks: [block('heading'), block('text')] }],
     ['the template', { template: new Map() }],
     ["a block's version", { blocks: [block('heading'), { ...block('text'), version: 2 }, block('image')] }],
+    // What the import keeps on a block (PR 3.9) is a rule as much as its schema.
+    [
+      'whether a block may be aligned',
+      { blocks: [block('heading'), { ...block('text'), alignable: false }, block('image')] },
+    ],
   ])('the rules change with %s', async (_what, change) => {
     expect((await instructionsHeader(input(change))).instructions.rules).not.toBe(
       (await instructionsHeader(input())).instructions.rules,
@@ -220,6 +226,8 @@ describe('what the instructions offer', () => {
     for (const member of ['"renderMode"', '"span"', '"frozen"']) {
       expect(text).toContain(member);
     }
+    // And where it stands in its column, which the file may choose (PR 3.9).
+    expect(text).toContain('"align":{');
     expect(text).toContain('"background"');
     expect(text).toContain('"source"');
     expect(text).not.toContain('9007199254740991');
@@ -234,6 +242,16 @@ describe('what the instructions offer', () => {
     }
     expect(markdown).toContain(JSON.stringify(block('image').example, null, 2));
     expect(markdown).not.toContain('`hero`');
+  });
+
+  test('a block that may be aligned says so, and the fixed part says what to write (PR 3.9)', async () => {
+    const { markdown } = await composeInstructions(input({ blocks: [block('heading'), block('table')] }));
+    const entryOf = (type: string) =>
+      markdown.slice(markdown.indexOf(`\`${type}\`, version`)).split('\n### ')[0]!;
+
+    expect(markdown).toContain('A block whose entry below says it **may be aligned**');
+    expect(entryOf('heading')).toContain('It may be aligned: `align`');
+    expect(entryOf('table')).not.toContain('It may be aligned');
   });
 
   test('an address is marked in the schema of a block, and the fixed part says what the mark means', async () => {

@@ -392,7 +392,6 @@ describe('interactive and structure', () => {
     draw(
       <ButtonGroupBlock
         props={{
-          align: 'center',
           buttons: [
             { label: en('Start'), href: '/start', variant: 'primary' },
             { label: en('Outside'), href: 'https://example.org', variant: 'ghost' },

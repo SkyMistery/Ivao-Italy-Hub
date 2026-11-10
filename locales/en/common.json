@@ -628,6 +628,14 @@
       "renderModeHint": "\"As it was when published\" keeps what the block showed on the day the page was published, until somebody publishes the page again.",
       "column": "Column",
       "columnNumber": "Column {{number}}",
+      "align": {
+        "label": "Alignment",
+        "options": {
+          "left": "Left",
+          "center": "Centred",
+          "right": "Right"
+        }
+      },
       "section": "Section",
       "reorder": "Drag to reorder",
       "previewWidth": "Preview width",
@@ -1322,18 +1330,12 @@
       "label": "Buttons",
       "about": "One or more buttons in a row, each leading to an address of the site or outside it.",
       "fields": {
-        "align": "Alignment",
         "buttons": "Buttons",
         "buttons.label": "Label",
         "buttons.href": "Address",
         "buttons.variant": "Weight"
       },
       "options": {
-        "align": {
-          "left": "Left",
-          "center": "Centred",
-          "right": "Right"
-        },
         "buttons.variant": {
           "primary": "Main",
           "secondary": "Second",

@@ -2,10 +2,13 @@ import type { TFunction } from 'i18next';
 import { z } from 'zod';
 
 import {
+  alignOf,
   allBlocks,
   allSections,
   bodySchema,
+  carriesOldAlign,
   newId,
+  placedAt,
   type BlockEnvelope,
   type Body,
   type SectionEnvelope,
@@ -521,6 +524,10 @@ function settleBody(
         ? (before?.block.props ?? block.props)
         : checkProps(block, registration, path);
 
+    // Where the block stands in its column is the file's to choose, like its column (PR 3.9) — on a block it means
+    // something for, and nowhere else.
+    const alignable = registration?.alignable === true;
+
     let settled: BlockEnvelope;
     if (before !== undefined) {
       settled = {
@@ -533,6 +540,7 @@ function settleBody(
         frozen: before.block.frozen,
         span: before.block.span,
         source: block.source ?? before.block.source,
+        align: alignable ? block.align : before.block.align,
       };
     } else {
       // Not offered and not known returned above; this is for the compiler, which cannot follow a set.
@@ -550,6 +558,20 @@ function settleBody(
         column: block.column,
         source: registration.carriesSource === true ? block.source : null,
       });
+    }
+
+    // Props read by today's schema have lost the `align` an older body kept there (a group of buttons, before PR 3.9):
+    // it comes onto the envelope, unless the file chose one there. Whether the file kept it in the old place or dropped
+    // it, as that block's JSON Schema no longer has it, the alignment the page had is not lost on the way.
+    if (alignable && !unchanged) {
+      const chosen =
+        block.align ??
+        (carriesOldAlign(block)
+          ? alignOf(block)
+          : before !== undefined && carriesOldAlign(before.block)
+            ? alignOf(before.block)
+            : 'left');
+      settled = { ...settled, ...placedAt(settled, chosen, settled.props) };
     }
 
     if (!unchanged) {

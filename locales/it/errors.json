@@ -65,6 +65,7 @@
       "sourceNotInteractive": "Solo un blocco interattivo porta del codice.",
       "sourceNotPermitted": "Per aggiungere o cambiare il codice di un blocco interattivo serve il permesso di inserire codice.",
       "spanUnknown": "Questo blocco ha una larghezza che una dashboard non ha.",
+      "alignUnknown": "Questo blocco chiede un allineamento che non esiste: a sinistra, al centro o a destra.",
       "blockAudience": "Questo blocco è per meno lettori della pagina: toglilo, oppure rendi la pagina visibile a meno persone."
     },
     "content": {

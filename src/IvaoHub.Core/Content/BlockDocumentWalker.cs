@@ -340,6 +340,7 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
             CheckRenderMode(block, errors);
             CheckColumn(section, block, errors);
             CheckSpan(block, errors);
+            CheckAlign(block, errors);
             sourceBytes += CheckSource(block, errors);
         }
 
@@ -661,6 +662,38 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
         if (!value.TryGetValue<int>(out var span) || !Spans.Contains(span))
         {
             errors.Add(new BlockDocumentError("errors.body.spanUnknown", $"{block.Path}.span"));
+        }
+    }
+
+    /// <summary>
+    /// Where a block stands in its column: on the left, in the middle or on the right (design of the
+    /// editor's phase 3, §5.6). On the envelope beside <c>column</c> and <c>span</c>, because it is
+    /// where the block is put and not what it says; absent is the left. Which blocks it means
+    /// something for is the browser's business (a block's registration declares it), as is how it is
+    /// drawn: the server only keeps the value to one of the three.
+    /// <para>The other half is <c>ALIGNS</c> in <c>web/src/blocks/envelope.ts</c>, and the two agree
+    /// by hand like the layouts and the grounds do: the integration test that posts an alignment the
+    /// server does not know is what keeps them agreeing.</para>
+    /// </summary>
+    public static readonly IReadOnlyList<string> Aligns = ["left", "center", "right"];
+
+    /// <summary>
+    /// An alignment that is not one of <see cref="Aligns"/>. Anything else than one of the three
+    /// strings is refused, a number or an object as much as a fourth word: the browser reads the
+    /// envelope with the same closed set, and a body it cannot read is drawn as an empty page.
+    /// </summary>
+    private static void CheckAlign(BlockDocumentNode block, List<BlockDocumentError> errors)
+    {
+        if (block.Node["align"] is not JsonNode node)
+        {
+            return;
+        }
+
+        if (node is not JsonValue value
+            || !value.TryGetValue<string>(out var align)
+            || !Aligns.Contains(align, StringComparer.Ordinal))
+        {
+            errors.Add(new BlockDocumentError("errors.body.alignUnknown", $"{block.Path}.align"));
         }
     }
 

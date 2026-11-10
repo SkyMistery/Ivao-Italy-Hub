@@ -32,6 +32,7 @@ const text = (id: string, en = 'Hello') => ({
   frozen: null,
   column: null,
   span: null,
+  align: null,
   source: null,
 });
 
@@ -56,6 +57,7 @@ const draft: Body = {
           frozen: { items: [1, 2] },
           column: null,
           span: 6,
+          align: null,
           source: null,
         },
       ],
@@ -331,6 +333,102 @@ describe('a block of the draft keeps what was chosen in the editor (review of #4
     expect((await refused(file)).problems.map((problem) => problem.key)).toContain(
       'content.import.blockChangedType',
     );
+  });
+});
+
+describe('where a block stands in its column (PR 3.9)', () => {
+  const go = { label: { en: 'Go', xx: 'Vai' }, href: '/about', variant: 'primary' };
+
+  /** A group of buttons of the draft, written before PR 3.9 with its alignment in its props, or after. */
+  const buttons = (props: Record<string, unknown>, align: 'center' | 'right' | null = null) => ({
+    id: 'blk-go',
+    type: 'buttonGroup',
+    version: 1,
+    props: { buttons: [go], ...props },
+    renderMode: null,
+    frozen: null,
+    column: null,
+    span: null,
+    align,
+    source: null,
+  });
+
+  const draftWith = (block: ReturnType<typeof buttons>) =>
+    context({
+      body: withSections([section({ id: 'sec-a', key: null, blocks: [text('blk-a'), block] })]) as Body,
+    });
+
+  const answered = async (ctx: ImportContext, block: Record<string, unknown>) => {
+    const file = await fileFor(ctx, {
+      body: withSections([section({ id: 'sec-a', blocks: [text('blk-a'), block] })]),
+    });
+    return allBlocks((await ready(file, ctx)).body)[1]!;
+  };
+
+  test("is the file's to choose on a block that may be aligned, and nowhere else", async () => {
+    const answer = await ready(
+      await fileFor(context(), {
+        body: withSections([
+          section({
+            id: 'sec-a',
+            blocks: [
+              { ...text('blk-a'), align: 'center' },
+              {
+                id: 'blk-data',
+                type: 'newsList',
+                version: 1,
+                props: { category: 'updates', limit: 3 },
+                align: 'right',
+              },
+              {
+                type: 'heading',
+                version: 1,
+                align: 'right',
+                props: { level: 2, text: { en: 'New', xx: 'Nuovo' } },
+              },
+              { type: 'table', version: 1, align: 'center', props: { columns: [], rows: [] } },
+            ],
+          }),
+        ]),
+      }),
+    );
+
+    expect(allBlocks(answer.body).map((block) => [block.type, block.align])).toEqual([
+      ['text', 'center'],
+      // A data block, a table: an `align` on them would mean nothing, and the import does not keep it.
+      ['newsList', null],
+      ['heading', 'right'],
+      ['table', null],
+    ]);
+  });
+
+  test('an old group of buttons nobody touched is left as it was written', async () => {
+    const ctx = draftWith(buttons({ align: 'center' }));
+
+    expect(await answered(ctx, buttons({ align: 'center' }))).toMatchObject({
+      align: null,
+      props: { align: 'center', buttons: [go] },
+    });
+  });
+
+  test('an old group of buttons the file changed keeps its alignment, now on the envelope', async () => {
+    const ctx = draftWith(buttons({ align: 'center' }));
+    const away = { ...go, label: { en: 'Away', xx: 'Via' } };
+
+    // The file dropped it, as today's JSON Schema of the block no longer has it.
+    const dropped = await answered(ctx, { ...buttons({ buttons: [away] }), props: { buttons: [away] } });
+    expect(dropped.align).toBe('center');
+    expect(dropped.props).toEqual({ buttons: [away] });
+
+    // The file kept it in the old place.
+    const kept = await answered(ctx, buttons({ align: 'right', buttons: [away] }));
+    expect(kept.align).toBe('right');
+    expect(kept.props).not.toHaveProperty('align');
+
+    // The file chose another one on the envelope: the file's, the old one gone.
+    const chosen = await answered(ctx, buttons({ align: 'center', buttons: [away] }, 'right'));
+    expect(chosen.align).toBe('right');
+    expect(chosen.props).not.toHaveProperty('align');
   });
 });
 
@@ -618,6 +716,7 @@ describe('the review of #453', () => {
     frozen: null,
     column: null,
     span: null,
+    align: null,
     source,
   });
 

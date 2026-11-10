@@ -52,6 +52,7 @@ const body: Body = {
           column: 0,
           source: null,
           span: null,
+          align: null,
           props: {
             title: { en: 'Join us', it: 'Unisciti' },
             text: { en: 'Come and fly', it: 'Vieni a volare' },

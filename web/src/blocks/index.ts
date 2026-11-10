@@ -12,6 +12,7 @@ export {
 } from './embedding';
 export { blockDataKey, blockDataQuery, categoryLabel, encodeProps, type ContentListData } from './data';
 export {
+  ALIGNS,
   BACKGROUNDS,
   LAYOUTS,
   PADDINGS,
@@ -19,16 +20,20 @@ export {
   SCHEMA_VERSION,
   SPANS,
   WIDTHS,
+  alignOf,
   allBlocks,
   allSections,
   blockEnvelopeSchema,
   bodySchema,
+  carriesOldAlign,
   columnsOf,
   emptyBody,
   newId,
+  placedAt,
   readBody,
   sectionSchema,
   spanOf,
+  type Align,
   type Background,
   type BlockEnvelope,
   type Body,

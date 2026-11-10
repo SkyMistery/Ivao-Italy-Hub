@@ -1,14 +1,20 @@
-import { Label, Select } from '@ivao/atmosphere-react';
+import { Button, Label, Select } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
+import { TextAlignCenter, TextAlignEnd, TextAlignStart } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
 import {
+  ALIGNS,
   EMBED_GUIDELINES_PATH,
   SPANS,
+  alignOf,
+  carriesOldAlign,
   columnsOf,
+  placedAt,
   spanOf,
+  type Align,
   type Background,
   type BlockEnvelope,
   type Layout,
@@ -315,6 +321,44 @@ function SourceField({
   );
 }
 
+const ALIGN_ICON = { left: TextAlignStart, center: TextAlignCenter, right: TextAlignEnd } as const;
+
+/**
+ * Where the block stands in its column: three icons, applied at once, like the grounds of a section (`SectionFrame`),
+ * because an alignment is chosen while looking at the page. Not in the generated form: it is the envelope, like the
+ * column beside it (design of the editor's phase 3, §5.6).
+ */
+function AlignField({ align, onAlign }: { align: Align; onAlign: (align: Align) => void }) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-sm font-medium">{t('content.editor.align.label')}</span>
+      <div role="group" aria-label={t('content.editor.align.label')} className="flex items-center gap-1">
+        {ALIGNS.map((value) => {
+          const Icon = ALIGN_ICON[value];
+          const label = t(`content.editor.align.options.${value}`);
+
+          return (
+            <Button
+              key={value}
+              type="button"
+              size="sm"
+              variant={value === align ? 'secondary' : 'ghost'}
+              aria-label={label}
+              aria-pressed={value === align}
+              title={label}
+              onClick={() => onAlign(value)}
+            >
+              <Icon aria-hidden className="size-4" />
+            </Button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function BlockProperties({
   block,
   section,
@@ -418,6 +462,13 @@ export function BlockProperties({
 
   const columns = columnsOf(section.layout);
   const labels = registration.propertyLabels ?? `blocks.${block.type}`;
+  const alignable = registration.alignable === true;
+  // A block written before PR 3.9 with the alignment in its props (a group of buttons): the panel shows it as the
+  // envelope's, and its first write — any write — moves it there, so that opening a block never changes a page by
+  // itself (design §2, principle 4).
+  const oldAlign = alignable && carriesOldAlign(block);
+  const applyProps = (props: Record<string, unknown>) =>
+    oldAlign ? onEnvelope(placedAt(block, alignOf(block), props)) : onApplyProps(props);
   // Beside the block's name, so a module's block has its line in its own language files too. Every
   // block has one since PR 3.0a (`app/blockAbout.test.ts`); the guard stays for a build whose
   // language files are late.
@@ -455,6 +506,10 @@ export function BlockProperties({
             items={[...sections]}
           />
         </div>
+      ) : null}
+
+      {alignable ? (
+        <AlignField align={alignOf(block)} onAlign={(align) => onEnvelope(placedAt(block, align))} />
       ) : null}
 
       {registration.kind === 'Data' && registration.alwaysLive !== true && captures ? (
@@ -516,7 +571,7 @@ export function BlockProperties({
         // language would otherwise travel as `{ en: "", it: "" }`, and publication — which reads
         // the body without knowing what a block means — would read that as a translation hole and
         // refuse the page (`writtenValues`).
-        onChange={(values) => onApplyProps(writtenValues(registration.schema, values))}
+        onChange={(values) => applyProps(writtenValues(registration.schema, values))}
       />
     </div>
   );

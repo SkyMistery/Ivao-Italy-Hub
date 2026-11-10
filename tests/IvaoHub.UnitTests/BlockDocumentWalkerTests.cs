@@ -518,6 +518,57 @@ public sealed class BlockDocumentWalkerTests
         }
     }
 
+    [Theory]
+    [InlineData("\"left\"", true)]
+    [InlineData("\"center\"", true)]
+    [InlineData("\"right\"", true)]
+    [InlineData("null", true)]
+    [InlineData("\"justify\"", false)]
+    [InlineData("\"Center\"", false)]
+    [InlineData("\"\"", false)]
+    [InlineData("1", false)]
+    [InlineData("{ \"value\": \"center\" }", false)]
+    public void ABlockStandsOnTheLeftInTheMiddleOrOnTheRightOfItsColumn(string align, bool valid)
+    {
+        // Design of the editor's phase 3, §5.6: three alignments on the envelope, absent being the
+        // left. A null is the absence the browser writes; anything else that is not one of the three
+        // words is refused, because the browser reads the envelope with the same closed set.
+        var body = JsonNode.Parse($$"""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s", "layout": "stacked", "blocks": [
+            { "id": "b", "type": "text", "align": {{align}} } ] } ]
+        }
+        """);
+
+        var result = Walker.ValidateEnvelope(body, ["text"]);
+
+        Assert.Equal(valid, result.IsValid);
+        if (!valid)
+        {
+            Assert.Equal(
+                [new BlockDocumentError("errors.body.alignUnknown", "sections[0].blocks[0].align")],
+                result.Errors);
+        }
+    }
+
+    [Fact]
+    public void AnAlignmentIsNotTextOfThePage()
+    {
+        // On the envelope, so the search never reads it: a member searching for "center" must not
+        // find every page with a centred heading.
+        var body = JsonNode.Parse("""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s", "blocks": [
+            { "id": "b", "type": "heading", "align": "center",
+              "props": { "text": { "en": "Welcome", "it": "Benvenuti" } } } ] } ]
+        }
+        """);
+
+        Assert.DoesNotContain("center", Walker.ExtractText(body, "en"), StringComparison.Ordinal);
+    }
+
     private static JsonNode? Column(string layout, int column) => JsonNode.Parse($$"""
     {
       "schemaVersion": 1,

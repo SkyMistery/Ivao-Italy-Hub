@@ -111,6 +111,7 @@ export function PublicListScreen({
           column: null,
           source: null,
           span: null,
+          align: null,
         }}
         staff={false}
       />

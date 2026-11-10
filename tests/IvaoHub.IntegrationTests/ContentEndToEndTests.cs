@@ -514,6 +514,56 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task EnvelopeValidationRejectsAnAlignmentTheServerDoesNotKnow()
+    {
+        // The pair that has to agree by hand since PR 3.9 (design of the editor's phase 3, §5.6):
+        // `ALIGNS` in `web/src/blocks/envelope.ts` and `BlockDocumentWalker.Aligns`. Posting one the
+        // server has not got is what keeps the two halves honest, as for the grounds above.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(EventsCoordinatorVid, position: "IT-EC", cancellationToken: token);
+
+        using var client = _factory.CreateApiClient();
+        await _factory.SignInAsync(client, EventsCoordinatorVid, token);
+
+        JsonNode? Aligned(string align) => JsonNode.Parse($$"""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s1", "blocks": [
+            { "id": "b1", "type": "heading", "align": {{align}},
+              "props": { "level": 2, "text": { "en": "A heading", "it": "Un titolo" } } } ] } ]
+        }
+        """);
+
+        using var refused = await SendAsync(
+            client,
+            HttpMethod.Post,
+            ContentEndpoints.Pattern,
+            Payload(Department.ED, $"al-{Guid.NewGuid():N}"[..20], body: Aligned("\"justify\"")),
+            token);
+
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+
+        var errors = (await refused.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("errors");
+        Assert.Equal(
+            "errors.body.alignUnknown",
+            errors.GetProperty("body.sections[0].blocks[0].align")[0].GetString());
+
+        // And the three the browser offers, one by one, with the absence it writes for the left: the
+        // day the client grows a fourth and the server does not, it is the new one that fails here.
+        foreach (var align in new[] { "\"left\"", "\"center\"", "\"right\"", "null" })
+        {
+            using var saved = await SendAsync(
+                client,
+                HttpMethod.Post,
+                ContentEndpoints.Pattern,
+                Payload(Department.ED, $"al-{Guid.NewGuid():N}"[..20], body: Aligned(align)),
+                token);
+
+            Assert.True(saved.StatusCode == HttpStatusCode.Created, $"{align} was refused: {saved.StatusCode}");
+        }
+    }
+
+    [Fact]
     public async Task PublishRejectsMissingLocales()
     {
         var token = TestContext.Current.CancellationToken;
