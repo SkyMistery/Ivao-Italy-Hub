@@ -68,6 +68,8 @@ const tour = {
   totalEstimatedMinutes: null,
   parent: null,
   subtours: [],
+  department: 'FOD',
+  award: null,
 };
 
 function leg(
@@ -171,7 +173,8 @@ test('the map of a tour draws, with no base map to draw on and under the real po
   const complaints = complaintsOf(page);
   await stubTheTours(page);
 
-  await page.goto(`/tours/${SLUG}`);
+  // The map is in the tab of the route (design 11 §4), which the address opens.
+  await page.goto(`/tours/${SLUG}?tab=route`);
   await expect(page.getByRole('heading', { level: 1, name: 'Across the Alps' })).toBeVisible();
 
   // The canvas MapLibre draws into. It exists only if the library started at all — which means the

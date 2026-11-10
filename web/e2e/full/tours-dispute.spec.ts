@@ -154,7 +154,7 @@ test('a pilot disputes a rejection, the department answers in the thread, and th
     await reject(context.request, reportId, made.error);
 
     // ---------------------------------------------------------------- the pilot disputes it from the tour's page
-    await pilotPage.goto(`/tours/${slug}`);
+    await pilotPage.goto(`/tours/${slug}?tab=reports`);
     const disputeButton = pilotPage.getByRole('button', { name: words.public.disputeAction, exact: true });
     await expect(disputeButton).toBeVisible();
     await disputeButton.click();
@@ -230,7 +230,7 @@ test('a pilot disputes a rejection, the department answers in the thread, and th
       assistant.getByText(words.review.options.status.Queued, { exact: true }).first(),
     ).toBeVisible();
 
-    await pilotPage.goto(`/tours/${slug}`);
+    await pilotPage.goto(`/tours/${slug}?tab=reports`);
     await expect(pilotPage.getByText(words.public.dispute.Upheld)).toBeVisible();
     await expect(pilotPage.getByText(words.public.reportStatus.Queued, { exact: true })).toBeVisible();
   }
