@@ -353,6 +353,15 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 - **File del nucleo**: `blocks/envelope.ts`, `blocks/ContentRenderer.tsx`, `shared/modules.ts`, `features/content/BlockProperties.tsx`,
   `Core/Content/BlockDocumentWalker.cs`, i file di lingua (anche `errors.body.alignUnknown`). **Nota sua**: no, la decide questo
   documento.
+- **Com'è andata** (PR 3.9, ramo `feat/envelope-alignment`, nota `2026-11-10-l-allineamento-nella-busta`): sei scelte della sessione,
+  nessuna di Carmine. (1) Il pannello **non** sposta l'`align` dei pulsanti aprendo il blocco, che sarebbe una modifica a pagina ferma
+  (principio 4, §5.3): lo mostra come quello della busta, e lo sposta con la sua prima scrittura. (2) L'involucro allinea il testo, spinge
+  di lato con i margini un pezzo più stretto della colonna, giustifica una riga `flex` che lo dice con `data-align-row` (i pulsanti, e la
+  riga dell'autore di una testimonianza) e porta il pallino di un elenco accanto alle parole; un blocco allineabile non ha un `align` suo,
+  e un test lo controlla. (3) Il server rifiuta ogni valore che non sia una delle tre parole, anche un numero. (4) Anche l'import da Claude
+  e le istruzioni cambiano, che il §5.6 non nominava: `align` è del file come `column`, solo sui blocchi allineabili, e l'allineamento
+  vecchio dei pulsanti non si perde; ⚠️ l'impronta `rules` cambia. (5) Una sezione bloccata si può ancora allineare. (6) Le parole
+  `align` di `buttonGroup` escono dai file di lingua.
 
 ### 5.7 Le etichette dei blocchi di dati (XVI)
 
