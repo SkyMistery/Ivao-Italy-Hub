@@ -60,3 +60,49 @@ test('a live form applies after a pause, once, and only what the schema accepts'
   await waitFor(() => expect(onChange).toHaveBeenCalledTimes(2));
   expect(onChange).toHaveBeenLastCalledWith({ title: 'Back', note: 'three' });
 });
+
+test('a click inside the pause applies at once, and the mouse going down does not', async () => {
+  // A button outside the form, as the editor's toolbar is (decisions/2026-11-08-l-ultima-battuta.md).
+  const onChange = vi.fn();
+  const pressed = vi.fn();
+  const user = userEvent.setup();
+  renderWithProviders(
+    <>
+      <SchemaForm
+        schema={schema}
+        defaults={{ title: 'Written', note: '' }}
+        locales={['en']}
+        labels="test"
+        onChange={onChange}
+      />
+      <button
+        type="button"
+        onClick={() => {
+          pressed(onChange.mock.calls.length);
+        }}
+      >
+        Elsewhere
+      </button>
+    </>,
+    { i18n: createTestI18n(labels) },
+  );
+
+  await user.type(screen.getByLabelText('Note'), 'x');
+  const button = screen.getByRole('button', { name: 'Elsewhere' });
+
+  // The focus leaves the field with the mouse on its way down: a screen that redrew now would move the button from
+  // under it, and the click would be lost.
+  await user.pointer({ keys: '[MouseLeft>]', target: button });
+  expect(screen.getByLabelText('Note')).not.toHaveFocus();
+  expect(onChange).not.toHaveBeenCalled();
+
+  // The click: applied before its own handler runs.
+  await user.pointer({ keys: '[/MouseLeft]', target: button });
+  expect(onChange).toHaveBeenCalledTimes(1);
+  expect(onChange).toHaveBeenLastCalledWith({ title: 'Written', note: 'x' });
+  expect(pressed).toHaveBeenCalledWith(1);
+
+  // And once: the pause that was running applies nothing more.
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  expect(onChange).toHaveBeenCalledTimes(1);
+});

@@ -171,6 +171,45 @@ test('the editor of a page downloads the instructions, with the draft and the he
   expect(header).toMatch(/"body": "sha256:[0-9a-f]{64}"/);
 });
 
+test('a press right after the last keystroke stores the draft with that keystroke first', async ({
+  page,
+}) => {
+  // The draft the press stores, as the server is sent it (decisions/2026-11-08-l-ultima-battuta.md). Before, the press
+  // came inside the pause of the live form and stored nothing: 40 times out of 40, the press 35–56 ms after the keystroke.
+  const stored: string[] = [];
+  await page.route('**/api/content/7', (route) => {
+    const request = route.request();
+    if (request.method() === 'PUT') {
+      const sent = JSON.parse(request.postData() ?? '{}') as { slug: string };
+      stored.push(sent.slug);
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...aPage, slug: sent.slug, rowVersion: '2026-11-04T10:00:01' }),
+      });
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(aPage) });
+  });
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/staff/content/7');
+
+  const address = page
+    .locator('#content-metadata')
+    .getByRole('textbox', { name: englishCommon.content.fields.slug });
+  await expect(address).toHaveValue('welcome');
+
+  // No wait for the line that says the draft has changes: the press comes as fast as the keyboard leaves it.
+  await address.fill('welcome-team');
+  const [file] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: download.label }).click(),
+  ]);
+
+  expect(file.suggestedFilename()).toBe('welcome-team.claude.md');
+  expect(stored).toEqual(['welcome-team']);
+});
+
 test('a template has no download: there is no page to write', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   // Row 5 of the fixture is a template.
