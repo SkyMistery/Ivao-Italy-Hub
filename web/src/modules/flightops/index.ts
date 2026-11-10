@@ -10,6 +10,7 @@ import {
   reportSearchSchema,
   reviewQueueSearchSchema,
   tourEditorSearchSchema,
+  tourListSearchSchema,
   tourPageSearchSchema,
   tourRuleSearchSchema,
   yearSearchSchema,
@@ -64,9 +65,11 @@ export const flightOpsManifest: ModuleManifest = {
   routes: [
     // The public side (T10): the cards of every tour a visitor may see, and one tour by its address.
     // Under `_public`, so they wear the header, the footer and the language switcher of the site.
+    // The tab, the search by name and the kind in the address (design 11 §3), as the generated list keeps them.
     {
       area: 'public',
       path: '/tours',
+      validateSearch: tourListSearchSchema,
       component: PublicToursPage,
     },
     // The open tab in the address (design 11 §4), so that a link — the server's too — lands on it.

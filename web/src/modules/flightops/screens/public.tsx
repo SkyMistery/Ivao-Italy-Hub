@@ -21,6 +21,8 @@ import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { ContentRenderer, readBody } from '../../../blocks';
 import { loginHref } from '../../../shared/api/client';
 import { SchemaForm, describeProblem } from '../../../shared/forms';
+import { ListFilter } from '../../../shared/list';
+import { SearchBox } from '../../../shared/list/SearchBox';
 import { resolveLocalized } from '../../../shared/i18n/localized';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
@@ -39,23 +41,29 @@ import {
   type MyTourDto,
   type PirepDto,
   type PublicLegDto,
+  type PublicTourCardDto,
   type PublicTourDto,
   type StartedTourDto,
 } from '../api';
 import {
+  TOUR_LIST_TABS,
   disputeSchema,
   legIssueReportSchema,
+  tourListSearchSchema,
   tourPageSearchSchema,
   type DisputeValues,
   type LegIssueReportValues,
+  type TourListSearch,
+  type TourListTab,
   type TourPageTab,
 } from '../schemas';
 
 import { ProgressLine } from './ProgressLine';
 import { isDecided, mapLeg, reportActions } from './reporting';
 import { REPORT_STATUS_COLOURS } from './reviewing';
-import { TourCards } from './TourCards';
+import { TourCards, type TourCard } from './TourCards';
 import { TourHead } from './TourFace';
+import { cardKinds, myCards, narrowCards, tabCards } from './tourListing';
 import { formatMinutes, legGroups, nextLeg, openTab, pageTabs, ruleGroups, simbriefUrl } from './tourPage';
 
 /**
@@ -75,13 +83,53 @@ import { formatMinutes, legGroups, nextLeg, openTab, pageTabs, ruleGroups, simbr
  * rule (`/tours/{slug}/ask`), and report a problem on a leg.
  */
 
+/**
+ * `/tours` (design 11 §3, phase 6): «Your tours» on top for a signed in pilot — the tours they started and have not
+ * finished —, then three tabs: the tours to fly now, those to come, and the archive of the closed ones, which a pilot looks
+ * through for an award or for their reports. A search by name and a filter by kind narrow the tab; the tab, the search
+ * and the kind are in the address, as the generated list keeps them, so that a link lands on a view.
+ */
 export function PublicToursPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const read = useLocalized();
-  const tours = useQuery(publicToursQuery).data;
+  const navigate = useNavigate();
+  const search = tourListSearchSchema.parse(useSearch({ strict: false }));
+  const tab: TourListTab = search.tab ?? 'open';
+  const { data: bootstrap } = useQuery(bootstrapQuery);
+  const signedIn = bootstrap?.user !== null && bootstrap?.user !== undefined;
+  const current = useQuery(publicToursQuery());
+  // The archive is the same read asked for the closed tours, and only when its tab is open.
+  const archive = useQuery({ ...publicToursQuery(['Closed']), enabled: tab === 'archive' });
+  const started = useQuery({ ...myToursQuery, enabled: signedIn }).data?.tours;
+
+  const onSearch = (patch: Partial<TourListSearch>) =>
+    void navigate({
+      search: ((previous: TourListSearch) => ({ ...previous, ...patch })) as never,
+      to: '.',
+    });
+
+  const toCards = (tours: readonly PublicTourCardDto[] | undefined): TourCard[] | undefined =>
+    tours?.map((tour) => ({
+      ...tour,
+      title: read(tour.title),
+      summary: read(tour.summary),
+      award: tour.award === null ? null : read(tour.award.name),
+    }));
+
+  const cards = toCards(current.data);
+  const archived = toCards(archive.data);
+  const mine = cards === undefined ? [] : myCards(cards, started);
+  const answer = tab === 'archive' ? archive : current;
+  const pool = tab === 'archive' ? archived : cards === undefined ? undefined : tabCards(tab, cards, mine);
+
+  const contents: Record<TourListTab, string> = {
+    open: t('flightops:public.listTabs.open'),
+    upcoming: t('flightops:public.listTabs.upcoming'),
+    archive: t('flightops:public.listTabs.archive'),
+  };
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10">
       <PageMetadata title={t('flightops:public.title')} description={t('flightops:public.description')} />
 
       <header className="flex flex-col gap-2">
@@ -89,20 +137,97 @@ export function PublicToursPage() {
         <Lead>{t('flightops:public.description')}</Lead>
       </header>
 
-      {tours === undefined ? (
-        <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
-      ) : tours.length === 0 ? (
-        <EmptyState title={t('flightops:public.none')} />
-      ) : (
-        <TourCards
-          tours={tours.map((tour) => ({
-            ...tour,
-            title: read(tour.title),
-            summary: read(tour.summary),
+      {mine.length === 0 ? null : (
+        <section className="flex flex-col gap-4">
+          <H2>{t('flightops:public.myTours')}</H2>
+          <TourCards tours={mine} />
+        </section>
+      )}
+
+      <Tabs
+        // ⚠️ `w-full` is not decoration: Atmosphere pins `Tabs` to `w-[400px]` (HANDOFF §13).
+        className="w-full"
+        value={tab}
+        // The kind of one tab is seldom a kind of the next: the search stays, the kind goes.
+        onValueChange={(next) =>
+          onSearch({ tab: next === 'open' ? undefined : (next as TourListTab), kind: undefined })
+        }
+        tabs={Object.fromEntries(
+          TOUR_LIST_TABS.map((key) => [
+            key,
+            {
+              trigger: contents[key],
+              content:
+                key !== tab ? null : (
+                  <div className="flex flex-col gap-6 pt-6">
+                    {answer.isError ? (
+                      <Notice
+                        tone="error"
+                        title={describeProblem(answer.error, t, i18n.language) ?? t('errors.unknown')}
+                      />
+                    ) : pool === undefined ? (
+                      <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
+                    ) : (
+                      <TourListTabBody tab={tab} cards={pool} search={search} onSearch={onSearch} />
+                    )}
+                  </div>
+                ),
+            },
+          ]),
+        )}
+      />
+    </div>
+  );
+}
+
+/** One tab of `/tours`: the search, the kind, and the cards they leave — or why there are none. */
+function TourListTabBody({
+  tab,
+  cards,
+  search,
+  onSearch,
+}: {
+  tab: TourListTab;
+  cards: readonly TourCard[];
+  search: TourListSearch;
+  onSearch: (patch: Partial<TourListSearch>) => void;
+}) {
+  const { t } = useTranslation();
+
+  if (cards.length === 0) {
+    return <EmptyState title={t(`flightops:public.listEmpty.${tab}`)} />;
+  }
+
+  const shown = narrowCards(cards, search);
+
+  return (
+    <>
+      <div className="flex flex-wrap items-end gap-4">
+        <SearchBox
+          initial={search.q ?? ''}
+          placeholder={t('flightops:public.searchByName')}
+          onCommit={(q) => onSearch({ q: q === '' ? undefined : q })}
+        />
+        <ListFilter
+          className="min-w-48"
+          id="tours-kind"
+          label={t('flightops:tours.fields.kind')}
+          none={t('flightops:public.anyKind')}
+          value={search.kind}
+          onChange={(kind) => onSearch({ kind })}
+          items={cardKinds(cards).map((kind) => ({
+            value: kind,
+            label: t(`flightops:tours.options.kind.${kind}`),
           }))}
         />
+      </div>
+
+      {shown.length === 0 ? (
+        <EmptyState title={t('flightops:public.noneHere')} />
+      ) : (
+        <TourCards tours={shown} />
       )}
-    </div>
+    </>
   );
 }
 
@@ -435,10 +560,13 @@ function RouteTab({ tour, mine }: { tour: PublicTourDto; mine: MyTourDto | undef
         <TourCards
           tours={tour.subtours.map((subtour) => ({
             ...subtour,
-            kind: tour.kind,
+            // A subtour's card says its own kind; an award is never on a subtour, its container gives it.
             coverMediaId: null,
             title: read(subtour.title),
             summary: read(subtour.summary),
+            minPilotRatingName: null,
+            award: null,
+            subtours: 0,
           }))}
         />
       )}

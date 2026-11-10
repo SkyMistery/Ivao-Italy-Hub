@@ -1095,7 +1095,23 @@
     "ruleGroups": {
       "division": "Regole di ogni tour",
       "tour": "Regole di questo tour"
-    }
+    },
+    "myTours": "I miei tour",
+    "listTabs": {
+      "open": "Aperti",
+      "upcoming": "In arrivo",
+      "archive": "Archivio"
+    },
+    "listEmpty": {
+      "open": "Nessun tour aperto in questo momento.",
+      "upcoming": "Nessun tour in arrivo, per ora.",
+      "archive": "Nessun tour si è ancora chiuso."
+    },
+    "searchByName": "Cerca per nome",
+    "anyKind": "Tutti i tipi",
+    "noneHere": "Nessun tour corrisponde alla ricerca.",
+    "subtourCount_one": "{{count}} sottotour",
+    "subtourCount_other": "{{count}} sottotour"
   },
   "report": {
     "title": "Invia il report",

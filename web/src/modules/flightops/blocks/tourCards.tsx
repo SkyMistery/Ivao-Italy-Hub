@@ -11,14 +11,15 @@ import { TourCards, type TourCard } from '../screens/TourCards';
  * ago, and miss the one that opened this morning.
  *
  * The cards themselves are the ones `/tours` draws, from the same component: a block that drew its own would be the
- * same screen written twice.
+ * same screen written twice. Since phase 6 they carry the line of numbers of design 11 §3, and the block follows.
  */
 
 /** What `TourCardsProvider` answers with. */
 export interface TourCardsData {
-  items?: (Omit<TourCard, 'title' | 'summary'> & {
+  items?: (Omit<TourCard, 'title' | 'summary' | 'award'> & {
     title: LocalizedString | null;
     summary: LocalizedString | null;
+    award: { id: number; name: LocalizedString | null } | null;
   })[];
 }
 
@@ -41,6 +42,7 @@ export function TourCardsBlock({ data }: BlockComponentProps) {
         ...item,
         title: item.title === null ? '' : read(item.title),
         summary: item.summary === null ? '' : read(item.summary),
+        award: item.award === null ? null : read(item.award.name),
       }))}
     />
   );
