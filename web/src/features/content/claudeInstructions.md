@@ -72,6 +72,8 @@ A page is a list of **sections**; a section holds **blocks** and may hold **rows
   write it in every language, it helps them find their way.
 - A **block** in a section with columns says which one with `column` (0 is the first). In a `stacked` section leave it
   out.
+- A block whose entry below says it **may be aligned** stands on the left of its column, or in the middle or on the
+  right of it with `align`: `center` or `right`; for the left leave it out. On any other block leave it out.
 - Every block has `type` and `version`, both exactly as the block's entry below gives them, and `props`, which must
   satisfy that block's JSON Schema.
 - A block **already in the draft** keeps `renderMode`, `span` and `frozen` exactly as they are: they are choices made in

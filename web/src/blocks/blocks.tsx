@@ -1173,7 +1173,8 @@ export function TestimonialBlock({ props }: BlockComponentProps) {
   return (
     <figure className="bg-muted flex flex-col gap-4 rounded-lg p-6">
       <BlockQuote className="text-lg">{read(text(props, 'quote'))}</BlockQuote>
-      <figcaption className="flex items-center gap-3">
+      {/* A row, like the buttons of a group: it follows the block's alignment through the wrapper (PR 3.9). */}
+      <figcaption data-align-row="" className="flex items-center gap-3">
         {portrait === null ? null : (
           <img
             src={mediaFileUrl(portrait)}
@@ -1193,12 +1194,6 @@ export function TestimonialBlock({ props }: BlockComponentProps) {
 
 // ---- buttonGroup -----------------------------------------------------------------------------
 
-const GROUP_ALIGN = {
-  left: 'justify-start',
-  center: 'justify-center',
-  right: 'justify-end',
-} as const;
-
 const BUTTON_VARIANT = {
   primary: 'primary',
   secondary: 'secondary',
@@ -1207,10 +1202,11 @@ const BUTTON_VARIANT = {
 
 export function ButtonGroupBlock({ props }: BlockComponentProps) {
   const read = useLocalized();
-  const align = GROUP_ALIGN[choice(props, 'align', ['left', 'center', 'right'] as const, 'left')];
 
+  // Where the row stands is the block's envelope, drawn by the renderer's wrapper (PR 3.9): this row only says it is
+  // one, since a row laid out by flex follows neither the alignment of the text nor a margin.
   return (
-    <div className={`flex flex-wrap gap-3 ${align}`}>
+    <div data-align-row="" className="flex flex-wrap gap-3">
       {entries(props, 'buttons').map((button, index) => (
         <Button
           key={index}

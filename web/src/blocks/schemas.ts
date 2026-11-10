@@ -337,8 +337,12 @@ export const testimonialSchema = z.object({
   mediaId: z.number().int().optional().meta({ media: true }),
 });
 
+/**
+ * A row of buttons. Its alignment left the props in PR 3.9 for the block's envelope, where every alignable block keeps
+ * it (design of the editor's phase 3, §5.6): a body written before still carries `align` here, which the renderer reads
+ * while the envelope has none and the panel moves at its first write (`alignOf`, `placedAt`).
+ */
 export const buttonGroupSchema = z.object({
-  align: z.enum(CELL_ALIGNMENTS).default('left'),
   buttons: z.array(z.object({ ...linkFields, variant: z.enum(BUTTON_VARIANTS).default('primary') })),
 });
 

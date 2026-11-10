@@ -284,7 +284,8 @@ export function startingMode(kind: string): 'live' | null {
 
 /**
  * A block as it is born, by the editor's hand or from a file (PR 3.0b): nothing captured, no width of its own, no code
- * unless it brings some. One place, so that the two never make different blocks.
+ * unless it brings some, on the left unless a file says otherwise (PR 3.9). One place, so that the two never make
+ * different blocks.
  */
 export function newBlock(fields: {
   id?: string;
@@ -294,6 +295,7 @@ export function newBlock(fields: {
   renderMode: 'live' | 'frozen' | null;
   column: number | null;
   source?: string | null;
+  align?: BlockEnvelope['align'] | undefined;
 }): BlockEnvelope {
   return {
     id: fields.id ?? newId('b'),
@@ -305,6 +307,7 @@ export function newBlock(fields: {
     column: fields.column,
     source: fields.source ?? null,
     span: null,
+    align: fields.align ?? null,
   };
 }
 

@@ -226,6 +226,8 @@ export function instructionRules(input: HeaderInput): unknown {
       type: block.type,
       version: block.version,
       schema: jsonSchemaOf(block.schema),
+      // A rule as much as the schema: the import keeps an `align` only on a block that may be aligned (PR 3.9).
+      ...(block.alignable === true ? { alignable: true } : {}),
     })),
     template: [...input.template.entries()]
       .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
@@ -323,6 +325,12 @@ function blocksSection(input: InstructionsInput): string {
             '',
             'A data block: the site fills it with what it knows when the page is read. Its properties are the question, ' +
               'not the content.',
+          ]
+        : []),
+      ...(block.alignable === true
+        ? [
+            '',
+            'It may be aligned: `align` on the block, beside `type`, puts it in the middle or on the right of its column.',
           ]
         : []),
       ...(block.carriesSource === true && input.embedGuidelines !== null

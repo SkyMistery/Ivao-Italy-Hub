@@ -22,8 +22,10 @@ import type { BlockRegistration } from '../shared/modules';
 import { blockDataQuery } from './data';
 import {
   SPANS,
+  alignOf,
   columnsOf,
   spanOf,
+  type Align,
   type BlockEnvelope,
   type Body,
   type SectionEnvelope,
@@ -808,12 +810,26 @@ function Column({
   );
 }
 
+/**
+ * Where an alignable block stands in its column (design of the editor's phase 3, §5.6), drawn here once for every block
+ * rather than by each of them: the alignment of its text; a piece narrower than the column — a picture a third wide — on
+ * that side, by its margins; and a row laid out by `flex`, which follows neither, marked `data-align-row` by the block
+ * and justified from here. The marker of a list item goes beside its words (`list-inside`): outside, it stayed on the
+ * left while the words went to the middle or to the right, a column of dots away from what they mark. Literal classes,
+ * because Tailwind reads the source. The left is no wrapper at all, so a page that chose nothing is drawn exactly as
+ * before.
+ */
+const ALIGN: Record<Exclude<Align, 'left'>, string> = {
+  center: 'text-center *:mx-auto [&_[data-align-row]]:justify-center [&_li]:list-inside',
+  right: 'text-right *:ml-auto [&_[data-align-row]]:justify-end [&_li]:list-inside',
+};
+
 export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boolean }) {
   const picking = usePicking();
   const { t } = useTranslation();
   const registration = registry.blocks.find((candidate) => candidate.type === block.type);
 
-  const drawn =
+  const content =
     registration === undefined ? (
       staff ? (
         <UnknownBlock type={block.type} />
@@ -822,6 +838,17 @@ export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boole
       <DataBlockView block={block} registration={registration} staff={staff} />
     ) : (
       <registration.component id={block.id} staff={staff} props={block.props} />
+    );
+
+  // Only a block that declares it: on any other, an `align` on the envelope means nothing and draws nothing.
+  const align = registration?.alignable === true ? alignOf(block) : 'left';
+  const drawn =
+    content === null || align === 'left' ? (
+      content
+    ) : (
+      <div data-align={align} className={ALIGN[align]}>
+        {content}
+      </div>
     );
 
   if (picking === null || drawn === null) {

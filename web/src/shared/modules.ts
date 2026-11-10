@@ -149,6 +149,17 @@ export interface BlockRegistration {
    */
   readonly carriesSource?: boolean;
   /**
+   * Whether the block may stand on the left, in the middle or on the right of its column — the `align` of its envelope
+   * (design of the editor's phase 3, §5.6). Only where it means something: a block that takes the whole column already,
+   * a table or a grid of cards, has nothing to move, and its panel offers no choice.
+   *
+   * The block does not draw it: the renderer's wrapper sets the alignment of its text and pushes a piece narrower than
+   * the column — a picture, say — to that side. A row of pieces laid out by `flex`, which neither of the two moves (the
+   * buttons of a group), carries `data-align-row`, and the wrapper justifies it. ⚠️ So an alignable block declares no
+   * `align` among its own properties: one would be a second alignment of the same thing (`registry.test.ts`).
+   */
+  readonly alignable?: boolean;
+  /**
    * What the line at the top of the block's properties panel needs besides its words, which sit
    * beside its name — `editorLabelKey` with `.about` for `.label`; a block without that key has no
    * line: the values the words name, and a screen of the hub the line leads to, labelled by the

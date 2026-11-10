@@ -628,6 +628,14 @@
       "renderModeHint": "«Fermo alla pubblicazione» tiene quello che il blocco mostrava il giorno in cui la pagina è stata pubblicata, finché qualcuno non la ripubblica.",
       "column": "Colonna",
       "columnNumber": "Colonna {{number}}",
+      "align": {
+        "label": "Allineamento",
+        "options": {
+          "left": "A sinistra",
+          "center": "Al centro",
+          "right": "A destra"
+        }
+      },
       "section": "Sezione",
       "reorder": "Trascina per riordinare",
       "previewWidth": "Larghezza dell’anteprima",
@@ -1322,18 +1330,12 @@
       "label": "Pulsanti",
       "about": "Uno o più pulsanti in fila, ognuno verso un indirizzo del sito o di fuori.",
       "fields": {
-        "align": "Allineamento",
         "buttons": "Pulsanti",
         "buttons.label": "Etichetta",
         "buttons.href": "Indirizzo",
         "buttons.variant": "Peso"
       },
       "options": {
-        "align": {
-          "left": "A sinistra",
-          "center": "Centrato",
-          "right": "A destra"
-        },
         "buttons.variant": {
           "primary": "Principale",
           "secondary": "Secondario",
