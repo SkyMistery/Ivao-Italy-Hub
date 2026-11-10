@@ -68,7 +68,21 @@ export function ReviewPanel({
   const [slug, setSlug] = useState(content.slug);
   const [parent, setParent] = useState(content.parentId === null ? '' : String(content.parentId));
 
+  // A new version of the row starts the address and the parent the approver may correct from what it says, not from the
+  // one the tab opened on (issue #332, item 2). Adjusted while rendering, like `SearchBox`; not a `key`, which would close the
+  // author's dialog at every autosave.
+  const [seenVersion, setSeenVersion] = useState(content.rowVersion);
+  if (seenVersion !== content.rowVersion) {
+    setSeenVersion(content.rowVersion);
+    setSlug(content.slug);
+    setParent(content.parentId === null ? '' : String(content.parentId));
+  }
+
   const refusal = describeProblem(review.error, t, i18n.language);
+
+  // The version the summary on screen describes: the approver's two answers are to what they read, and the server refuses
+  // them when the row has moved on since (issue #332, item 2). Before the summary arrives, the row on screen.
+  const readVersion = summary.data?.rowVersion ?? content.rowVersion;
 
   const menu = () =>
     Object.values(menuLabel).some((text) => text.trim() !== '')
@@ -265,6 +279,7 @@ export function ReviewPanel({
                     changelog: changelog.trim() === '' ? null : changelog,
                     slug,
                     parentId: parent === '' ? null : Number(parent),
+                    rowVersion: readVersion,
                     ...(proposed === null ? {} : { menu: proposed }),
                   },
                   'content.review.approveDone',
@@ -319,7 +334,7 @@ export function ReviewPanel({
               disabled={review.isPending}
               onConfirm={() =>
                 act(
-                  { action: 'SendBack', note: note.trim() === '' ? null : note },
+                  { action: 'SendBack', note: note.trim() === '' ? null : note, rowVersion: readVersion },
                   'content.review.sendBackDone',
                 )
               }

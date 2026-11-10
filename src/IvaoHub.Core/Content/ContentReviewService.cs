@@ -43,13 +43,19 @@ public enum ContentReviewAction
 /// <param name="Changelog">Approving: a line for the staff about what changed.</param>
 /// <param name="Slug">Approving: the last segment of the address, corrected.</param>
 /// <param name="ParentId">Approving: the page it goes under, corrected; null at the top.</param>
+/// <param name="RowVersion">
+/// The version of the row the summary that was read described (<see cref="ContentReviewDto.RowVersion"/>): an approver who
+/// publishes or sends back answers what they read, and the row that moved on since is refused with 409 (issue #332, item 2).
+/// Null asks nothing, as the author's two actions do.
+/// </param>
 public sealed record ContentReviewRequest(
     ContentReviewAction Action,
     string? Note = null,
     ProposedMenuEntry? Menu = null,
     string? Changelog = null,
     string? Slug = null,
-    long? ParentId = null);
+    long? ParentId = null,
+    DateTime? RowVersion = null);
 
 /// <summary>How one section of a page changed between what is online and what is ready.</summary>
 public enum SectionChange
@@ -83,6 +89,7 @@ public sealed record BlockChangesDto(int Added, int Removed, int Changed);
 /// <param name="ReadyByName">Who marked it ready, as a name.</param>
 /// <param name="Blocks">The blocks added, removed and changed, nested sections included.</param>
 /// <param name="Fields">The fields around the body that are not the ones online, by the name the form gives them.</param>
+/// <param name="RowVersion">The version of the row this summary describes, which the approver sends back with their answer.</param>
 public sealed record ContentReviewDto(
     bool FirstPublication,
     bool TitleChanged,
@@ -93,7 +100,8 @@ public sealed record ContentReviewDto(
     DateTime? ReadyAt,
     string? ReadyByName,
     BlockChangesDto Blocks,
-    IReadOnlyList<string> Fields);
+    IReadOnlyList<string> Fields,
+    DateTime RowVersion);
 
 /// <summary>
 /// The review of a page (G19, note 2026-09-13-contenuti-centralizzati §3.2): a department marks a
@@ -202,7 +210,8 @@ public sealed class ContentReviewService(
             Blocks: online is null
                 ? new BlockChangesDto(0, 0, 0)
                 : CompareBlocks(JsonNode.Parse(online.BodyJson), JsonNode.Parse(content.BodyJson)),
-            Fields: online is null ? [] : ChangedFields(online, content));
+            Fields: online is null ? [] : ChangedFields(online, content),
+            RowVersion: content.RowVersion);
     }
 
     /// <summary>
