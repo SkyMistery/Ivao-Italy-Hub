@@ -191,6 +191,11 @@
     "description": "You are signed in, but your staff positions do not open this page. If you think they should, talk to your director.",
     "home": "Back to the home page"
   },
+  "failed": {
+    "title": "This page could not be loaded",
+    "description": "The server did not answer as it should. Try again in a moment.",
+    "retry": "Try again"
+  },
   "admin": {
     "title": "Administration"
   },
@@ -2213,7 +2218,8 @@
       "description": "Copy it into your program now: the hub will not show it again. If you lose it, revoke it and make another.",
       "label": "The token",
       "copy": "Copy",
-      "copied": "Copied"
+      "copied": "Copied",
+      "copyFailed": "The browser did not let the hub copy it: select the token in the box and copy it by hand."
     },
     "revoke": {
       "action": "Revoke",

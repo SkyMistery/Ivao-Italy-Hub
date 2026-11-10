@@ -29,7 +29,7 @@ export {
 } from './calendar';
 export { MediaPicker, type PickableMedia, type MediaPage, type MediaLibraryQuery } from './MediaPicker';
 export { narrowLibrary, NOTHING_ASKED, type MediaBrowse } from './narrowLibrary';
-export { NotFound, Forbidden } from './status-pages';
+export { NotFound, Forbidden, Failed, RouteError } from './status-pages';
 export {
   RouteMap,
   BASE_MAP_URL,

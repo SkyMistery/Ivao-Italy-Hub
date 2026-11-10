@@ -70,7 +70,13 @@ function MyTokensPage() {
               description={t('tokens.revoke.description', { name: row.name })}
               confirmText={t('tokens.revoke.action')}
               disabled={revoke.isPending}
-              onConfirm={() => revoke.mutate(row.id, { onError: refused })}
+              onConfirm={() =>
+                revoke.mutate(row.id, {
+                  // A token revoked is no longer offered for copying (issue #332, item 12).
+                  onSuccess: () => setIssued((shown) => (shown?.row.id === row.id ? null : shown)),
+                  onError: refused,
+                })
+              }
             />
           )}
         />
@@ -100,7 +106,7 @@ function MyTokensPage() {
 /** The token just created, the one time it is shown: copy it now, or revoke it and make another. */
 function IssuedToken({ issued }: { issued: PersonalTokenIssuedDto }) {
   const { t } = useTranslation();
-  const [copied, setCopied] = useState(false);
+  const [copy, setCopy] = useState<'idle' | 'copied' | 'failed'>('idle');
 
   return (
     <Notice
@@ -120,14 +126,18 @@ function IssuedToken({ issued }: { issued: PersonalTokenIssuedDto }) {
               type="button"
               variant="secondary"
               onClick={() =>
-                void navigator.clipboard.writeText(issued.token).then(() => {
-                  setCopied(true);
-                })
+                // A browser that refuses the clipboard — a page not served over https, a permission denied — is said, and
+                // the token stays in the box to be copied by hand (issue #332, item 12).
+                void navigator.clipboard.writeText(issued.token).then(
+                  () => setCopy('copied'),
+                  () => setCopy('failed'),
+                )
               }
             >
-              {copied ? t('tokens.issued.copied') : t('tokens.issued.copy')}
+              {copy === 'copied' ? t('tokens.issued.copied') : t('tokens.issued.copy')}
             </Button>
           </div>
+          {copy === 'failed' ? <p role="alert">{t('tokens.issued.copyFailed')}</p> : null}
         </div>
       }
     />

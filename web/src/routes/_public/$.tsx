@@ -8,9 +8,10 @@ import {
   usePublishedEmbedding,
 } from '../../blocks';
 import { publicPageQuery } from '../../features/content/queries';
+import { ApiError } from '../../shared/api/problem';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { PageMetadata } from '../../shared/seo/PageMetadata';
-import { NotFound } from '../../shared/ui';
+import { NotFound, RouteError } from '../../shared/ui';
 
 /**
  * Recipe 3 (design M0 §7.3): a public page, loaded before it is drawn.
@@ -37,15 +38,16 @@ export const Route = createFileRoute('/_public/$')({
     }
 
     if (answer.page === null) {
-      // Not reached: the server answers 404 rather than an empty answer. Said anyway, the way every
-      // other loader of this site says "nothing here" — an error the route draws as `NotFound`.
-      throw new Error(`No page at /${params._splat ?? ''}.`);
+      // Not reached: the server answers 404 rather than an empty answer. Said anyway, as the 404 the server would have
+      // given: `RouteError` draws that as `NotFound`, and any other error as what it is (issue #332, item 5).
+      throw new ApiError(404, undefined);
     }
 
     return answer.page;
   },
   notFoundComponent: NotFound,
-  errorComponent: NotFound,
+  // A 404 is "not found"; a 500 or a network that failed is not, and is said as what it is (issue #332, item 5).
+  errorComponent: RouteError,
   component: PublicContentPage,
 });
 

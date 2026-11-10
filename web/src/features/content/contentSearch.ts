@@ -21,9 +21,10 @@ export type ContentScreenKind = (typeof CONTENT_SCREEN_KINDS)[number];
 export const CONTENT_STATUSES = ['Draft', 'Ready', 'Published'] as const;
 
 export const contentSearchSchema = departmentListSearchSchema.extend({
-  kind: z.enum(CONTENT_SCREEN_KINDS).default('Page'),
+  // Read as the default when the address carries something else, as the parameters of every list are (issue #332, item 5).
+  kind: z.enum(CONTENT_SCREEN_KINDS).default('Page').catch('Page'),
   // Optional and not defaulted, like the department: every state unless one is asked for.
-  status: z.enum(CONTENT_STATUSES).optional(),
+  status: z.enum(CONTENT_STATUSES).optional().catch(undefined),
 });
 
 export type ContentSearch = z.output<typeof contentSearchSchema>;

@@ -6,7 +6,7 @@ import { bootstrapQuery } from '../features/me/queries';
 import { useDivisionLanguage } from '../shared/i18n/useDivisionLanguage';
 import { setDateFormat } from '../shared/i18n/useMoment';
 import { DivisionTitle } from '../shared/seo/PageMetadata';
-import { NotFound } from '../shared/ui';
+import { NotFound, RouteError } from '../shared/ui';
 
 /**
  * The root of the route tree, and the only place the bootstrap is loaded.
@@ -54,6 +54,15 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     <div className="bg-body text-foreground min-h-screen px-4 py-16">
       <div className="mx-auto max-w-2xl">
         <NotFound />
+      </div>
+    </div>
+  ),
+  // The bootstrap itself did not come: no layout is drawn yet, so the answer gets the frame `notFoundComponent` has
+  // (issue #332, item 5). Below the root, a route that throws draws `RouteError` inside its layout.
+  errorComponent: (props) => (
+    <div className="bg-body text-foreground min-h-screen px-4 py-16">
+      <div className="mx-auto max-w-2xl">
+        <RouteError {...props} />
       </div>
     </div>
   ),

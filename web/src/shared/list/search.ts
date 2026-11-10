@@ -11,13 +11,17 @@ import type { operations } from '../api/schema';
  * `filter[name]=value` is deliberately absent, here as there: its names are the properties of the
  * entity, so it cannot be one type. The allow list is `CrudOptions.Filterable` on the server, and a
  * name outside it is answered with 400 rather than ignored.
+ *
+ * An address written by hand that one of them does not accept — `?page=0`, `?pageSize=500`, `?dir=x` — reads as its default
+ * rather than as an error drawn over the screen (issue #332, item 5): `.catch` on each, so one wrong parameter keeps the
+ * others. A sort the server refuses is still the server's 400, which the route's error screen says.
  */
 export const listSearchSchema = z.object({
-  page: z.number().int().min(1).default(1),
-  pageSize: z.number().int().min(1).max(100).default(25),
-  sort: z.string().optional(),
-  dir: z.enum(['asc', 'desc']).default('asc'),
-  q: z.string().optional(),
+  page: z.number().int().min(1).default(1).catch(1),
+  pageSize: z.number().int().min(1).max(100).default(25).catch(25),
+  sort: z.string().optional().catch(undefined),
+  dir: z.enum(['asc', 'desc']).default('asc').catch('asc'),
+  q: z.string().optional().catch(undefined),
 });
 
 export type ListSearch = z.output<typeof listSearchSchema>;
@@ -29,7 +33,7 @@ export type ListSearch = z.output<typeof listSearchSchema>;
  * reaches; the server narrows it to those either way.
  */
 export const departmentListSearchSchema = listSearchSchema.extend({
-  department: z.enum(DEPARTMENTS).optional(),
+  department: z.enum(DEPARTMENTS).optional().catch(undefined),
 });
 
 export type DepartmentListSearch = z.output<typeof departmentListSearchSchema>;
