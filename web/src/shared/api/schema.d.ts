@@ -9381,6 +9381,15 @@ export interface components {
             toUtc: string;
         };
         /**
+         * @description The award a tour gives, as a reader needs it: its name. The core's catalogue is shared for reading (`Award`), and a
+         *     visitor has no catalogue to look an identifier up in.
+         */
+        PublicAwardDto: {
+            /** Format: int64 */
+            id: number;
+            name: components["schemas"]["LocalizedOfstring"];
+        };
+        /**
          * @description What the public site is given: the published version and nothing about the draft behind it.
          *     There is no row version, no audit trail and no status, because a visitor has nothing to do with
          *     any of them.
@@ -9787,7 +9796,8 @@ export interface components {
          *     that looks after it.
          *     What is here depends on the kind: a Distance tour carries the miles it asks for, an Open tour its
          *     goal and the filters and sequence rules every flight has to respect (§2.6.1), a Container its subtours and no
-         *     legs of its own, a Hub tour its rotations.
+         *     legs of its own, a Hub tour its rotations.The award is the one the tour gives, by name: the head of the page says it next to the legs and the miles (design
+         *     11-design-pagine-dei-tour §4, phase 6). None when the tour gives none.
          */
         PublicTourDto: {
             /** Format: int64 */
@@ -9836,6 +9846,7 @@ export interface components {
             parent: null | components["schemas"]["PublicParentDto"];
             subtours: components["schemas"]["PublicSubtourDto"][];
             department: components["schemas"]["Department"];
+            award: null | components["schemas"]["PublicAwardDto"];
         };
         /** @description A turn of an activity: when it starts and ends, and how many of its seats are free. */
         PublicTurnDto: {

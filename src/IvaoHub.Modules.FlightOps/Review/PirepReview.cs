@@ -617,7 +617,8 @@ public sealed class PirepReview(
             ["rules"] = rules.Count == 0
                 ? catalog.Resolve(locale, "flightops:mail.flightops.noRules")
                 : string.Join('\n', rules.Select(rule => $"- {rule.Code} {Text(rule.Title, locale, options.DefaultLocale)}")),
-            ["url"] = $"https://{options.Domain}/tours/{slug}",
+            // The tab of the pilot's reports, where the decision is (design 11 §4).
+            ["url"] = $"https://{options.Domain}/tours/{slug}{PublicTours.ReportsTab}",
         };
 
         await notifications.QueueAsync(new NotificationIntent(type, [NotificationRecipient.Member(pirep.Vid)], data), cancellationToken);
