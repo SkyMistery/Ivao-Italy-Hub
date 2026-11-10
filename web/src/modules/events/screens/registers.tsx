@@ -29,6 +29,8 @@ import {
   type UnflownExcuseFormValues,
 } from '../schemas';
 
+import { registerHref, registerTitle } from './registerPeople';
+
 /**
  * The registers in the staff's back office (design M4 §3.7, §4.5, §7.2, E13b; note 2026-10-16-i-no-show-i-registri-e-i-limiti, readings 1,
  * 4, 5, 6 and 10): the controllers' — `/staff/events/controllers`, one row per controller with their counts and their penalty, and a
@@ -40,6 +42,18 @@ import {
 
 const CONTROLLERS = '/staff/events/controllers';
 const PILOTS = '/staff/events/pilots';
+
+/** «Open» on a row of a register: to the person's page, and nothing for a person whose data was erased. */
+function OpenPerson({ register, vid }: { register: string; vid: number }) {
+  const { t } = useTranslation();
+  const href = registerHref(register, vid);
+
+  return href === null ? null : (
+    <Button asChild variant="ghost" size="sm">
+      <RouterAnchor href={href}>{t('events:registers.open')}</RouterAnchor>
+    </Button>
+  );
+}
 
 const controllerColumns: readonly ColumnSpec<ControllerRegisterRowDto>[] = [
   col.person('controller'),
@@ -72,13 +86,7 @@ export function ControllersRegisterPage() {
         search={search}
         onSearchChange={(patch) => setSearch((current) => ({ ...current, ...patch }))}
         emptyDescription={t('events:registers.controllers.empty')}
-        actions={(row) => (
-          <Button asChild variant="ghost" size="sm">
-            <RouterAnchor href={`${CONTROLLERS}/${row.controller.vid}`}>
-              {t('events:registers.open')}
-            </RouterAnchor>
-          </Button>
-        )}
+        actions={(row) => <OpenPerson register={CONTROLLERS} vid={row.controller.vid} />}
       />
     </PageShell>
   );
@@ -93,7 +101,7 @@ export function ControllerRegisterPage() {
   const row = useQuery(
     controllersRegisterQuery(listSearchSchema.parse({ q: String(vid), pageSize: 100 })),
   ).data?.items.find((candidate) => candidate.controller.vid === vid);
-  const name = row === undefined ? String(vid) : personName(row.controller, t);
+  const name = registerTitle(vid, row?.controller, t);
   const [search, setSearch] = useState<ListSearch>(() =>
     listSearchSchema.parse({ sort: 'fromUtc', dir: 'desc' }),
   );
@@ -162,11 +170,7 @@ export function PilotsRegisterPage() {
         search={search}
         onSearchChange={(patch) => setSearch((current) => ({ ...current, ...patch }))}
         emptyDescription={t('events:registers.pilots.empty')}
-        actions={(row) => (
-          <Button asChild variant="ghost" size="sm">
-            <RouterAnchor href={`${PILOTS}/${row.pilot.vid}`}>{t('events:registers.open')}</RouterAnchor>
-          </Button>
-        )}
+        actions={(row) => <OpenPerson register={PILOTS} vid={row.pilot.vid} />}
       />
     </PageShell>
   );
@@ -194,7 +198,7 @@ export function PilotRegisterPage() {
   const row = useQuery(
     pilotsRegisterQuery(listSearchSchema.parse({ q: String(vid), pageSize: 100 })),
   ).data?.items.find((candidate) => candidate.pilot.vid === vid);
-  const name = row === undefined ? String(vid) : personName(row.pilot, t);
+  const name = registerTitle(vid, row?.pilot, t);
   const [search, setSearch] = useState<ListSearch>(() => listSearchSchema.parse({ pageSize: 100 }));
 
   // The counts in plain sight above the bookings, as the controller's page has them.

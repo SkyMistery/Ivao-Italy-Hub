@@ -4,10 +4,13 @@ import { ArrowDown, ArrowUp, Copy, GripVertical, Plus, Trash2 } from 'lucide-rea
 import {
   createContext,
   useContext,
+  useEffect,
+  useState,
   type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
   type ReactNode,
+  type SyntheticEvent,
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -19,14 +22,16 @@ import type { BlockRegistration } from '../shared/modules';
 import { blockDataQuery } from './data';
 import {
   SPANS,
+  alignOf,
   columnsOf,
   spanOf,
+  type Align,
   type BlockEnvelope,
   type Body,
   type SectionEnvelope,
   type Span,
 } from './envelope';
-import { usePicking, type PickAction, type Picking, type SortableBinding } from './picking';
+import { stopClick, usePicking, type PickAction, type Picking, type SortableBinding } from './picking';
 
 /**
  * Drawing a page. The same component renders the published version for a visitor and the draft in
@@ -37,9 +42,9 @@ import { usePicking, type PickAction, type Picking, type SortableBinding } from 
  * decides whether its blocks follow one another or stand in columns. A block decides nothing about
  * the page: it is handed its properties and draws them.
  *
- * A section's `title` is not drawn. It is the name the editor puts in the tree, which is why the
- * seeded templates spell it "Hero" and "Body": what a visitor reads is a `heading` block, which is
- * a block an editor can move, translate and delete.
+ * A section's `title` is not drawn for a visitor. It is the name the editor puts in the tree and on
+ * the section's label while composing, which is why the seeded templates spell it "Hero" and "Body":
+ * what a visitor reads is a `heading` block, which is a block an editor can move, translate and delete.
  *
  * Since 9 September 2026 the same component is also **what the editor composes in** — see
  * `picking.ts`. That is one context read in two places; with no provider, which is the public path,
@@ -170,7 +175,7 @@ export function ContentRenderer({
     // on the public site is the window and in the editor's preview is the width that was chosen.
     <DashboardContext.Provider value={dashboard}>
       <div className="@container flex flex-col">
-        <Siblings sections={body.sections} staff={staff} />
+        <Siblings sections={body.sections} staff={staff} parent={null} />
       </div>
 
       {/* ⚠️ After the container and not inside it (6 October 2026). Inside, the editor's preview
@@ -196,12 +201,39 @@ export function ContentRenderer({
  * The sections of one parent — the page's, or the rows of a section — drawn in order, and while
  * composing wrapped in what lets them be dragged among themselves (`Picking.SortableGroup`).
  */
-function Siblings({ sections, staff }: { sections: SectionEnvelope[]; staff: boolean }) {
+function Siblings({
+  sections,
+  staff,
+  parent,
+}: {
+  sections: SectionEnvelope[];
+  staff: boolean;
+  /** The section these are the rows of, and the number it goes by; `null` for the page's own. */
+  parent: { id: string; number: string } | null;
+}) {
   const picking = usePicking();
-  const views = sections.map((section) => <SectionView key={section.id} section={section} staff={staff} />);
+  const views = sections.map((section, index) => (
+    <SectionView
+      key={section.id}
+      section={section}
+      staff={staff}
+      place={{
+        parent: parent?.id ?? null,
+        index,
+        number: parent === null ? `${index + 1}` : `${parent.number}.${index + 1}`,
+      }}
+    />
+  ));
   const Group = picking?.SortableGroup;
 
   return Group === undefined ? views : <Group ids={sections.map((section) => section.id)}>{views}</Group>;
+}
+
+/** Where a section stands among its siblings: what its label says, and what an insertion there asks for. */
+interface SectionPlace {
+  readonly parent: string | null;
+  readonly index: number;
+  readonly number: string;
 }
 
 /**
@@ -211,8 +243,9 @@ function Siblings({ sections, staff }: { sections: SectionEnvelope[]; staff: boo
 function AddSectionInvitation() {
   const picking = usePicking();
   const { t } = useTranslation();
+  const add = picking?.onAddSection;
 
-  if (picking?.onAddSection === undefined) {
+  if (add === undefined) {
     return null;
   }
 
@@ -220,7 +253,7 @@ function AddSectionInvitation() {
     <div className="px-4 py-4">
       <button
         type="button"
-        onClick={picking.onAddSection}
+        onClick={() => add()}
         className="border-border text-muted-foreground hover:border-primary hover:text-foreground flex min-h-12 w-full items-center justify-center rounded-md border border-dashed text-sm transition-colors"
       >
         {t('content.editor.addSection')}
@@ -229,7 +262,199 @@ function AddSectionInvitation() {
   );
 }
 
-function SectionView({ section, staff }: { section: SectionEnvelope; staff: boolean }) {
+/** Whether the editor offers a row inside this section: it answers `addRow` where the template and the depth allow one. */
+function takesRows(picking: Picking | null, id: string): boolean {
+  return picking?.actions?.({ kind: 'section', id }).some((action) => action.key === 'addRow') === true;
+}
+
+/**
+ * What a section is, on the section, while composing (design of phase 3, §4.1): its number among its
+ * siblings, its name, and its background when it has one — "2 · Rules · pale blue background", and
+ * "Row 2.1" for a row. A row with no name says no more than that: "Row 2.1 · Untitled row" would say it
+ * twice. Out of the flow, so that nothing on the page moves: the label of a section sits in its
+ * corner, and the label of a row stands in the air above it, which the section's own gap gives it.
+ *
+ * Left to the click: on it the section is picked, by the section's own handler, which is also the
+ * way to a row whose blocks leave no air around them.
+ */
+function SectionLabel({ section, place }: { section: SectionEnvelope; place: SectionPlace }) {
+  const { t } = useTranslation();
+  const read = useLocalized();
+  const isRow = place.parent !== null;
+  const name = read(section.title) || section.key || (isRow ? null : t('content.editor.untitledSection'));
+
+  const label = [
+    isRow ? t('content.editor.sectionLabel.row', { number: place.number }) : place.number,
+    name,
+    section.background === 'none'
+      ? null
+      : t('content.editor.sectionLabel.background', {
+          name: t(`content.section.options.background.${section.background}`).toLocaleLowerCase(),
+        }),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  return (
+    <div
+      data-section-label=""
+      title={label}
+      className={`bg-body text-muted-foreground absolute left-0 z-30 max-w-[45%] cursor-pointer truncate rounded-sm px-1.5 text-xs/5 ${
+        isRow ? '-top-5' : 'top-0'
+      }`}
+    >
+      {label}
+    </div>
+  );
+}
+
+/**
+ * "+ section" or "+ row" where one would land, while composing (design of phase 3, §4.1): shown when
+ * the pointer reaches the strip or the keyboard reaches the button, and out of the flow, so that
+ * nothing on the page moves to make room for it. The strip is what the pointer has to reach, the line
+ * says where the new one would go.
+ *
+ * ⚠️ Under what the section holds, not over it (`z-0`, with the section's content on `z-[1]` while
+ * composing): the strip takes the pointer only in the air, and a block is picked up to its edge, however
+ * little air its section leaves. Over the content a click on a heading in a row inserted a row. This is a
+ * shortcut for the pointer: the way to insert, everywhere and with a finger too, is the section's bar
+ * (Carmine, 5 November 2026), which is what serves where two sections with no padding touch and there is no
+ * air. The keyboard raises it. A click beside the button lands on the section around it, like any click on
+ * its air.
+ */
+function InsertGap({
+  label,
+  hint,
+  placement,
+  onInsert,
+}: {
+  label: string;
+  hint: string;
+  placement: string;
+  onInsert: (byKeyboard: boolean) => void;
+}) {
+  return (
+    <div
+      data-chrome=""
+      data-insert-gap=""
+      className={`group/gap absolute inset-x-0 z-0 flex h-4 items-center justify-center focus-within:z-40 ${placement}`}
+    >
+      <span
+        aria-hidden
+        className="bg-primary absolute inset-x-0 top-1/2 h-px opacity-0 transition-opacity group-focus-within/gap:opacity-100 group-hover/gap:opacity-100"
+      />
+      <button
+        type="button"
+        title={hint}
+        onClick={(event) => {
+          event.stopPropagation();
+          // A click the keyboard made has no pointer behind it, and so no count of presses.
+          onInsert(event.detail === 0);
+        }}
+        className="bg-body text-primary border-primary relative rounded-full border px-2 text-xs/4 opacity-0 shadow-sm transition-opacity group-hover/gap:opacity-100 focus-visible:opacity-100"
+      >
+        {label}
+      </button>
+    </div>
+  );
+}
+
+/** Whether the typefaces of the page have finished loading. A browser with no `document.fonts` has nothing to wait for. */
+function useTypefacesLoaded(): boolean {
+  const [loaded, setLoaded] = useState(() => !('fonts' in document));
+
+  useEffect(() => {
+    const settle = () => setLoaded(true);
+
+    if ('fonts' in document) {
+      void document.fonts.ready.then(settle, settle);
+    }
+  }, []);
+
+  return loaded;
+}
+
+/**
+ * What inserts a section, once there is somewhere to draw it.
+ *
+ * ⚠️ Nothing until the typefaces have loaded (`decisions/2026-11-05-le-fessure-e-l-anteprima-vuota.md`).
+ * With a place to insert inside the sections from the first draw, the trap of the empty preview is back:
+ * on a slow machine the typefaces finish a moment after that draw, and every section of the preview is
+ * left in the document with no box, for good. Nothing is lost by waiting: a place to insert is out of sight
+ * until the pointer or the keyboard reaches it. Asked by components of their own, so that a visitor has no
+ * state for it at all.
+ */
+function useInsert(): Picking['onAddSection'] {
+  const picking = usePicking();
+  const typefacesLoaded = useTypefacesLoaded();
+
+  return typefacesLoaded ? picking?.onAddSection : undefined;
+}
+
+/**
+ * The place before a section, among its siblings: where its edge meets the one above for a section of the
+ * page, which has no gap, and in the gap above it for a row. The end of the page has its own invitation.
+ */
+function InsertBefore({ place }: { place: SectionPlace }) {
+  const picking = usePicking();
+  const { t } = useTranslation();
+  const insert = useInsert();
+  const isRow = place.parent !== null;
+
+  if (insert === undefined || (isRow && !takesRows(picking, place.parent))) {
+    return null;
+  }
+
+  return (
+    <InsertGap
+      label={t(isRow ? 'content.editor.insertRow' : 'content.editor.insertSection')}
+      hint={t(isRow ? 'content.editor.insertRowHint' : 'content.editor.insertSectionHint', {
+        number: place.number,
+      })}
+      // The first section of the page keeps inside its own edge, which the frame would cut. A row's stands
+      // in the middle of the gap above it, clear of the row: a row is born with no air of its own.
+      placement={isRow ? '-top-5' : place.index === 0 ? 'top-0' : '-top-2'}
+      onInsert={(byKeyboard) => insert(place.parent ?? undefined, place.index, byKeyboard)}
+    />
+  );
+}
+
+/**
+ * The place after the last row of a section of the page, drawn after what the section holds so that the
+ * keyboard meets it where the eye does. Not on a row: it has no air to stand in, and its strip would stand
+ * on its last child's. A row inside a row comes from the row's own bar, or from the outline.
+ */
+function InsertRowAtEnd({ section, place }: { section: SectionEnvelope; place: SectionPlace }) {
+  const picking = usePicking();
+  const { t } = useTranslation();
+  const insert = useInsert();
+
+  if (insert === undefined || place.parent !== null || !takesRows(picking, section.id)) {
+    return null;
+  }
+
+  return (
+    <InsertGap
+      label={t('content.editor.insertRow')}
+      hint={t('content.editor.insertRowHint', {
+        number: `${place.number}.${section.sections.length + 1}`,
+      })}
+      // Clear of the strip on the edge below, which belongs to the next section.
+      placement="bottom-2"
+      onInsert={(byKeyboard) => insert(section.id, undefined, byKeyboard)}
+    />
+  );
+}
+
+function SectionView({
+  section,
+  staff,
+  place,
+}: {
+  section: SectionEnvelope;
+  staff: boolean;
+  place: SectionPlace;
+}) {
   const dashboard = useContext(DashboardContext);
   const mediaFileUrl = useMediaFileUrl();
   const picking = usePicking();
@@ -241,7 +466,7 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
     // A section is picked by its own space — the air around its blocks — because clicking a block
     // picks the block. `outline` and not `border`: a border would move everything by two pixels and
     // the point of composing here is that what you see is what a reader gets.
-    picking === null ? '' : `relative ${ring(picking, section.id)}`,
+    picking === null ? '' : `relative ${sectionRing(picking, section.id)}`,
   ]
     .filter(Boolean)
     .join(' ');
@@ -267,11 +492,21 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
             ...(picking.selected === section.id ? { 'data-picked': '' } : {}),
             // The bubble phase, while a block takes the capture phase and stops there: outer
             // handlers capture first, so a section that captured would always win and a block could
-            // never be picked.
-            onClick: () => picking.onPick('section', section.id),
-            onDoubleClick: () => picking.onOpen?.('section', section.id),
+            // never be picked. Stopped here, or the section around a row would take it next and a
+            // row could never be picked by its own air.
+            onClick: (event: SyntheticEvent) => {
+              event.stopPropagation();
+              picking.onPick('section', section.id);
+            },
+            onDoubleClick: (event: SyntheticEvent) => {
+              event.stopPropagation();
+              picking.onOpen?.('section', section.id);
+            },
           })}
     >
+      {picking !== null ? <SectionLabel section={section} place={place} /> : null}
+      {picking !== null ? <InsertBefore place={place} /> : null}
+
       {picking !== null && picking.selected === section.id ? (
         <PickedBar
           name={read(section.title) || section.key || t('content.editor.untitledSection')}
@@ -284,11 +519,23 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
         />
       ) : null}
 
-      <div className={`${dashboard ? WIDTH.full : WIDTH[section.width]} flex flex-col gap-6`}>
+      {/* Above the places to insert while composing, so that what is in the section takes the pointer first
+          (`InsertGap`). For a visitor there is nothing to be above. */}
+      <div
+        className={`${dashboard ? WIDTH.full : WIDTH[section.width]} flex flex-col gap-6 ${
+          picking === null ? '' : 'relative z-[1]'
+        }`}
+      >
         <SectionBlocks section={section} staff={staff} />
 
-        <Siblings sections={section.sections} staff={staff} />
+        <Siblings
+          sections={section.sections}
+          staff={staff}
+          parent={{ id: section.id, number: place.number }}
+        />
       </div>
+
+      {picking !== null ? <InsertRowAtEnd section={section} place={place} /> : null}
     </section>
   );
 
@@ -563,12 +810,26 @@ function Column({
   );
 }
 
+/**
+ * Where an alignable block stands in its column (design of the editor's phase 3, §5.6), drawn here once for every block
+ * rather than by each of them: the alignment of its text; a piece narrower than the column — a picture a third wide — on
+ * that side, by its margins; and a row laid out by `flex`, which follows neither, marked `data-align-row` by the block
+ * and justified from here. The marker of a list item goes beside its words (`list-inside`): outside, it stayed on the
+ * left while the words went to the middle or to the right, a column of dots away from what they mark. Literal classes,
+ * because Tailwind reads the source. The left is no wrapper at all, so a page that chose nothing is drawn exactly as
+ * before.
+ */
+const ALIGN: Record<Exclude<Align, 'left'>, string> = {
+  center: 'text-center *:mx-auto [&_[data-align-row]]:justify-center [&_li]:list-inside',
+  right: 'text-right *:ml-auto [&_[data-align-row]]:justify-end [&_li]:list-inside',
+};
+
 export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boolean }) {
   const picking = usePicking();
   const { t } = useTranslation();
   const registration = registry.blocks.find((candidate) => candidate.type === block.type);
 
-  const drawn =
+  const content =
     registration === undefined ? (
       staff ? (
         <UnknownBlock type={block.type} />
@@ -577,6 +838,17 @@ export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boole
       <DataBlockView block={block} registration={registration} staff={staff} />
     ) : (
       <registration.component id={block.id} staff={staff} props={block.props} />
+    );
+
+  // Only a block that declares it: on any other, an `align` on the envelope means nothing and draws nothing.
+  const align = registration?.alignable === true ? alignOf(block) : 'left';
+  const drawn =
+    content === null || align === 'left' ? (
+      content
+    ) : (
+      <div data-align={align} className={ALIGN[align]}>
+        {content}
+      </div>
     );
 
   if (picking === null || drawn === null) {
@@ -621,8 +893,7 @@ export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boole
           return;
         }
 
-        event.preventDefault();
-        event.stopPropagation();
+        stopClick(event);
         picking.onPick('block', block.id);
       }}
     >
@@ -655,19 +926,55 @@ function ring(picking: Picking, id: string): string {
     : 'hover:outline-border hover:outline-2 hover:outline-offset-2';
 }
 
-const ACTION_LABEL: Record<PickAction['key'], { label: string; Icon: typeof Trash2 }> = {
-  moveUp: { label: 'content.editor.moveUp', Icon: ArrowUp },
-  moveDown: { label: 'content.editor.moveDown', Icon: ArrowDown },
-  remove: { label: 'content.editor.remove', Icon: Trash2 },
-  duplicate: { label: 'content.editor.duplicate', Icon: Copy },
-  addRow: { label: 'content.editor.addRow', Icon: Plus },
+/**
+ * A section's outline is there the whole time while composing, so that the page reads as the sections
+ * it is made of (design of phase 3, §4.1): thin and dashed, solid when it is the one picked. Drawn
+ * inside its edge, because the first section of a page sits against the preview's frame, which clips,
+ * and in the colour of the ground it is on: a dark section is a piece of the dark theme.
+ */
+function sectionRing(picking: Picking, id: string): string {
+  return picking.selected === id
+    ? 'outline-primary outline-2 -outline-offset-2'
+    : 'outline-muted-foreground/50 hover:outline-muted-foreground outline-1 -outline-offset-1 outline-dashed';
+}
+
+const ICON = 'size-3.5';
+
+/**
+ * "Add, above" and "add, below": the set has no one icon that says it, and two made of its own say it
+ * better than one that has to be learned, next to the arrows that move the same thing up and down.
+ */
+const ADD_ABOVE = (
+  <span aria-hidden className="inline-flex items-center">
+    <Plus className="size-3" />
+    <ArrowUp className="-ml-0.5 size-3" />
+  </span>
+);
+const ADD_BELOW = (
+  <span aria-hidden className="inline-flex items-center">
+    <Plus className="size-3" />
+    <ArrowDown className="-ml-0.5 size-3" />
+  </span>
+);
+
+const ACTION_LABEL: Record<PickAction['key'], { label: string; icon: ReactNode }> = {
+  moveUp: { label: 'content.editor.moveUp', icon: <ArrowUp aria-hidden className={ICON} /> },
+  moveDown: { label: 'content.editor.moveDown', icon: <ArrowDown aria-hidden className={ICON} /> },
+  remove: { label: 'content.editor.remove', icon: <Trash2 aria-hidden className={ICON} /> },
+  duplicate: { label: 'content.editor.duplicate', icon: <Copy aria-hidden className={ICON} /> },
+  addRow: { label: 'content.editor.addRow', icon: <Plus aria-hidden className={ICON} /> },
+  sectionAbove: { label: 'content.editor.sectionAbove', icon: ADD_ABOVE },
+  sectionBelow: { label: 'content.editor.sectionBelow', icon: ADD_BELOW },
+  rowAbove: { label: 'content.editor.rowAbove', icon: ADD_ABOVE },
+  rowBelow: { label: 'content.editor.rowBelow', icon: ADD_BELOW },
 };
 
 /**
  * The name of what is picked and what may be done to it, on the thing itself (Carmine, 11 September
  * 2026). Over the top right corner, out of the flow: nothing on the page moves when it appears.
  * The buttons stop their clicks where they are, so pressing "remove" does not also re-pick the
- * section the block was in.
+ * section the block was in. Where the name and the commands do not fit on one line, the name takes a line
+ * of its own above them, and gives way only past that: a name cut to nothing beside them says nothing.
  */
 function PickedBar({
   name,
@@ -687,45 +994,51 @@ function PickedBar({
   return (
     <div
       data-chrome
-      className={`bg-body text-foreground border-primary absolute right-2 z-10 flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs shadow-sm ${
+      className={`bg-body text-foreground border-primary absolute right-2 z-40 flex max-w-[calc(100%-1rem)] flex-wrap items-center justify-end gap-x-1 rounded-md border px-2 py-0.5 text-xs shadow-sm ${
         placement === 'inside' ? 'top-2' : '-top-3'
       }`}
       onClick={(event) => event.stopPropagation()}
     >
-      {handle === undefined ? null : (
-        <button
-          type="button"
-          // Attached from a callback and not handed over as the ref itself: handed over, the lint
-          // takes the whole handle for a ref and refuses to read its listeners while drawing.
-          ref={(element) => handle.attach(element)}
-          aria-label={t('content.editor.reorder')}
-          title={t('content.editor.reorder')}
-          className="text-muted-foreground cursor-grab touch-none"
-          {...handle.listeners}
-        >
-          <GripVertical aria-hidden className="size-3.5" />
-        </button>
-      )}
-      <span className="text-primary font-medium">{name}</span>
-      {actions.map(({ key, run }) => {
-        const { label, Icon } = ACTION_LABEL[key];
-
-        return (
+      <span className="flex max-w-full min-w-0 items-center gap-1">
+        {handle === undefined ? null : (
           <button
-            key={key}
             type="button"
-            aria-label={t(label)}
-            title={t(label)}
-            onClick={(event) => {
-              event.stopPropagation();
-              run();
-            }}
-            className="hover:text-primary rounded-sm p-0.5"
+            // Attached from a callback and not handed over as the ref itself: handed over, the lint
+            // takes the whole handle for a ref and refuses to read its listeners while drawing.
+            ref={(element) => handle.attach(element)}
+            aria-label={t('content.editor.reorder')}
+            title={t('content.editor.reorder')}
+            className="text-muted-foreground shrink-0 cursor-grab touch-none"
+            {...handle.listeners}
           >
-            <Icon aria-hidden className="size-3.5" />
+            <GripVertical aria-hidden className={ICON} />
           </button>
-        );
-      })}
+        )}
+        <span title={name} className="text-primary min-w-0 truncate font-medium">
+          {name}
+        </span>
+      </span>
+      <span className="flex items-center gap-1">
+        {actions.map(({ key, run }) => {
+          const { label, icon } = ACTION_LABEL[key];
+
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-label={t(label)}
+              title={t(label)}
+              onClick={(event) => {
+                event.stopPropagation();
+                run(event.detail === 0);
+              }}
+              className="hover:text-primary rounded-sm p-0.5"
+            >
+              {icon}
+            </button>
+          );
+        })}
+      </span>
     </div>
   );
 }

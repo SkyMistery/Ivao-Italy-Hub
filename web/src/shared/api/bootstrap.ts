@@ -60,6 +60,31 @@ export function holdsPermissionAnywhere(bootstrap: Bootstrap, name: string): boo
 }
 
 /**
+ * True when the user holds the permission **without a row scope**: on one department, on all of them, on a FIR, from
+ * outside, or as a global permission — anything but a grant on single rows. It is the server's `HasUnscoped`
+ * (note 2026-10-17-il-permesso-senza-ambito), asked by a screen of the whole division — a register — that a grant on one
+ * event does not open. A super administrator's bootstrap carries every permission with no scope, so it holds them all.
+ */
+export function holdsPermissionUnscoped(bootstrap: Bootstrap, name: string): boolean {
+  return bootstrap.permissions.some(
+    (permission) => permission.name === name && permission.resourceScope === null,
+  );
+}
+
+/**
+ * Whether the user may change what holds for the whole division — the settings of the content
+ * (`decisions/2026-11-04-la-pagina-dello-stile.md`, Carmine on 4 November 2026: «Solo chi ha tutti»): the superadmin, or
+ * a role that reaches every department, with the permission. `hasAllDepartments` is the server's fact of the role
+ * (`RolePermissionMatrix.ReachesEveryDepartment`), read here and never worked out again.
+ */
+export function mayChangeTheWholeDivision(bootstrap: Bootstrap, name: string): boolean {
+  const user = bootstrap.user;
+  return (
+    user !== null && (user.isSuperadmin || user.hasAllDepartments) && holdsPermissionAnywhere(bootstrap, name)
+  );
+}
+
+/**
  * The department the site itself belongs to: its menu, its templates and the pages the installation
  * was born with. It comes from the bootstrap and is never written here — a client that knew which
  * department that is would be a client that knows which division it is running for.

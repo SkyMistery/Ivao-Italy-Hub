@@ -1,4 +1,11 @@
-import { createContext, useContext, type CSSProperties, type ComponentType, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  type CSSProperties,
+  type ComponentType,
+  type ReactNode,
+} from 'react';
 
 import type { BlockEnvelope, Span } from './envelope';
 
@@ -61,8 +68,16 @@ export interface Picking {
    * one — and the page draws exactly that list, so a rule lives in one place.
    */
   readonly actions?: (target: { kind: 'section' | 'block'; id: string }) => readonly PickAction[];
-  /** A section at the end of the page, offered after the last one, the way an empty column offers a block. */
-  readonly onAddSection?: () => void;
+  /**
+   * A section where it is wanted: with nothing said, at the end of the page, offered after the last
+   * one the way an empty column offers a block; with a place, between two others — `parentId` the
+   * section whose row it is, none for one of the page, and `at` its place among its siblings. Absent
+   * on a body nothing may be added to. Rows are offered only inside a section whose `actions` answer
+   * `addRow`, so the template's rules and the depth the server accepts stay in the editor. `byKeyboard`
+   * says the press came from the keyboard: the button it was on is about to mean something else, and
+   * where the cursor goes next is the editor's, which owns the panel.
+   */
+  readonly onAddSection?: (parentId?: string, at?: number, byKeyboard?: boolean) => void;
   /**
    * The name to draw a block by while nothing has been written into it, or `null` once something
    * has (Carmine, 11 September 2026). A heading without words draws nothing, and nothing is what
@@ -109,8 +124,18 @@ export interface SortableBinding {
 }
 
 export interface PickAction {
-  readonly key: 'moveUp' | 'moveDown' | 'remove' | 'duplicate' | 'addRow';
-  readonly run: () => void;
+  readonly key:
+    | 'moveUp'
+    | 'moveDown'
+    | 'remove'
+    | 'duplicate'
+    | 'addRow'
+    | 'sectionAbove'
+    | 'sectionBelow'
+    | 'rowAbove'
+    | 'rowBelow';
+  /** `byKeyboard` as in `Picking.onAddSection`: told by the bar, read by what inserts. */
+  readonly run: (byKeyboard?: boolean) => void;
 }
 
 export const PickingContext = createContext<Picking | null>(null);
@@ -118,4 +143,38 @@ export const PickingContext = createContext<Picking | null>(null);
 /** `null` everywhere the editor has not said otherwise, which is everywhere the public reads. */
 export function usePicking(): Picking | null {
   return useContext(PickingContext);
+}
+
+/** What taking a click means while a page is composed or looked at: its default does not happen, and it goes no further. */
+export function stopClick(event: Pick<Event, 'preventDefault' | 'stopPropagation'>): void {
+  event.preventDefault();
+  event.stopPropagation();
+}
+
+/**
+ * The read-only way of the same thing (design of phase 3, §4.7): the draft looked at in a tab of its own, where a link
+ * must not carry anybody away from what they came to check, and there is nothing to pick. The whole document and not a
+ * block at a time, so that the frame's links keep the promise the strip makes too, with nothing around a block that a
+ * visitor's page does not have. Only the links: an accordion opens and a tab changes, because reading them is what the
+ * preview is for, and no block writes anything from a click.
+ *
+ * `auxclick` is the middle button, which opens a link without a `click`. The frame of an interactive block is another
+ * document, whose clicks do not come through here.
+ */
+export function useLinksDisabled(): void {
+  useEffect(() => {
+    const stopLink = (event: MouseEvent) => {
+      if (event.target instanceof Element && event.target.closest('a') !== null) {
+        stopClick(event);
+      }
+    };
+
+    document.addEventListener('click', stopLink, { capture: true });
+    document.addEventListener('auxclick', stopLink, { capture: true });
+
+    return () => {
+      document.removeEventListener('click', stopLink, { capture: true });
+      document.removeEventListener('auxclick', stopLink, { capture: true });
+    };
+  }, []);
 }

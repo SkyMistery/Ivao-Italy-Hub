@@ -33,6 +33,7 @@ const block: BlockEnvelope = {
   column: 0,
   source: null,
   span: null,
+  align: null,
 };
 
 const section = {

@@ -28,7 +28,8 @@ public sealed record EventListDto(
 /// <summary>
 /// An event as its page loads it (§1.2, §7.2). <c>State</c> is what the dates say now. The switches of the ATC roster and of
 /// an event in person, the length of a shift and the limits of whoever books and does not fly are read here and written by
-/// their own phases (M4b, M4c); who cancelled an event is the audit's to say.
+/// their own phases (M4b, M4c); who cancelled an event is the audit's to say. <c>Actions</c> is what the reader may do on it, the one
+/// handler's answer on the row (#427): the page draws its buttons and its tabs from it.
 /// </summary>
 public sealed record EventDetailDto(
     long Id,
@@ -62,7 +63,8 @@ public sealed record EventDetailDto(
     int? ShiftMinutes,
     int? RestrictedWindowHours,
     int? RestrictedMaxPerWindow,
-    int? RestrictedMaxPerEvent);
+    int? RestrictedMaxPerEvent,
+    EventActionsDto Actions);
 
 /// <summary>
 /// What a client may set on an event (§1.2, E3a). The status and the cancellation are not here: publishing is a verb of its
@@ -131,7 +133,7 @@ internal static class EventMapper
         row.EndsAtUtc,
         row.UpdatedAt);
 
-    public static EventDetailDto ToDetail(Event row, DateTime now) => new(
+    public static EventDetailDto ToDetail(Event row, DateTime now, EventActionsDto actions) => new(
         row.Id,
         row.OwnerDepartment,
         row.Slug,
@@ -164,7 +166,8 @@ internal static class EventMapper
         row.ShiftMinutes,
         row.RestrictedWindowHours,
         row.RestrictedMaxPerWindow,
-        row.RestrictedMaxPerEvent);
+        row.RestrictedMaxPerEvent,
+        actions);
 
     /// <summary>
     /// Everything the payload says, and the version the caller edited, so a stale form is answered 409. The address in lower

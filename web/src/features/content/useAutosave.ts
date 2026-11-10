@@ -42,6 +42,8 @@ export interface Autosave {
    * when the draft is stored.
    */
   flush: () => Promise<boolean>;
+  /** Told that a write of the screen's own was answered 409: somebody else saved this row, as when a save of its own is. */
+  stop: () => void;
   /** Told that somebody else stored this snapshot — a press on "save draft" — so it is not dirty. */
   settle: (snapshot: string) => void;
   /**
@@ -153,6 +155,10 @@ export function useAutosave({
     stopped,
     failed: refused === snapshot,
     flush,
+    stop: () => {
+      stoppedNow.current = true;
+      setStopped(true);
+    },
     settle: (saved) => {
       storedNow.current = saved;
       setStored(saved);

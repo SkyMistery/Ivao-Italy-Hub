@@ -8,6 +8,11 @@ using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
+using IvaoHub.Modules.Events;
+using IvaoHub.Modules.Events.Data;
+using IvaoHub.Modules.FlightOps;
+using IvaoHub.Modules.FlightOps.Data;
+using IvaoHub.Modules.FlightOps.Pireps;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -114,6 +119,124 @@ public sealed class DomainBackboneTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var moving = await database.Links.SingleAsync(row => row.Id == id, token);
         moving.OwnerDepartment = Department.ED;
         await Assert.ThrowsAsync<ForbiddenDomainException>(() => database.SaveChangesAsync(token));
+    }
+
+    [Fact]
+    public async Task ADeletionIsJudgedOnTheDepartmentTheRowHadWhenItWasLoaded()
+    {
+        // Issue #319, item 1: a row loaded, given a department the writer holds and removed was judged on that department.
+        var token = TestContext.Current.CancellationToken;
+        var id = await SeedAsSuperadminAsync(NewLink(Department.FOD), token);
+
+        _user.Coordinator(StaffVid, Department.ED);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+        var theirs = await database.Links.SingleAsync(row => row.Id == id, token);
+        theirs.OwnerDepartment = Department.ED;
+        database.Links.Remove(theirs);
+        var refused = await Assert.ThrowsAsync<ForbiddenDomainException>(() => database.SaveChangesAsync(token));
+        Assert.Equal(CorePermissions.LinksEdit, refused.Permission);
+
+        database.ChangeTracker.Clear();
+        Assert.True(await database.Links.IgnoreQueryFilters().AnyAsync(row => row.Id == id, token));
+    }
+
+    [Fact]
+    public async Task AMemberWhoChangesTheFirOfTheirOwnRowIsRefused()
+    {
+        // Issue #319, item 4: the exception for a member's own row (T11) asked only for the same departments. A controller's
+        // request moved to another FIR is a move, and the member holds nothing that writes it. The guard answers before the
+        // database: a row attached as if loaded is enough, and a guard that let it through would meet the database instead.
+        var token = TestContext.Current.CancellationToken;
+        const int controller = 931006;
+        _user.Member(controller);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var events = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+        var transfer = new EventAtcTransfer
+        {
+            Id = 931006,
+            EventId = 931006,
+            ShiftId = 931006,
+            ControllerVid = controller,
+            Fir = "LIRR",
+            OwnerDepartment = Department.ED,
+            OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+        };
+        events.AtcTransfers.Attach(transfer);
+
+        transfer.Fir = "LIMM";
+        await Assert.ThrowsAsync<ForbiddenDomainException>(() => events.SaveChangesAsync(token));
+    }
+
+    [Fact]
+    public async Task APilotHoldingTheValidationDoesNotHandTheirReportToSomebodyElse()
+    {
+        // Issue #319, item 4: the alternatives refused the stakeholder only as the row is now. A pilot who also validates rewrote
+        // their report to another pilot and decided it.
+        var token = TestContext.Current.CancellationToken;
+        const int pilot = 931007;
+        _user.MemberHolding(pilot, new EffectivePermission(TourPermissions.Validate, Department.FOD, "grant:test"));
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var tours = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+        var pirep = new Pirep
+        {
+            Id = 931007,
+            TourId = 931007,
+            ScopeTourId = 931007,
+            Vid = pilot,
+            OwnerDepartment = Department.FOD,
+            OwnerDepartmentMask = DepartmentMask.Of(Department.FOD),
+        };
+        tours.Pireps.Attach(pirep);
+
+        pirep.Vid = 931008;
+        await Assert.ThrowsAsync<ForbiddenDomainException>(() => tours.SaveChangesAsync(token));
+    }
+
+    [Fact]
+    public async Task AnAdoptedChildIsJudgedOnItsParentAsItIsNowAndNeverOnADepartmentTheWriterPutIn()
+    {
+        // Note 2026-11-05-la-cura-che-una-riga-prende-dal-genitore: a row of an event stored when the event was ED and FOD's, the
+        // event now ED and TD's. Training deletes it once it took the event's care (RowCare.Adopt); a row given TD by the writer
+        // is still judged on what it was loaded with (issue #319, item 1). The guard answers before the database: a deletion it
+        // lets through meets the database and finds no row, which is the proof it passed.
+        var token = TestContext.Current.CancellationToken;
+        const int training = 931009;
+        _user.MemberHolding(training, new EffectivePermission(EventsPermissions.Edit, Department.TD, "grant:test"));
+        var stored = DepartmentMask.Of([Department.ED, Department.FOD]);
+        var now = DepartmentMask.Of([Department.ED, Department.TD]);
+
+        EventAirport Stale() => new()
+        {
+            Id = 931009,
+            EventId = 931009,
+            OwnerDepartment = Department.ED,
+            OwnerDepartmentMask = stored,
+        };
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var events = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+            var adopted = Stale();
+            events.Airports.Attach(adopted);
+            RowCare.Adopt(events, adopted, Department.ED, now);
+            events.Airports.Remove(adopted);
+            await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => events.SaveChangesAsync(token));
+        }
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var events = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+            var written = Stale();
+            events.Airports.Attach(written);
+            written.OwnerDepartmentMask = now;
+            events.Airports.Remove(written);
+            await Assert.ThrowsAsync<ForbiddenDomainException>(() => events.SaveChangesAsync(token));
+        }
     }
 
     [Fact]

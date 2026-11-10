@@ -29,6 +29,7 @@ import {
 import { bookingsOpen } from './bookingTimes';
 import { airportLabel } from './cards';
 import { AirportName } from './EventCards';
+import { endOfHours } from './hours';
 import { MY_EVENTS_PAGE, VISITOR, type SlotViewer } from './myBookings';
 import { isLimitRefusal } from './limits';
 import { LimitsNotice } from './myRecord';
@@ -70,6 +71,9 @@ export function PrivateSlots({ event, viewer = VISITOR }: { event: PublicEventDt
   );
   const sameDay = privateOneDay(event.privateSlots);
   const time = (value: string) => moment(value, sameDay ? { date: false } : {});
+  // The end of an hour on the slots' one day is a time, and one past midnight has its date (#333, item 6).
+  const until = (fromUtc: string, toUtc: string) =>
+    sameDay ? endOfHours(fromUtc, toUtc, moment) : time(toUtc);
   const first = event.privateSlots[0];
   const airportOf = (icao: string): PublicEventAirportDto =>
     event.airports.find((airport) => airport.icao === icao) ?? { icao, name: null };
@@ -107,6 +111,7 @@ export function PrivateSlots({ event, viewer = VISITOR }: { event: PublicEventDt
                 arrivals={false}
                 hours={airport.departures}
                 time={time}
+                until={until}
                 viewer={viewer}
                 onOpen={(fromUtc, by) => open(false, fromUtc, by)}
               />
@@ -116,6 +121,7 @@ export function PrivateSlots({ event, viewer = VISITOR }: { event: PublicEventDt
                 arrivals
                 hours={airport.arrivals}
                 time={time}
+                until={until}
                 viewer={viewer}
                 onOpen={(fromUtc, by) => open(true, fromUtc, by)}
               />
@@ -146,6 +152,7 @@ export function PrivateSlots({ event, viewer = VISITOR }: { event: PublicEventDt
           isArrival={opened.isArrival}
           hour={hour}
           time={time}
+          until={until}
           viewer={viewer}
           onClose={() => setOpened(null)}
         />
@@ -159,12 +166,14 @@ function HourTable({
   arrivals,
   hours,
   time,
+  until,
   viewer,
   onOpen,
 }: {
   arrivals: boolean;
   hours: readonly PrivateHour<PublicPrivateSlotDto>[];
   time: (value: string) => string;
+  until: (fromUtc: string, toUtc: string) => string;
   viewer: SlotViewer;
   onOpen: (fromUtc: string, by: HTMLElement | null) => void;
 }) {
@@ -219,7 +228,10 @@ function HourTable({
                       onOpen(hour.fromUtc, click.currentTarget);
                     }}
                   >
-                    {t('events:private.range', { from: time(hour.fromUtc), to: time(hour.toUtc) })}
+                    {t('events:private.range', {
+                      from: time(hour.fromUtc),
+                      to: until(hour.fromUtc, hour.toUtc),
+                    })}
                   </button>
                 </td>
                 <td className="py-2 pr-3 tabular-nums">
@@ -256,6 +268,7 @@ function PrivateHourDialog({
   isArrival,
   hour,
   time,
+  until,
   viewer,
   onClose,
 }: {
@@ -264,6 +277,7 @@ function PrivateHourDialog({
   isArrival: boolean;
   hour: PrivateHour<PublicPrivateSlotDto>;
   time: (value: string) => string;
+  until: (fromUtc: string, toUtc: string) => string;
   viewer: SlotViewer;
   onClose: () => void;
 }) {
@@ -286,7 +300,10 @@ function PrivateHourDialog({
       title={t(isArrival ? 'events:private.dialog.arrivals' : 'events:private.dialog.departures', {
         airport: airportLabel(airport),
       })}
-      description={t('events:private.dialog.hour', { from: time(hour.fromUtc), to: time(hour.toUtc) })}
+      description={t('events:private.dialog.hour', {
+        from: time(hour.fromUtc),
+        to: until(hour.fromUtc, hour.toUtc),
+      })}
     >
       {/* Two flights' fields are taller than a window, a phone's first: the dialog's own content scrolls, its title stays. */}
       <div className="scroll-thin -mr-2 flex max-h-[65vh] flex-col gap-4 overflow-y-auto pr-2">

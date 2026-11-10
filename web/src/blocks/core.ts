@@ -178,6 +178,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     group: 'content',
     subgroup: 'text',
     icon: Heading,
+    alignable: true,
   },
   {
     type: CORE_BLOCK_TYPES.text,
@@ -195,6 +196,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     group: 'content',
     subgroup: 'text',
     icon: Pilcrow,
+    alignable: true,
   },
   {
     type: CORE_BLOCK_TYPES.callout,
@@ -214,6 +216,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     group: 'content',
     subgroup: 'text',
     icon: Info,
+    alignable: true,
   },
   {
     type: CORE_BLOCK_TYPES.cta,
@@ -297,6 +300,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     group: 'content',
     subgroup: 'media',
     icon: Image,
+    alignable: true,
   },
   {
     type: CORE_BLOCK_TYPES.video,
@@ -312,6 +316,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     group: 'content',
     subgroup: 'media',
     icon: Video,
+    alignable: true,
   },
   {
     type: CORE_BLOCK_TYPES.embed,
@@ -552,6 +557,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     editorLabelKey: 'blocks.testimonial.label',
     group: 'interactive',
     icon: Quote,
+    alignable: true,
   },
   {
     type: CORE_BLOCK_TYPES.buttonGroup,
@@ -560,7 +566,6 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     schema: buttonGroupSchema,
     component: ButtonGroupBlock,
     example: {
-      align: 'left',
       buttons: [
         { label: { en: 'Start here', it: 'Comincia da qui' }, href: '/start', variant: 'primary' },
         { label: { en: 'Read more', it: 'Approfondisci' }, href: '/about', variant: 'secondary' },
@@ -569,6 +574,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     editorLabelKey: 'blocks.buttonGroup.label',
     group: 'interactive',
     icon: Pointer,
+    alignable: true,
   },
   {
     type: CORE_BLOCK_TYPES.spacer,

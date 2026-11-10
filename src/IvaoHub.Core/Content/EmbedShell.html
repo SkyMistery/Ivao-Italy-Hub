@@ -218,22 +218,95 @@
       })();
 
       /*
-        The height, and it is the only thing that ever leaves this frame: one number, to the page
-        that framed it. The page accepts it only from this frame and clamps it, so nothing here can
-        make a document taller than a document.
+        The height: one number, to the page that framed it. The page accepts it only from this frame
+        and clamps it, so nothing here can make a document taller than a document.
+
+        The measure is the larger of two. The rectangle of the root is the flow; `scrollHeight` also
+        sees what the rectangle does not count: something positioned out of the flow, a negative
+        margin, a `body` that was given the frame's height and overflows it.
+
+        ⚠️ But `scrollHeight` is never less than the frame, so taken as it is the frame could only ever
+        grow: a fragment shorter than the room it started with would keep that room, and so would a
+        drawing after a phone is turned on its side. It says something only when it is beyond the
+        frame, then, and what it said is kept (`spill`) because at the new height it will have nothing
+        to add. It is forgotten when the root changes width, or when its height changes with the frame
+        staying as it was: the next measure is the flow alone, and if something still spills out of
+        that, it says so again.
+
+        ⚠️ Not when the height changes because the page answered. A flow that follows the frame (`vh`,
+        which the guidelines forbid and saved fragments use) changes with every answer, and forgetting
+        then would never settle: 500, the flow 250, forgotten, says 250, the flow 125, spills, says 500.
       */
       (function () {
+        var root = document.documentElement;
         var last = 0;
+        var width = 0;
+        var flow = 0;
+        var room = 0;
+        var spill = 0;
+
         var tell = function () {
-          var height = Math.ceil(document.documentElement.getBoundingClientRect().height);
+          var box = root.getBoundingClientRect();
+
+          if (box.width !== width || (box.height !== flow && window.innerHeight === room)) {
+            spill = 0;
+          }
+
+          width = box.width;
+          flow = box.height;
+          room = window.innerHeight;
+
+          if (root.scrollHeight > root.clientHeight) {
+            spill = root.scrollHeight;
+          }
+
+          var height = Math.ceil(Math.max(box.height, spill));
           if (height !== last && height > 0) {
             last = height;
             parent.postMessage({ hub: 'embed-height', height: height }, '*');
           }
         };
 
-        new ResizeObserver(tell).observe(document.documentElement);
+        new ResizeObserver(tell).observe(root);
         window.addEventListener('load', tell);
+
+        // The page answering with a new height: the root's box may be the same as before, and only
+        // now can the spill be seen again.
+        window.addEventListener('resize', tell);
+
+        /*
+          ⚠️ A panel shown out of the flow changes no box the observer above is watching, and in a frame
+          the page does not let scroll (`scrolling`, on its side) what is not measured cannot be reached
+          at all. So a change to the document asks for a measure too, once per frame at most. The filter
+          leaves out what a drawing usually changes sixty times a second (`transform`, `d`, `cx`); one
+          that writes `style` that often asks once per frame, and a measure that finds nothing says nothing.
+
+          And a choice asks too, whatever it changed: `aria-pressed`, a `data-` attribute or `:checked`
+          can open a panel through a rule of the fragment's, and no filter can name them all. On the way
+          down, so that a fragment stopping the event does not stop this; in the next frame, so that its
+          own handler has run.
+        */
+        var asked = false;
+        var askForAMeasure = function () {
+          if (!asked) {
+            asked = true;
+            requestAnimationFrame(function () {
+              asked = false;
+              tell();
+            });
+          }
+        };
+
+        new MutationObserver(askForAMeasure).observe(document.body, {
+          subtree: true,
+          childList: true,
+          characterData: true,
+          attributeFilter: ['style', 'class', 'hidden', 'open'],
+        });
+
+        ['click', 'input', 'change'].forEach(function (name) {
+          document.addEventListener(name, askForAMeasure, true);
+        });
       })();
     </script>
 

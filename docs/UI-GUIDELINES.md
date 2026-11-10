@@ -53,7 +53,9 @@ speak English.
 What it does *not* replace is as important: the open and closed state is still Atmosphere's
 `SidebarProvider` and `SidebarContext`, and every leaf is still its `SidebarItem`. Only the frame
 and the group heading are ours, because those are the two pieces the library exports no way to
-reach. And it **is** the `<aside>` — it is not a panel to wrap in a shell of your own. Wrapping the
+reach. The provider sits in `StaffLayout`, around the row, so that the page editor can reach the same
+state with `useSidebar()`; a second sidebar on a page brings a provider of its own. And it **is** the
+`<aside>` — it is not a panel to wrap in a shell of your own. Wrapping the
 one it replaced once drew the whole back office inside a 288 pixel column with two collapse
 buttons, and `e2e/back-office.spec.ts` measures the geometry so that it cannot happen again.
 
@@ -90,8 +92,10 @@ the top of `Toaster.tsx`.
 
 `MediaPicker` chooses a file out of the library of a department, and it is on the list because two
 very different screens mount it: the library itself, and every block property that names a file. It
-picks and nothing else — uploading belongs to the library screen, and a picker that also uploaded
-would be a second way for a file to enter the hub.
+looks for a file (a search, a category unless the field asks for one, a next page: the same read of
+the library), and where a screen allows it, it takes a new one, through the same call the library
+screen makes: by the button at the top or by dragging a file on the grid. A file uploaded there is
+chosen, and it says it has no alternative text yet, with the way to its page in the library.
 
 `CalendarView` draws the one calendar of the division as an agenda, a week or a month, and it is on
 the list for the same reason: two screens mount it, the public calendar and the `calendar` block
@@ -412,12 +416,18 @@ What the schema may say about how a field is drawn:
   is always ISO in UTC**, whatever the browser's own time zone is. An instant shows the division's
   local time underneath, which is the rule every list follows; a day does not, because "the same day
   elsewhere" is not a fact a day has, and echoing one is only ever a chance to read the wrong day.
-  Both need `division` on `SchemaForm`;
+  An optional one has a button beside it that takes it off. Both need `division` on `SchemaForm`;
 - `localizedObject({ ... })` is a small object per language: language tabs, and inside each of them
   the generator again. `seo` is the first, and it is how a translated JSON column becomes fields a
   coordinator can fill in rather than JSON they have to write;
 - a **list** of objects can be reordered with the up and down buttons beside add and remove. They
-  are what a keyboard reaches, and they stay when dragging arrives;
+  are what a keyboard reaches, and they stay when dragging arrives. An entry is a closed row, its
+  number and its title, and a click opens it and closes the one open before; a new entry is born
+  open, a list that opens with one entry shows it, and an entry holding an error opens by itself.
+  The title is the first text of the entry, in the language on screen — or the first choice, or the
+  first date, in a list that has no text — and `.meta({ entryTitle: true })` on another field says
+  otherwise. A closed entry stays mounted, hidden: its fields keep doing to their values what a
+  drawn field does;
 - `.meta({ slugFrom: 'title' })` proposes a field from another one while the other is being typed,
   and stops for ever the moment somebody writes in it. `slugPrefix: '/'` puts the leading slash of a
   menu path in front. An address outlives the page it was made for, so a row that already has one
@@ -446,7 +456,7 @@ Filtering in memory is right for a short, fixed list and wrong for anything a da
 
 ⚠️ And where that set contains **routes of this client**, the two halves agree **by hand**: a route
 is not something the OpenAPI contract can carry. `MenuItemWriteDtoValidator.Screens` and
-`SITE_SCREENS` in `web/src/routes/_staff/staff.$dept.menu.$id.tsx` are one list written twice. A fork
+`SITE_SCREENS` in `web/src/features/content/siteAddresses.ts` are one list written twice. A fork
 that adds or removes a screen edits both, and an integration test posting a screen keeps them honest
 — the same arrangement the backgrounds of a section already use.
 
@@ -547,12 +557,25 @@ colour chosen by hand can promise nothing about the text on it. They are Atmosph
 same reason in reverse: on `aurora-mid` secondary text measures 2.3 : 1 and no grey light enough to
 fix it would still read as secondary.
 
+**A word of prose may take one of four colours, and no other.** "No free colour" stays: the text of a
+field drawn by `MarkdownContent` takes a colour only from the closed set of the formatting bar — `brand`
+(blue), `ocean` (light blue), `aurora` (teal) and `danger` (red, for a warning) — written
+`:ocean[a word]`; a name outside the set draws plain text. Each is a pair of tones in
+`src/styles/index.css`, and a dark ground takes the second by construction, because it carries `dark`.
+Each tone is measured at 4.5 : 1 on every ground in both themes by `e2e/contrast.spec.ts`, which is why
+the brand's orange is left out (the numbers are under the accent, below). `image` is measured on the
+`muted` it stands on before a picture arrives: nothing can promise a colour over a photograph, which is
+one more reason a picture is for a quiet section. ⚠️ A colour never carries a meaning alone: the words
+have to say it too. **There is no underline**, because on this site an underlined word reads as a link,
+and the alignment belongs to the whole block.
+
 **A block's accent is four names, and it colours graphics only.** `hero`, `cardGrid`, `iconGrid` and
 `timeline` carry an `accent` property — `brand`, `ocean`, `aurora`, `artifice` — which draws the icon
 of an item, the 2px rule above a card and the short bar above a hero; in an `iconGrid` the icon also
 stands on a disc of the same colour at 15 %, because a line drawing alone carried too little of the
 colour to tell the four apart (issue #363). The default is `brand`, which is
-what those blocks already looked like, so no page changes by itself. ⚠️ **Never a word.** WCAG asks
+what those blocks already looked like, so no page changes by itself. ⚠️ **Never a word**: the accent and
+the colour of a word are two sets, measured for two thresholds. WCAG asks
 3 : 1 of a graphic and 4.5 : 1 of text, and the brand's orange does not reach the second: `artifice-low`
 is 4.5 : 1 on white but 3.7 : 1 on the `accent` ground, and `artifice-dark` is 3.2 : 1 on white
 already. So a hero's overline stays the secondary grey and the colour becomes a bar beside it. Each
@@ -564,8 +587,9 @@ different in kind rather than in degree. The code lives on the block's **envelop
 in `props`, because the server reads it to serve the frame and the server never reads inside `props`.
 It runs in a frame served by `/embed/{content}/{version}/{block}` with a policy of its own —
 `default-src 'none'`, `sandbox allow-scripts`, an opaque origin — so it can draw and answer clicks
-and can do nothing else: no network, no storage, no access to the page around it. Whatever it tries
-and is refused, and any error it throws, is drawn under it **for the staff only**. The rules an
+and can do nothing else: no network, no storage, no access to the page around it. It is as tall as
+what it holds and has no scroll bar, up to 2000 px, past which it stops growing and scrolls. Whatever
+it tries and is refused, and any error it throws, is drawn under it **for the staff only**. The rules an
 author follows — what to write, how it should look, how to see it before publishing — are not in this
 file: they are served by the hub at `/embed/guidelines`, generated from the very shell that wraps
 the code, beside a local preview at `/embed/preview`. If you fork this and change the shell, those
@@ -583,6 +607,15 @@ photograph is not something this hub can make read well, and should not be attem
 **The width belongs to the section**, and there are four: `narrow`, `default` (the reading column),
 `wide`, `full`. `full` is for `hero`, `gallery` and `image`; a section of text as wide as the screen
 is a line nobody finishes.
+
+**A block's alignment is on its envelope, and only where it means something.** `align` sits beside
+`column` and `span`: `left`, `center` or `right`, and absent means left. A block that can be aligned
+says so in its registration (`alignable`): today the heading, the text, the callout, the image, the
+video, the buttons and the testimonial. A table or a grid of cards already takes the whole column.
+One wrapper of the renderer draws it: the text, a piece narrower than its column, a row laid out by
+`flex` that marks itself with `data-align-row`, and the bullet of a list next to its words. An
+alignable block never declares an `align` of its own among its props (`blocks/align.test.tsx`).
+`hero` keeps its own, because it aligns what is inside its ground, not the block in the column.
 
 **A locked section shows its fields, not its structure.** No "add block", no "move", no "drag", no
 "delete":
@@ -629,9 +662,16 @@ An alignment or a tone is still a `z.enum` and a column count still a number —
 would otherwise eat them, but because a select is the right control for a closed set. The shape of a
 video is `16x9` and not `16:9`, because a colon is what i18next reads as a namespace separator.
 
-**And prose loses its Markdown on the way in.** A snippet is read by a person, so the asterisks come
-off, a link keeps its text and loses its address, and a heading or a bullet loses its marker.
-Underscores stay: `snake_case` is a word.
+**And prose loses its Markdown on the way in.** A snippet is read by a person, so the asterisks and
+tildes come off, a link keeps its text and loses its address, a colour keeps its words and loses its
+name, and a heading or a bullet loses its marker. Underscores stay: `snake_case` is a word.
+
+**Markdown is CommonMark, plus two tildes and the colours.** `MarkdownContent` reads `~~struck~~` and
+`:ocean[a word]` and nothing else of GFM or of the directives: a table stays the words it was (a table is
+the `table` block), and `10:30` is a time. A field it draws is annotated `.meta({ markdown: true })`, and
+that puts the formatting bar above its box, so the annotation and the renderer are written together.
+`hero`, `timeline`, `cardGrid` and `iconGrid` draw their text plain, because they are short lines inside a
+drawing; a `callout` is prose, and has the bar.
 
 **A block never contains blocks.** `tabs` and `accordion` carry markdown per entry — the same
 sanitized `MarkdownContent` as `text` — and the only nesting in the model is the one sections have
@@ -663,10 +703,30 @@ the same query and is what an older body may carry.)
 Never draw such a property as a number field. `MediaPicker` is what fills it in, and the reason is
 plain: a free numeric field produces pages pointing at files that were deleted years ago.
 
+A file a block cannot do without — `.meta({ media: true })` that is not `.optional()` — is declared
+again in the block's C# half, `RequiredMedia: ["images[].mediaId"]`, and a page with one left to choose
+is not published. It is the one piece of a schema the server is told, because a key that is not there
+cannot be found by walking a document, and a test fails when the two halves disagree.
+
 A component builds the address of a file with `useMediaFileUrl()`, never by hand. On a published page
 it carries the fingerprint of the file (`/media/{id}/{fingerprint}/file`), which may be cached for a
 year and changes when somebody replaces the file on the same row; elsewhere it is the address of the
 identifier alone, which is always right and checked again at each read.
+
+### How a block names an address
+
+An address a block leads to is a property called **`href`**, wherever it sits, annotated
+`.meta({ address: true })`. The form offers the addresses of the site there, grouped: the pages, news
+items and documents online that the writer can read, the screens of the application and the links of
+the library. It is an offer and not a rule: an address of somewhere else is written in full. A block
+that called it something else would offer nothing, and neither the import of a file nor publication
+would check it.
+
+Publication reads every `href` and every link of a piece of Markdown, without a schema. An address
+that starts with `/` has to arrive: a screen, a first segment the application or a module answers for,
+or a content online. And it has to arrive for the readers of the page: a page for everybody does not
+lead to a page for the staff. An address of somewhere else is not checked, and a draft is free to point
+at a page that comes out later.
 
 ### How a block sits on a dashboard
 
@@ -823,7 +883,7 @@ every January, in every language at once.
 
 ## The editor of a page, and what it may not do
 
-Five rules M1 settled by using the editor rather than by designing it. They are here because they
+Rules settled by using the editor rather than by designing it. They are here because they
 are the ones a contributor is most likely to break by improving something.
 
 **Three columns, and the middle one is the only one that changes.** Components on the left, the page
@@ -832,6 +892,29 @@ page itself — the same renderer the public gets, clicked to select — and one
 outline, which is the road for anybody without a mouse. The two side columns do not move when it
 does: an editor whose panels jump when you change how you are looking at the page is one you have to
 re-find your place in every time.
+
+**Only who drags moves them.** Two thin lines between the columns, from `xl` up: real separators, with
+their value for a screen reader, moved by the pointer or the arrow keys, and put back by a double click.
+The palette stays between 10 and 20 rem, the properties between 16 and 36, and the page never goes under
+24: that one is the grid's to keep, with `minmax` tracks, so a narrower window squeezes the side columns
+and never the page. The widths are remembered in the browser, a comfort of whoever is looking and not a
+fact to keep on the server. The staff sidebar shuts when the editor opens and is as it was when the editor
+closes; whoever opens it by hand while writing keeps it open.
+
+**While composing, the page says what it is made of, and a visitor never reads any of it.** Every
+section has a thin dashed outline, solid when it is the one picked, and a label with its number among
+its siblings, its name and its background ("2 · Rules · pale blue background"; a row says "Row 2.1").
+The name is a section's `title`, which only who writes sees. The way to insert is the bar of what is
+picked: "+ section above" and "+ section below", "+ row above" and "+ row below" on a row, which needs
+no air and works with a finger. Between two sections, when the pointer or the keyboard reaches the
+place, "+ section" does the same as a shortcut, and "+ row" for the rows of a section. A place to insert
+stands under what the section holds, so a block is picked up to its edge and the place answers only in
+the air: where two sections with no padding touch there is none, and that is what the bar is for. A row
+inside a row comes from the row's bar. All of it stands
+out of the flow, so nothing on the page moves to make room, and all of it reads the composing context
+(`blocks/picking.ts`), which the public site does not mount. Rows are
+the only subsections there are: for things side by side there are the columns, and for things grouped
+the Tabs and the Questions blocks.
 
 **There is one place a block is added from.** The palette is the bar on the left, and adding a block
 puts it in the section that is selected — the section itself, or the one holding the selected block.

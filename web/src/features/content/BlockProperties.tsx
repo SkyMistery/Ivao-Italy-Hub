@@ -1,13 +1,20 @@
-import { Label, Select } from '@ivao/atmosphere-react';
+import { Button, Label, Select } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
+import { TextAlignCenter, TextAlignEnd, TextAlignStart } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
 import {
+  ALIGNS,
+  EMBED_GUIDELINES_PATH,
   SPANS,
+  alignOf,
+  carriesOldAlign,
   columnsOf,
+  placedAt,
   spanOf,
+  type Align,
   type Background,
   type BlockEnvelope,
   type Layout,
@@ -17,7 +24,9 @@ import {
   SchemaForm,
   chooseCalendarKinds,
   collectionKindOf,
+  namesAddresses,
   namesCalendarKinds,
+  suggestAddresses,
   suggestCollections,
   writtenValues,
 } from '../../shared/forms';
@@ -25,6 +34,7 @@ import { useLocalized } from '../../shared/i18n/useLocalized';
 import { collectionsOfKindQuery } from '../categories/queries';
 import { bootstrapQuery } from '../me/queries';
 import { emptyLocalized } from '../../shared/i18n/localized';
+import { aboutKeyOf } from '../../shared/modules';
 import type { MediaLibraryQuery } from '../../shared/ui';
 
 import { defaultProps } from './body';
@@ -37,6 +47,7 @@ const MAX_SOURCE_BYTES = 64 * 1024;
 
 import { SectionFrame } from './SectionFrame';
 import { sectionSettingsSchema, type SectionFormValues } from './schema';
+import { asSuggestions, useAddressesToLinkTo } from './siteAddresses';
 import type { SectionRule } from './templateRules';
 
 /**
@@ -135,6 +146,8 @@ export function SectionProperties({
         onBackground={(background) => onFrame({ background })}
         onLayout={(layout) => onFrame({ layout })}
       />
+
+      <p className="text-muted-foreground text-sm">{t('content.section.howToDivide')}</p>
 
       {isTemplate && named ? (
         // Written once, then shown. Changing it would break the match with every page already made
@@ -288,7 +301,7 @@ function SourceField({
 
       <p className="text-muted-foreground text-sm">{t('blocks.interactive.sourceHint')}</p>
       <a
-        href="/embed/guidelines"
+        href={EMBED_GUIDELINES_PATH}
         download="interactive-blocks.md"
         className="text-primary text-sm underline underline-offset-2"
       >
@@ -304,6 +317,44 @@ function SourceField({
       >
         {t('blocks.interactive.preview')}
       </a>
+    </div>
+  );
+}
+
+const ALIGN_ICON = { left: TextAlignStart, center: TextAlignCenter, right: TextAlignEnd } as const;
+
+/**
+ * Where the block stands in its column: three icons, applied at once, like the grounds of a section (`SectionFrame`),
+ * because an alignment is chosen while looking at the page. Not in the generated form: it is the envelope, like the
+ * column beside it (design of the editor's phase 3, §5.6).
+ */
+function AlignField({ align, onAlign }: { align: Align; onAlign: (align: Align) => void }) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-sm font-medium">{t('content.editor.align.label')}</span>
+      <div role="group" aria-label={t('content.editor.align.label')} className="flex items-center gap-1">
+        {ALIGNS.map((value) => {
+          const Icon = ALIGN_ICON[value];
+          const label = t(`content.editor.align.options.${value}`);
+
+          return (
+            <Button
+              key={value}
+              type="button"
+              size="sm"
+              variant={value === align ? 'secondary' : 'ghost'}
+              aria-label={label}
+              aria-pressed={value === align}
+              title={label}
+              onClick={() => onAlign(value)}
+            >
+              <Icon aria-hidden className="size-4" />
+            </Button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -359,6 +410,10 @@ export function BlockProperties({
     ...collectionsOfKindQuery(collectionKind ?? 'News'),
     enabled: collectionKind !== null,
   });
+  // Where a button, a card or a logo may lead (design §4.5): a way of not typing, and the field stays open. From the
+  // first drawing, the screens at least, so the field never changes kind under somebody typing.
+  const leadsSomewhere = registration !== undefined && namesAddresses(registration.schema);
+  const addresses = useAddressesToLinkTo(leadsSomewhere);
   // The kinds of the calendar a block chooses from (issue #360): the ones in use, from `/api/me`, and
   // any this block already holds that is no longer among them, said as retired rather than drawn
   // as an empty select — the block keeps it, and the calendar answers it with nothing.
@@ -382,6 +437,10 @@ export function BlockProperties({
       );
     }
 
+    if (leadsSomewhere) {
+      shaped = suggestAddresses(shaped, asSuggestions(addresses));
+    }
+
     if (bootstrap !== undefined && namesCalendarKinds(shaped)) {
       const inUse = bootstrap.calendarKinds.map((kind) => ({
         value: kind.key,
@@ -395,7 +454,7 @@ export function BlockProperties({
     }
 
     return shaped;
-  }, [registration, collections.data, bootstrap, heldKinds, read, t]);
+  }, [registration, collections.data, leadsSomewhere, addresses, bootstrap, heldKinds, read, t]);
 
   if (registration === undefined || schema === undefined) {
     return <p className="text-muted-foreground text-sm">{t('blocks.unknown', { type: block.type })}</p>;
@@ -403,8 +462,17 @@ export function BlockProperties({
 
   const columns = columnsOf(section.layout);
   const labels = registration.propertyLabels ?? `blocks.${block.type}`;
-  // Beside the block's name, so a module's block has its line in its own language files too.
-  const aboutKey = registration.editorLabelKey.replace(/\.label$/, '.about');
+  const alignable = registration.alignable === true;
+  // A block written before PR 3.9 with the alignment in its props (a group of buttons): the panel shows it as the
+  // envelope's, and its first write — any write — moves it there, so that opening a block never changes a page by
+  // itself (design §2, principle 4).
+  const oldAlign = alignable && carriesOldAlign(block);
+  const applyProps = (props: Record<string, unknown>) =>
+    oldAlign ? onEnvelope(placedAt(block, alignOf(block), props)) : onApplyProps(props);
+  // Beside the block's name, so a module's block has its line in its own language files too. Every
+  // block has one since PR 3.0a (`app/blockAbout.test.ts`); the guard stays for a build whose
+  // language files are late.
+  const aboutKey = aboutKeyOf(registration);
   const about = i18n.exists(aboutKey) ? t(aboutKey, registration.about?.values ?? {}) : null;
 
   return (
@@ -438,6 +506,10 @@ export function BlockProperties({
             items={[...sections]}
           />
         </div>
+      ) : null}
+
+      {alignable ? (
+        <AlignField align={alignOf(block)} onAlign={(align) => onEnvelope(placedAt(block, align))} />
       ) : null}
 
       {registration.kind === 'Data' && registration.alwaysLive !== true && captures ? (
@@ -499,7 +571,7 @@ export function BlockProperties({
         // language would otherwise travel as `{ en: "", it: "" }`, and publication — which reads
         // the body without knowing what a block means — would read that as a translation hole and
         // refuse the page (`writtenValues`).
-        onChange={(values) => onApplyProps(writtenValues(registration.schema, values))}
+        onChange={(values) => applyProps(writtenValues(registration.schema, values))}
       />
     </div>
   );

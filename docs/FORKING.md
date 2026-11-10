@@ -266,7 +266,8 @@ Four things, and the first two are where all of the module's own code lives:
 2. **`web/src/modules/<key>/`** — all of the module's React code, and no other folder holds any of
    it. `index.ts` exports exactly one `ModuleManifest`: its blocks, its routes and the
    i18n namespaces it brings. A route is public by default; `area: 'staff'` hangs it inside the back
-   office, behind the staff guard and the `permission` the route names; `area: 'member'` puts it behind
+   office, behind the staff guard and the `permission` the route names — with `unscoped: true`, held
+   without a row scope, for a register a grant on one row does not open; `area: 'member'` puts it behind
    the sign in, with the public frame (a form only a signed in member sends, such as a pilot's report);
    and `validateSearch` gives a list its typed search parameters. Its language files live in `web/src/modules/<key>/locales/{lang}/`;
    `pnpm i18n:sync` copies them into `locales/`, which is the one set the browser, the back end and
@@ -731,6 +732,12 @@ out to break something on your installation, `contentSecurityPolicy.enabled: fal
 editing a file, because production is reached by FTP and there is no shell there. Everything else in
 it is measured against this application: `web/e2e/security.spec.ts` walks the screens under the real
 policy and fails on a single refusal, which is the test to run if you change a directive.
+
+A last one is optional: **`Discord`**, also in `secrets/*.json`. With it, a member can connect their
+Discord account on `/me` and sees their username there; nobody else does. Without it, the section does
+not exist and nothing else changes. Create an application in the Discord developer portal, register
+`https://<host>/auth/discord/callback` as its redirect, and fill in all three keys or none: a section
+filled in halfway stops the application at the start. See `docs/DEPLOYING.md`.
 
 One more thing to change before the first start, and it is easy to miss because it is not a secret:
 **`superAdmins` in `config/division.json` still holds the VIDs of the division this repository was

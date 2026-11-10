@@ -265,7 +265,7 @@ export function CalloutBlock({ props }: BlockComponentProps) {
       <Icon aria-hidden className="size-4" />
       {title === '' ? null : <AlertTitle>{title}</AlertTitle>}
       <AlertDescription className={title === '' ? 'mt-0' : undefined}>
-        {read(text(props, 'text'))}
+        <MarkdownContent source={read(text(props, 'text'))} />
       </AlertDescription>
     </AlertRoot>
   );
@@ -546,6 +546,46 @@ export function EmbedBlock({ props }: BlockComponentProps) {
 
 // ---- interactive -----------------------------------------------------------------------------
 
+/** The most a frame is given, however tall it says it is. Past this it scrolls (Carmine, 5 November 2026). */
+const TALLEST_FRAME = 2000;
+
+/** A bar coming back this soon after it went is the answer to its going, and not somebody's choice. */
+const A_BAR_BACK_AT_ONCE = 1000;
+
+interface FrameBar {
+  readonly on: boolean;
+  /** When it last went. */
+  readonly wentAt: number;
+  /** The width of the frame at which it came back at once: there it stays. */
+  readonly staysAt: number | null;
+}
+
+const NO_BAR: FrameBar = { on: false, wentAt: Number.NEGATIVE_INFINITY, staysAt: null };
+
+/**
+ * The scroll bar of a frame, after it asked for this height.
+ *
+ * ⚠️ A bar takes width, a drawing scaled by its `viewBox` is then shorter, and what it says with the bar
+ * is less than what it would need without it. That is the fault this exists for, in both directions: left
+ * to the browser below the limit, the bar stays for good on any drawing taller than the room it was first
+ * given (the guidelines' own example did it, at every width); taken at its word around the limit, a
+ * drawing of 2005 px would say 1977 with the bar, lose the bar, say 2005, and so on for ever.
+ *
+ * So the bar goes whenever what the frame says fits, and only what comes next tells whether that was
+ * true: back at once means it did not fit without it, and at that width the bar stays. This knows nothing
+ * about how wide a bar is (a fragment can style its own, and the browser's zoom changes it) nor about how
+ * the content scales.
+ */
+function barAfter(bar: FrameBar, asked: number, width: number, now: number): FrameBar {
+  if (asked > TALLEST_FRAME) {
+    return bar.on
+      ? bar
+      : { ...bar, on: true, staysAt: now - bar.wentAt < A_BAR_BACK_AT_ONCE ? width : bar.staysAt };
+  }
+
+  return !bar.on || bar.staysAt === width ? bar : { ...bar, on: false, wentAt: now };
+}
+
 /**
  * An animation, or a small thing with choices in it, written by somebody and run **in a frame that
  * can do nothing** (12 September 2026, `decisions/2026-09-12-il-blocco-interattivo.md`).
@@ -570,6 +610,7 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
   const frame = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState(() => count(props, 'minHeight', 320));
   const [refused, setRefused] = useState<{ kind: string; detail: string } | null>(null);
+  const [bar, setBar] = useState(NO_BAR);
 
   const title = read(text(props, 'title'));
   const description = read(text(props, 'description'));
@@ -620,7 +661,10 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
         return;
       }
 
-      setHeight(Math.min(Math.max(Math.round(message.height), 80), 2000));
+      const asked = Math.round(message.height);
+      setHeight(Math.min(Math.max(asked, 80), TALLEST_FRAME));
+      const now = performance.now();
+      setBar((was) => barAfter(was, asked, element.clientWidth, now));
     };
 
     window.addEventListener('message', onMessage);
@@ -635,7 +679,9 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
       element.removeEventListener('load', tellTheTheme);
       theme.disconnect();
     };
-  }, [address]);
+    // ⚠️ `printing` because the frame is taken out of the page and what comes back is a new one, and a
+    // cancelled print does it too: listening to the old one, the page would never hear it again.
+  }, [address, printing]);
 
   const caption = description === '' ? null : <p className="text-muted-foreground text-sm">{description}</p>;
 
@@ -681,6 +727,11 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
         // frame back in our origin and hand a pasted script the reader's session: it is the single
         // line that the whole design rests on, and `blocks.test.tsx` fails if it changes.
         sandbox="allow-scripts"
+        // ⚠️ Here and not in the shell, for two reasons. The limit is this page's, and it is the page that
+        // has it in one place. And the frame of a public page is kept for a year: a version already in
+        // somebody's cache has the shell it was published with, and it obeys this all the same. An old
+        // attribute, and every engine applies a change to it on a frame already loaded (5 November 2026).
+        scrolling={bar.on ? 'auto' : 'no'}
         loading="lazy"
         // ⚠️ `print:hidden` as well as the context above, and the two are not the same thing. The
         // context is how a **document** prints — `PrintContext` takes the frame out of the page
@@ -1122,7 +1173,8 @@ export function TestimonialBlock({ props }: BlockComponentProps) {
   return (
     <figure className="bg-muted flex flex-col gap-4 rounded-lg p-6">
       <BlockQuote className="text-lg">{read(text(props, 'quote'))}</BlockQuote>
-      <figcaption className="flex items-center gap-3">
+      {/* A row, like the buttons of a group: it follows the block's alignment through the wrapper (PR 3.9). */}
+      <figcaption data-align-row="" className="flex items-center gap-3">
         {portrait === null ? null : (
           <img
             src={mediaFileUrl(portrait)}
@@ -1142,12 +1194,6 @@ export function TestimonialBlock({ props }: BlockComponentProps) {
 
 // ---- buttonGroup -----------------------------------------------------------------------------
 
-const GROUP_ALIGN = {
-  left: 'justify-start',
-  center: 'justify-center',
-  right: 'justify-end',
-} as const;
-
 const BUTTON_VARIANT = {
   primary: 'primary',
   secondary: 'secondary',
@@ -1156,10 +1202,11 @@ const BUTTON_VARIANT = {
 
 export function ButtonGroupBlock({ props }: BlockComponentProps) {
   const read = useLocalized();
-  const align = GROUP_ALIGN[choice(props, 'align', ['left', 'center', 'right'] as const, 'left')];
 
+  // Where the row stands is the block's envelope, drawn by the renderer's wrapper (PR 3.9): this row only says it is
+  // one, since a row laid out by flex follows neither the alignment of the text nor a margin.
   return (
-    <div className={`flex flex-wrap gap-3 ${align}`}>
+    <div data-align-row="" className="flex flex-wrap gap-3">
       {entries(props, 'buttons').map((button, index) => (
         <Button
           key={index}

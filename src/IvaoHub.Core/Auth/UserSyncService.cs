@@ -25,7 +25,6 @@ public sealed record IvaoUserProfile(
     string? CountryId,
     int? RatingAtc,
     int? RatingPilot,
-    string? DiscordId,
     string? Email,
     string? LanguageId,
     bool? IvaoIsStaff,
@@ -109,7 +108,6 @@ public sealed class UserSyncService(
         // so it never lets anybody past a threshold they have not reached (decision note of 25 September 2026).
         user.HoursAtc = profile.HoursAtc ?? user.HoursAtc;
         user.HoursPilot = profile.HoursPilot ?? user.HoursPilot;
-        user.DiscordId = profile.DiscordId;
 
         // Read for the notification service and for nothing else. Kept up to date at every sign
         // in, and left alone when IVAO sends nothing rather than blanked: an address the hub had

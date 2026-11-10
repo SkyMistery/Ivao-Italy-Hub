@@ -372,10 +372,15 @@ export async function uploadMedia(
   ownerDepartment: string,
   name: string,
   bytes: Buffer,
+  category?: string,
 ): Promise<number> {
   const response = await context.request.post('/api/media', {
     headers: asTheClientDoes,
-    multipart: { file: { name, mimeType: 'image/png', buffer: bytes }, ownerDepartment },
+    multipart: {
+      file: { name, mimeType: 'image/png', buffer: bytes },
+      ownerDepartment,
+      ...(category === undefined ? {} : { category }),
+    },
   });
   expect(response.status(), await response.text()).toBeLessThan(300);
   return ((await response.json()) as { id: number }).id;

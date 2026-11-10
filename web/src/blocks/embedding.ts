@@ -33,20 +33,32 @@ export function useEmbedding(): Embedding | null {
 }
 
 /**
+ * Where the server serves the guidelines for the code of an interactive block (`EmbedEndpoints.GuidelinesPattern`): the
+ * link of the block's properties panel, and where the instructions for Claude send it instead of repeating them.
+ */
+export const EMBED_GUIDELINES_PATH = '/embed/guidelines';
+
+/**
  * The address of a frame, in the one place that writes it. Both callers — the public page and the
  * editor — go through here, so the shape of that address exists once on this side as it exists once
  * on the other (`EmbedEndpoints.Pattern`).
  *
  * `locale` rides as a query so that the document inside the frame is written in the language the
  * reader is reading, which is the only thing the server cannot work out for itself.
+ *
+ * `revision`, which the server does not read, is for a page that looks at a draft from the outside (`DraftPreviewScreen`):
+ * the address of a draft does not change with the draft, and a frame reloads only when its address does.
  */
 export function frameAddress(
   contentId: number,
   version: number | 'draft',
   blockId: string,
   locale: string,
+  revision?: string,
 ): string {
-  return `/embed/${contentId}/${version}/${encodeURIComponent(blockId)}?lang=${encodeURIComponent(locale)}`;
+  const address = `/embed/${contentId}/${version}/${encodeURIComponent(blockId)}?lang=${encodeURIComponent(locale)}`;
+
+  return revision === undefined ? address : `${address}&revision=${encodeURIComponent(revision)}`;
 }
 
 /**

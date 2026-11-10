@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Security.Claims;
 using FluentValidation;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data.Crud;
@@ -21,8 +22,9 @@ namespace IvaoHub.Modules.Events.Atc;
 
 /// <summary>
 /// A position of an event as its list and its form show it (design M4 §1.7): the callsign, the name the core knows and its FIR, the hours,
-/// the staff's note, how many controllers are available in some of its hours, and whether the reader may write shifts on it (E11b: what the
-/// form of a shift offers, as the one handler answers) — both read with a page of positions; none for a row read alone.
+/// the staff's note, how many controllers are available in some of its hours, and whether the reader may write it and its shifts (E11b: what
+/// the form of a shift offers, as the one handler answers; #427: «Save» and «Delete» on the position's own page) — read with a page of
+/// positions and with one position alike; none for a row the engine maps alone.
 /// </summary>
 public sealed record EventAtcPositionDto(
     long Id,
@@ -73,7 +75,8 @@ public sealed record AtcCandidateDto(
 /// The head of an event as the staff of the ATC read it (design M4 §6.3, E2's form, E11a): what the page of its ATC shows and needs —
 /// its words, its state, its window, when its availabilities close, how long a shift is, when its roster was proposed (E11b), when it is
 /// published and whether it was (E12) — to whoever holds <c>EventAtc.View</c> without a scope, the staff of a FIR among them, who do not
-/// read the event itself, and to whoever holds it on that event alone (issue #311).
+/// read the event itself, and to whoever holds it on that event alone (issue #311). <c>CanAddPositions</c> is whether the reader may open a
+/// position on it, its «New position» (#427): some position of the division the one handler lets them write there.
 /// </summary>
 public sealed record AtcEventDto(
     long Id,
@@ -88,7 +91,8 @@ public sealed record AtcEventDto(
     DateTime? CancelledAt,
     DateTime? RosterProposedAt,
     DateTime PublishesAtUtc,
-    DateTime? RosterPublishedAt);
+    DateTime? RosterPublishedAt,
+    bool CanAddPositions);
 
 /// <summary>A position of the division as the form of a position offers it: the callsign, its name, its kind and its FIR.</summary>
 public sealed record AtcPositionChoiceDto(string Callsign, string Name, string Type, string? Fir);
@@ -209,6 +213,8 @@ public static class AtcPositionEndpoints
             options.ToListPage = (positions, services, cancellationToken) =>
                 services.GetRequiredService<StaffAvailability>().PositionsAsync(positions, cancellationToken);
             options.ToDetail = AtcPositionMapper.ToDto;
+            options.ToDetailPage = async (position, services, cancellationToken) =>
+                (await services.GetRequiredService<StaffAvailability>().PositionsAsync([position], cancellationToken)).Single();
             options.Apply = AtcPositionMapper.Apply;
             options.BeforeAuthorize = AdoptAsync;
             options.BeforeSave = SaveAsync;
@@ -472,16 +478,7 @@ public static class AtcPositionEndpoints
         var offered = new List<AtcPositionChoiceDto>();
         foreach (var position in await directory.OfDivisionAsync(http.RequestAborted))
         {
-            var probe = new EventAtcPosition
-            {
-                EventId = parent.Id,
-                Callsign = position.Callsign,
-                Fir = position.Fir,
-                OwnerDepartment = parent.OwnerDepartment,
-                OwnerDepartmentMask = parent.OwnerDepartmentMask,
-            };
-
-            if ((await authorization.AuthorizeAsync(http.User, probe, EventsPermissions.AtcEdit)).Succeeded)
+            if (await MayOpenAsync(parent, position, authorization, http.User))
             {
                 offered.Add(new AtcPositionChoiceDto(position.Callsign, position.Name, position.Type, position.Fir));
             }
@@ -501,6 +498,7 @@ public static class AtcPositionEndpoints
         string? q,
         EventsDbContext database,
         ModuleSettingsStore settings,
+        IAtcPositionDirectory directory,
         IClock clock,
         IAuthorizationService authorization,
         ICurrentUser currentUser,
@@ -525,7 +523,7 @@ public static class AtcPositionEndpoints
             var reached = new List<long>();
             foreach (var candidate in await query.ToListAsync(http.RequestAborted))
             {
-                if (await ReachesAsync(candidate, authorization, currentUser, http))
+                if (await ReachesAsync(candidate, authorization, currentUser, http.User))
                 {
                     reached.Add(candidate.Id);
                 }
@@ -542,8 +540,15 @@ public static class AtcPositionEndpoints
             .Take(size)
             .ToListAsync(http.RequestAborted);
         var current = await settings.GetAsync<EventsSettings>(EventsModule.ModuleKey, http.RequestAborted);
+        var division = await directory.OfDivisionAsync(http.RequestAborted);
 
-        return new PagedResult<AtcEventDto>([.. rows.Select(row => Head(row, current, now))], number, size, total);
+        var heads = new List<AtcEventDto>();
+        foreach (var row in rows)
+        {
+            heads.Add(Head(row, current, now, await MayAddPositionsAsync(row, division, authorization, http.User)));
+        }
+
+        return new PagedResult<AtcEventDto>(heads, number, size, total);
     }
 
     /// <summary>
@@ -554,6 +559,7 @@ public static class AtcPositionEndpoints
         long id,
         EventsDbContext database,
         ModuleSettingsStore settings,
+        IAtcPositionDirectory directory,
         IClock clock,
         IAuthorizationService authorization,
         ICurrentUser currentUser,
@@ -567,25 +573,68 @@ public static class AtcPositionEndpoints
             return Results.NotFound();
         }
 
-        if (!await ReachesAsync(row, authorization, currentUser, http))
+        if (!await ReachesAsync(row, authorization, currentUser, http.User))
         {
             return Problem(StatusCodes.Status403Forbidden, CrudProblems.ForbiddenTitleKey, catalog, currentUser);
         }
 
-        return Results.Ok(Head(row, await settings.GetAsync<EventsSettings>(EventsModule.ModuleKey, http.RequestAborted), clock.UtcNow));
+        return Results.Ok(Head(
+            row,
+            await settings.GetAsync<EventsSettings>(EventsModule.ModuleKey, http.RequestAborted),
+            clock.UtcNow,
+            await MayAddPositionsAsync(row, await directory.OfDivisionAsync(http.RequestAborted), authorization, http.User)));
     }
 
     /// <summary>
     /// Whether the reader reaches the head of an event (issue #311, note 2026-11-01-l-atc-di-un-solo-evento): <c>EventAtc.View</c> held
     /// without a scope (<see cref="ICurrentUser.HasUnscoped"/>) reaches every event, as since E11a — the ATC operations, the staff of a
     /// FIR, who do not read the event, a grant to a position and the super administrator —; held on single events only, the one handler
-    /// is asked on the event, so a grant on one event reaches that event and no other.
+    /// is asked on the event, so a grant on one event reaches that event and no other. The page of an event asks it for its tab (#427).
     /// </summary>
-    private static async Task<bool> ReachesAsync(Event row, IAuthorizationService authorization, ICurrentUser currentUser, HttpContext http) =>
+    internal static async Task<bool> ReachesAsync(Event row, IAuthorizationService authorization, ICurrentUser currentUser, ClaimsPrincipal reader) =>
         currentUser.HasUnscoped(EventsPermissions.AtcView)
-        || (await authorization.AuthorizeAsync(http.User, row, EventsPermissions.AtcView)).Succeeded;
+        || (await authorization.AuthorizeAsync(reader, row, EventsPermissions.AtcView)).Succeeded;
 
-    private static AtcEventDto Head(Event row, EventsSettings settings, DateTime now) => new(
+    /// <summary>
+    /// «New position» (#427): whether some position of the division may be opened on the event (<see cref="MayOpenAsync"/>) — at the
+    /// first the staff of a department, at one of their FIR's the staff of a FIR, at none whoever only reads.
+    /// </summary>
+    private static async Task<bool> MayAddPositionsAsync(
+        Event parent,
+        IReadOnlyList<AtcPositionDto> division,
+        IAuthorizationService authorization,
+        ClaimsPrincipal reader)
+    {
+        foreach (var position in division)
+        {
+            if (await MayOpenAsync(parent, position, authorization, reader))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Whether the reader may open a position of the division on the event: the one handler asked as the position would be — in the event's
+    /// care and scope, with the FIR the directory gives it.
+    /// </summary>
+    private static async Task<bool> MayOpenAsync(Event parent, AtcPositionDto position, IAuthorizationService authorization, ClaimsPrincipal reader)
+    {
+        var probe = new EventAtcPosition
+        {
+            EventId = parent.Id,
+            Callsign = position.Callsign,
+            Fir = position.Fir,
+            OwnerDepartment = parent.OwnerDepartment,
+            OwnerDepartmentMask = parent.OwnerDepartmentMask,
+        };
+
+        return (await authorization.AuthorizeAsync(reader, probe, EventsPermissions.AtcEdit)).Succeeded;
+    }
+
+    private static AtcEventDto Head(Event row, EventsSettings settings, DateTime now, bool canAddPositions) => new(
         row.Id,
         row.OwnerDepartment,
         row.Slug,
@@ -598,7 +647,8 @@ public static class AtcPositionEndpoints
         row.CancelledAt,
         row.RosterProposedAt,
         RosterPublication.PublishesAt(row, settings),
-        row.RosterPublishedAt);
+        row.RosterPublishedAt,
+        canAddPositions);
 
     private static IResult Problem(int status, string titleKey, LocaleCatalog catalog, ICurrentUser currentUser) =>
         Results.Problem(statusCode: status, title: catalog.Resolve(currentUser.Locale, titleKey));

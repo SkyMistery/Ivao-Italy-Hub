@@ -229,3 +229,22 @@ test('a write of the screen waits for the save in flight, and the pause does not
   });
   expect(pressed).toHaveBeenCalledTimes(1);
 });
+
+test('told of a conflict by a write of the screen, it stops as if it had heard it itself', async () => {
+  const save = saving(['saved']);
+  const { result, rerender } = renderHook(
+    (snapshot: string) => useAutosave({ enabled: true, snapshot, busy: false, save, delay: 10 }),
+    {
+      initialProps: 'one',
+    },
+  );
+
+  act(() => result.current.stop());
+  expect(result.current.stopped).toBe(true);
+
+  rerender('two');
+  await act(async () => {
+    expect(await result.current.flush()).toBe(false);
+  });
+  expect(save).not.toHaveBeenCalled();
+});

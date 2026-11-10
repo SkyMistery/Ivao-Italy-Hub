@@ -226,7 +226,7 @@ public sealed partial class PirepTests
         {
             var sync = scope.ServiceProvider.GetRequiredService<UserSyncService>();
             await sync.UpsertAsync(
-                new IvaoUserProfile(LeavingValidatorVid, "Test", "Pirep", null, "IT", "IT", null, 4, null, null, "en", false, false, []),
+                new IvaoUserProfile(LeavingValidatorVid, "Test", "Pirep", null, "IT", "IT", null, 4, null, "en", false, false, []),
                 token);
         }
 

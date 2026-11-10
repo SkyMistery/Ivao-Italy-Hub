@@ -258,7 +258,6 @@ public sealed class InstallationTests(MariaDbFixture mariaDb) : IAsyncLifetime
         CountryId: null,
         RatingAtc: null,
         RatingPilot: null,
-        DiscordId: null,
         Email: "member@example.org",
         LanguageId: "en",
         IvaoIsStaff: positions.Length > 0,

@@ -42,17 +42,20 @@
     "signIn": "Sign in to see your trainings.",
     "upcomingSessions": {
       "label": "Upcoming training sessions and exams",
+      "about": "The upcoming training sessions and exams of the division.",
       "fields": {
         "limit": "At most (0: all)"
       }
     },
     "myTraining": {
       "label": "My training",
+      "about": "The training of whoever is looking, one rating ladder at a time.",
       "datesToCome": "Your trainer will propose the dates of the session.",
       "lastReport": "Last report: {{date}}."
     },
     "trainerQueue": {
       "label": "My trainings to move",
+      "about": "The trainings that wait for a step of the trainer who is looking: choices, dates to propose, reports to write.",
       "waiting": "Waiting for the trainee's choice",
       "waitingDays_one": "no choice for {{count}} day",
       "waitingDays_other": "no choice for {{count}} days",
@@ -62,12 +65,14 @@
     },
     "approvalQueue": {
       "label": "Requests to approve and to assign",
+      "about": "The training requests to accept or refuse and the trainings to assign to a trainer.",
       "toApprove_one": "{{count}} request to approve",
       "toApprove_other": "{{count}} requests to approve",
       "toAssign_one": "{{count}} training to assign",
       "toAssign_other": "{{count}} trainings to assign",
       "empty": "No request is waiting for you."
-    }
+    },
+    "unavailable": "This cannot be read right now. Try again later."
   },
   "states": {
     "Requested": "Waiting for acceptance",

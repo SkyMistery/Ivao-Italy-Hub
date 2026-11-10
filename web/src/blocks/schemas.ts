@@ -33,19 +33,19 @@ export const headingSchema = z.object({
 });
 
 export const textSchema = z.object({
-  markdown: localized().meta({ multiline: true }),
+  markdown: localized().meta({ multiline: true, markdown: true }),
 });
 
 export const calloutSchema = z.object({
   tone: z.enum(CALLOUT_TONES),
   // Optional (issue #358): a callout may be its text alone.
   title: localized().optional(),
-  text: localized().meta({ multiline: true }),
+  text: localized().meta({ multiline: true, markdown: true }),
 });
 
 export const ctaSchema = z.object({
   label: localized(),
-  href: z.string(),
+  href: z.string().meta({ address: true }),
 });
 
 export const linkListSchema = z.object({
@@ -66,7 +66,10 @@ export const linkListSchema = z.object({
 // alignment or a column count must not be something a member finds by searching for it.
 //
 // A property that names a file is `.meta({ media: true })` and nothing else: a number to type is a
-// page pointing at a file somebody deleted years ago.
+// page pointing at a file somebody deleted years ago. One that is not `.optional()` stops publication
+// while nobody has chosen it, and is declared too in the block's C# half, `RequiredMedia`: the one piece of
+// a schema the server is told (note 2026-11-07-la-foto-rimasta-da-scegliere), and
+// `app/blockRequiredMedia.test.ts` fails when the two disagree.
 
 /** Where a block sets its content, when it is the kind of block that can be centred. */
 export const ALIGNMENTS = ['left', 'center'] as const;
@@ -120,7 +123,7 @@ export const DIVIDER_SPACINGS = ['sm', 'md', 'lg'] as const;
  * carry one — the pair of a `hero`, the entries of a `buttonGroup` — and a second description of
  * the same pair is a second place for it to drift.
  */
-const linkFields = { label: localized(), href: z.string() };
+const linkFields = { label: localized(), href: z.string().meta({ address: true }) };
 
 export const heroSchema = z.object({
   eyebrow: localized().optional(),
@@ -247,7 +250,7 @@ export const cardGridSchema = z.object({
       title: localized(),
       text: localized().optional().meta({ multiline: true }),
       mediaId: z.number().int().optional().meta({ media: true }),
-      href: z.string().optional(),
+      href: z.string().optional().meta({ address: true }),
       icon: z.string().optional().meta({ icon: true }),
     }),
   ),
@@ -303,7 +306,7 @@ export const logoGridSchema = z.object({
       // The name of a partner is a name, not a sentence: it reads the same in every language, and
       // it is what a reader who cannot see the logo is told.
       name: z.string(),
-      href: z.string().optional(),
+      href: z.string().optional().meta({ address: true }),
     }),
   ),
 });
@@ -314,12 +317,16 @@ export const logoGridSchema = z.object({
  * way of getting the depth wrong. What is inside is the same sanitized `MarkdownContent` as `text`.
  */
 export const tabsSchema = z.object({
-  tabs: z.array(z.object({ label: localized(), body: localized().meta({ multiline: true }) })),
+  tabs: z.array(
+    z.object({ label: localized(), body: localized().meta({ multiline: true, markdown: true }) }),
+  ),
 });
 
 export const accordionSchema = z.object({
   allowMultiple: z.boolean().default(false),
-  items: z.array(z.object({ question: localized(), answer: localized().meta({ multiline: true }) })),
+  items: z.array(
+    z.object({ question: localized(), answer: localized().meta({ multiline: true, markdown: true }) }),
+  ),
 });
 
 export const testimonialSchema = z.object({
@@ -330,8 +337,12 @@ export const testimonialSchema = z.object({
   mediaId: z.number().int().optional().meta({ media: true }),
 });
 
+/**
+ * A row of buttons. Its alignment left the props in PR 3.9 for the block's envelope, where every alignable block keeps
+ * it (design of the editor's phase 3, §5.6): a body written before still carries `align` here, which the renderer reads
+ * while the envelope has none and the panel moves at its first write (`alignOf`, `placedAt`).
+ */
 export const buttonGroupSchema = z.object({
-  align: z.enum(CELL_ALIGNMENTS).default('left'),
   buttons: z.array(z.object({ ...linkFields, variant: z.enum(BUTTON_VARIANTS).default('primary') })),
 });
 
@@ -446,7 +457,7 @@ export const staffListSchema = z.object({
 export const MY_WORK_KINDS = ['approvals', 'contacts', 'reviews', 'drafts'] as const;
 
 export const welcomeSchema = z.object({
-  message: localized().optional().meta({ multiline: true }),
+  message: localized().optional().meta({ multiline: true, markdown: true }),
 });
 
 export const myDepartmentsSchema = z.object({});

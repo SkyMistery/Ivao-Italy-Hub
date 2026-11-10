@@ -299,6 +299,40 @@ test('the gallery draws every kind of field the generator learned, and they are 
   await expect(page.getByRole('button', { name: 'Move up' }).first()).toBeDisabled();
 });
 
+// jsdom does no layout, and this was seen on a screen: `flex-1` beside `basis-40` left a title «V…» in the block's panel.
+test('the title of a list entry keeps its width: in a narrow column the buttons go to the line below', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/staff/admin/ui-kit');
+
+  const form = page.locator('[data-ui-kit="SchemaForm"]');
+  const title = form.getByRole('button', { name: '1 One', exact: true });
+  const remove = form.getByRole('button', { name: 'Remove', exact: true }).first();
+  await expect(title).toBeVisible();
+
+  // Where there is room they share the line.
+  const wide = (await title.boundingBox())!;
+  expect((await remove.boundingBox())!.y).toBeLessThan(wide.y + wide.height);
+
+  // The width of the block's panel in the editor.
+  await form.evaluate((column: HTMLElement) => {
+    column.style.width = '19rem';
+  });
+  await expect(async () => {
+    const narrow = (await title.boundingBox())!;
+    expect(narrow.width).toBeGreaterThanOrEqual(160);
+    expect((await remove.boundingBox())!.y).toBeGreaterThanOrEqual(narrow.y + narrow.height);
+  }).toPass();
+
+  // A long title is cut, and it is no reason for the list to come out of the column.
+  const list = form.getByRole('group', { name: 'Cards' });
+  await title.click();
+  await list.getByRole('textbox').first().fill('A name far too long to fit in the column of a panel');
+  await expect(list.getByRole('button', { name: /^1 A name far too long/ })).toBeVisible();
+  expect((await list.boundingBox())!.width).toBeLessThanOrEqual(304);
+});
+
 /**
  * The three screens G5 added, opened in a browser.
  *

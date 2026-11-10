@@ -490,7 +490,6 @@ public sealed class FirTeamPermissionTests(MariaDbFixture mariaDb) : IAsyncLifet
                 CountryId: "IT",
                 RatingAtc: null,
                 RatingPilot: null,
-                DiscordId: null,
                 Email: null,
                 LanguageId: "en",
                 IvaoIsStaff: positions.Length > 0,

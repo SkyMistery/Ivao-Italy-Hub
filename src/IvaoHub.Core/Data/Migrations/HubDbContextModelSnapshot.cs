@@ -91,6 +91,15 @@ namespace IvaoHub.Core.Data.Migrations
                         .HasColumnType("varchar(32)")
                         .HasColumnName("discord_id");
 
+                    b.Property<DateTime?>("DiscordLinkedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("discord_linked_at");
+
+                    b.Property<string>("DiscordUsername")
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)")
+                        .HasColumnName("discord_username");
+
                     b.Property<string>("DivisionCode")
                         .HasMaxLength(3)
                         .HasColumnType("varchar(3)")
@@ -180,6 +189,10 @@ namespace IvaoHub.Core.Data.Migrations
 
                     b.HasKey("Vid")
                         .HasName("pk_hub_users");
+
+                    b.HasIndex("DiscordId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_hub_users_discord_id");
 
                     b.HasIndex("IsStaff")
                         .HasDatabaseName("ix_hub_users_is_staff");
@@ -1114,6 +1127,10 @@ namespace IvaoHub.Core.Data.Migrations
                         .HasMaxLength(8)
                         .HasColumnType("varchar(8)")
                         .HasColumnName("document_type");
+
+                    b.Property<bool>("DraftFromFile")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("draft_from_file");
 
                     b.Property<DateTime?>("EffectiveOn")
                         .HasColumnType("date")

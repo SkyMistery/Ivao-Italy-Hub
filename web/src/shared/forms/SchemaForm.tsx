@@ -2,23 +2,18 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
   Checkbox,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-  CommandRoot,
+  CollapsibleContent,
+  CollapsibleRoot,
+  CollapsibleTrigger,
   H4,
   Input,
   Label,
-  PopoverAnchor,
-  PopoverContent,
-  PopoverRoot,
   Select,
   Subtle,
   Switch,
   Textarea,
 } from '@ivao/atmosphere-react';
-import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   Controller,
@@ -27,24 +22,25 @@ import {
   useForm,
   useFormContext,
   useWatch,
+  type ControllerRenderProps,
   type FieldErrors,
   type UseFormReturn,
 } from 'react-hook-form';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { z } from 'zod';
 
 import { formatMoment } from '../i18n/useMoment';
 import { ICON_NAMES } from '../icons';
 import { iconGlyph } from '../icons/glyphs';
-import { fold } from '../search/highlight';
 import { MediaPicker, type MediaLibraryQuery } from '../ui/MediaPicker';
 import { narrowLibrary } from '../ui/narrowLibrary';
 
 import { LocaleFields } from './LocaleFields';
 import { LocaleTabs } from './LocaleTabs';
 import { ProblemAlert } from './ProblemAlert';
-import { NO_CHOICE, blankEntry, readFields, whereDrawn, type FieldNode, type Suggestion } from './schema';
+import { NO_CHOICE, blankEntry, entryTitleField, readFields, whereDrawn, type FieldNode } from './schema';
 import { slugify } from './slug';
+import { Suggest } from './Suggest';
 import { useProblemDetails } from './useProblemDetails';
 
 /**
@@ -72,6 +68,8 @@ interface FormEnvironment {
   onSuggestSearch?: ((field: string, typed: string) => void) | undefined;
   /** What a `creatable` field draws under its boxes to make a new value, and tick it (`choose`). */
   createChoice?: ((field: string, choose: (value: string) => void) => React.ReactNode) | undefined;
+  /** How many times the form has taken the row again (`useNewerRow`). */
+  rowsTaken: number;
 }
 
 /**
@@ -180,6 +178,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
     // showed on a submit would never show at all.
     mode: onChange === undefined ? 'onSubmit' : 'onChange',
   });
+  const rowsTaken = useNewerRow(form, defaults, onChange !== undefined);
   const fields = readFields(schema);
   const problem = useProblemDetails(form, (field) => whereDrawn(fields, field, form.getValues()));
   const env: FormEnvironment = {
@@ -190,6 +189,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
     division,
     onSuggestSearch,
     createChoice,
+    rowsTaken,
   };
 
   // What a screen reader is told about Enter, which only a box of one line answers with a save (#224).
@@ -198,7 +198,6 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
 
   useProposedSlugs(form, fields, division?.defaultLocale);
   useLiveValues(form, schema, onChange);
-  useNewerRow(form, defaults, onChange !== undefined);
 
   const submit = form.handleSubmit(async (values) => {
     if (onSubmit === undefined) {
@@ -266,7 +265,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
  * Enter there writes a new line and saves nothing. With no box of one line nothing is said; with both
  * kinds the sentence says which box it means.
  *
- * The boxes of a repeatable list are on the screen only once an entry is added (the review of #238, low
+ * The boxes of a repeatable list are on the screen only while an entry is open (the review of #238, low
  * 1). One of one line there is not counted, because a hint about a box that is not there is worse than
  * none; one of several lines is, because the sentence that names the box of one line stays true either
  * way.
@@ -345,6 +344,16 @@ const LIVE_DELAY = 150;
  * What makes a form live (`onChange` above). One subscription for as long as the form exists —
  * not one per render: the screen hands a fresh lambda every time it draws, and resubscribing on
  * each would throw away the timer of the keystroke it was in the middle of.
+ *
+ * ⚠️ While a keystroke waits for its pause, **a click anywhere on the page applies it at once**, in
+ * the capture phase on the document: before any handler of the click reads the screen, and after the
+ * click has found its target. Without it, a press inside the pause read the screen without that
+ * letter: «Download for Claude» right after the last keystroke stored nothing and downloaded the
+ * draft without it. Not on the focus leaving the form, which was the first way: the focus leaves on
+ * the mouse's way **down**, a screen that answers the change with a line above its buttons moves
+ * them before the mouse comes up, and the click is lost — «Save» of an event pressed right after a
+ * keystroke sent nothing (`decisions/2026-11-08-l-ultima-battuta.md`). A key that presses a button
+ * (Enter, Space) is a click too.
  */
 function useLiveValues<TValues extends Record<string, unknown>>(
   form: UseFormReturn<TValues, unknown, TValues>,
@@ -360,6 +369,17 @@ function useLiveValues<TValues extends Record<string, unknown>>(
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
 
+    const apply = () => {
+      clearTimeout(timer);
+      timer = undefined;
+      document.removeEventListener('click', apply, true);
+
+      const parsed = latest.current.schema.safeParse(form.getValues());
+      if (parsed.success) {
+        latest.current.onChange?.(parsed.data);
+      }
+    };
+
     const subscription = form.watch((_values, { name }) => {
       // `name` is the field somebody changed. A reset reports none, and is not an edit.
       if (name === undefined || latest.current.onChange === undefined) {
@@ -367,16 +387,14 @@ function useLiveValues<TValues extends Record<string, unknown>>(
       }
 
       clearTimeout(timer);
-      timer = setTimeout(() => {
-        const parsed = latest.current.schema.safeParse(form.getValues());
-        if (parsed.success) {
-          latest.current.onChange?.(parsed.data);
-        }
-      }, LIVE_DELAY);
+      timer = setTimeout(apply, LIVE_DELAY);
+      // Once only, however many letters: the same listener in the same phase is not added twice.
+      document.addEventListener('click', apply, true);
     });
 
     return () => {
       clearTimeout(timer);
+      document.removeEventListener('click', apply, true);
       subscription.unsubscribe();
     };
   }, [form]);
@@ -391,9 +409,14 @@ function useLiveValues<TValues extends Record<string, unknown>>(
  * answered 409, "somebody else changed this", about the person themselves.
  *
  * So when the version in `defaults` changes, the form starts again from them **but keeps what the
- * person has written**: a field whose value differs from the defaults the form last took is set back
- * to what was typed, and stays dirty. A field nobody touched shows what the row now says. Errors
- * stay where they are: a message somebody is reading does not vanish because the row moved.
+ * person has written**: a field whose value differs from the defaults the form last took starts from
+ * what was typed. A field nobody touched shows what the row now says. Errors stay where they are: a
+ * message somebody is reading does not vanish because the row moved.
+ *
+ * ⚠️ What was typed goes in with the reset, never with a `setValue` after it. A field that registers
+ * again finds `undefined` and writes its default over it, without a word: a date taken off came back
+ * and was saved. Nothing reads whether a field of this form is dirty. And a controller stays with the
+ * value it was born with, so the date's is born again on the count this answers.
  *
  * A live form (`onChange`) is left alone: its screen keeps the row itself and adds the version at
  * the moment it saves (the content editor), and taking the defaults again would hand the version
@@ -403,9 +426,10 @@ function useNewerRow<TValues extends Record<string, unknown>>(
   form: UseFormReturn<TValues, unknown, TValues>,
   defaults: TValues,
   live: boolean,
-): void {
+): number {
   const version = live ? undefined : defaults['rowVersion'];
   const taken = useRef({ version, defaults });
+  const [rowsTaken, setRowsTaken] = useState(0);
 
   useEffect(() => {
     if (version === taken.current.version) {
@@ -416,13 +440,14 @@ function useNewerRow<TValues extends Record<string, unknown>>(
     const typed = form.getValues() as Record<string, unknown>;
     taken.current = { version, defaults };
 
-    form.reset(defaults, { keepErrors: true });
-    for (const [field, value] of Object.entries(typed)) {
-      if (JSON.stringify(value) !== JSON.stringify(before[field])) {
-        form.setValue(field as never, value as never, { shouldDirty: true });
-      }
-    }
+    const kept = Object.entries(typed).filter(
+      ([field, value]) => JSON.stringify(value) !== JSON.stringify(before[field]),
+    );
+    form.reset({ ...defaults, ...Object.fromEntries(kept) }, { keepErrors: true });
+    setRowsTaken((count) => count + 1);
   }, [form, version, defaults]);
+
+  return rowsTaken;
 }
 
 /**
@@ -517,412 +542,6 @@ function readSource(value: unknown, defaultLocale: string | undefined): string {
 }
 
 /**
- * The `value` of `cmdk`'s root that no option carries: "nothing is lit". An empty string would not
- * do — `cmdk` reads it as "light the first option" — and no address, callsign or aircraft type holds
- * a NUL.
- */
-const NOTHING_LIT = '\u0000';
-
-/**
- * A field that **offers** without demanding: the address of a menu entry is the case it was built
- * for — the pages of the site, grouped by the department that wrote them, and an address of
- * somewhere else typed in full.
- *
- * ⚠️ It is not a select, and the difference is the whole point (asked for while running the demo of
- * M1, part 1). A select refuses everything it does not list, and a menu that could only point at a
- * page of this site could not link the forum. What is typed **is** the value; the list is a way of
- * not typing it.
- *
- * The list filters itself against what is in the box, folded the way the search folds — so "citta"
- * finds "Città" here too — and it is `shouldFilter={false}` because that filtering is ours: `cmdk`
- * would match on its own idea of the text and throw away a page whose address matches while its
- * title does not.
- *
- * ⚠️ The box drives the list from the keyboard (28 September 2026, note
- * `2026-09-28-il-suggerimento-dalla-tastiera`). It sits outside `cmdk`'s root — the root is inside
- * the popover, the box is its anchor — so `cmdk` never heard a key typed in it: the arrows did not
- * move through the options, Enter did not choose one, and Enter in the only line of a form with no
- * button sent the form. The box now hands the arrows and Enter to the root, and `cmdk` moves and
- * chooses as it does for its own input; which option is lit is held here (`value` on the root), so
- * the box can say it to a screen reader and decide what Enter means.
- */
-function Suggest({
-  id,
-  value,
-  suggestions,
-  only,
-  empty,
-  onChange,
-  onSearch,
-}: {
-  id: string;
-  value: string;
-  suggestions: readonly Suggestion[];
-  /** True when the list is the whole of what the field accepts, and not only what it offers. */
-  only: boolean;
-  empty: string;
-  onChange: (next: string) => void;
-  /** Told what is being typed, after a pause, so the screen can go and ask for more. */
-  onSearch?: ((typed: string) => void) | undefined;
-}) {
-  const [open, setOpen] = useState(false);
-  const box = useRef<HTMLInputElement>(null);
-
-  // ⚠️ The box and its list are **one field** (A6c, 26 September 2026). Pressing the list — an
-  // option, a heading, its scrollbar — moves the focus into it, and that is not leaving the field.
-  // It counted as leaving: a closed field with part of a value typed put back what it held (the
-  // rule below), the list grew back to every row under the pointer, and the click landed on
-  // another row, so the option pressed was never chosen. Measured in a browser; in jsdom a click
-  // reaches its element whatever has moved under it. The list is allowed the focus rather than
-  // denied it: cancelling the press would keep the box focused, and would also stop a scrollbar
-  // from dragging — measured too.
-  const list = useRef<HTMLDivElement>(null);
-  const inList = (node: EventTarget | null) => node instanceof Node && list.current?.contains(node) === true;
-
-  // ⚠️ What narrows the list is what somebody has typed **since it opened**, not what the field
-  // happened to hold. Opening the address of an entry that already has one would otherwise answer
-  // "nothing matches": the value is a whole address, and it matches nothing but itself.
-  const [opened, setOpened] = useState(value);
-  const typed = value === opened ? '' : fold(value.trim());
-  const matching = suggestions.filter(
-    (suggestion) =>
-      typed === '' || fold(suggestion.value).includes(typed) || fold(suggestion.label).includes(typed),
-  );
-
-  // ⚠️ And the same text goes **to the caller**, after a pause, so that a list which is only ever a
-  // page of rows can be a different page. Three hundred milliseconds, like the search box of a list
-  // — the same pause, because it is the same gesture. Only while the box is open: choosing an entry
-  // writes a whole address into the field, and asking the server about it would be a request for
-  // something already chosen.
-  //
-  // What was asked last, and which options were on the screen when it was: while they are still the
-  // same ones, the answer has not arrived.
-  const asked = useRef<{ text: string; options: string } | null>(null);
-  const options = suggestions.map((suggestion) => suggestion.value).join('\n');
-  const optionsNow = useRef(options);
-  useEffect(() => {
-    optionsNow.current = options;
-  }, [options]);
-  const ask = useCallback(
-    (text: string) => {
-      asked.current = { text, options: optionsNow.current };
-      onSearch?.(text);
-    },
-    [onSearch],
-  );
-
-  useEffect(() => {
-    if (onSearch === undefined || !open) {
-      return undefined;
-    }
-
-    const timer = setTimeout(() => ask(typed), 300);
-    return () => clearTimeout(timer);
-  }, [typed, open, onSearch, ask]);
-
-  // Kept in the order the caller gave them, grouped by the heading each carries: a `Map` because
-  // insertion order is the order the groups are drawn in, and the caller decided it.
-  const groups = new Map<string, Suggestion[]>();
-  for (const suggestion of matching) {
-    const heading = suggestion.group ?? '';
-    groups.set(heading, [...(groups.get(heading) ?? []), suggestion]);
-  }
-
-  // A closed field keeps only what was offered. What is typed is a way of searching the list, so
-  // leaving the field with something nobody offered puts back what was there — and the server
-  // refuses that value anyway, which is what makes this a rule.
-  //
-  // ⚠️ Offered is read the way the list is searched, folded (#366): `a320` typed in full is the
-  // `A320` the list shows and lights, and leaving the field writes the option as it is offered. It
-  // was compared exactly, and the field put back what it held under the option it had just lit.
-  const held = fold(value.trim());
-  const match =
-    suggestions.find((suggestion) => suggestion.value === value) ??
-    (held === '' ? undefined : suggestions.find((suggestion) => fold(suggestion.value) === held));
-  const offered = match !== undefined;
-
-  // ⚠️ And a field left before the answer to what was typed arrived waits for it (#366): the
-  // question goes three hundred milliseconds after the last key, and the options on the screen
-  // until the answer are those of the question before — the first page of every type, where `A320`
-  // is not. Tab straight after typing put back a value the answer would have offered. So leaving
-  // asks at once, if it was not asked yet, and the field decides when the options change; what it
-  // holds meanwhile is what was typed, and the server still refuses it if nothing offers it.
-  //
-  // ⚠️ Not forever: an answer may be the very options already on the screen, and nothing changes
-  // then. After two seconds the field decides with what it has, as it did before it waited.
-  const [waiting, setWaiting] = useState<string | null>(null);
-  const [gaveUp, setGaveUp] = useState(false);
-  const keepWhatWasOffered = () => {
-    if (!only) {
-      return;
-    }
-
-    if (match !== undefined) {
-      if (match.value !== value) {
-        onChange(match.value);
-      }
-
-      return;
-    }
-
-    const answered =
-      asked.current !== null && asked.current.text === typed && asked.current.options !== options;
-    if (onSearch !== undefined && typed !== '' && !answered) {
-      if (asked.current?.text !== typed) {
-        ask(typed);
-      }
-
-      setWaiting(opened);
-      return;
-    }
-
-    onChange(opened);
-  };
-
-  useEffect(() => {
-    if (waiting === null || open) {
-      return undefined;
-    }
-
-    const timer = setTimeout(() => setGaveUp(true), 2000);
-    return () => clearTimeout(timer);
-  }, [waiting, open]);
-
-  useEffect(() => {
-    if (waiting === null || open || (asked.current?.options === options && !gaveUp)) {
-      return;
-    }
-
-    setWaiting(null);
-    setGaveUp(false);
-    onChange(match?.value ?? waiting);
-  }, [waiting, open, options, gaveUp, match, onChange]);
-
-  // The option lit in the list, by its `value` — what `cmdk` calls the value of its root, and what
-  // it chooses on Enter. Held here rather than by `cmdk`, so that the box decides when something is
-  // lit at all.
-  //
-  // ⚠️ **Nothing is lit until somebody searches or moves.** The list opens on focus, and a lit
-  // option there would turn the Enter of somebody who only walked through the field into a choice
-  // they never made. `cmdk` lights its first option by itself whenever its value is empty, so
-  // "nothing" is a value no option carries.
-  const [lit, setLit] = useState(NOTHING_LIT);
-  const root = useRef<HTMLDivElement>(null);
-
-  // What `cmdk` is told is lit. In a closed field that somebody is searching, the first option still
-  // shown is lit unless an arrow lit another: what is typed there is a search, and Enter finishes it —
-  // part of a callsign, Enter, and the one it matches is chosen. In an open field what is typed is
-  // the value, and only an arrow or the pointer lights an option.
-  const shown = [...groups.values()].flat();
-  const lighting =
-    only && typed !== '' && !shown.some((suggestion) => suggestion.value === lit)
-      ? (shown[0]?.value ?? NOTHING_LIT)
-      : lit;
-
-  // What `cmdk` itself chooses on Enter: the row it has marked, and nothing else.
-  const litOption = () => list.current?.querySelector('[cmdk-item][aria-selected="true"]') ?? null;
-
-  // A key typed in the box, handed to the list as if it were typed in `cmdk`'s own input. A new event,
-  // because an event is dispatched once; `cmdk` handles it before `dispatchEvent` returns.
-  const toList = (key: string) =>
-    root.current?.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
-
-  // Opening from the box lights nothing, or the first option when an arrow opened it: the arrow's
-  // promise is "take me into the list".
-  const show = (from: string = NOTHING_LIT) => {
-    if (!open) {
-      setLit(from);
-    }
-
-    setOpen(true);
-  };
-
-  // ⚠️ The box points at the list and at the lit row, so that a screen reader follows the arrows
-  // while the focus stays in the box. Both ids are `cmdk`'s — it overwrites any id given to its list
-  // or its rows. The list's arrives through its `ref`, which also draws the box again once the list
-  // is on the page: Radix mounts a popover's content one pass after it opens. The row's is read from
-  // the page and set on the box by hand, since its rows are drawn after the box: React does not own
-  // that attribute, and nothing else writes it.
-  const [listbox, setListbox] = useState<string>();
-  const holdListbox = useCallback((node: HTMLDivElement | null) => setListbox(node?.id), []);
-
-  useLayoutEffect(() => {
-    const row = [...(list.current?.querySelectorAll('[cmdk-item]') ?? [])].find(
-      (candidate) => candidate.getAttribute('data-value') === lighting,
-    );
-
-    if (open && row !== undefined) {
-      box.current?.setAttribute('aria-activedescendant', row.id);
-    } else {
-      box.current?.removeAttribute('aria-activedescendant');
-    }
-  });
-
-  return (
-    <PopoverRoot
-      open={open}
-      onOpenChange={(next) => {
-        if (next) {
-          setOpened(value);
-        } else if (document.activeElement !== box.current) {
-          // Closing with the focus in the list or already past it — a click elsewhere after a press
-          // on the list, Tab or Escape from there — is leaving the field, and the box had no blur
-          // to say so.
-          keepWhatWasOffered();
-        }
-
-        setOpen(next);
-      }}
-    >
-      <PopoverAnchor asChild>
-        <Input
-          ref={box}
-          id={id}
-          value={value}
-          autoComplete="off"
-          role="combobox"
-          aria-autocomplete="list"
-          aria-expanded={open}
-          aria-controls={open ? listbox : undefined}
-          onChange={(event) => {
-            onChange(event.target.value);
-            // In an open field what is typed is the value again: a row lit before it is not a choice.
-            if (open && !only) {
-              setLit(NOTHING_LIT);
-            }
-
-            show();
-          }}
-          onFocus={(event) => {
-            // Back from the list is not arriving: the search goes on from where it was. Back while the
-            // field waits for an answer is coming back to the same search, and what it would put back
-            // is still what it held before it.
-            if (!inList(event.relatedTarget)) {
-              setOpened(waiting ?? value);
-              setWaiting(null);
-              setGaveUp(false);
-            }
-
-            show();
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') {
-              setOpen(false);
-              return;
-            }
-
-            // The arrows move through the list, and open it first when it is closed. Never the caret:
-            // in a one line box they would only jump it to an end.
-            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-              event.preventDefault();
-
-              if (!open) {
-                show(shown[0]?.value);
-              } else {
-                // Up from nothing lit is the last option, as it is in any list; `cmdk` would stay put.
-                toList(event.key === 'ArrowUp' && litOption() === null ? 'End' : event.key);
-              }
-
-              return;
-            }
-
-            if (event.key !== 'Enter' || event.nativeEvent.isComposing) {
-              return;
-            }
-
-            // ⚠️ Enter chooses the lit option, and then it is **only** a choice: without
-            // `preventDefault` the browser also sends the form — the only line of a form with no
-            // button does exactly that (the request of a training, #144).
-            if (open && litOption() !== null) {
-              event.preventDefault();
-              toList('Enter');
-              return;
-            }
-
-            // Nothing lit. In a closed field something typed that nobody offered is a search nobody
-            // finished, and sending it would send a value the server refuses: Enter opens the list
-            // instead. An empty box is not a search, and neither is what the field held on arrival.
-            if (only && !offered && typed !== '') {
-              event.preventDefault();
-              show();
-              return;
-            }
-
-            // Otherwise what the box holds is a value — chosen, or typed in an open field — and Enter
-            // is the form's again: it sends it, as in any line of a form. Deliberately: a field that
-            // swallowed Enter would be the one line of a form where it does nothing. What it sends is the
-            // option as it is offered, not as it was typed.
-            if (only && match !== undefined && match.value !== value) {
-              onChange(match.value);
-            }
-
-            setOpen(false);
-          }}
-          onBlur={(event) => {
-            if (!inList(event.relatedTarget)) {
-              keepWhatWasOffered();
-            }
-          }}
-        />
-      </PopoverAnchor>
-
-      <PopoverContent
-        ref={list}
-        align="start"
-        className="w-(--radix-popover-trigger-width) p-0"
-        // The box keeps the focus: this list is read while typing, and a popover that stole it
-        // would end the typing it exists to help.
-        onOpenAutoFocus={(event) => event.preventDefault()}
-        // ⚠️ And a click **in the box** does not count as clicking away. Without this the list
-        // opened on focus and closed on the very same click, so it never appeared to a mouse —
-        // while a test in jsdom passed, because jsdom does not deliver the pointer event Radix
-        // dismisses on. Measured in a browser.
-        onInteractOutside={(event) => {
-          if (box.current?.contains(event.target as Node) === true) {
-            event.preventDefault();
-          }
-        }}
-      >
-        <CommandRoot
-          ref={root}
-          shouldFilter={false}
-          value={lighting}
-          // `cmdk` says "nothing" with an empty string, which to itself means "light the first".
-          onValueChange={(next) => setLit(next === '' ? NOTHING_LIT : next)}
-        >
-          <CommandList ref={holdListbox}>
-            {matching.length === 0 ? <CommandEmpty>{empty}</CommandEmpty> : null}
-
-            {[...groups].map(([heading, items]) => (
-              <CommandGroup key={heading} {...(heading === '' ? {} : { heading })}>
-                {items.map((suggestion) => (
-                  <CommandItem
-                    key={suggestion.value}
-                    value={suggestion.value}
-                    onSelect={() => {
-                      onChange(suggestion.value);
-                      // What was there, from now on, is the choice: the box may be entered again from
-                      // the list while it is still closing, and that is not an arrival that reads it.
-                      setOpened(suggestion.value);
-                      setOpen(false);
-                    }}
-                  >
-                    <span className="flex flex-col">
-                      <span>{suggestion.label}</span>
-                      <span className="text-muted-foreground text-xs">{suggestion.value}</span>
-                    </span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            ))}
-          </CommandList>
-        </CommandRoot>
-      </PopoverContent>
-    </PopoverRoot>
-  );
-}
-
-/**
  * `node.path` is where the field is in the schema, and therefore what its label is looked up by;
  * `name` is where its value is in the form, which for an entry of a repeatable list carries an
  * index. They are the same everywhere except inside a list, and keeping them apart is what stops
@@ -960,9 +579,15 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
   const label = node.meta.label ?? t(`${labels}.fields.${node.path}`);
 
   // What an optional select says for "nothing chosen". Its own key beside the field's, as it always
-  // was; for a field with a name of its own there is no key beside it, so the core says it with one
-  // word that fits any field.
-  const none = node.meta.label === undefined ? t(`${labels}.options.${node.path}.none`) : t('form.none');
+  // was; a field with a name of its own has no key beside it, and neither has a field that never needed
+  // a word of its own, so the core says it with one word that fits any field.
+  const noneKey = `${labels}.options.${node.path}.none`;
+  const none = node.meta.label === undefined && i18n.exists(noneKey) ? t(noneKey) : t('form.none');
+
+  // What a closed select says while nothing is chosen. ⚠️ Left out, Atmosphere says "Select an option"
+  // in English, whatever the language on screen. An optional field is in the state its "none" names, so
+  // it says that, as a list's filter and the template picker do; a required one asks for a choice.
+  const nothingChosen = node.optional ? none : t('form.choose');
 
   // The sentence under a field, drawn only when the language files carry one. It is a convention
   // rather than a schema flag on purpose: a hint is words, and words live in `locales/`.
@@ -985,6 +610,8 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
           hint={hint}
           locales={locales}
           multiline={node.meta.multiline === true}
+          markdown={node.meta.markdown === true}
+          addresses={node.meta.suggestions}
           error={error}
         />
       );
@@ -1011,16 +638,16 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
 
       return (
         <Row id={name} label={label} hint={hint} error={error}>
-          <Controller
-            control={control}
+          <HeldField
             name={name}
-            render={({ field }) => (
+            rowsTaken={env.rowsTaken}
+            render={(held, field) => (
               <MediaPicker
                 query={library}
                 onUpload={
                   upload === undefined || category === null ? upload : (file: File) => upload(file, category)
                 }
-                value={typeof field.value === 'number' ? field.value : null}
+                value={typeof held === 'number' ? held : null}
                 // Undefined and not null when nothing is chosen: an optional field that is absent
                 // is absent, and a null would be a value the contract does not have.
                 onChange={(chosen) => field.onChange(chosen ?? undefined)}
@@ -1034,7 +661,17 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
     }
 
     case 'icon':
-      return <IconChoice node={node} name={name} none={none} label={label} hint={hint} error={error} />;
+      return (
+        <IconChoice
+          node={node}
+          name={name}
+          none={none}
+          label={label}
+          hint={hint}
+          error={error}
+          rowsTaken={env.rowsTaken}
+        />
+      );
 
     case 'instant':
       return (
@@ -1046,6 +683,7 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
           error={error}
           locale={i18n.language}
           timezone={env.division?.timezone}
+          rowsTaken={env.rowsTaken}
         />
       );
 
@@ -1064,10 +702,11 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
                 <Select
                   // The label of the row points at this id: see the note on the enum above.
                   id={name}
-                  {...(typeof field.value === 'string' && field.value !== '' ? { value: field.value } : {})}
+                  value={typeof field.value === 'string' ? field.value : ''}
                   // Back to "nothing chosen", the same gesture an optional enum has: without it the
                   // first category somebody picks could never be taken off again.
                   onValueChange={(chosen) => field.onChange(chosen === NO_CHOICE ? '' : chosen)}
+                  placeholder={nothingChosen}
                   // The labels are the caller's, already in the language on screen. For a set only
                   // known at runtime — the permission catalogue, which depends on the modules
                   // installed — the label *is* the value, and that is what `choices` hands over.
@@ -1130,6 +769,7 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
                 <Select
                   {...(typeof field.value === 'number' ? { value: String(field.value) } : {})}
                   onValueChange={(chosen) => field.onChange(Number(chosen))}
+                  placeholder={nothingChosen}
                   items={node.choices!.map((choice) => ({
                     value: String(choice),
                     label: t(`${labels}.options.${node.path}.${choice}`),
@@ -1164,20 +804,21 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
     case 'enum':
       return (
         <Row id={name} label={label} hint={hint} error={error}>
-          <Controller
-            control={control}
+          <HeldField
             name={name}
-            render={({ field }) => (
+            rowsTaken={env.rowsTaken}
+            render={(held, field) => (
               <Select
                 // ⚠️ The label of a row points at this id, and without it the select has no
                 // accessible name at all — `getByLabel` finds nothing, and neither does a screen
                 // reader. Every generated select was missing it until G13; the public filters had
                 // it right, which is where the shape was copied from.
                 id={name}
-                {...(typeof field.value === 'string' ? { value: field.value } : {})}
+                value={typeof held === 'string' ? held : ''}
                 // An optional enum needs a way back to "nothing chosen", and a select has no such
                 // gesture: leaving it out would make the first choice permanent.
                 onValueChange={(chosen) => field.onChange(chosen === NO_CHOICE ? undefined : chosen)}
+                placeholder={nothingChosen}
                 items={[
                   ...(node.optional ? [{ value: NO_CHOICE, label: none }] : []),
                   ...node.options.map((option) => ({
@@ -1281,7 +922,21 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
   }
 }
 
-/** A list of objects: add, remove, reorder, and the same generator again for each entry. */
+/**
+ * A list of objects: add, remove, reorder, and the same generator again for each entry.
+ *
+ * An entry is a closed row — its number, its title, the arrows and "remove" — and one click opens it and
+ * closes the one open before (Carmine's staff round, IX; design of the editor, phase 3, §4.3): the steps
+ * of a timeline stood open one under the other, and in a panel a third of the screen wide the sixth
+ * could not be found. Which ones are open is held by position, because a position is what `move` and
+ * `remove` say, and what survives the form taking a newer row (`useNewerRow`), where the identifiers of
+ * the entries are born again.
+ *
+ * ⚠️ A closed entry stays **mounted**, hidden. What a mounted field does to its value is part of what a
+ * form validates: a box of text turns an absent value into an empty one, a box for a number turns a
+ * null into nothing. An entry never drawn would hold what the server sent, and the schema would refuse
+ * it — in a form that applies as it is written, silently, for the whole block.
+ */
 function RepeatableList({
   node,
   name,
@@ -1296,9 +951,42 @@ function RepeatableList({
   /** What is wrong with the list as a whole — none, too many — said under its title (#331). */
   error: string | undefined;
 }) {
-  const { t } = useTranslation();
-  const { control } = useFormContext();
+  const { t, i18n } = useTranslation();
+  const { control, formState, getValues } = useFormContext();
   const { fields, append, remove, move } = useFieldArray({ control, name });
+
+  // The titles follow what is typed in the entry that is open.
+  useWatch({ control, name });
+  const titleField = entryTitleField(node.children);
+  const title = (index: number) =>
+    titleField === null
+      ? ''
+      : titleOf(titleField, getValues(`${name}.${index}${titleField.path.slice(node.path.length)}`), {
+          locale: i18n.language,
+          labels: env.labels,
+          t,
+        });
+
+  // A list that opens with one entry shows it (Carmine, 5 November 2026, note
+  // `2026-11-05-la-voce-sola-nasce-aperta`): a pilot opening a report would find a row to click before
+  // anything to write, and closing the only entry makes room for nothing.
+  const [open, setOpen] = useState<readonly number[]>(fields.length === 1 ? [0] : []);
+
+  // An entry holding an error is open, because an error in a closed entry is an error nobody sees: it
+  // opens by itself, and whoever closes it finds it open again until the error is gone. Added to what
+  // is open rather than worked out from the errors on every draw, or the entry would close under the
+  // hands of whoever is typing the letter that ends the error.
+  const closedWithError = fields.flatMap((_, index) =>
+    !open.includes(index) && holdsAnError(formState.errors, `${name}.${index}`) ? [index] : [],
+  );
+
+  // Nothing here moves the page. On a refused submit the form's own move to the first wrong box gets there
+  // on its second try, after the entry has opened, and the browser brings it into view (measured in
+  // Chromium, by click and by Enter). Anything more would pull somebody back to this entry each time they
+  // open another, for as long as the error is there.
+  if (closedWithError.length > 0) {
+    setOpen([...open, ...closedWithError]);
+  }
 
   return (
     <fieldset className="border-border flex flex-col gap-4 rounded-md border p-4">
@@ -1307,57 +995,110 @@ function RepeatableList({
       </legend>
       <FieldError error={error} />
 
-      {fields.map((entry, index) => (
-        <div key={entry.id} className="border-border flex flex-col gap-4 rounded-md border p-3">
-          {node.children.map((child) => (
-            <Field
-              key={child.path}
-              node={child}
-              name={`${name}.${index}${child.path.slice(node.path.length)}`}
-              env={env}
-            />
-          ))}
-          <div className="flex flex-wrap items-center gap-1">
-            {/* Up and down rather than dragging, and they stay when dragging arrives in G11: this
-                is the pair that works from a keyboard, and reordering is something an editor does
-                far more often than adding. */}
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={index === 0}
-              aria-label={t('form.moveUp')}
-              onClick={() => move(index, index - 1)}
-            >
-              <ChevronUp aria-hidden className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={index === fields.length - 1}
-              aria-label={t('form.moveDown')}
-              onClick={() => move(index, index + 1)}
-            >
-              <ChevronDown aria-hidden className="size-4" />
-            </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>
-              <Trash2 aria-hidden className="mr-2 size-4" />
-              {t('form.removeEntry')}
-            </Button>
-          </div>
-        </div>
-      ))}
+      {fields.map((entry, index) => {
+        const written = title(index);
+
+        return (
+          <CollapsibleRoot
+            key={entry.id}
+            open={open.includes(index)}
+            onOpenChange={(opening) => setOpen(opening ? [index] : open.filter((at) => at !== index))}
+            className="border-border rounded-md border"
+          >
+            <div className="flex flex-wrap items-center gap-1 p-1">
+              {/* `grow`, never `flex-1`: its basis of 0% wins over `basis-40`, and the row never wraps. In the
+                  block's panel the title would be left a few pixels wide, next to the buttons. */}
+              <CollapsibleTrigger className="group hover:bg-accent focus-visible:ring-ring flex min-w-0 grow basis-40 items-center gap-2 rounded-sm px-2 py-1 text-left text-sm font-medium focus-visible:ring-2 focus-visible:outline-none">
+                <ChevronRight
+                  aria-hidden
+                  className="size-4 shrink-0 transition-transform group-data-[state=open]:rotate-90"
+                />
+                {written === '' ? (
+                  <span className="text-muted-foreground truncate">
+                    {t('form.entry', { number: index + 1 })}
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-muted-foreground tabular-nums">{index + 1}</span>{' '}
+                    {/* `w-0`: cut or not, the whole text counts for how narrow the list can get, and a
+                        fieldset never goes below that. A long title would widen the block's panel. */}
+                    <span className="w-0 grow truncate">{written}</span>
+                  </>
+                )}
+              </CollapsibleTrigger>
+
+              {/* Up and down rather than dragging, and they stay when dragging arrives in G11: this
+                  is the pair that works from a keyboard, and reordering is something an editor does
+                  far more often than adding. */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={index === 0}
+                aria-label={t('form.moveUp')}
+                onClick={() => {
+                  move(index, index - 1);
+                  setOpen(open.map((at) => swapped(at, index, index - 1)));
+                }}
+              >
+                <ChevronUp aria-hidden className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={index === fields.length - 1}
+                aria-label={t('form.moveDown')}
+                onClick={() => {
+                  move(index, index + 1);
+                  setOpen(open.map((at) => swapped(at, index, index + 1)));
+                }}
+              >
+                <ChevronDown aria-hidden className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  remove(index);
+                  setOpen(open.filter((at) => at !== index).map((at) => (at > index ? at - 1 : at)));
+                }}
+              >
+                <Trash2 aria-hidden className="mr-2 size-4" />
+                {t('form.removeEntry')}
+              </Button>
+            </div>
+
+            <CollapsibleContent forceMount hidden={!open.includes(index)}>
+              <div className="border-border flex flex-col gap-4 border-t p-3">
+                {node.children.map((child) => (
+                  <Field
+                    key={child.path}
+                    node={child}
+                    name={`${name}.${index}${child.path.slice(node.path.length)}`}
+                    env={env}
+                  />
+                ))}
+              </div>
+            </CollapsibleContent>
+          </CollapsibleRoot>
+        );
+      })}
 
       <div>
         {/* A new entry starts at what its own fields say they hold when empty, and never at `{}`:
             a translated field with no value is an input React cannot control, and the coordinator
-            would be typing into a box that forgets what they wrote. */}
+            would be typing into a box that forgets what they wrote. And it starts open: it is there
+            to be written in. */}
         <Button
           type="button"
           variant="secondary"
           size="sm"
-          onClick={() => append(blankEntry(node.children, node.path, env.locales))}
+          onClick={() => {
+            append(blankEntry(node.children, node.path, env.locales));
+            setOpen([fields.length]);
+          }}
         >
           <Plus aria-hidden className="mr-2 size-4" />
           {t('form.addEntry')}
@@ -1365,6 +1106,64 @@ function RepeatableList({
       </div>
     </fieldset>
   );
+}
+
+/** Where an open entry at a position ends up when the entries at `from` and `to` change places. */
+function swapped(position: number, from: number, to: number): number {
+  return position === from ? to : position === to ? from : position;
+}
+
+/**
+ * The words of an entry's title, out of the value of its title field, in the language on screen — or
+ * the first language that has anything written in it, as the address of a page does (`readSource`): an
+ * entry written only in Italian is still named by that on a screen in English. Empty when nothing is
+ * written, and a value that a choice offers is called what the choice calls it.
+ */
+function titleOf(
+  node: FieldNode,
+  value: unknown,
+  { locale, labels, t }: { locale: string; labels: string; t: (key: string) => string },
+): string {
+  if (node.kind === 'localized') {
+    return readSource(value, locale).trim();
+  }
+
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    return '';
+  }
+
+  const written = String(value).trim();
+  if (written === '') {
+    return '';
+  }
+
+  switch (node.kind) {
+    case 'enum':
+      return t(`${labels}.options.${node.path}.${written}`);
+    case 'text':
+      return node.choices?.find((choice) => choice.value === written)?.label ?? written;
+    case 'suggest':
+      return node.suggestions.find((suggestion) => suggestion.value === written)?.label ?? written;
+    // In UTC, like the box it comes from.
+    case 'instant':
+      return formatMoment(locale, written, { dateStyle: 'short', time: node.withTime });
+    default:
+      return written;
+  }
+}
+
+/** Whether react-hook-form holds an error anywhere under that path. */
+function holdsAnError(errors: FieldErrors, path: string): boolean {
+  let current: unknown = errors;
+
+  for (const segment of path.split('.')) {
+    if (current === null || typeof current !== 'object') {
+      return false;
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+
+  return current !== null && typeof current === 'object' && Object.keys(current).length > 0;
 }
 
 /**
@@ -1422,6 +1221,37 @@ function LocalizedObject({
 }
 
 /**
+ * A field that can go back to nothing: what it holds is `undefined`, and that has to be what it draws.
+ *
+ * ⚠️ What is drawn is read with `useWatch`, and not from `field.value`. A controller's value is watched
+ * with the value it was born with as its default, and react-hook-form hands the default back for
+ * `undefined`: a field taken off drew itself again, while the form held nothing and saved nothing.
+ * Measured on a date: `{ shown: '2026-01-02', sent: {} }`, and on an enum, an icon and a media. A picture
+ * still drawn as chosen could not even be chosen again: pressing a chosen one takes it off. An empty string
+ * is no way out: `z.string().optional()` accepts it, so the form would send an empty string where there
+ * should be nothing at all.
+ *
+ * ⚠️ The controller is born again when the form takes the row: registering after a reset, it writes the
+ * value it was born with over `undefined`, and a field taken off would come back.
+ */
+function HeldField({
+  name,
+  rowsTaken,
+  render,
+}: {
+  name: string;
+  rowsTaken: number;
+  render: (held: unknown, field: ControllerRenderProps) => React.ReactElement;
+}) {
+  const { control } = useFormContext();
+  const held: unknown = useWatch({ control, name });
+
+  return (
+    <Controller key={rowsTaken} control={control} name={name} render={({ field }) => render(held, field)} />
+  );
+}
+
+/**
  * An icon, out of the allow list. It is drawn as a grid of pictures rather than as a select, and
  * for a reason worth writing down: Atmosphere's `Select` takes a plain string per option, so a
  * select could only ever list the names — and a name without its picture is exactly the choice
@@ -1435,6 +1265,7 @@ function IconChoice({
   label,
   hint,
   error,
+  rowsTaken,
 }: {
   node: Extract<FieldNode, { kind: 'icon' }>;
   name: string;
@@ -1443,9 +1274,8 @@ function IconChoice({
   label: string;
   hint: string | undefined;
   error: string | undefined;
+  rowsTaken: number;
 }) {
-  const { control } = useFormContext();
-
   return (
     <fieldset className="flex flex-col gap-1">
       <Label asChild>
@@ -1453,14 +1283,14 @@ function IconChoice({
       </Label>
       <FieldHint hint={hint} />
 
-      <Controller
-        control={control}
+      <HeldField
         name={name}
-        render={({ field }) => (
+        rowsTaken={rowsTaken}
+        render={(held, field) => (
           <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
             {node.optional ? (
               <IconOption
-                chosen={typeof field.value !== 'string' || field.value === ''}
+                chosen={typeof held !== 'string' || held === ''}
                 label={none}
                 onChoose={() => field.onChange(undefined)}
               />
@@ -1469,7 +1299,7 @@ function IconChoice({
             {ICON_NAMES.map((iconName) => (
               <IconOption
                 key={iconName}
-                chosen={field.value === iconName}
+                chosen={held === iconName}
                 label={iconName}
                 icon={iconName}
                 onChoose={() => field.onChange(iconName)}
@@ -1528,6 +1358,9 @@ function IconOption({
  * A **day** shows no second line. "The same day, elsewhere" is not a fact a date has, and echoing
  * one would only ever be a chance to read the wrong day. An **instant** does show the division's
  * local time under it, which is the rule `DateCell` follows in every list.
+ *
+ * An optional one can be taken off, with a button beside it: a date picker has no gesture of its own
+ * for it (the staff's round, IX).
  */
 function Instant({
   node,
@@ -1537,6 +1370,7 @@ function Instant({
   error,
   locale,
   timezone,
+  rowsTaken,
 }: {
   node: Extract<FieldNode, { kind: 'instant' }>;
   name: string;
@@ -1545,8 +1379,9 @@ function Instant({
   error: string | undefined;
   locale: string;
   timezone: string | undefined;
+  rowsTaken: number;
 }) {
-  const { control } = useFormContext();
+  const { t } = useTranslation();
 
   if (node.withTime && timezone === undefined) {
     throw new Error(
@@ -1559,27 +1394,41 @@ function Instant({
 
   return (
     <Row id={name} label={label} hint={hint} error={error}>
-      <Controller
-        control={control}
+      <HeldField
         name={name}
-        render={({ field }) => {
-          const iso = typeof field.value === 'string' ? field.value : '';
+        rowsTaken={rowsTaken}
+        render={(held, field) => {
+          const iso = typeof held === 'string' ? held : '';
 
           return (
             <div className="flex flex-col gap-1">
-              <Input
-                id={name}
-                type={node.withTime ? 'datetime-local' : 'date'}
-                className="max-w-xs"
-                value={iso.slice(0, width)}
-                onBlur={field.onBlur}
-                onChange={(event) => {
-                  const written = event.target.value;
-                  field.onChange(
-                    written === '' ? undefined : node.withTime ? `${written}:00Z` : `${written}T00:00:00Z`,
-                  );
-                }}
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  id={name}
+                  type={node.withTime ? 'datetime-local' : 'date'}
+                  className="max-w-xs"
+                  value={iso.slice(0, width)}
+                  onBlur={field.onBlur}
+                  onChange={(event) => {
+                    const written = event.target.value;
+                    field.onChange(
+                      written === '' ? undefined : node.withTime ? `${written}:00Z` : `${written}T00:00:00Z`,
+                    );
+                  }}
+                />
+                {node.optional && iso !== '' ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    // Two dates side by side, a start and an end, are two buttons: the name says which.
+                    aria-label={`${t('form.clearDate')} (${label})`}
+                    onClick={() => field.onChange(undefined)}
+                  >
+                    {t('form.clearDate')}
+                  </Button>
+                ) : null}
+              </div>
               {node.withTime && iso !== '' && timezone !== undefined ? (
                 <Subtle className="tabular-nums">{localTime(iso, locale, timezone)}</Subtle>
               ) : null}
