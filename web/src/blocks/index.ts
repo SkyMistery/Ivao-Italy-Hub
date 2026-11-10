@@ -1,6 +1,6 @@
 export { BlockView, ContentRenderer } from './ContentRenderer';
 export type { PickAction, SortableBinding } from './picking';
-export { PickingContext, useLinksDisabled, usePicking, type Picking } from './picking';
+export { PickingContext, newGesture, useLinksDisabled, usePicking, type Picking } from './picking';
 export { PrintContext, usePrinting } from './print';
 export {
   EMBED_GUIDELINES_PATH,
@@ -42,6 +42,7 @@ export {
   type SectionEnvelope,
   type Span,
 } from './envelope';
+export { carriesOldSize, sizeOf, sizedAt, snapped } from './size';
 export { CORE_BLOCK_TYPES } from './core';
 export { startsWithPageTitle } from './envelope';
 export { coreBlocks } from './registry';

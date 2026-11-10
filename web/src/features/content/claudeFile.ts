@@ -7,8 +7,11 @@ import {
   allSections,
   bodySchema,
   carriesOldAlign,
+  carriesOldSize,
   newId,
   placedAt,
+  sizeOf,
+  sizedAt,
   type BlockEnvelope,
   type Body,
   type SectionEnvelope,
@@ -572,6 +575,22 @@ function settleBody(
             ? alignOf(before.block)
             : 'left');
       settled = { ...settled, ...placedAt(settled, chosen, settled.props) };
+    }
+
+    // The same for the width of a picture written before PR 3.10, `width` where today's schema has `widthPercent`: read
+    // by today's schema the old one is gone, and the default would take the whole column. Unless the file writes the new
+    // one, the width the page had comes with it, from the file's block or else from the draft's.
+    const resizable = registration?.resizable;
+    if (resizable !== undefined && !unchanged && !Object.hasOwn(block.props, resizable.prop)) {
+      const old = carriesOldSize(resizable, block.props)
+        ? block.props
+        : before !== undefined && carriesOldSize(resizable, before.block.props)
+          ? before.block.props
+          : null;
+
+      if (old !== null) {
+        settled = { ...settled, props: sizedAt(resizable, settled.props, sizeOf(resizable, old)) };
+      }
     }
 
     if (!unchanged) {

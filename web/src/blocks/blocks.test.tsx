@@ -78,7 +78,7 @@ describe('content', () => {
   });
 
   test('a picture is read at the address of its file, and an empty alt means decoration', () => {
-    const { unmount } = draw(<ImageBlock props={{ mediaId: 7, width: 'full', rounded: true }} />);
+    const { unmount } = draw(<ImageBlock props={{ mediaId: 7, widthPercent: 100, rounded: true }} />);
 
     // `alt=""` is what makes a screen reader skip it. The alternative — a file name — is worse than
     // nothing: it is read out, and it says nothing about the picture (design M1 §1.2).
@@ -87,7 +87,7 @@ describe('content', () => {
     expect(decoration).toHaveAttribute('alt', '');
     unmount();
 
-    draw(<ImageBlock props={{ mediaId: 7, alt: en('A runway at dawn'), width: 'full' }} />);
+    draw(<ImageBlock props={{ mediaId: 7, alt: en('A runway at dawn'), widthPercent: 100 }} />);
     expect(screen.getByAltText('A runway at dawn')).toBeInTheDocument();
   });
 
