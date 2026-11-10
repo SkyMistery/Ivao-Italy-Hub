@@ -10,6 +10,7 @@ using IvaoHub.Modules.FlightOps.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -231,9 +232,20 @@ public static class TourEndpoints
         return Results.Ok(new TourMapper().ToDetail(tour, now));
     }
 
-    /// <summary>The cards of <c>/tours</c>: the tours the public sees now, containers included, subtours not.</summary>
-    private static async Task<IResult> PublicCardsAsync(PublicTours tours, HttpContext http) =>
-        Results.Ok(await tours.CardsAsync(states: null, limit: null, http.RequestAborted));
+    /// <summary>
+    /// The cards of <c>/tours</c>: the tours the public sees now, containers included, subtours not. <paramref name="states"/>
+    /// asks for some states only (design <c>11-design-pagine-dei-tour</c> §3): the archive is <c>?states=Closed</c>, the same
+    /// read. Nothing asked is the three states of a card; a state that is not one of the list's narrows to nothing rather
+    /// than widening to everything, as the block's property does.
+    /// </summary>
+    private static async Task<IResult> PublicCardsAsync(PublicTours tours, HttpContext http, [FromQuery] TourStateKind[]? states)
+    {
+        var wanted = states is { Length: > 0 }
+            ? [.. states.Where(PublicTours.ListStates.Contains).Distinct()]
+            : (IReadOnlyCollection<TourStateKind>?)null;
+
+        return Results.Ok(await tours.CardsAsync(wanted, limit: null, http.RequestAborted));
+    }
 
     /// <summary>One tour by its address. A hidden tour, a draft, a template and one not yet released all answer 404.</summary>
     private static async Task<IResult> PublicTourAsync(string slug, PublicTours tours, HttpContext http) =>

@@ -13,6 +13,9 @@ namespace IvaoHub.Modules.FlightOps.Tours;
 /// the one a browser is asked to check again rather than keep for a year.
 /// <para>No progress and no next leg: those are the pilot's own, and the browser draws them on top of the card from
 /// <c>GET /api/flightops/my-tours</c> (T15b, <see cref="People.MyTours"/>). A card is the same for whoever is looking.</para>
+/// <para>Under the title a line of numbers (design <c>11-design-pagine-dei-tour</c> §3, phase 6): the legs and the miles,
+/// the minimum rating by its short name, the award by name, and for a container how many subtours it has — the server's
+/// numbers, which the card only says.</para>
 /// </summary>
 public sealed record PublicTourCardDto(
     long Id,
@@ -25,7 +28,10 @@ public sealed record PublicTourCardDto(
     DateTime ReleaseAt,
     DateTime CloseAt,
     int Legs,
-    decimal TotalNm);
+    decimal TotalNm,
+    string? MinPilotRatingName,
+    PublicAwardDto? Award,
+    int Subtours);
 
 /// <summary>
 /// One leg of a tour as the public page and the map draw it (design M2 §8.1): the two airports with their coordinates —
@@ -67,7 +73,10 @@ public sealed record PublicAircraftGroupDto(long Id, Localized<string> Name);
 /// <summary>One rotation of a hub tour, so that the page groups the legs the way the tour flies them (design M2 §1.3).</summary>
 public sealed record PublicRotationDto(long Id, string Icao, int Sort, int Size);
 
-/// <summary>A subtour of a container, as its parent's page lists it (note 2026-09-21-la-forma-dei-tour).</summary>
+/// <summary>
+/// A subtour of a container, as its parent's page lists it (note 2026-09-21-la-forma-dei-tour): a card, which says the
+/// subtour's own kind (phase 6) — a subtour is a tour of its kind, not the container's.
+/// </summary>
 public sealed record PublicSubtourDto(
     long Id,
     string Slug,
@@ -77,7 +86,8 @@ public sealed record PublicSubtourDto(
     DateTime ReleaseAt,
     DateTime CloseAt,
     int Legs,
-    decimal TotalNm);
+    decimal TotalNm,
+    TourKind Kind);
 
 /// <summary>
 /// One tour as a visitor reads it (design M2 §8.1): the briefing as it stands — a tour has no published version behind

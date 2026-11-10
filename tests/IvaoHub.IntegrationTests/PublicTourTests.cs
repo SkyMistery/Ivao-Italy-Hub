@@ -266,6 +266,68 @@ public sealed class PublicTourTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
+    /// The list of the site (design <c>11-design-pagine-dei-tour</c> §3, phase 6): a card says its numbers — the minimum
+    /// rating by its short name, the award by name — and the archive is the closed tours, asked of the same read with
+    /// <c>?states=Closed</c>. A closed tour leaves the cards everybody gets; a state that is not one of the list's narrows to
+    /// nothing rather than to everything.
+    /// </summary>
+    [Fact]
+    public async Task TheArchiveIsTheClosedToursOfTheSameReadAndACardSaysItsNumbers()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(_factory, CoordinatorVid, token);
+        using var visitor = Anonymous();
+
+        var awardName = $"fo-test t10 archive {Guid.NewGuid():N}"[..34];
+        var awardId = await SeedAwardAsync(awardName, token);
+        var slug = $"fo-test-public-{Guid.NewGuid():N}"[..28];
+        var tour = await CreatedAsync(
+            coordinator,
+            TourEndpoints.Pattern,
+            Payload(slug, released: true, preview: false) with { AwardId = awardId, MinPilotRating = 5 },
+            token);
+        var tourId = Id(tour);
+        _tours.Add(tourId);
+        await OkAsync(await coordinator.PostAsJsonAsync(Legs(tourId), Leg(Rome, Milan), token), token);
+        await ReadyAsync(coordinator, tourId, token);
+
+        // Open: on the cards, with its numbers; not in the archive.
+        var cards = await OkAsync(await visitor.GetAsync(PublicCards, token), token);
+        var card = Assert.Single(cards.EnumerateArray(), row => Id(row) == tourId);
+        Assert.Equal("PP", card.GetProperty("minPilotRatingName").GetString());
+        Assert.Equal(awardName, card.GetProperty("award").GetProperty("name").GetProperty("en").GetString());
+        Assert.Equal(0, card.GetProperty("subtours").GetInt32());
+
+        var archive = await OkAsync(await visitor.GetAsync($"{PublicCards}?states=Closed", token), token);
+        Assert.DoesNotContain(archive.EnumerateArray(), row => Id(row) == tourId);
+
+        // Closed, report window and all: the dates moved into the past, as the clock would move them.
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+            await database.Tours.IgnoreQueryFilters()
+                .Where(row => row.Id == tourId)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(row => row.ReleaseAt, DateTime.UtcNow.AddDays(-90))
+                        .SetProperty(row => row.CloseAt, DateTime.UtcNow.AddDays(-60)),
+                    token);
+        }
+
+        var afterwards = await OkAsync(await visitor.GetAsync(PublicCards, token), token);
+        Assert.DoesNotContain(afterwards.EnumerateArray(), row => Id(row) == tourId);
+
+        var archived = await OkAsync(await visitor.GetAsync($"{PublicCards}?states=Closed", token), token);
+        var closed = Assert.Single(archived.EnumerateArray(), row => Id(row) == tourId);
+        Assert.Equal("Closed", closed.GetProperty("state").GetString());
+        Assert.All(archived.EnumerateArray(), row => Assert.Equal("Closed", row.GetProperty("state").GetString()));
+
+        // A state the list does not show — a template, a draft — narrows to nothing, never to everything.
+        var none = await OkAsync(await visitor.GetAsync($"{PublicCards}?states=Template", token), token);
+        Assert.Empty(none.EnumerateArray());
+    }
+
+    /// <summary>
     /// The base map (note 2026-09-15-la-mappa §5, verification 1): the archive is served with <c>Range</c> and a strong
     /// tag, which is what makes a 179 MB file readable a few kilobytes at a time. Kestrel does it here; Passenger is
     /// the same question asked again on the staging, and it is still open.

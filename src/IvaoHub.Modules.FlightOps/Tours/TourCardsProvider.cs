@@ -58,6 +58,12 @@ public sealed class TourCardsProvider(PublicTours tours) : IDataBlockProvider
                 ["closeAt"] = card.CloseAt,
                 ["legs"] = card.Legs,
                 ["totalNm"] = card.TotalNm,
+                // The line of numbers of the card of `/tours` (design 11 §3), which the block draws with the same card.
+                ["minPilotRatingName"] = card.MinPilotRatingName,
+                ["award"] = card.Award is { } award
+                    ? new JsonObject { ["id"] = award.Id, ["name"] = BlockProps.Translated(award.Name) }
+                    : null,
+                ["subtours"] = card.Subtours,
             });
         }
 

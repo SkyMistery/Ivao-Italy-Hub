@@ -9746,7 +9746,10 @@ export interface components {
             trainee: null | components["schemas"]["TrainingMemberDto"];
             trainer: null | components["schemas"]["TrainingMemberDto"];
         };
-        /** @description A subtour of a container, as its parent's page lists it (note 2026-09-21-la-forma-dei-tour). */
+        /**
+         * @description A subtour of a container, as its parent's page lists it (note 2026-09-21-la-forma-dei-tour): a card, which says the
+         *     subtour's own kind (phase 6) — a subtour is a tour of its kind, not the container's.
+         */
         PublicSubtourDto: {
             /** Format: int64 */
             id: number;
@@ -9762,13 +9765,16 @@ export interface components {
             legs: number;
             /** Format: double */
             totalNm: number;
+            kind: components["schemas"]["TourKind"];
         };
         /**
          * @description A tour as a card shows it (design M2 §8.1): what fits on a tile, and nothing a visitor may not see. The picture is
          *     the identifier alone — a module reads no row of the core's library, and the address built from the identifier is
          *     the one a browser is asked to check again rather than keep for a year.
          *     No progress and no next leg: those are the pilot's own, and the browser draws them on top of the card from
-         *     GET /api/flightops/my-tours (T15b, MyTours). A card is the same for whoever is looking.
+         *     GET /api/flightops/my-tours (T15b, MyTours). A card is the same for whoever is looking.Under the title a line of numbers (design 11-design-pagine-dei-tour §3, phase 6): the legs and the miles,
+         *     the minimum rating by its short name, the award by name, and for a container how many subtours it has — the server's
+         *     numbers, which the card only says.
          */
         PublicTourCardDto: {
             /** Format: int64 */
@@ -9788,6 +9794,10 @@ export interface components {
             legs: number;
             /** Format: double */
             totalNm: number;
+            minPilotRatingName: null | string;
+            award: null | components["schemas"]["PublicAwardDto"];
+            /** Format: int32 */
+            subtours: number;
         };
         /**
          * @description One tour as a visitor reads it (design M2 §8.1): the briefing as it stands — a tour has no published version behind
@@ -19579,7 +19589,9 @@ export interface operations {
     };
     FlightOpsPublicTours: {
         parameters: {
-            query?: never;
+            query?: {
+                states?: components["schemas"]["TourStateKind"][];
+            };
             header?: never;
             path?: never;
             cookie?: never;
