@@ -204,6 +204,8 @@ function TourListTabBody({
     <>
       <div className="flex flex-wrap items-end gap-4">
         <SearchBox
+          // Wide enough to read what is typed: on a phone the filter goes under it rather than squeezing it.
+          className="max-w-xs min-w-56 flex-1"
           initial={search.q ?? ''}
           placeholder={t('flightops:public.searchByName')}
           onCommit={(q) => onSearch({ q: q === '' ? undefined : q })}
