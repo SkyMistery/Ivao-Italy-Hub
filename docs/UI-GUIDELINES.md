@@ -608,6 +608,15 @@ photograph is not something this hub can make read well, and should not be attem
 `wide`, `full`. `full` is for `hero`, `gallery` and `image`; a section of text as wide as the screen
 is a line nobody finishes.
 
+**A block's alignment is on its envelope, and only where it means something.** `align` sits beside
+`column` and `span`: `left`, `center` or `right`, and absent means left. A block that can be aligned
+says so in its registration (`alignable`): today the heading, the text, the callout, the image, the
+video, the buttons and the testimonial. A table or a grid of cards already takes the whole column.
+One wrapper of the renderer draws it: the text, a piece narrower than its column, a row laid out by
+`flex` that marks itself with `data-align-row`, and the bullet of a list next to its words. An
+alignable block never declares an `align` of its own among its props (`blocks/align.test.tsx`).
+`hero` keeps its own, because it aligns what is inside its ground, not the block in the column.
+
 **A locked section shows its fields, not its structure.** No "add block", no "move", no "drag", no
 "delete":
 what an editor sees is the list of blocks the template put there, each with its property form, and a
