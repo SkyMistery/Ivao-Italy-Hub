@@ -65,12 +65,16 @@
       "sourceNotInteractive": "Only an interactive block carries code.",
       "sourceNotPermitted": "Adding or changing the code of an interactive block needs the permission to embed code.",
       "spanUnknown": "This block has a width a dashboard does not have.",
+      "alignUnknown": "This block asks for an alignment that does not exist: left, centre or right.",
       "blockAudience": "This block is for fewer readers than the page: take it out, or make the page visible to fewer people."
     },
     "content": {
       "templateNotPublishable": "A template is not published: make a page from it and publish that.",
       "mediaMissing": "This picture is no longer in the media library. Choose another one.",
       "mediaNotVisible": "This picture is not visible to the readers of this page. Make it public in the media library, or choose another one.",
+      "mediaToChoose": "This picture has not been chosen yet. Choose one from the media library.",
+      "linkNowhere": "This link leads nowhere: no screen and no published content has this address. Publish that page first, or choose another address.",
+      "linkLessVisible": "This link leads somewhere the readers of this page cannot go. Choose another address, or change who can read one of the two.",
       "notADocument": "Only a document carries this. Leave it empty on a page or a news item.",
       "successorUnknown": "The document that replaces this one does not exist. Pick one from the list.",
       "successorWithoutRetirement": "A document with a successor is no longer in force: say since when.",
@@ -98,7 +102,11 @@
         "blockAudience": "The page online carries a block for fewer readers. Take it out and publish again, then change who reads it."
       },
       "tooManyCollections": "A row may be filed in twenty collections at most.",
-      "collectionInvalid": "A collection is named by its key: lower case letters, digits and dashes."
+      "collectionInvalid": "A collection is named by its key: lower case letters, digits and dashes.",
+      "settings": {
+        "stylePageNotFound": "Choose a published page you can read.",
+        "stylePageTooNarrow": "Only one department reads this page: whoever downloads the instructions must be able to read it, so choose one for the whole staff."
+      }
     },
     "maintenance": {
       "title": "This part of the site is closed for changes right now"

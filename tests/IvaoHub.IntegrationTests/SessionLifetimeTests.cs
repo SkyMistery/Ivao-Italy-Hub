@@ -216,7 +216,6 @@ public sealed class SessionLifetimeTests(MariaDbFixture mariaDb) : IAsyncLifetim
                 CountryId: null,
                 RatingAtc: null,
                 RatingPilot: null,
-                DiscordId: null,
                 Email: null,
                 LanguageId: "en",
                 IvaoIsStaff: positions.Length > 0,

@@ -10,6 +10,7 @@ import { ConfirmDialog, Notice, useNotice } from '../../shared/ui';
 import { menuParentsQuery } from '../menu/queries';
 
 import { CHANGELOG_MAX, changeSummary } from './changeSummary';
+import { versionLine } from './claudeFile';
 import { useReviewContent } from './mutations';
 import { contentReviewQuery, pageTreeQuery, type ContentDetailDto } from './queries';
 
@@ -29,6 +30,9 @@ function emptyLabel(locales: readonly string[]): Record<string, string> {
  *
  * It sits above the editor rather than inside its toolbar, because while a page waits the editor
  * is read only and this is the part of the screen that still does something.
+ *
+ * ⚠️ Its two selects always get a value, `''` for nothing: without one Radix draws the last choice it held, and the
+ * approval publishes under a parent the dialog is not showing (note 2026-11-06-il-pannello-rimesso-a-niente).
  */
 export function ReviewPanel({
   content,
@@ -100,7 +104,7 @@ export function ReviewPanel({
           <Label htmlFor="review-menu-parent">{t('content.review.menu.parent')}</Label>
           <Select
             id="review-menu-parent"
-            {...(menuParent === '' ? {} : { value: menuParent })}
+            value={menuParent}
             onValueChange={(chosen) => setMenuParent(chosen === NO_CHOICE ? '' : chosen)}
             placeholder={t('content.review.menu.top')}
             items={[
@@ -250,7 +254,7 @@ export function ReviewPanel({
               // dialog does (issue #352): the summary above, in words, for the approver to keep or rewrite.
               onOpenChange={(open) => {
                 if (open && changelog === '' && facts !== undefined) {
-                  setChangelog(changeSummary(facts, t, read));
+                  setChangelog(versionLine(content, changeSummary(facts, t, read), t));
                 }
               }}
               onConfirm={() => {
@@ -281,7 +285,7 @@ export function ReviewPanel({
                 <Label htmlFor="review-parent">{t('content.fields.parentId')}</Label>
                 <Select
                   id="review-parent"
-                  {...(parent === '' ? {} : { value: parent })}
+                  value={parent}
                   onValueChange={(chosen) => setParent(chosen === NO_CHOICE ? '' : chosen)}
                   placeholder={t('content.options.parentId.none')}
                   items={[

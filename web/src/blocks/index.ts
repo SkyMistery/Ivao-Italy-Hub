@@ -1,8 +1,9 @@
 export { BlockView, ContentRenderer } from './ContentRenderer';
 export type { PickAction, SortableBinding } from './picking';
-export { PickingContext, usePicking, type Picking } from './picking';
+export { PickingContext, useLinksDisabled, usePicking, type Picking } from './picking';
 export { PrintContext, usePrinting } from './print';
 export {
+  EMBED_GUIDELINES_PATH,
   EmbeddingContext,
   frameAddress,
   useEmbedding,
@@ -11,6 +12,7 @@ export {
 } from './embedding';
 export { blockDataKey, blockDataQuery, categoryLabel, encodeProps, type ContentListData } from './data';
 export {
+  ALIGNS,
   BACKGROUNDS,
   LAYOUTS,
   PADDINGS,
@@ -18,16 +20,20 @@ export {
   SCHEMA_VERSION,
   SPANS,
   WIDTHS,
+  alignOf,
   allBlocks,
   allSections,
   blockEnvelopeSchema,
   bodySchema,
+  carriesOldAlign,
   columnsOf,
   emptyBody,
   newId,
+  placedAt,
   readBody,
   sectionSchema,
   spanOf,
+  type Align,
   type Background,
   type BlockEnvelope,
   type Body,

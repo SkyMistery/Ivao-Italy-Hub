@@ -126,6 +126,9 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   Nessun livello nuovo nel modello.
 - **Meccanismo**: il contesto di composizione. `Picking.onAddSection` prende dove (`parentId`, posizione); `addSection` di `body.ts` un
   indice. Le etichette le disegna `SectionView` quando `usePicking()` non è `null`.
+- **Dalla barra della sezione** (Carmine, in chat al master il 5 novembre 2026; nota `2026-11-05-le-fessure-e-l-anteprima-vuota`): il modo di inserire
+  una sezione o una riga è la barra di quella scelta, sopra e sotto, per ogni sezione e ogni riga. Le strisce fra le sezioni sono la scorciatoia col
+  mouse e non rispondono dove non c'è aria. «+ riga» in fondo solo sulle sezioni della pagina.
 - **File del nucleo**: `blocks/ContentRenderer.tsx`, `blocks/picking.ts`, `features/content/BodyEditor.tsx`, `features/content/body.ts`,
   i file di lingua. Il server non cambia.
 - **Nota sua**: no. **Test**: `blocks.test.tsx` già controlla che la pagina di un visitatore sia inerte — ci si aggiunge che non ha
@@ -147,6 +150,9 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 - **File del nucleo**: `shared/ui/StaffSidebar.tsx` e `app/layouts/StaffLayout.tsx` (cambia dove sta il provider, non che cosa fa: la
   geometria la misura già `e2e/back-office.spec.ts`), `features/content/BodyEditor.tsx` e un pezzo interno nuovo accanto,
   `features/content/PanelSplitter.tsx`. **Nota sua**: no.
+- **Com'è andata** (#471): ⚠️ la barra si chiude **prima** che le sezioni siano nel documento: chiuderla con la pagina già lì riapriva la trappola
+  dell'anteprima vuota (nota `2026-11-07-la-barra-che-si-chiude-e-l-anteprima-vuota`). `localStorage` non è più il primo uso nell'hub: la 3.0b ci
+  tiene gli avanzi di un import; lo è per una comodità di chi guarda.
 
 ### 4.3 Le voci ripetute si chiudono (IX)
 
@@ -155,7 +161,10 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   è il valore, nella lingua sullo schermo, del primo campo di testo della voce («Voce 3» se è vuoto); un blocco che vuole un altro campo
   lo dice con `.meta({ entryTitle: true })`. Una voce **nuova** nasce aperta; una voce con un **errore** si apre da sola, perché un
   errore dentro una voce chiusa è un errore che nessuno vede (i percorsi di `useProblemDetails` dicono già quale voce).
-- **La data che si toglie**: un campo data facoltativo (`Instant`) ha «Togli la data» accanto.
+  **Un elenco che all'apertura del form ha una voce sola la mostra aperta** (Carmine, in chat al master il 5 novembre 2026, «Sì, aperta»; nota
+  `2026-11-05-la-voce-sola-nasce-aperta`).
+- **La data che si toglie**: un campo data facoltativo (`Instant`) ha «Togli la data» accanto. La stessa correzione vale per enum, icona e media
+  (nota `2026-11-06-il-campo-rimesso-a-niente`).
 - **Meccanismo**: il form generato (`SchemaForm`), con `Collapsible` di Atmosphere. **File**: `shared/forms/SchemaForm.tsx`,
   `shared/forms/schema.ts` (l'annotazione), i file di lingua. **Nota sua**: no.
 - ⚠️ **Tocca ogni form di ogni modulo.** Gli e2e che aggiungono una voce e la scrivono continuano a funzionare (la voce nuova è aperta);
@@ -217,6 +226,9 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 - **File del nucleo**: `shared/ui/MarkdownContent.tsx` (elenco chiuso: cambia), `shared/forms/LocaleFields.tsx`, `shared/forms/schema.ts`,
   `blocks/schemas.ts`, `src/styles/index.css` (le classi dei colori, nessun valore esadecimale), `Core/Content/BlockDocumentWalker.cs`,
   `e2e/contrast.spec.ts`, `web/package.json` (due dipendenze). **Nota sua**: no; la regola cambiata la registra questo documento.
+- **Com'è andata** (#474, nota `2026-11-07-la-barra-di-formattazione`): ogni colore è una coppia di token, **tranne il verde acqua sugli sfondi scuri**, che è `aurora-light` col
+  40 % di bianco (Carmine, in chat al master il 7 novembre 2026, «(a) schiarito col bianco»). Quattro pacchetti al posto di `remark-gfm` e `remark-directive` interi, perché un corpo
+  salvato si disegni come prima (§6). La barra sta su ogni campo disegnato da `MarkdownContent`, anche di un modulo.
 
 ### 4.7 L'anteprima in una scheda nuova (6)
 
@@ -234,6 +246,16 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   larghezza; le tre larghezze restano dentro l'editor.
 - **File del nucleo**: una rotta in `web/src/routes/`, `features/content/ContentEditor.tsx` (il tasto), `blocks/picking.ts` (il modo
   «solo lettura» del contesto). Il server non cambia. **Nota sua**: no.
+- **Com'è andata** (PR 3.7, ramo `feat/editor-preview-tab`): la rotta è `_public/staff.content.$id.preview.tsx`, cioè sotto il layout
+  pubblico, che **è** la cornice (intestazione, striscia del traffico, piè di pagina, e il rifiuto disegnato dentro); la guardia dello
+  staff è una funzione sola per le due rotte (`routes/-staffGuard.tsx`). Quattro scelte della sessione, nel corpo della PR: (1) la
+  scheda si apre **sul clic**, vuota, e va alla bozza dopo `autosave.flush` — una `window.open` dopo un `await` il browser può
+  bloccarla; (2) i link fermati sono quelli **di tutta la scheda**, cornice compresa, e **solo i link**: fisarmonica e schede si aprono,
+  perché leggerle è lo scopo, e nessun blocco scrive con un clic; (3) notizie e documenti si disegnano con la loro schermata pubblica
+  (`PublicEntryScreen`), con la data dell'ultimo salvataggio e senza il piè del documento, che nominerebbe un'edizione che non c'è;
+  (4) la lingua scelta vale per ciò che la riga dice, come nell'anteprima dell'editor; la cornice resta nella lingua del sito. Per la
+  lingua la barra di `BodyEditor` passa anche `locale` al proprietario; l'indirizzo della cornice di un interattivo porta la versione
+  della riga, così si ricarica quando la bozza cambia.
 
 ## 5. I blocchi
 
@@ -306,7 +328,9 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   stessa (il guscio non dice `overflow: hidden` e un pixel di arrotondamento basta), il contenuto posizionato fuori dal flusso o con
   margini negativi (il rettangolo di `documentElement` non lo conta, `scrollHeight` sì), un frammento che usa `100vh` (dentro una
   cornice cresce con la cornice, fino ai 2000 px), un frammento più alto di 2000 px.
-- **La correzione** nel guscio: la misura è il più grande fra il rettangolo e `scrollHeight`, e la cornice non scorre mai.
+- **La correzione** nel guscio: la misura è il più grande fra il rettangolo e `scrollHeight`, e ~~la cornice non scorre mai~~ **nessuna barra fino a 2000 px;
+  oltre, la cornice si ferma e la barra resta** (Carmine, in chat al master il 5 novembre 2026, «(c) resta la barra»). La barra la decide la pagina con
+  `scrolling`, non il guscio (nota `2026-11-05-l-altezza-dell-interattivo`).
 - **Le istruzioni** (`EmbedGuidelines.md`): un paragrafo «Tablet e telefono» — niente altezze in `vh`, niente larghezze in pixel,
   `viewBox` e `flex-wrap`, una prova a 768 px oltre ai 360 che l'anteprima locale già offre. L'import da Claude rimanda a queste
   istruzioni, quindi le legge anche lui.
@@ -322,13 +346,25 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 - **Solo dove vuol dire qualcosa**: una registrazione lo dichiara (`alignable: true`) — titolo, testo, callout, immagine, video,
   pulsanti, testimonianza. Una tabella o una griglia di card prendono già tutta la colonna.
 - **Niente scritto due volte**: l'`align` di `buttonGroup` è la stessa cosa e passa nella busta — il renderer legge ancora quello delle
-  `props` quando la busta non lo ha, il pannello lo sposta aprendo il blocco. Quello di `hero` resta suo: allinea il contenuto dentro il
+  `props` quando la busta non lo ha, il pannello lo sposta ~~aprendo il blocco~~ **alla sua prima scrittura sul blocco**, perché aprire un
+  blocco non è una modifica (Carmine, in chat al master il 10 novembre 2026, «Sì, accetto»; nota `2026-11-10-l-allineamento-nella-busta`,
+  punto 1). Quello di `hero` resta suo: allinea il contenuto dentro il
   suo sfondo, non il blocco nella colonna.
 - **È una modifica del nucleo del server** (la busta): una PR sua, prima dell'immagine (§7), con il test d'integrazione del valore
   rifiutato.
 - **File del nucleo**: `blocks/envelope.ts`, `blocks/ContentRenderer.tsx`, `shared/modules.ts`, `features/content/BlockProperties.tsx`,
   `Core/Content/BlockDocumentWalker.cs`, i file di lingua (anche `errors.body.alignUnknown`). **Nota sua**: no, la decide questo
   documento.
+- **Com'è andata** (#479, ramo `feat/envelope-alignment`, nota `2026-11-10-l-allineamento-nella-busta`): sei scelte, la prima decisa
+  da Carmine. (1) Il pannello **non** sposta l'`align` dei pulsanti aprendo il blocco, che sarebbe una modifica a pagina ferma
+  (principio 4, §5.3): lo mostra come quello della busta, e lo sposta con la sua prima scrittura (Carmine, in chat al master il
+  10 novembre 2026, «Sì, accetto»). Le altre cinque sono della sessione. (2) L'involucro allinea il testo, spinge
+  di lato con i margini un pezzo più stretto della colonna, giustifica una riga `flex` che lo dice con `data-align-row` (i pulsanti, e la
+  riga dell'autore di una testimonianza) e porta il pallino di un elenco accanto alle parole; un blocco allineabile non ha un `align` suo,
+  e un test lo controlla. (3) Il server rifiuta ogni valore che non sia una delle tre parole, anche un numero. (4) Anche l'import da Claude
+  e le istruzioni cambiano, che il §5.6 non nominava: `align` è del file come `column`, solo sui blocchi allineabili, e l'allineamento
+  vecchio dei pulsanti non si perde; ⚠️ l'impronta `rules` cambia. (5) Una sezione bloccata si può ancora allineare. (6) Le parole
+  `align` di `buttonGroup` escono dai file di lingua.
 
 ### 5.7 Le etichette dei blocchi di dati (XVI)
 
@@ -370,9 +406,16 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 - **Prima del clic**: i due problemi compaiono anche nell'elenco «che cosa manca per pubblicare» dell'editor (`PublishProblems`, la
   domanda che l'editor fa già al server prima della pubblicazione), accanto al blocco.
 - **Gli indirizzi di fuori** non si controllano: non si sa che cosa c'è dall'altra parte.
+- **Una foto rimasta da scegliere ferma la pubblicazione**, per ogni pagina, importata o scritta a mano (Carmine, in chat al master il
+  5 novembre 2026: «Sì, la ferma»; nota `2026-11-04-le-scelte-dell-import-da-claude`, punto 11). ⚠️ Il server non legge gli schemi, quindi
+  da solo non sa quale `mediaId` è obbligatorio: ~~lo dice la 3.15 nella sua nota~~ lo dichiara il blocco in `RequiredMedia` (Carmine, in chat al master il 7 novembre 2026,
+  «A, dichiarato in C#»; nota `2026-11-07-la-foto-rimasta-da-scegliere`).
+- **Com'è andata** (#473, nota `2026-11-07-le-scelte-del-controllo-dei-link`): una schermata è più delle sei del menu, cioè ogni primo segmento riservato; due pagine nuove
+  che si linkano a vicenda non escono insieme, e il controllo ferma anche «Pronta per l'approvazione».
 - **È una modifica del nucleo del server**: una PR sua, dopo §4.5, con il test d'integrazione dei due rifiuti.
 - **File del nucleo**: `Core/Content/ContentPublishService.cs`, `Core/Content/BlockDocumentWalker.cs`,
-  `Core/Content/MenuItemWriteDtoValidator.cs` e il servizio nuovo accanto, i file di lingua del nucleo. **Nota sua**: no.
+  `Core/Content/MenuItemWriteDtoValidator.cs` e il servizio nuovo accanto, i file di lingua del nucleo. **Nota sua**: no per i link, sì
+  per la foto rimasta da scegliere (qui sopra).
 
 ## 6. Che cosa non cambia
 
@@ -380,7 +423,7 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 - **Il server non legge le `props`**: gli unici due punti nuovi del server sono un campo della busta (`align`, §5.6) e una chiave per
   convenzione (`href`, §5.9), come `mediaId`.
 - **L'elenco chiuso** resta di ventisei componenti: `MediaPicker`, `MarkdownContent` e `StaffSidebar` cambiano dentro.
-- **La pubblicazione e l'approvazione**: si aggiungono due problemi (§5.9), nient'altro.
+- **La pubblicazione e l'approvazione**: si aggiungono tre problemi (§5.9), nient'altro.
 - **I blocchi già salvati** si disegnano come oggi (immagine, pulsanti); nessuna migrazione dei corpi.
 - **Una migrazione sola**, additiva: la colonna `frequency` delle postazioni (§5.8).
 
@@ -406,7 +449,7 @@ Una PR per riga, ognuna con la sua versione come le altre (`Directory.Build.prop
 | **3.12** | Tabella (§5.1) | `schemas`, `blocks`, `BlockProperties`, `shared/files/`, `legFile` | 3.11 |
 | **3.13** | Domande e risposte (§5.4), etichette dei dati (§5.7) | `schemas`, `blocks` | 3.12 |
 | **3.14** | Frequenze dalle postazioni (§5.8), nucleo del server | `Core/Ivao/`, migrazione, `schemas` | 3.13 |
-| **3.15** | Il controllo dei link alla pubblicazione (§5.9), nucleo del server | `ContentPublishService`, il servizio degli indirizzi | 3.5 |
+| **3.15** | Il controllo dei link alla pubblicazione e la foto rimasta da scegliere (§5.9), nucleo del server | `ContentPublishService`, il servizio degli indirizzi | 3.5 |
 
 Le PR dei blocchi (3.10–3.14) toccano tutte `blocks/schemas.ts` e `blocks/blocks.tsx`: vanno in fila. Quelle segnate «in parallelo»
 toccano file loro e possono correre accanto, in sessioni diverse. Dopo 3.6, 3.10 e 3.12 la parte fissa delle istruzioni per Claude

@@ -13,9 +13,9 @@ import {
 } from '../../features/awards/mutations';
 import { awardQuery, type AwardDetailDto } from '../../features/awards/queries';
 import { awardSchema, type AwardFormValues } from '../../features/awards/schema';
-import { useUploadMedia } from '../../features/media/mutations';
+import { MEDIA_EDIT, useUploadMedia } from '../../features/media/mutations';
 import { mediaPickerQuery } from '../../features/media/queries';
-import { writableDepartments } from '../../shared/api/bootstrap';
+import { holdsPermission, writableDepartments } from '../../shared/api/bootstrap';
 import { DEPARTMENTS } from '../../shared/api/department';
 import { SchemaForm } from '../../shared/forms';
 import { ConfirmDialog, PageShell, useRefusalNotice } from '../../shared/ui';
@@ -112,8 +112,10 @@ function AwardForm() {
         labels="awards"
         // The picture comes from the library of the award's department, and an upload lands there.
         mediaLibrary={mediaPickerQuery(department)}
-        uploadMedia={async (file) =>
-          (await upload.mutateAsync({ file, ownerDepartment: department })).media.id
+        uploadMedia={
+          holdsPermission(bootstrap, MEDIA_EDIT, department)
+            ? async (file) => (await upload.mutateAsync({ file, ownerDepartment: department })).media.id
+            : undefined
         }
         division={{ defaultLocale: bootstrap.division.defaultLocale, timezone: bootstrap.division.timezone }}
         onSubmit={submit}

@@ -65,12 +65,16 @@
       "sourceNotInteractive": "Solo un blocco interattivo porta del codice.",
       "sourceNotPermitted": "Per aggiungere o cambiare il codice di un blocco interattivo serve il permesso di inserire codice.",
       "spanUnknown": "Questo blocco ha una larghezza che una dashboard non ha.",
+      "alignUnknown": "Questo blocco chiede un allineamento che non esiste: a sinistra, al centro o a destra.",
       "blockAudience": "Questo blocco è per meno lettori della pagina: toglilo, oppure rendi la pagina visibile a meno persone."
     },
     "content": {
       "templateNotPublishable": "Un template non si pubblica: creane una pagina e pubblica quella.",
       "mediaMissing": "Questa immagine non è più nella libreria. Scegline un'altra.",
       "mediaNotVisible": "Questa immagine non è visibile a chi legge questa pagina. Rendila pubblica nella libreria oppure scegline un'altra.",
+      "mediaToChoose": "Questa immagine non è ancora stata scelta. Scegline una dalla libreria.",
+      "linkNowhere": "Questo link non porta da nessuna parte: nessuna schermata e nessun contenuto pubblicato ha questo indirizzo. Pubblica prima quella pagina, oppure scegli un altro indirizzo.",
+      "linkLessVisible": "Questo link porta dove chi legge questa pagina non può andare. Scegli un altro indirizzo, oppure cambia chi può leggere una delle due.",
       "notADocument": "Solo un documento ha questo campo. Lascialo vuoto su una pagina o una notizia.",
       "successorUnknown": "Il documento che sostituisce questo non esiste. Scegline uno dall'elenco.",
       "successorWithoutRetirement": "Un documento con un successore non è più in vigore: di' da quando.",
@@ -98,7 +102,11 @@
         "blockAudience": "La pagina online porta un blocco per meno lettori. Toglilo e pubblica di nuovo, poi cambia chi la legge."
       },
       "tooManyCollections": "Una riga può stare al massimo in venti raccolte.",
-      "collectionInvalid": "Una raccolta si indica con la sua chiave: lettere minuscole, cifre e trattini."
+      "collectionInvalid": "Una raccolta si indica con la sua chiave: lettere minuscole, cifre e trattini.",
+      "settings": {
+        "stylePageNotFound": "Scegli una pagina pubblicata che puoi leggere.",
+        "stylePageTooNarrow": "Questa pagina la legge un solo dipartimento: chi scarica le istruzioni deve poterla leggere, scegline una per tutto lo staff."
+      }
     },
     "maintenance": {
       "title": "Questa parte del sito al momento non accetta modifiche"

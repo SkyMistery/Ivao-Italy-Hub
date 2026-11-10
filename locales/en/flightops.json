@@ -935,6 +935,7 @@
     },
     "tourCards": {
       "label": "Tour cards",
+      "about": "The division's tours as cards, in the chosen states.",
       "fields": {
         "states": "Tours shown",
         "limit": "How many at most"
@@ -953,12 +954,14 @@
     },
     "reviewQueue": {
       "label": "Reports to validate",
+      "about": "The tour reports waiting for a validator, one tour per line.",
       "empty": "No report is waiting on the tours you may validate.",
       "waiting_one": "{{count}} report, waiting since {{since}} UTC",
       "waiting_other": "{{count}} reports, the oldest since {{since}} UTC"
     },
     "openIssues": {
       "label": "What else waits for the tours",
+      "about": "What else waits for the tours' staff: issues on the legs, disputes and clarifications nobody answered.",
       "empty": "Nothing waits: no open issue on the legs, no dispute or clarification without an answer.",
       "legIssues_one": "{{count}} open issue on the legs",
       "legIssues_other": "{{count}} open issues on the legs",
@@ -969,6 +972,7 @@
     },
     "myTours": {
       "label": "My tours",
+      "about": "The tours of whoever is looking: the ones started, the reports to correct and the answers to read.",
       "signIn": "Sign in to see your tours.",
       "toModify": "Correct your report on {{tour}}: {{from}} → {{to}}",
       "answered": "Answered: {{subject}}",

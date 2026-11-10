@@ -27,6 +27,12 @@ export interface FieldMeta {
   localized?: boolean;
   /** A long text: a textarea rather than a single line input. */
   multiline?: boolean;
+  /**
+   * A translated text the renderer draws with `MarkdownContent`, which is what puts the formatting bar above its box (design
+   * of the editor, phase 3, §4.6). Written on the field and never deduced from `multiline`: a plain text wraps too, and an
+   * asterisk there stays an asterisk. With `suggestAddresses`, the bar's link offers the addresses of the site.
+   */
+  markdown?: boolean;
   /** Carried by the form and submitted, never shown. `rowVersion` is the reason this exists. */
   hidden?: boolean;
   /**
@@ -125,6 +131,14 @@ export interface FieldMeta {
    */
   collectionOf?: 'News' | 'Document';
   /**
+   * An address a block leads to (design of the editor, phase 3, §4.5): the property is called `href`,
+   * and this says what it holds. A block schema is code and the addresses of the site are rows, so
+   * whoever draws the form turns it into `suggestions` with `suggestAddresses`. Still free text, on
+   * purpose (Carmine, 31 October 2026, answer 5 of the design): a page of the site is chosen from the
+   * list, and an address of somewhere else is written in full.
+   */
+  address?: boolean;
+  /**
    * A key of the calendar's kinds (`cms_calendar_kinds`), chosen and never typed (issue #360): the
    * kinds are rows, so whoever draws the form turns it into `choices` with `chooseCalendarKinds`, out
    * of the kinds `/api/me` lists. Closed in the form only: the server keeps reading a block's
@@ -156,6 +170,11 @@ export interface FieldMeta {
    * value it is handed back; what a new value *is* and how it is made stays the screen's.
    */
   creatable?: boolean;
+  /**
+   * The field that names an entry of a repeatable list on its closed row (design of the editor, phase
+   * 3, §4.3), for a list that does not want its first text there: see `entryTitleField`.
+   */
+  entryTitle?: boolean;
 }
 
 /**
@@ -421,6 +440,35 @@ function pruneEntry(children: FieldNode[], path: string, entry: unknown): unknow
 }
 
 /**
+ * The field whose value is the title of an entry of a repeatable list, on the row it is closed to: the
+ * one annotated `entryTitle`, or the first that somebody writes text into, or — a list of choices, like
+ * the metrics of a block — the first closed choice, or — a list of dates, like the proposal of a training
+ * — the first date. Null when nothing would name it, a list of pictures for one, and the row then says
+ * only which entry it is. Inside a group too, never inside a list of its own, and never a hidden field: a
+ * title nobody could have written is not a title.
+ */
+export function entryTitleField(children: readonly FieldNode[]): FieldNode | null {
+  const readable = (nodes: readonly FieldNode[]): FieldNode[] =>
+    nodes.flatMap((node) =>
+      node.meta.hidden === true ? [] : node.kind === 'object' ? readable(node.children) : [node],
+    );
+  const fields = readable(children);
+
+  return (
+    fields.find((node) => node.meta.entryTitle === true) ??
+    fields.find(
+      (node) =>
+        node.kind === 'localized' ||
+        node.kind === 'suggest' ||
+        (node.kind === 'text' && node.choices === null),
+    ) ??
+    fields.find((node) => node.kind === 'enum' || node.kind === 'text') ??
+    fields.find((node) => node.kind === 'instant') ??
+    null
+  );
+}
+
+/**
  * Where the form draws the error the server sent under `path`, as the form names it, or null when it
  * draws it nowhere — and then the refusal is the sentence above the form (#331).
  *
@@ -558,51 +606,75 @@ export function suggestCollections<T>(schema: T, suggestions: readonly Suggestio
   return schema.extend(patched) as unknown as T;
 }
 
+/** A field that leads somewhere: an address, or a text whose bar writes links (§4.6). */
+const leadsSomewhere = (meta: FieldMeta) => meta.address === true || meta.markdown === true;
+
+/**
+ * The same schema, with every `address` property — at any depth: the buttons of a hero are in an
+ * optional object, those of a group in a list — offering these suggestions, and every `markdown` one
+ * offering them to the link of its bar. A new schema, like `suggestCollections`: what a block stores is
+ * still read with the schema of the registry.
+ */
+export function suggestAddresses<T>(schema: T, suggestions: readonly Suggestion[]): T {
+  return withMeta(schema, leadsSomewhere, { suggestions: [...suggestions] }) as T;
+}
+
+/** Whether a property of this schema, at any depth, leads somewhere: an `address`, or a `markdown` text. */
+export function namesAddresses(schema: unknown): boolean {
+  return names(schema, leadsSomewhere);
+}
+
 /**
  * The same schema, with every `calendarKind` property — at any depth: the calendar block holds its
  * kinds as a list of `{ kind }` — choosing among these. A new schema, like `suggestCollections`.
  */
 export function chooseCalendarKinds<T>(schema: T, choices: readonly ChoiceOption[]): T {
-  return withChoices(schema, (meta) => meta.calendarKind === true, choices) as T;
+  return withMeta(schema, (meta) => meta.calendarKind === true, { choices: [...choices] }) as T;
 }
 
 /** Whether a property of this schema, at any depth, is a `calendarKind`. */
 export function namesCalendarKinds(schema: unknown): boolean {
-  if (schema instanceof z.ZodObject) {
-    return Object.values(schema.shape).some(namesCalendarKinds);
-  }
+  return names(schema, (meta) => meta.calendarKind === true);
+}
 
+function names(schema: unknown, annotated: (meta: FieldMeta) => boolean): boolean {
   const { inner, meta } = unwrap(schema);
-  if (meta.calendarKind === true) {
+  if (annotated(meta)) {
     return true;
   }
 
-  return inner instanceof z.ZodArray ? namesCalendarKinds(inner.element) : false;
+  if (inner instanceof z.ZodObject) {
+    return Object.values(inner.shape).some((field) => names(field, annotated));
+  }
+
+  return inner instanceof z.ZodArray ? names(inner.element, annotated) : false;
 }
 
-function withChoices(
-  schema: unknown,
-  annotated: (meta: FieldMeta) => boolean,
-  choices: readonly ChoiceOption[],
-): unknown {
+function withMeta(schema: unknown, annotated: (meta: FieldMeta) => boolean, patch: FieldMeta): unknown {
   if (schema instanceof z.ZodObject) {
     return schema.extend(
       Object.fromEntries(
-        Object.entries(schema.shape).map(([name, field]) => [name, withChoices(field, annotated, choices)]),
+        Object.entries(schema.shape).map(([name, field]) => [name, withMeta(field, annotated, patch)]),
       ),
     );
   }
 
-  if (annotated(annotation(schema))) {
-    return (schema as z.ZodType).meta({ ...annotation(schema), choices: [...choices] });
+  if (annotated(unwrap(schema).meta)) {
+    return (schema as z.ZodType).meta({ ...annotation(schema), ...patch });
   }
 
   // A list of objects is rebuilt around its patched element, its own annotations kept. Only a bare
   // list: a wrapped one has no case today, and would be one more branch when it does.
   if (schema instanceof z.ZodArray && schema.element instanceof z.ZodObject) {
-    return z
-      .array(withChoices(schema.element, annotated, choices) as z.ZodType)
-      .meta({ ...annotation(schema) });
+    return z.array(withMeta(schema.element, annotated, patch) as z.ZodType).meta({ ...annotation(schema) });
+  }
+
+  // An optional object: the two buttons of a hero. Whatever is optional and holds nothing to patch
+  // stays the schema it was.
+  if (schema instanceof z.ZodOptional) {
+    const held = schema.unwrap();
+    const patched = withMeta(held, annotated, patch);
+    return patched === held ? schema : (patched as z.ZodType).optional().meta({ ...annotation(schema) });
   }
 
   return schema;

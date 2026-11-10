@@ -19,7 +19,7 @@ jobs:
   # number is raised in a pull request, where its rule is written; the tag follows it, first and
   # cheaply, before the whole suite runs (note 2026-09-27-la-versione-del-sito).
   tag:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v7
@@ -48,7 +48,7 @@ jobs:
     uses: ./.github/workflows/build-test.yml
 
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: verify
 
     steps:

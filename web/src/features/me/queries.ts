@@ -96,6 +96,30 @@ export function useSaveNotificationPreference() {
   });
 }
 
+/** The member's own link with Discord, and whether this installation offers one. */
+export type DiscordLinkDto = components['schemas']['DiscordLinkDto'];
+
+export const discordLinkKey = ['me', 'discord'] as const;
+
+export const discordLinkQuery = queryOptions({
+  queryKey: discordLinkKey,
+  queryFn: async (): Promise<DiscordLinkDto> => unwrap(await api.GET('/api/me/discord')),
+});
+
+/** Forgets the link. Linking is not here: it is a round trip through Discord, started by a plain link. */
+export function useUnlinkDiscord() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (): Promise<void> => {
+      unwrapEmpty(await api.DELETE('/api/me/discord'));
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: discordLinkKey });
+    },
+  });
+}
+
 /**
  * One preference of the member asking, declared by a module (`IModule.Preferences`, M2 T4b); `null` when they never chose,
  * and the screen that asks has the default. Not in the bootstrap: a screen that needs one asks for it (T13b, the order of

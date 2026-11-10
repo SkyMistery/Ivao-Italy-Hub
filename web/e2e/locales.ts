@@ -18,7 +18,12 @@ interface CommonStrings {
     readonly sidebar: { readonly collapse: string; readonly expand: string };
   };
   readonly auth: { readonly login: string };
-  readonly common: { readonly edit: string; readonly save: string; readonly delete: string };
+  readonly common: {
+    readonly edit: string;
+    readonly save: string;
+    readonly delete: string;
+    readonly close: string;
+  };
   readonly forbidden: { readonly title: string };
   readonly departments: { readonly WD: string; readonly ED: string };
   readonly liveStatus: { readonly title: string; readonly updatedAt: string };
@@ -42,7 +47,20 @@ interface CommonStrings {
     readonly linksGroup: string;
     readonly screens: Readonly<Record<string, string>>;
   };
-  readonly form: { readonly addEntry: string; readonly suggest: { readonly emptyClosed: string } };
+  readonly form: {
+    readonly addEntry: string;
+    readonly suggest: { readonly emptyClosed: string };
+    readonly markdown: {
+      readonly bar: string;
+      readonly bold: string;
+      readonly strike: string;
+      readonly link: string;
+      readonly linkAddress: string;
+      readonly linkApply: string;
+      readonly colour: string;
+      readonly colours: { readonly brand: string; readonly ocean: string };
+    };
+  };
   readonly awards: { readonly create: string; readonly fields: { readonly name: string } };
   readonly awardAssignments: {
     readonly create: string;
@@ -51,7 +69,7 @@ interface CommonStrings {
     readonly fields: { readonly awardId: string };
   };
   readonly dashboard: { readonly edit: string };
-  readonly list: { readonly file: string };
+  readonly list: { readonly file: string; readonly search: string };
   readonly calendar: {
     readonly title: string;
     readonly create: string;
@@ -69,6 +87,17 @@ interface CommonStrings {
     readonly title: string;
     readonly upload: string;
     readonly fields: { readonly category: string };
+    readonly options: { readonly category: { readonly Document: string; readonly Logo: string } };
+    readonly picker: {
+      readonly label: string;
+      readonly search: string;
+      readonly more: string;
+      readonly noMatch: string;
+      readonly upload: string;
+      readonly dropHint: string;
+      readonly anyCategory: string;
+      readonly altToWrite: string;
+    };
     readonly replace: { readonly action: string };
     readonly archive: { readonly notice: string; readonly restore: string };
   };
@@ -93,6 +122,29 @@ interface CommonStrings {
     };
     readonly changes: { readonly first: string };
     readonly versions: { readonly title: string };
+    readonly draftPreview: { readonly notice: string; readonly refresh: string };
+    readonly claude: {
+      readonly download: { readonly label: string; readonly hint: string };
+    };
+    readonly import: {
+      readonly label: string;
+      readonly refused: string;
+      readonly conflict: string;
+      readonly failed: string;
+      readonly notFromInstructions: string;
+      readonly draftChanged: string;
+      readonly startedOver: string;
+      readonly startedOverConfirm: string;
+      readonly versionLine: string;
+      readonly pending: { readonly pictureCount_one: string };
+    };
+    readonly settings: {
+      readonly open: string;
+      readonly title: string;
+      readonly fields: { readonly stylePageId: string };
+      readonly none: string;
+      readonly saved: string;
+    };
     readonly review: {
       readonly ready: string;
       readonly readyDialog: { readonly confirm: string };
@@ -102,6 +154,7 @@ interface CommonStrings {
       readonly change: { readonly Changed: string; readonly Unchanged: string };
       readonly approve: string;
       readonly approveDialog: { readonly confirm: string };
+      readonly menu: { readonly label: string; readonly parent: string; readonly top: string };
     };
     readonly address: {
       readonly label: string;
@@ -113,11 +166,25 @@ interface CommonStrings {
       readonly kind: { readonly Page: string; readonly Document: string };
     };
     readonly section: {
-      readonly fields: { readonly key: string; readonly allowedBlocks: string };
+      readonly fields: {
+        readonly title: string;
+        readonly key: string;
+        readonly allowedBlocks: string;
+        readonly padding: string;
+      };
+      readonly options: {
+        readonly background: { readonly accent: string };
+        readonly padding: { readonly none: string };
+      };
+      readonly howToDivide: string;
     };
     readonly editor: {
       readonly saveDraft: string;
       readonly tileWidth: { readonly label: string; readonly options: { readonly '6': string } };
+      readonly align: {
+        readonly label: string;
+        readonly options: { readonly left: string; readonly center: string; readonly right: string };
+      };
       readonly publish: string;
       readonly publishDialog: {
         readonly changelog: string;
@@ -127,9 +194,17 @@ interface CommonStrings {
       readonly setKey: string;
       readonly addBlock: string;
       readonly addSection: string;
+      readonly insertSection: string;
+      readonly insertRow: string;
+      readonly addRow: string;
+      readonly sectionAbove: string;
+      readonly sectionBelow: string;
+      readonly rowAbove: string;
+      readonly rowBelow: string;
       readonly components: string;
       readonly outline: string;
       readonly undo: string;
+      readonly redo: string;
       readonly onThePage: string;
       readonly componentsHint: string;
       readonly searchComponents: string;
@@ -137,6 +212,9 @@ interface CommonStrings {
       readonly properties: string;
       readonly preview: string;
       readonly previewWidths: { readonly phone: string; readonly desktop: string };
+      readonly previewLanguage: string;
+      readonly openPreview: { readonly label: string; readonly notSaved: string };
+      readonly panelWidth: { readonly palette: string; readonly properties: string };
       readonly autosave: {
         readonly title: string;
         readonly saved: string;
@@ -182,12 +260,24 @@ interface CommonStrings {
       readonly empty: { readonly drafts: string };
     };
     readonly calendar: { readonly label: string; readonly fields: { readonly 'kinds.kind': string } };
+    readonly buttonGroup: {
+      readonly label: string;
+      readonly fields: { readonly 'buttons.href': string; readonly 'buttons.label': string };
+    };
+    readonly cardGrid: { readonly label: string; readonly fields: { readonly 'cards.href': string } };
+    readonly logoGrid: { readonly label: string; readonly fields: { readonly 'items.href': string } };
+    readonly hero: { readonly label: string };
+    readonly cta: { readonly label: string; readonly fields: { readonly href: string } };
     readonly heading: {
       readonly label: string;
       readonly fields: { readonly text: string; readonly level: string };
       readonly options: { readonly level: Readonly<Record<string, string>> };
     };
-    readonly text: { readonly label: string; readonly fields: { readonly markdown: string } };
+    readonly text: {
+      readonly label: string;
+      readonly about: string;
+      readonly fields: { readonly markdown: string };
+    };
     readonly image: { readonly label: string };
     readonly callout: {
       readonly label: string;

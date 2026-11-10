@@ -149,6 +149,17 @@ export interface BlockRegistration {
    */
   readonly carriesSource?: boolean;
   /**
+   * Whether the block may stand on the left, in the middle or on the right of its column — the `align` of its envelope
+   * (design of the editor's phase 3, §5.6). Only where it means something: a block that takes the whole column already,
+   * a table or a grid of cards, has nothing to move, and its panel offers no choice.
+   *
+   * The block does not draw it: the renderer's wrapper sets the alignment of its text and pushes a piece narrower than
+   * the column — a picture, say — to that side. A row of pieces laid out by `flex`, which neither of the two moves (the
+   * buttons of a group), carries `data-align-row`, and the wrapper justifies it. ⚠️ So an alignable block declares no
+   * `align` among its own properties: one would be a second alignment of the same thing (`blocks/align.test.tsx`).
+   */
+  readonly alignable?: boolean;
+  /**
    * What the line at the top of the block's properties panel needs besides its words, which sit
    * beside its name — `editorLabelKey` with `.about` for `.label`; a block without that key has no
    * line: the values the words name, and a screen of the hub the line leads to, labelled by the
@@ -162,6 +173,18 @@ export interface BlockRegistration {
     readonly values?: Readonly<Record<string, string>>;
     readonly href?: string;
   };
+}
+
+/**
+ * The key of the sentence that says what a block is for: `editorLabelKey` with `.about` for `.label`
+ * (`blocks.text.about`, `events:blocks.eventList.about`).
+ *
+ * Every block has one, in every language of the division, and `app/blockAbout.test.ts` asks it of each
+ * (PR 3.0a, `decisions/2026-10-30-una-pagina-scritta-con-claude.md`, answer 1): it is the line at the top
+ * of the properties panel, and how the instructions for Claude say which block is for what.
+ */
+export function aboutKeyOf(block: Pick<BlockRegistration, 'editorLabelKey'>): string {
+  return block.editorLabelKey.replace(/\.label$/, '.about');
 }
 
 /**
@@ -182,6 +205,12 @@ export interface RouteDefinition {
   readonly area?: 'public' | 'member' | 'staff';
   /** A staff route only: the permission it is behind, held on any department. Without it, `/forbidden`. */
   readonly permission?: string;
+  /**
+   * A staff route only: `permission` must be held **without a row scope** — a register of the whole division, whose list
+   * the server opens with `HasUnscoped`, so that a grant on one event does not lead to a page that answers 403. It is
+   * what `NavItemDescriptor(…, Unscoped: true)` says of the menu entry (note 2026-10-17-il-permesso-senza-ambito).
+   */
+  readonly unscoped?: boolean;
   /** The typed search parameters of the route, as recipe 2 of design M0 §7.3 declares them for a list. */
   readonly validateSearch?: z.ZodType;
 }

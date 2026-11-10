@@ -164,6 +164,7 @@ builder.Services.AddSingleton(timings);
 // Erasing a person's data: the core's half, and each module's IPersonalDataEraser (note 2026-09-25-la-cancellazione-dei-dati-di-una-persona).
 builder.Services.AddScoped<PersonalDataErasure>();
 builder.Services.AddIvaoAuthentication();
+builder.Services.AddDiscordLink();
 
 // The FIRs and airports of the division, and the job that keeps their snapshot fresh. It reads
 // nothing at this point: the time zone of the schedule and the choice between the real client and
@@ -389,6 +390,7 @@ app.MapMediaEndpoints();
 app.MapMediaFileEndpoint();
 app.MapTileEndpoints();
 app.MapContentEndpoints();
+app.MapContentSettingsEndpoints();
 app.MapEmbedEndpoints();
 app.MapCategoriesEndpoints();
 app.MapMenuEndpoints();
@@ -396,6 +398,7 @@ app.MapCalendarEndpoints();
 app.MapCalendarKindEndpoints();
 app.MapContactsEndpoints();
 app.MapNotificationPreferenceEndpoints();
+app.MapDiscordLinkEndpoints();
 app.MapUserPreferenceEndpoints();
 app.MapModuleSettingsEndpoints();
 app.MapAircraftTypeEndpoints();

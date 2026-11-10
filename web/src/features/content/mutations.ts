@@ -122,11 +122,16 @@ export function emptyContent(
   };
 }
 
+/** A translated value as the form holds it: every language of the division present, as a tab. */
+export function spreadLocalized(
+  value: LocalizedString | null,
+  locales: readonly string[],
+): Record<string, string> {
+  return Object.fromEntries(locales.map((locale) => [locale, value?.[locale] ?? '']));
+}
+
 /** The form as an existing row fills it, with every language of the division present as a tab. */
 export function toFormValues(content: ContentDetailDto, locales: readonly string[]): ContentFormValues {
-  const spread = (value: LocalizedString | null): Record<string, string> =>
-    Object.fromEntries(locales.map((locale) => [locale, value?.[locale] ?? '']));
-
   return {
     kind: content.kind,
     slug: content.slug,
@@ -134,8 +139,8 @@ export function toFormValues(content: ContentDetailDto, locales: readonly string
     visibility: content.visibility,
     isTemplate: content.isTemplate,
     parentId: content.parentId === null ? '' : String(content.parentId),
-    title: spread(content.title),
-    summary: spread(content.summary),
+    title: spreadLocalized(content.title, locales),
+    summary: spreadLocalized(content.summary, locales),
     seo: spreadSeo(content.seo, locales),
     collections: [...content.collections],
     ...(content.coverMediaId === null ? {} : { coverMediaId: content.coverMediaId }),
@@ -188,6 +193,11 @@ interface ContentWrite {
   body: Body;
   /** A save the editor made by itself, after a pause: audited without the body (`AUTOSAVE_HEADER`). */
   autosave?: boolean;
+  /**
+   * Says whether the draft came from a file; absent says nothing, and the row keeps what it has
+   * (`decisions/2026-11-04-la-bozza-che-viene-da-un-file.md`).
+   */
+  draftFromFile?: boolean | undefined;
 }
 
 export function useCreateContent() {
@@ -210,7 +220,10 @@ export function useUpdateContent(id: number) {
       unwrap(
         await api.PUT('/api/content/{id}', {
           params: { path: { id: String(id) } },
-          body: toWriteDto(write.values, write.body),
+          body: {
+            ...toWriteDto(write.values, write.body),
+            ...(write.draftFromFile === undefined ? {} : { draftFromFile: write.draftFromFile }),
+          },
           ...(write.autosave === true ? { headers: { [AUTOSAVE_HEADER]: '1' } } : {}),
         }),
       ),

@@ -18,6 +18,9 @@ public static class HubClaims
     /// <summary>Name of the OpenID Connect challenge scheme towards IVAO.</summary>
     public const string IvaoScheme = "IVAO";
 
+    /// <summary>Name of the OAuth scheme a member links their Discord account through. It signs nobody in.</summary>
+    public const string DiscordScheme = "Discord";
+
     /// <summary>
     /// Name of the scheme of personal tokens (M2, T19a): <c>Authorization: Bearer hubpat_…</c>, accepted only by the
     /// endpoints of the token's audience. Never a default scheme.

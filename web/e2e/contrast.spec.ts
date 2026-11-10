@@ -1,5 +1,7 @@
 import { type Page, expect, test } from '@playwright/test';
 
+import { TEXT_COLOURS, textColourClass } from '../src/shared/ui/textColours';
+
 import { measureContrast, type Measured } from './contrast';
 import {
   oneTemplate,
@@ -206,13 +208,17 @@ function onGround(ground: string) {
 }
 
 /** The editor open on a page whose sections are one per ground, and nothing else. */
-async function openOnGrounds(page: Page, grounds: string[]) {
+async function openOnGrounds(
+  page: Page,
+  grounds: string[],
+  blocksOf: (ground: string) => unknown[] = onGround,
+) {
   const row = {
     ...oneTemplate,
     isTemplate: false,
     body: {
       schemaVersion: 1,
-      sections: grounds.map((ground) => groundSection(ground, ground, onGround(ground))),
+      sections: grounds.map((ground) => groundSection(ground, ground, blocksOf(ground))),
     },
   };
 
@@ -268,3 +274,79 @@ test('text on the tinted ground of a section meets AA', async ({ page }) => {
   expect(rows.filter((row) => row.text.startsWith('On ')).length).toBe(1);
   readable('the tinted ground', rows);
 });
+
+/**
+ * The colours of a word (design of the editor, phase 3, §4.6): one sentence per colour on each of the eight grounds, in both
+ * themes, at the 4.5 : 1 of text. ⚠️ If one of these fails the answer is not a lower threshold and not one ground less (design
+ * §4.6): it is another tone, or the question goes to the maintainer. `image` is its `muted` here, with no picture over it:
+ * nothing can promise a colour over a photograph.
+ */
+const EVERY_GROUND = ['none', 'muted', 'accent', 'brand', 'deep', 'dark', 'aurora', 'image'];
+
+const COLOURED_WORDS = TEXT_COLOURS.map((colour) => `.${textColourClass(colour)}`).join(', ');
+
+const inColour = (ground: string) =>
+  TEXT_COLOURS.map((colour) => `:${colour}[${colour} on ${ground}]`).join('\n\n');
+
+function colouredText(ground: string) {
+  return [
+    {
+      id: `w-${ground}`,
+      type: 'text',
+      version: 1,
+      renderMode: null,
+      frozen: null,
+      column: 0,
+      props: { markdown: { en: inColour(ground), it: inColour(ground) } },
+    },
+  ];
+}
+
+/** A callout is prose since the same design, on a ground each of its tones chooses for itself. */
+function colouredCallouts() {
+  return ['info', 'success', 'warning', 'danger'].map((tone) => ({
+    id: `c-${tone}`,
+    type: 'callout',
+    version: 1,
+    renderMode: null,
+    frozen: null,
+    column: 0,
+    props: { tone, text: { en: inColour(tone), it: inColour(tone) } },
+  }));
+}
+
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`the colours of a word in the ${scheme} theme`, () => {
+    test.use({ colorScheme: scheme });
+
+    test('they meet AA on every ground of a section', async ({ page }) => {
+      await openOnGrounds(page, EVERY_GROUND, colouredText);
+      await expect(page.locator('html').first()).toHaveClass(scheme === 'dark' ? /dark/ : /^(?!.*\bdark\b)/);
+      await page
+        .locator(`.${textColourClass('brand')}`)
+        .first()
+        .waitFor({ state: 'visible' });
+
+      const rows = await measureContrast(page, COLOURED_WORDS);
+
+      // Every colour on every ground: a colour that stopped being drawn would otherwise measure nothing, and pass.
+      expect(rows.map((row) => row.text).sort()).toEqual(
+        EVERY_GROUND.flatMap((ground) => TEXT_COLOURS.map((colour) => `${colour} on ${ground}`)).sort(),
+      );
+      readable('a coloured word', rows);
+    });
+
+    test('they meet AA in a callout of every tone', async ({ page }) => {
+      await openOnGrounds(page, ['none'], colouredCallouts);
+      await page
+        .locator(`.${textColourClass('brand')}`)
+        .first()
+        .waitFor({ state: 'visible' });
+
+      const rows = await measureContrast(page, COLOURED_WORDS);
+
+      expect(rows.length).toBe(16);
+      readable('a coloured word in a callout', rows);
+    });
+  });
+}

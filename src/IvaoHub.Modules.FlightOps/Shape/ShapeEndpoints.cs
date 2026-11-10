@@ -1,3 +1,4 @@
+using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
@@ -40,8 +41,9 @@ public sealed class TourChildren(FlightOpsDbContext database, TourReadiness read
             return (null, Refusal("tourId", TourState.PurgedKey));
         }
 
-        row.OwnerDepartment = tour.OwnerDepartment;
-        row.OwnerDepartmentMask = tour.OwnerDepartmentMask;
+        // As if stored with it: the write guard judges the row on its tour as it is now (note
+        // 2026-11-05-la-cura-che-una-riga-prende-dal-genitore).
+        RowCare.Adopt(database, row, tour.OwnerDepartment, tour.OwnerDepartmentMask);
 
         return (tour, null);
     }

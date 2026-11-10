@@ -267,6 +267,12 @@ describe('the interactive block', () => {
     expect(frame).toHaveAttribute('src', '/embed/7/3/b_1?lang=en');
   });
 
+  test('the frame starts with no scroll bar: the page says so, on its own attribute', () => {
+    drawInteractive(embedding);
+
+    expect(screen.getByTitle('A left hand circuit')).toHaveAttribute('scrolling', 'no');
+  });
+
   test('with no page to ask, it says so instead of drawing an empty box', () => {
     // The gallery, and a body that has never been saved: there is no row for the server to build a
     // frame from, and a silent gap would read as a broken picture.
@@ -351,6 +357,15 @@ describe('the callout', () => {
     expect(screen.getByRole('alert').querySelector('svg + h5')).toHaveTextContent('Heads up');
   });
 
+  test('its text is prose: Markdown is drawn, and the text still follows the icon (design of the editor, §4.6)', () => {
+    draw(<CalloutBlock props={{ tone: 'info', text: en('**Only** the :danger[text].') }} />);
+
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('Only the text.');
+    expect(alert.querySelector('svg + div strong')).toHaveTextContent('Only');
+    expect(alert.querySelector('.text-colour-danger')).toHaveTextContent('text');
+  });
+
   test('«Careful» is yellow and «Important» red', () => {
     const { unmount } = draw(<CalloutBlock props={{ tone: 'warning', title: en('Careful') }} />);
     expect(screen.getByRole('alert')).toHaveClass('bg-semantic-yellow-50');
@@ -377,7 +392,6 @@ describe('interactive and structure', () => {
     draw(
       <ButtonGroupBlock
         props={{
-          align: 'center',
           buttons: [
             { label: en('Start'), href: '/start', variant: 'primary' },
             { label: en('Outside'), href: 'https://example.org', variant: 'ghost' },

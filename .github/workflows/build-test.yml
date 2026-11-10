@@ -18,7 +18,10 @@ env:
 
 jobs:
   build-test:
-    runs-on: ubuntu-latest
+    # Pinned, not `ubuntu-latest`: on 9 Nov 2026 the label moved to 26.04, whose limit of 128 inotify
+    # instances the integration hosts exhaust (711 tests failed at start-up). Every workflow uses the
+    # same image; moving to a newer one is its own change (note 2026-11-09-l-immagine-della-ci).
+    runs-on: ubuntu-24.04
 
     # The database the end to end bench runs against. The integration tests are unaffected: they
     # bring their own container through Testcontainers, because there the database belongs to the

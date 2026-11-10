@@ -126,6 +126,17 @@ public sealed class BlockDocumentWalkerTests
     // A picture keeps what a reader would have been told, and loses the address.
     [InlineData("![Il logo](/media/7.png) sopra", "Il logo sopra")]
     [InlineData("1. primo\n2. secondo", "primo secondo")]
+    // The strikethrough and the colour of the formatting bar (design of the editor, phase 3, §4.6): the words stay.
+    [InlineData("un ~~vecchio~~ nuovo", "un vecchio nuovo")]
+    [InlineData("una :ocean[parola] qui", "una parola qui")]
+    [InlineData("una :danger[**parola** forte] qui", "una parola forte qui")]
+    [InlineData("vedi :brand[[la pagina](/about)] sopra", "vedi la pagina sopra")]
+    [InlineData(":ocean[uno [due] tre]", "uno [due] tre")]
+    // A name outside the set is drawn as plain text, and read the same.
+    [InlineData("una :orange[parola] qui", "una parola qui")]
+    // A colon in a sentence is not a colour.
+    [InlineData("alle 10:30 in punto", "alle 10:30 in punto")]
+    [InlineData("Frequenza:LIRF_APP e :ocean senza parole", "Frequenza:LIRF_APP e :ocean senza parole")]
     public void ProseUndoesOnlyWhatAnEditorCanWrite(string markdown, string expected) =>
         Assert.Equal(expected, OneParagraph(markdown));
 
@@ -333,6 +344,94 @@ public sealed class BlockDocumentWalkerTests
             result.Errors);
     }
 
+    [Fact]
+    public void ASectionWithAPictureBehindItAndNoPictureIsSaid()
+    {
+        var body = JsonNode.Parse("""
+        {
+          "sections": [
+            { "id": "s1", "background": "image", "blocks": [] },
+            { "id": "s2", "background": "image", "mediaId": null, "blocks": [],
+              "sections": [ { "id": "s3", "background": "image", "mediaId": 7, "blocks": [] } ] },
+            { "id": "s4", "background": "muted", "blocks": [] }
+          ]
+        }
+        """);
+
+        Assert.Equal(["sections[0].mediaId", "sections[1].mediaId"], Walker.SectionsWithoutTheirPicture(body));
+    }
+
+    [Fact]
+    public void APictureABlockCannotDoWithoutAndNobodyChoseIsSaidAndAnOptionalOneIsNot()
+    {
+        var body = JsonNode.Parse("""
+        {
+          "sections": [ { "id": "s1", "blocks": [
+            { "id": "b1", "type": "image", "props": { "width": "full" } },
+            { "id": "b2", "type": "image", "props": { "mediaId": 7 } },
+            { "id": "b3", "type": "image" },
+            { "id": "b4", "type": "hero", "props": { "title": "x" } },
+            { "id": "b5", "type": "gallery", "props": { "images": [ { "mediaId": 7 }, { }, { "mediaId": null } ] } },
+            { "id": "b6", "type": "gallery", "props": { "images": [] } },
+            { "id": "b7", "type": "gallery", "props": { "mediaIds": [ 7 ] } },
+            { "id": "b8", "type": "logoGrid", "props": { "items": [ { "name": "x" } ] } }
+          ] } ]
+        }
+        """);
+
+        Assert.Equal(
+            [
+                "sections[0].blocks[0].props.mediaId",
+                "sections[0].blocks[2].props.mediaId",
+                "sections[0].blocks[4].props.images[1].mediaId",
+                "sections[0].blocks[4].props.images[2].mediaId",
+                "sections[0].blocks[7].props.items[0].mediaId",
+            ],
+            Walker.BlocksWithoutTheirPictures(body, new BlockRegistry(CoreBlocks.All)));
+    }
+
+    [Fact]
+    public void TheLinksOfABodyAreAnHrefAtAnyDepthAndWhatMarkdownLinks()
+    {
+        var body = JsonNode.Parse("""
+        {
+          "sections": [ { "id": "s1", "blocks": [
+            { "id": "b1", "type": "cta", "props": { "href": "/one" } },
+            { "id": "b2", "type": "hero", "props": { "primary": { "href": "https://example.org" } } },
+            { "id": "b3", "type": "cardGrid", "props": { "cards": [ { "title": "x" }, { "href": "/two" } ] } },
+            { "id": "b4", "type": "text", "props": { "markdown": {
+              "it": "[Tre](/three \"Il titolo\") e [quattro](</four>)",
+              "en": "![A picture](/not-a-link.png)" } } },
+            { "id": "b5", "type": "stats", "props": {}, "frozen": { "href": "/what-a-provider-answered" } }
+          ] } ]
+        }
+        """);
+
+        Assert.Equal(
+            [
+                new BlockDocumentLink("sections[0].blocks[0].props.href", "/one"),
+                new BlockDocumentLink("sections[0].blocks[1].props.primary.href", "https://example.org"),
+                new BlockDocumentLink("sections[0].blocks[2].props.cards[1].href", "/two"),
+                new BlockDocumentLink("sections[0].blocks[3].props.markdown.it", "/three"),
+                new BlockDocumentLink("sections[0].blocks[3].props.markdown.it", "/four"),
+            ],
+            Walker.Links(body));
+    }
+
+    [Theory]
+    [InlineData("/about", "/about")]
+    [InlineData("/about/", "/about")]
+    [InlineData("/about?x=1#team", "/about")]
+    [InlineData("/", "/")]
+    [InlineData("/#team", "/")]
+    [InlineData("//elsewhere.example", null)]
+    [InlineData("https://example.org/about", null)]
+    [InlineData("#team", null)]
+    [InlineData("about", null)]
+    [InlineData("", null)]
+    public void AnAddressOfThisSiteIsReadAsTheRouterReadsIt(string written, string? expected) =>
+        Assert.Equal(expected, SiteDestinations.OnThisSite(written));
+
     [Theory]
     [InlineData("stacked", 1)]
     [InlineData("1/2+1/2", 2)]
@@ -417,6 +516,57 @@ public sealed class BlockDocumentWalkerTests
         {
             Assert.Contains(result.Errors, error => error is { Key: "errors.body.spanUnknown", Path: "sections[0].blocks[0].span" });
         }
+    }
+
+    [Theory]
+    [InlineData("\"left\"", true)]
+    [InlineData("\"center\"", true)]
+    [InlineData("\"right\"", true)]
+    [InlineData("null", true)]
+    [InlineData("\"justify\"", false)]
+    [InlineData("\"Center\"", false)]
+    [InlineData("\"\"", false)]
+    [InlineData("1", false)]
+    [InlineData("{ \"value\": \"center\" }", false)]
+    public void ABlockStandsOnTheLeftInTheMiddleOrOnTheRightOfItsColumn(string align, bool valid)
+    {
+        // Design of the editor's phase 3, §5.6: three alignments on the envelope, absent being the
+        // left. A null is the absence the browser writes; anything else that is not one of the three
+        // words is refused, because the browser reads the envelope with the same closed set.
+        var body = JsonNode.Parse($$"""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s", "layout": "stacked", "blocks": [
+            { "id": "b", "type": "text", "align": {{align}} } ] } ]
+        }
+        """);
+
+        var result = Walker.ValidateEnvelope(body, ["text"]);
+
+        Assert.Equal(valid, result.IsValid);
+        if (!valid)
+        {
+            Assert.Equal(
+                [new BlockDocumentError("errors.body.alignUnknown", "sections[0].blocks[0].align")],
+                result.Errors);
+        }
+    }
+
+    [Fact]
+    public void AnAlignmentIsNotTextOfThePage()
+    {
+        // On the envelope, so the search never reads it: a member searching for "center" must not
+        // find every page with a centred heading.
+        var body = JsonNode.Parse("""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s", "blocks": [
+            { "id": "b", "type": "heading", "align": "center",
+              "props": { "text": { "en": "Welcome", "it": "Benvenuti" } } } ] } ]
+        }
+        """);
+
+        Assert.DoesNotContain("center", Walker.ExtractText(body, "en"), StringComparison.Ordinal);
     }
 
     private static JsonNode? Column(string layout, int column) => JsonNode.Parse($$"""

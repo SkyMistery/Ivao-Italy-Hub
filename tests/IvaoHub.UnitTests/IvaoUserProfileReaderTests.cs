@@ -65,14 +65,6 @@ public sealed class IvaoUserProfileReaderTests
     }
 
     [Fact]
-    public void DoesNotReadADiscordIdBecauseIvaoDoesNotSendOne()
-    {
-        // Measured, not assumed: the payload carries no Discord field at all, even with the
-        // discord scope granted. The division links Discord with a tool of its own.
-        Assert.Null(Read(RealShape).DiscordId);
-    }
-
-    [Fact]
     public void ReadsTheEmailAddressForTheNotificationService()
     {
         // Until 6 September 2026 this test said the opposite, and it was right: the hub keeps the

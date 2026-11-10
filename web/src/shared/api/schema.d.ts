@@ -55,6 +55,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/content/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentSettings"];
+        put: operations["ContentSettingsWrite"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/notifications": {
         parameters: {
             query?: never;
@@ -66,6 +82,22 @@ export interface paths {
         put: operations["MeSetNotificationPreference"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MeDiscordLink"];
+        put?: never;
+        post?: never;
+        delete: operations["MeDiscordUnlink"];
         options?: never;
         head?: never;
         patch?: never;
@@ -797,6 +829,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/logout": {
         parameters: {
             query?: never;
@@ -1078,6 +1143,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["ContentAddress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/addresses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentSiteAddresses"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4259,7 +4340,8 @@ export interface components {
          * @description The head of an event as the staff of the ATC read it (design M4 §6.3, E2's form, E11a): what the page of its ATC shows and needs —
          *     its words, its state, its window, when its availabilities close, how long a shift is, when its roster was proposed (E11b), when it is
          *     published and whether it was (E12) — to whoever holds `EventAtc.View` without a scope, the staff of a FIR among them, who do not
-         *     read the event itself, and to whoever holds it on that event alone (issue #311).
+         *     read the event itself, and to whoever holds it on that event alone (issue #311). `CanAddPositions` is whether the reader may open a
+         *     position on it, its «New position» (#427): some position of the division the one handler lets them write there.
          */
         AtcEventDto: {
             /** Format: int64 */
@@ -4284,6 +4366,7 @@ export interface components {
             publishesAtUtc: string;
             /** Format: date-time */
             rosterPublishedAt: null | string;
+            canAddPositions: boolean;
         };
         /** @description An exemption on a report: with its status at the send, and the checks it softens as they were then. */
         AtcExemptionDto: {
@@ -5251,6 +5334,7 @@ export interface components {
             /** Format: int64 */
             supersededById: null | number;
             showFooter: boolean;
+            draftFromFile: boolean;
             /** Format: int64 */
             publishedVersionId: null | number;
             /** Format: date-time */
@@ -5404,6 +5488,37 @@ export interface components {
              */
             parentId?: null | number;
         };
+        /** @description What the settings of the content say: the page of the staff that describes how the division writes. */
+        ContentSettingsDto: {
+            /**
+             * Format: int64
+             * @description The page chosen, or null when none is.
+             */
+            stylePageId: null | number;
+            /**
+             * @description Its address, read with the visibility of whoever asks and only while it is published: null when they cannot read it, so
+             *     that the instructions for Claude leave the style out rather than promise a page their reader will never open.
+             */
+            stylePagePath: null | string;
+        };
+        /** @description What the settings panel saves. Null takes the choice away. */
+        ContentSettingsWriteDto: {
+            /** Format: int64 */
+            stylePageId: null | number;
+        };
+        /**
+         * @description One address of the site that whoever asks can read online: a page, a news item or a document, with where it is, what it is
+         *     called, whose it is and who reads it (`decisions/2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere.md`).
+         */
+        ContentSiteAddressDto: {
+            /** Format: int64 */
+            id: number;
+            kind: components["schemas"]["ContentKind"];
+            url: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            ownerDepartment: components["schemas"]["Department"];
+            visibility: components["schemas"]["Visibility"];
+        };
         /**
          * @description One version of a row as its history in the editor shows it (note 2026-10-23-la-storia-delle-versioni): for the
          *     staff who may read the row, never for a visitor.
@@ -5482,6 +5597,7 @@ export interface components {
             showFooter: boolean;
             /** Format: int64 */
             parentId?: null | number;
+            draftFromFile?: null | boolean;
         };
         /** @description A controller's own register (§4.5, §7.1): their counts, their penalty, and their shifts of the events over, the latest first. */
         ControllerRecordDto: {
@@ -5579,6 +5695,13 @@ export interface components {
          * @enum {unknown}
          */
         Department: "HQ" | "SOD" | "FOD" | "AOD" | "TD" | "MD" | "ED" | "PRD" | "WD";
+        /** @description What a member sees of their own link. Available says whether this installation offers it. */
+        DiscordLinkDto: {
+            available: boolean;
+            username: null | string;
+            /** Format: date-time */
+            linkedAt: null | string;
+        };
         /**
          * @description Deciding a dispute (§3.8): upheld — the report goes back to the queue — or turned down, with the answer the pilot reads in the
          *     thread (note 2026-09-23-contestazioni-chiarimenti-segnalazioni §2).
@@ -5662,6 +5785,42 @@ export interface components {
          * @enum {unknown}
          */
         ErrorCategory: "Info" | "Warning" | "Dangerous";
+        /**
+         * @description What the reader may do on an event (issue #427, note 2026-11-01-le-azioni-di-un-evento-dal-server): the buttons of its page and which of
+         *     its tabs it shows and writes, each the one handler's answer on the event — a grant on one event reaches that event and no other, a
+         *     permission held from outside or on a FIR as the handler says — and never a rule of the page. «Publish» and «Cancel» say too what their
+         *     verbs refuse by the state: a draft not cancelled is published once, an event not cancelled and not over is cancelled.
+         */
+        EventActionsDto: {
+            /** @description `Events.Edit` on the event: its form, its description, its airports, its rules of award, its questions. */
+            canEdit: boolean;
+            /** @description `Events.Delete` on the event; whether nobody took part yet is the deletion's to answer. */
+            canDelete: boolean;
+            /** @description `Events.Edit` on a draft not cancelled; what it still needs is the publication's to list. */
+            canPublish: boolean;
+            /** @description `Events.Edit` on an event not cancelled and not over. */
+            canCancel: boolean;
+            /**
+             * @description `Events.Edit` on the new event as it would be stored — the duplicate's first question —, so a grant on one event alone never
+             *             duplicates it.
+             */
+            canDuplicate: boolean;
+            /** @description `EventRoutes.View` on the event: the tab of its routes. */
+            canReadRoutes: boolean;
+            /** @description `EventRoutes.Edit` on the event: its buttons. */
+            canWriteRoutes: boolean;
+            /** @description `EventBookings.View` on the event: the tabs of its slots, bookings, registrations and activities. */
+            canReadBookings: boolean;
+            /** @description `EventBookings.Edit` on the event: their buttons. */
+            canWriteBookings: boolean;
+            /**
+             * @description Whether the reader reaches the event's ATC, as its head answers (AtcPositionEndpoints): `EventAtc.View` held without a
+             *     scope, the staff of a FIR among them, or on this event.
+             */
+            canReadAtc: boolean;
+            /** @description `EventReports.View` on the event: the tab of its reports of support, each decided where it says. */
+            canReadReports: boolean;
+        };
         /**
          * @description A parallel activity as its list and its form show it (design M4 §4-bis.1): its words, its window, the length of a turn, the seats of
          *     each, how many turns it has, and `SeatsTaken` — how many seats the members hold in all its turns, read in the list, the numbers of
@@ -5755,8 +5914,9 @@ export interface components {
         };
         /**
          * @description A position of an event as its list and its form show it (design M4 §1.7): the callsign, the name the core knows and its FIR, the hours,
-         *     the staff's note, how many controllers are available in some of its hours, and whether the reader may write shifts on it (E11b: what the
-         *     form of a shift offers, as the one handler answers) — both read with a page of positions; none for a row read alone.
+         *     the staff's note, how many controllers are available in some of its hours, and whether the reader may write it and its shifts (E11b: what
+         *     the form of a shift offers, as the one handler answers; #427: «Save» and «Delete» on the position's own page) — read with a page of
+         *     positions and with one position alike; none for a row the engine maps alone.
          */
         EventAtcPositionDto: {
             /** Format: int64 */
@@ -6028,7 +6188,8 @@ export interface components {
         /**
          * @description An event as its page loads it (§1.2, §7.2). `State` is what the dates say now. The switches of the ATC roster and of
          *     an event in person, the length of a shift and the limits of whoever books and does not fly are read here and written by
-         *     their own phases (M4b, M4c); who cancelled an event is the audit's to say.
+         *     their own phases (M4b, M4c); who cancelled an event is the audit's to say. `Actions` is what the reader may do on it, the one
+         *     handler's answer on the row (#427): the page draws its buttons and its tabs from it.
          */
         EventDetailDto: {
             /** Format: int64 */
@@ -6077,6 +6238,7 @@ export interface components {
             restrictedMaxPerWindow: null | number;
             /** Format: int32 */
             restrictedMaxPerEvent: null | number;
+            actions: components["schemas"]["EventActionsDto"];
         };
         /**
          * @description What "Duplicate" answers (§2.3-bis, E8b): the new event, and — when its private slots were to be generated with it and the generator
@@ -11609,6 +11771,66 @@ export interface operations {
             };
         };
     };
+    ContentSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentSettingsDto"];
+                };
+            };
+        };
+    };
+    ContentSettingsWrite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContentSettingsWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentSettingsDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     MeNotificationPreferences: {
         parameters: {
             query?: never;
@@ -11659,6 +11881,44 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
+            };
+        };
+    };
+    MeDiscordLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordLinkDto"];
+                };
+            };
+        };
+    };
+    MeDiscordUnlink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -14013,6 +14273,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContentAddressDto"];
+                };
+            };
+        };
+    };
+    ContentSiteAddresses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentSiteAddressDto"][];
                 };
             };
         };

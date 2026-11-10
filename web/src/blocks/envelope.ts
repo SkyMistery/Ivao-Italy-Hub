@@ -7,9 +7,9 @@ import { z } from 'zod';
  *
  * The backend validates the same shape with `BlockDocumentWalker`. The lists below are the place
  * where they have to agree by hand: they are values inside an opaque document, so the OpenAPI
- * contract cannot carry them. `BlockDocumentWalker.Layouts`, `RenderModes` and `Backgrounds` are
- * the other half, and the integration test that posts a value the server does not know is what
- * keeps the pair honest.
+ * contract cannot carry them. `BlockDocumentWalker.Layouts`, `RenderModes`, `Backgrounds`, `Spans`
+ * and `Aligns` are the other half, and the integration test that posts a value the server does not
+ * know is what keeps the pair honest.
  */
 
 /** How a section arranges its blocks. */
@@ -53,6 +53,56 @@ export const WIDTHS = ['narrow', 'default', 'wide', 'full'] as const;
 export const SPANS = [3, 4, 6, 8, 9, 12] as const;
 export type Span = (typeof SPANS)[number];
 
+/**
+ * Where a block stands in its column: on the left, in the middle, on the right (design of the editor's phase 3, §5.6).
+ * On the envelope beside `column` and `span`, because it is where the block is put and not what it says; absent is the
+ * left. It means something only for a block whose registration declares `alignable` — a heading, a text, a picture, a
+ * row of buttons —, and the renderer's wrapper is what draws it. The server holds the same three in
+ * `BlockDocumentWalker.Aligns`.
+ */
+export const ALIGNS = ['left', 'center', 'right'] as const;
+export type Align = (typeof ALIGNS)[number];
+
+const isAlign = (value: unknown): value is Align => ALIGNS.includes(value as Align);
+
+/**
+ * Whether a block still carries the alignment it had in its own `props` before PR 3.9. Only `buttonGroup` had one, and
+ * the only one asked is a block that is `alignable`: whatever `align` its props hold is that old one, because an
+ * alignable block may not declare one of its own (`align.test.tsx`). `hero` keeps its own — it places what is inside
+ * its ground, not the block in its column — and is not alignable.
+ */
+export function carriesOldAlign(block: Pick<BlockEnvelope, 'props'>): boolean {
+  return Object.hasOwn(block.props, 'align');
+}
+
+/**
+ * The alignment an alignable block is drawn with: its envelope's, or else the one an older body wrote in its props, or
+ * else the left. A body saved before 3.9 is never rewritten for it (design §2, principle 4): it is read as it is, and
+ * what moves the old value onto the envelope is the next thing the properties panel writes to the block (`placedAt`).
+ */
+export function alignOf(block: Pick<BlockEnvelope, 'align' | 'props'>): Align {
+  if (isAlign(block.align)) {
+    return block.align;
+  }
+
+  return isAlign(block.props.align) ? block.props.align : 'left';
+}
+
+/**
+ * What a block writes on its envelope to stand at `align`: the alignment, absent for the left, and its props — today's,
+ * or the ones being written — without the old `align`, so that the old one can never come back from under the new.
+ */
+export function placedAt(
+  block: Pick<BlockEnvelope, 'props'>,
+  align: Align,
+  props: Record<string, unknown> = block.props,
+): Pick<BlockEnvelope, 'align' | 'props'> {
+  return {
+    align: align === 'left' ? null : align,
+    props: Object.fromEntries(Object.entries(props).filter(([key]) => key !== 'align')),
+  };
+}
+
 /** What each column of a layout is worth in twelfths, for a block on a dashboard that names no span. */
 const COLUMN_TWELFTHS: Record<Layout, readonly Span[]> = {
   stacked: [12],
@@ -95,6 +145,8 @@ export const blockEnvelopeSchema = z.object({
   column: z.number().int().nullish().default(null),
   /** Its width on a dashboard, one of `SPANS`; absent everywhere else. */
   span: z.number().int().nullish().default(null),
+  /** Where it stands in its column, one of `ALIGNS`; absent is the left, and so is any block that is not `alignable`. */
+  align: z.enum(ALIGNS).nullish().default(null),
   /**
    * The source of an interactive block (12 September 2026,
    * `decisions/2026-09-12-il-blocco-interattivo.md`).

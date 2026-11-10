@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useSearch } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
 import { DashboardScreen } from '../content/DashboardScreen';
 import { PERSONAL_DASHBOARDS } from '../content/dashboards';
 
+import { DiscordLink } from './DiscordLink';
 import { NotificationPreferences } from './NotificationPreferences';
 import { bootstrapQuery } from './queries';
 
@@ -19,6 +20,7 @@ import { bootstrapQuery } from './queries';
 export function MePage() {
   const { t } = useTranslation();
   const { data: bootstrap } = useQuery(bootstrapQuery);
+  const { discord } = useSearch({ from: '/_member/me' });
 
   if (bootstrap === undefined) {
     return null;
@@ -45,6 +47,8 @@ export function MePage() {
           </Link>
         </p>
       )}
+      {/* Above the preferences, which run to dozens of rows on a division with every module: under them nobody would find it. */}
+      <DiscordLink refusal={discord} />
       <NotificationPreferences />
     </div>
   );

@@ -820,7 +820,9 @@ collegata lo stesso `bookingGapMinutes` (§3.4).
 Il pilota ritira **fino all'EOBT** (c3): la riga si cancella e lo slot torna libero. Lo staff (`EventBookings.Edit`) toglie
 una prenotazione con un motivo: mail `bookingRemoved`. **Deciso con E6a** (#233, piano 1.32; le risposte di Carmine): il motivo è
 **obbligatorio**, va nella mail e **non si conserva** (l'audit dice chi ha tolto che cosa e quando), e lo staff toglie in
-qualunque momento; «togli» si autorizza sulla cura dell'evento **com'è ora**, non com'era il giorno della prenotazione; la mail
+qualunque momento; «togli» si autorizza sulla cura dell'evento **com'è ora**, non com'era il giorno della prenotazione (dal 4 nov
+2026 la prenotazione la prende con `RowCare.Adopt` del nucleo, come valore salvato, perché il guardiano giudica una cancellazione
+sui dipartimenti caricati: nota `2026-11-05-la-cura-che-una-riga-prende-dal-genitore`, #447, piano 1.48); la mail
 parte dopo la cancellazione. **Uno slot prenotato si corregge ancora**: la prenotazione resta, e **il pilota è avvisato quando
 cambia il volo che ha prenotato** — nominativo, orari, aeroporti, tipi ammessi — con `bookingChanged`; lo stand e il numero di
 volo non avvisano nessuno, e la compatibilità con le altre sue prenotazioni non si ricontrolla (un ritocco degli orari di molti
@@ -1658,6 +1660,8 @@ desse `Events.Delete` a un altro dipartimento lo darebbe davvero; è configurazi
   - **Statistiche**: i numeri del §1.10.
 - **`/staff/events/controllers`**: il registro di affidabilità di tutti, con «togli il no-show».
 - **`/staff/events/settings`**: impostazioni generate.
+
+**Le azioni della pagina di un evento e dell'ATC le dice il server** (6 novembre 2026, #439, nota `decisions/2026-11-01-le-azioni-di-un-evento-dal-server.md`, decisa da Carmine).
 
 **Nessun componente nuovo** nell'elenco chiuso: `DataList`, `SchemaForm`, `CalendarView`, `LiveStatusStrip`, `MediaPicker`,
 `StatusBadge`, `RatingBadge`, `ConfirmDialog`. L'`EventTimeline` del piano §8.3 non serve (il roster si legge in lista).

@@ -50,6 +50,8 @@ public sealed class AuditPersonColumnsTests(MariaDbFixture mariaDb) : IAsyncLife
             LastName = "Test",
             Email = Address,
             DiscordId = "discord-931004",
+            DiscordUsername = "discord-name-931004",
+            DiscordLinkedAt = clock.UtcNow,
             SecurityStamp = SuperadminService.NewStamp(),
             LastLoginAt = clock.UtcNow,
             CreatedAt = clock.UtcNow,
@@ -70,6 +72,9 @@ public sealed class AuditPersonColumnsTests(MariaDbFixture mariaDb) : IAsyncLife
         {
             Assert.DoesNotContain(nameof(HubUser.Email), json, StringComparison.Ordinal);
             Assert.DoesNotContain(nameof(HubUser.DiscordId), json, StringComparison.Ordinal);
+            Assert.DoesNotContain(nameof(HubUser.DiscordUsername), json, StringComparison.Ordinal);
+            Assert.DoesNotContain(nameof(HubUser.DiscordLinkedAt), json, StringComparison.Ordinal);
+            Assert.DoesNotContain("discord-name", json, StringComparison.Ordinal);
             Assert.DoesNotContain(nameof(HubUser.SecurityStamp), json, StringComparison.Ordinal);
             Assert.DoesNotContain(nameof(HubUser.LastLoginAt), json, StringComparison.Ordinal);
             Assert.DoesNotContain("example.org", json, StringComparison.Ordinal);
