@@ -1,8 +1,10 @@
 # L'allineamento nella busta: che cosa il design non diceva
 
 **Data:** 10 novembre 2026, PR 3.9 della fase 3 (`12-design-editor-fase-3.md` §5.6, riga 3.9 del §7).
-**Stato:** scelte della sessione di lavoro, dentro quello che il §5.6 ha già deciso; **nessuna è di Carmine**, e il revisore le
-controlla una per una. Nessuna cambia che cosa fa la funzione: dicono quando, dove e come.
+**Stato:** **il punto 1 l'ha deciso Carmine**, perché si scosta dalla lettera del §5.6: «Sì, accetto», in chat al master il 10 novembre
+2026, riportato sulla PR (https://github.com/SkyMistery/Ivao-Italy-Hub/pull/479#issuecomment-6769720262). I punti 2–6 sono scelte della
+sessione di lavoro, dentro quello che il §5.6 ha già deciso, e il revisore le controlla una per una. Nessuno cambia che cosa fa la
+funzione: dicono quando, dove e come.
 **Classificazione** (`CLAUDE.md` §5): (c), decisa dal design (approvato il 31 ottobre 2026, §9). Il §5.6 dice «nota sua: no»; questa
 nota c'è per i sei punti che il §5.6 non scrive e che il codice ha dovuto scegliere.
 
@@ -16,6 +18,9 @@ Quindi: aprendo il blocco il pannello **mostra** l'allineamento vecchio come que
 **la prima cosa che il pannello scrive** su quel blocco — un'etichetta, un indirizzo, l'allineamento stesso — porta con sé lo
 spostamento: `align` sulla busta, `props.align` tolto (`placedAt` in `blocks/envelope.ts`). Fino a quel momento il renderer legge il
 vecchio quando la busta non ha niente (`alignOf`). La sola scrittura che non si fonde con le battute dopo è la prima.
+
+**La risposta di Carmine**, in chat al master il 10 novembre 2026: «Sì, accetto». Il codice resta così, e il §5.6 del design cambia
+(«Da portare nel piano»). Il link: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/479#issuecomment-6769720262.
 
 ## 2. Come lo disegna l'involucro
 
@@ -75,6 +80,9 @@ campo; le parole nuove sono `content.editor.align` (il pannello, accanto a «Sez
 
 ## Da portare nel piano
 
+- **Il design dell'editor, `12-design-editor-fase-3.md` §5.6** (Carmine, 10 novembre 2026, punto 1): l'`align` di `buttonGroup` passa
+  nella busta, il renderer legge ancora quello delle `props` quando la busta non lo ha, e il pannello lo sposta **alla sua prima
+  scrittura sul blocco**, non «aprendo il blocco».
 - **§9.3** (il modello dei contenuti): la busta di un blocco ha `align` (`left | center | right`, assente = sinistra) accanto a
   `column` e `span`, controllato dal server come `span` (`errors.body.alignUnknown`); vale per un blocco che si dichiara `alignable`, e
   l'`align` di `buttonGroup` è passato lì. (È già nel «Da portare nel piano» del design; qui le precisazioni dei punti 1 e 3.)
