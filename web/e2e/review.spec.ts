@@ -33,6 +33,9 @@ const approverBootstrap = {
   permissions: [...staffBootstrap.permissions, { name: 'Content.Approve', department: 'ED' }],
 };
 
+/** The version of the row the summary describes, which the approval answers (issue #332, item 2). */
+const SUMMARY_VERSION = '2026-09-13T10:00:00Z';
+
 /** The row as the editor loads it, and every review sent, answered with the row that results. */
 async function stubThePage(page: Page, row: Record<string, unknown>, sent: unknown[]): Promise<void> {
   let current = row;
@@ -71,6 +74,7 @@ async function stubThePage(page: Page, row: Record<string, unknown>, sent: unkno
         readyByName: 'Test Coordinator',
         blocks: { added: 0, removed: 0, changed: 1 },
         fields: [],
+        rowVersion: SUMMARY_VERSION,
       }),
     });
   });
@@ -205,7 +209,10 @@ test('whoever may approve reads what changed and corrects the address while appr
 
   await expect
     .poll(() => sent)
-    .toEqual([{ action: 'Approve', changelog: line, slug: 'airshow-2026', parentId: 1 }]);
+    // With the version of the summary read above: a row changed since is refused (issue #332, item 2).
+    .toEqual([
+      { action: 'Approve', changelog: line, slug: 'airshow-2026', parentId: 1, rowVersion: SUMMARY_VERSION },
+    ]);
 });
 
 test('a parent put back to nothing says so, can be chosen again, and what is approved is what is drawn', async ({
