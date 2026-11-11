@@ -65,13 +65,19 @@ export function holdsPermission(
   const scope = row.resourceScope ?? null;
   const fir = row.fir ?? null;
 
-  return bootstrap.permissions.some(
-    (permission) =>
+  return bootstrap.permissions.some((permission) => {
+    // The server always says both, null for none; a permission written without them — a fixture of the smoke bench,
+    // which the old question never needed — is read the same way, and not as narrowed to `undefined`.
+    const heldScope = permission.resourceScope ?? null;
+    const heldFir = permission.fir ?? null;
+
+    return (
       permission.name === name &&
       (permission.department === null || permission.department === department) &&
-      (permission.resourceScope === null || permission.resourceScope === scope) &&
-      (permission.fir === null || (fir !== null && permission.fir.toLowerCase() === fir.toLowerCase())),
-  );
+      (heldScope === null || heldScope === scope) &&
+      (heldFir === null || (fir !== null && heldFir.toLowerCase() === fir.toLowerCase()))
+    );
+  });
 }
 
 /**

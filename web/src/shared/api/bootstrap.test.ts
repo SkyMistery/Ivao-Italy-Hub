@@ -61,3 +61,10 @@ test('a global permission is held on every department', () => {
 
   expect(holdsPermission(bootstrap, 'Sample.Edit', 'TD')).toBe(true);
 });
+
+test('a permission written without its scope and FIR is held on the department, as one with none', () => {
+  const bootstrap = holding({ name: 'Sample.Edit', department: 'ED' } as BootstrapPermission);
+
+  expect(holdsPermission(bootstrap, 'Sample.Edit', 'ED')).toBe(true);
+  expect(holdsPermission(bootstrap, 'Sample.Edit', 'ED', { fir: 'XXAA' })).toBe(true);
+});
