@@ -121,7 +121,10 @@ test('the preview of the editor draws the page however slowly the browser gets t
     // Picked, the picture has its handle, and the page is still drawn around it.
     await preview.getByRole('img', { name: 'A slow picture' }).click();
     await expect(preview.locator('[data-resize-handle]'), `slowed ${rate} times`).toBeVisible();
-    await expect(preview.getByRole('heading', { name: 'Drawn all the same' }), `slowed ${rate} times`).toBeVisible();
+    await expect(
+      preview.getByRole('heading', { name: 'Drawn all the same' }),
+      `slowed ${rate} times`,
+    ).toBeVisible();
     await expect(preview.getByRole('img', { name: 'A slow picture' }), `slowed ${rate} times`).toBeVisible();
   }
 });
