@@ -175,10 +175,7 @@ test('a released tour is read by a visitor, with its legs on the map', async ({
     await expect(map).toBeVisible();
     await expect(map.locator('canvas.maplibregl-canvas')).toBeVisible();
     await expect(map.locator('canvas.maplibregl-canvas')).not.toHaveJSProperty('width', 0);
-    // ⚠️ The airports are markers MapLibre adds once its style has loaded, and since the route is a tab the map starts
-    // only when the tab opens: on a busy runner, with no archive behind it, that took longer than the five seconds an
-    // assertion waits (seen on #484). The time it is given is the page's, not the assertion's.
-    await expect(map.getByText(benchAirports.milan, { exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(map.getByText(benchAirports.milan, { exact: true })).toBeVisible();
     await expect(map.getByRole('link', { name: 'OpenStreetMap' })).toBeVisible();
 
     // ⚠️ The whole reason the round runs the published package: this page is drawn under the real policy, and a map
