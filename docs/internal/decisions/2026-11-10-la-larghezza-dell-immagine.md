@@ -1,11 +1,12 @@
 # La larghezza dell'immagine e il tutto schermo: che cosa il design non diceva
 
 **Data:** 10 novembre 2026, PR 3.10 della fase 3 (`12-design-editor-fase-3.md` §5.3, riga 3.10 del §7).
-**Stato:** **il punto 1 è da confermare da Carmine**, perché si scosta dalla lettera del §5.3: la sessione di lavoro segue per
-analogia la decisione che Carmine ha preso sulla 3.9 («Sì, accetto», in chat al master il 10 novembre 2026,
-https://github.com/SkyMistery/Ivao-Italy-Hub/pull/479#issuecomment-6769720262), e il master gliela porta in revisione. I punti 2–8
-sono scelte della sessione, dentro quello che il §5.3 ha già deciso, e il revisore le controlla una per una. Nessuno cambia che cosa
-fa la funzione: dicono dove sta, come si scrive e come si legge.
+**Stato:** **il punto 1 l'ha deciso Carmine**, perché si scosta dalla lettera del §5.3: «Sì, come la 3.9», in chat al master
+l'11 novembre 2026, riportato sulla PR (https://github.com/SkyMistery/Ivao-Italy-Hub/pull/485#issuecomment-6797313455). La
+sessione di lavoro l'aveva proposto per analogia con la sua decisione sulla 3.9 («Sì, accetto»,
+https://github.com/SkyMistery/Ivao-Italy-Hub/pull/479#issuecomment-6769720262). I punti 2–8 sono scelte della sessione, dentro
+quello che il §5.3 ha già deciso, e il revisore le ha lette senza rilievi. Nessuno cambia che cosa fa la funzione: dicono dove sta,
+come si scrive e come si legge.
 **Classificazione** (`CLAUDE.md` §5): (c), decisa dal design (approvato il 31 ottobre 2026, §9). Il §5.3 dice «nota sua: no»; questa
 nota c'è per gli otto punti che il §5.3 non scrive e che il codice ha dovuto scegliere.
 
@@ -20,8 +21,8 @@ cursore, e **la prima cosa che l'editor scrive** su quel blocco — una didascal
 spostamento: `widthPercent` scritto, `width` tolto (`sizedAt` in `blocks/size.ts`). Fino a quel momento il renderer legge il vecchio
 quando il nuovo manca (`sizeOf`). Nessuna pagina cambia da sola.
 
-**Da chiedere a Carmine in revisione**: va bene la stessa regola della 3.9? Se sì, il §5.3 del design cambia come il §5.6
-(«Da portare nel piano»).
+**La risposta di Carmine**, in chat al master l'11 novembre 2026: «Sì, come la 3.9». Il codice resta così, e il §5.3 del design
+cambia come il §5.6 («Da portare nel piano»). Il link: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/485#issuecomment-6797313455.
 
 ## 2. La larghezza la disegna l'involucro del renderer, non il blocco
 
@@ -111,9 +112,9 @@ pezzo dei blocchi (`FullScreenPicture` in `blocks/blocks.tsx`) è scritto una vo
 
 ## Da portare nel piano
 
-- **Il design dell'editor, `12-design-editor-fase-3.md` §5.3** (se Carmine conferma il punto 1): il `width` delle foto vecchie si sposta
-  in `widthPercent` **alla prima scrittura dell'editor sul blocco**, non «aprendo il blocco»; il campo della tastiera è un cursore fuori
-  dal form generato; lo schema accetta ogni intero fra 20 e 100, e i passi di 5 sono della maniglia e del cursore.
+- **Il design dell'editor, `12-design-editor-fase-3.md` §5.3** (Carmine, 11 novembre 2026, punto 1): il `width` delle foto vecchie si
+  sposta in `widthPercent` **alla prima scrittura dell'editor sul blocco**, non «aprendo il blocco»; il campo della tastiera è un cursore
+  fuori dal form generato; lo schema accetta ogni intero fra 20 e 100, e i passi di 5 sono della maniglia e del cursore.
 - **§9.3** (il modello dei contenuti): l'immagine ha `widthPercent` (20–100, di default 100) e `fullscreen` (di default sì); il suo
   `width` vecchio è letto finché l'editor non scrive il blocco.
 - **§16** (meccanismi generici): `BlockRegistration.resizable`, l'involucro del renderer che disegna la larghezza (dentro

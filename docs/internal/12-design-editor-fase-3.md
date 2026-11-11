@@ -309,9 +309,10 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   un'immagine ha una larghezza in percentuale entro questi limiti.
 - **File del nucleo**: `blocks/schemas.ts`, `blocks/blocks.tsx`, `blocks/ContentRenderer.tsx`, `blocks/picking.ts`,
   `shared/modules.ts` (`BlockRegistration.resizable`), `features/content/BodyEditor.tsx`. **Nota sua**: no.
-- **Com'è andata** (PR 3.10, ramo `feat/image-width`, nota `2026-11-10-la-larghezza-dell-immagine`): otto scelte, la prima da confermare
-  da Carmine. (1) Il `width` vecchio si sposta in `widthPercent` **alla prima scrittura** dell'editor sul blocco, non aprendolo, per
-  analogia con la decisione della 3.9 (§5.6). Le altre sono della sessione. (2) La larghezza la disegna l'involucro del renderer, dentro
+- **Com'è andata** (#485, ramo `feat/image-width`, nota `2026-11-10-la-larghezza-dell-immagine`): otto scelte, la prima decisa da
+  Carmine. (1) Il `width` vecchio si sposta in `widthPercent` **alla prima scrittura** dell'editor sul blocco, non aprendolo, come
+  l'allineamento dei pulsanti della 3.9 (§5.6) (Carmine, in chat al master l'11 novembre 2026, «Sì, come la 3.9»). Le altre sette sono
+  della sessione. (2) La larghezza la disegna l'involucro del renderer, dentro
   l'allineamento, come l'allineamento; `ImageBlock` non ne ha una sua; `blocks/size.ts` ha le quattro funzioni, sul modello di quelle
   dell'allineamento. (3) Lo schema accetta ogni intero fra 20 e 100: un terzo è 33, e i passi di 5 sono del gesto. (4) Il campo della
   tastiera è uno `Slider` di Atmosphere **fuori** dal form generato, perché il form dal vivo avrebbe riscritto indietro la larghezza della
