@@ -193,7 +193,7 @@
   },
   "failed": {
     "title": "This page could not be loaded",
-    "description": "The server did not answer as it should. Try again in a moment.",
+    "description": "Something went wrong while reading it. Try again in a moment, or go back to where you were.",
     "retry": "Try again"
   },
   "admin": {
