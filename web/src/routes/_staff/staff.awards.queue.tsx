@@ -8,7 +8,7 @@ import { useMoveSignal } from '../../features/awards/mutations';
 import { AWARD_SIGNAL_STATUSES, awardSignalsListQuery } from '../../features/awards/queries';
 import { holdsPermissionAnywhere } from '../../shared/api/bootstrap';
 import { DataList, ListFilter, listSearchSchema } from '../../shared/list';
-import { PageShell } from '../../shared/ui';
+import { PageShell, useRefusalNotice } from '../../shared/ui';
 
 /** Global: the queue belongs to whoever assigns, whatever their department. */
 const AWARDS_ASSIGN = 'Awards.Assign';
@@ -41,6 +41,7 @@ function AwardQueuePage() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const move = useMoveSignal();
+  const refused = useRefusalNotice();
 
   const division = bootstrap.division;
 
@@ -92,7 +93,7 @@ function AwardQueuePage() {
                 variant="ghost"
                 size="sm"
                 disabled={move.isPending}
-                onClick={() => move.mutate({ id: row.id, status: 'Dismissed' })}
+                onClick={() => move.mutate({ id: row.id, status: 'Dismissed' }, { onError: refused })}
               >
                 {t('awardSignals.dismiss')}
               </Button>
@@ -102,7 +103,7 @@ function AwardQueuePage() {
               variant="ghost"
               size="sm"
               disabled={move.isPending}
-              onClick={() => move.mutate({ id: row.id, status: 'Pending' })}
+              onClick={() => move.mutate({ id: row.id, status: 'Pending' }, { onError: refused })}
             >
               {t('awardSignals.restore')}
             </Button>

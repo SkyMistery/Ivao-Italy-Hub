@@ -221,6 +221,18 @@ function SourceField({
   const [draft, setDraft] = useState(block.source ?? '');
   const [refused, setRefused] = useState<string | null>(null);
 
+  // The source changed from outside — an undo, a redo — follows into the box when the box is at rest, holding what the
+  // block held. It used to keep the draft of its mount, and the next blur put the old source back over the undo (issue
+  // #332, item 12). A box with typing in it keeps it, as `SearchBox` does.
+  const source = block.source ?? '';
+  const [seen, setSeen] = useState(source);
+  if (seen !== source) {
+    setSeen(source);
+    if (draft === seen) {
+      setDraft(source);
+    }
+  }
+
   // The page counts what the server counts: bytes of UTF-8, not characters. A line of Italian prose
   // in a comment is longer than it looks, and the refusal on save would be the first anybody heard.
   const bytes = new TextEncoder().encode(draft).length;

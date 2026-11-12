@@ -32,6 +32,10 @@ const ABOUT = '/about — About';
 const PILOTS = '/pilots — Pilots';
 const SERVICES = 'Services';
 
+/** The version of the row the summary describes, and an older one the tab opened on. */
+const SUMMARY_VERSION = '2026-11-10T10:00:00.123456Z';
+const OPENED_VERSION = '2026-11-10T09:00:00Z';
+
 const ok = <T,>(data: T) => ({ data, response: new Response(null, { status: 200 }) });
 
 function answers(path: string) {
@@ -45,6 +49,7 @@ function answers(path: string) {
         menu: null,
         readyAt: null,
         readyByName: null,
+        rowVersion: SUMMARY_VERSION,
       });
     case '/api/content/pages':
       return ok([
@@ -66,6 +71,7 @@ function aPageWaiting(parentId: number | null): ContentDetailDto {
     parentId,
     status: 'Ready',
     reviewNote: null,
+    rowVersion: OPENED_VERSION,
   } as ContentDetailDto;
 }
 
@@ -221,5 +227,14 @@ describe('the menu parent of the approval', () => {
 
     expect(menuParent()).toHaveTextContent(SERVICES);
     expect(await approve(user, dialog)).toMatchObject({ menu: { parentId: 7 } });
+  });
+});
+
+describe('the version the approval answers (issue #332, item 2)', () => {
+  test('approving answers the version the summary on screen describes', async () => {
+    const user = userEvent.setup();
+    const dialog = await openTheApproval(user);
+
+    expect(await approve(user, dialog)).toMatchObject({ action: 'Approve', rowVersion: SUMMARY_VERSION });
   });
 });

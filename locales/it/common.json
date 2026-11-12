@@ -3,6 +3,7 @@
     "title": "IVAO Division Hub"
   },
   "common": {
+    "notDone": "Non è stato fatto",
     "loading": "Caricamento...",
     "save": "Salva",
     "cancel": "Annulla",
@@ -189,6 +190,11 @@
     "title": "Questa pagina non è per te",
     "description": "Hai fatto l'accesso, ma le tue posizioni staff non aprono questa pagina. Se pensi che dovrebbero, parlane con il tuo direttore.",
     "home": "Torna alla home"
+  },
+  "failed": {
+    "title": "Non è stato possibile caricare la pagina",
+    "description": "Qualcosa non è andato leggendola. Riprova tra un momento, o torna dov'eri.",
+    "retry": "Riprova"
   },
   "admin": {
     "title": "Amministrazione"
@@ -2212,7 +2218,8 @@
       "description": "Copialo adesso nel tuo programma: l'hub non lo mostrerà più. Se lo perdi, revocalo e creane un altro.",
       "label": "Il token",
       "copy": "Copia",
-      "copied": "Copiato"
+      "copied": "Copiato",
+      "copyFailed": "Il browser non ha lasciato copiare il token all'hub: selezionalo nella casella e copialo a mano."
     },
     "revoke": {
       "action": "Revoca",

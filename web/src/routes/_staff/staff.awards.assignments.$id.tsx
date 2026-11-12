@@ -21,7 +21,7 @@ import { awardAssignmentSchema, type AwardAssignmentFormValues } from '../../fea
 import { holdsPermissionAnywhere } from '../../shared/api/bootstrap';
 import { SchemaForm, type ChoiceOption } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
-import { ConfirmDialog, Notice, PageShell } from '../../shared/ui';
+import { ConfirmDialog, Notice, PageShell, useRefusalNotice } from '../../shared/ui';
 
 /** Global: the register belongs to whoever assigns. */
 const AWARDS_ASSIGN = 'Awards.Assign';
@@ -77,6 +77,7 @@ function AwardAssignmentForm() {
   const create = useCreateAssignment();
   const update = useUpdateAssignment(Number(id));
   const remove = useDeleteAssignment();
+  const refused = useRefusalNotice();
 
   // Back where the assignment came from: the queue when it answered a line, the register otherwise.
   const back = search.signal === undefined ? '/staff/awards/assignments' : '/staff/awards/queue';
@@ -116,7 +117,7 @@ function AwardAssignmentForm() {
             description={t('awardAssignments.delete.description')}
             confirmText={t('awardAssignments.revoke')}
             disabled={remove.isPending}
-            onConfirm={() => remove.mutate(Number(id), { onSuccess: goBack })}
+            onConfirm={() => remove.mutate(Number(id), { onSuccess: goBack, onError: refused })}
           />
         )
       }

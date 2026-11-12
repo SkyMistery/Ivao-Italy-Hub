@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { notificationPreferencesQuery, useSaveNotificationPreference } from './queries';
+import { useRefusalNotice } from '../../shared/ui';
 
 /**
  * The words of a kind of notification. A module's kind is named after the module — `flightops.pirepAccepted` —
@@ -30,6 +31,7 @@ export function NotificationPreferences() {
   const { t } = useTranslation();
   const { data: preferences } = useQuery(notificationPreferencesQuery);
   const save = useSaveNotificationPreference();
+  const refused = useRefusalNotice();
 
   if (!preferences || preferences.length === 0) {
     return null;
@@ -50,7 +52,9 @@ export function NotificationPreferences() {
             checked={preference.enabled}
             disabled={save.isPending}
             aria-label={t(labelKeys(preference.type, 'title'))}
-            onCheckedChange={(enabled: boolean) => save.mutate({ type: preference.type, enabled })}
+            onCheckedChange={(enabled: boolean) =>
+              save.mutate({ type: preference.type, enabled }, { onError: refused })
+            }
           />
         </div>
       ))}
