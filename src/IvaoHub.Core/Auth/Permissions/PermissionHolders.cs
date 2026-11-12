@@ -8,9 +8,13 @@ namespace IvaoHub.Core.Auth.Permissions;
 /// </summary>
 public sealed record PermissionHolder(int Vid, bool IsSuperadmin, IReadOnlyList<EffectivePermission> Permissions)
 {
-    /// <summary>The handler's own question, asked of this member instead of the one making the request.</summary>
-    public bool Has(string permission, Department department, string? resourceScope = null) =>
-        PermissionSet.Has(Permissions, IsSuperadmin, permission, department, resourceScope);
+    /// <summary>
+    /// The handler's own question, asked of this member instead of the one making the request: on the row's department, with its
+    /// scope and its FIR (issue #319, item 7 — the FIR was left out, so a FIR team never matched; no digest asks about a row
+    /// with a FIR today).
+    /// </summary>
+    public bool Has(string permission, Department department, string? resourceScope = null, string? fir = null) =>
+        PermissionSet.Has(Permissions, IsSuperadmin, permission, department, resourceScope, fir);
 }
 
 /// <summary>

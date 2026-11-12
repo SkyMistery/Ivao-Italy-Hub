@@ -4818,6 +4818,17 @@ export interface components {
              *     and nowhere else — "Take" on the tours a validator is enabled on (M2, T3).
              */
             resourceScope: null | string;
+            /**
+             * @description Set when the permission is held on the rows of one FIR only, by the team of that FIR (M3, A11a): the screen offers it on
+             *     those rows and no other, as the single handler answers (issue #319, item 7).
+             */
+            fir: null | string;
+            /**
+             * @description True when it is held from outside its department — a grant to a position of another department, a FIR team's under
+             *     `firStaffScope: all`, a grantable global permission (plan 1.28): the permission on that department's rows, and not the
+             *     department; the cookie says it the same way.
+             */
+            fromOutside: boolean;
         };
         /**
          * @description One permission of the catalogue: core plus whatever the installed modules declare. It is here so
