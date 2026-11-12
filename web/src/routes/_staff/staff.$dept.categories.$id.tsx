@@ -19,7 +19,7 @@ import { categorySchema, type CategoryFormValues } from '../../features/categori
 import { deptParam } from '../../shared/api/department';
 import { SchemaForm } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
-import { ConfirmDialog, PageShell } from '../../shared/ui';
+import { ConfirmDialog, PageShell, useRefusalNotice } from '../../shared/ui';
 
 /**
  * The form of one shelf, and `new` for one that does not exist yet.
@@ -55,6 +55,7 @@ function CategoryForm() {
   const create = useCreateCategory();
   const update = useUpdateCategory(Number(id));
   const remove = useDeleteCategory();
+  const refused = useRefusalNotice();
 
   const backToList = () => void navigate({ to: '/staff/$dept/categories', params: { dept } });
 
@@ -84,7 +85,7 @@ function CategoryForm() {
             description={t('categories.delete.description')}
             confirmText={t('common.delete')}
             disabled={remove.isPending}
-            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToList })}
+            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToList, onError: refused })}
           >
             {uses.length === 0 ? null : (
               <div className="flex flex-col gap-1 text-sm">

@@ -1,7 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 
 import { api, unwrapEmpty } from '../../../shared/api/client';
-import { bootstrapKey } from '../../me/queries';
+import { useBootstrapChanged } from '../../me/queries';
 
 /**
  * Closing a module for changes, and opening it again.
@@ -12,7 +12,7 @@ import { bootstrapKey } from '../../me/queries';
  * in step (plan §16.7). So the screen reads the bootstrap, and this invalidates it.
  */
 export function useSetModuleMaintenance() {
-  const queryClient = useQueryClient();
+  const bootstrapChanged = useBootstrapChanged();
 
   return useMutation({
     mutationFn: async ({ key, maintenance }: { key: string; maintenance: boolean }): Promise<void> =>
@@ -22,8 +22,6 @@ export function useSetModuleMaintenance() {
           body: { maintenance },
         }),
       ),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: bootstrapKey });
-    },
+    onSuccess: bootstrapChanged,
   });
 }

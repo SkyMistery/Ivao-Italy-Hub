@@ -1,15 +1,12 @@
 import {
-  addProtocol,
   AttributionControl,
   MapLibreMap,
   Marker,
   NavigationControl,
-  removeProtocol,
   setWorkerUrl,
   type GeoJSONSource,
   type StyleSpecification,
 } from 'maplibre-gl';
-import { Protocol } from 'pmtiles';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -20,6 +17,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
 import { boundsOf, greatCirclePath, trackPath, type GeoPoint } from './greatCircle';
+import { holdProtocol, releaseProtocol } from './mapProtocol';
 
 /**
  * The legs of a tour on a map (design M2 §8.6, note 2026-09-15-la-mappa).
@@ -141,11 +139,10 @@ export function RouteMap({ legs, tracks, className, label }: RouteMapProps) {
       return;
     }
 
-    // One protocol registration per map, and the worker served from this origin: `worker-src` is
+    // The protocol held for as long as this map is drawn, and the worker served from this origin: `worker-src` is
     // not declared, so `script-src 'self'` is what allows it, and both are ours already.
     setWorkerUrl(workerUrl);
-    const protocol = new Protocol();
-    addProtocol('pmtiles', protocol.tile);
+    holdProtocol();
 
     const drawn = new MapLibreMap({
       container: element,
@@ -204,7 +201,7 @@ export function RouteMap({ legs, tracks, className, label }: RouteMapProps) {
       setReady(false);
       markers.current = [];
       drawn.remove();
-      removeProtocol('pmtiles');
+      releaseProtocol();
     };
   }, [supported]);
 

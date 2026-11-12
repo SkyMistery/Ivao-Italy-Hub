@@ -21,6 +21,7 @@ function changes(over: Partial<ContentReviewDto>): ContentReviewDto {
     readyByName: null,
     blocks: { added: 0, removed: 0, changed: 0 },
     fields: [],
+    rowVersion: '2026-11-10T12:00:00Z',
     ...over,
   };
 }

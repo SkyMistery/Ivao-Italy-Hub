@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { SchemaForm } from '../../../shared/forms';
-import { ConfirmDialog, SectionHeader } from '../../../shared/ui';
+import { ConfirmDialog, SectionHeader, useRefusalNotice } from '../../../shared/ui';
 
 import { useAddSuperadmin, useRemoveSuperadmin } from './mutations';
 import { superadminsQuery } from './queries';
@@ -30,6 +30,7 @@ export function SuperadminPanel({ locales }: { locales: readonly string[] }) {
 
   const add = useAddSuperadmin();
   const remove = useRemoveSuperadmin();
+  const refused = useRefusalNotice();
 
   return (
     <section className="flex flex-col gap-4">
@@ -48,7 +49,7 @@ export function SuperadminPanel({ locales }: { locales: readonly string[] }) {
                 description={t('superadmins.remove.description', { vid })}
                 confirmText={t('common.delete')}
                 disabled={remove.isPending}
-                onConfirm={() => remove.mutate(vid)}
+                onConfirm={() => remove.mutate(vid, { onError: refused })}
               />
             </li>
           ))}

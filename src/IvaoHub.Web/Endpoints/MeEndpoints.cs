@@ -73,7 +73,9 @@ internal static class MeEndpoints
                     new BootstrapPermission(
                         permission.Name,
                         permission.Department?.ToString(),
-                        permission.ResourceScope))],
+                        permission.ResourceScope,
+                        permission.Fir,
+                        permission.FromOutside))],
                 Division: new BootstrapDivision(
                     options.Code,
                     options.Name,
@@ -256,7 +258,16 @@ internal sealed record BootstrapUser(
 /// Set when the permission is held on one row only, so that the screen can offer the action there
 /// and nowhere else — "Take" on the tours a validator is enabled on (M2, T3).
 /// </param>
-internal sealed record BootstrapPermission(string Name, string? Department, string? ResourceScope);
+/// <param name="Fir">
+/// Set when the permission is held on the rows of one FIR only, by the team of that FIR (M3, A11a): the screen offers it on
+/// those rows and no other, as the single handler answers (issue #319, item 7).
+/// </param>
+/// <param name="FromOutside">
+/// True when it is held from outside its department — a grant to a position of another department, a FIR team's under
+/// <c>firStaffScope: all</c>, a grantable global permission (plan 1.28): the permission on that department's rows, and not the
+/// department; the cookie says it the same way.
+/// </param>
+internal sealed record BootstrapPermission(string Name, string? Department, string? ResourceScope, string? Fir, bool FromOutside);
 
 /// <summary>
 /// <paramref name="SiteDepartment"/> is the department the site itself belongs to: its menu, its

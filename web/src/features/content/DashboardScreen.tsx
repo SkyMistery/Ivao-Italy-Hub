@@ -6,8 +6,9 @@ import { useTranslation } from 'react-i18next';
 
 import { ContentRenderer, EmbeddingContext, readBody, usePublishedEmbedding } from '../../blocks';
 import { holdsPermission, type Bootstrap } from '../../shared/api/bootstrap';
+import { ApiError } from '../../shared/api/problem';
 import { useLocalized } from '../../shared/i18n/useLocalized';
-import { PageShell } from '../../shared/ui';
+import { Failed, PageShell } from '../../shared/ui';
 
 import { dashboardQuery } from './dashboards';
 
@@ -46,6 +47,12 @@ export function DashboardScreen({
   const embedding = usePublishedEmbedding(dashboard.data);
 
   const row = dashboard.data;
+  // Only a 404 is a dashboard nobody published. A 500 or a network that failed is said as what it is, with a way to try
+  // again, and not as "not published yet" (issue #332, item 5).
+  const failed =
+    row === undefined &&
+    dashboard.isError &&
+    !(dashboard.error instanceof ApiError && dashboard.error.status === 404);
   // Only offered to somebody who could act on it: a button that leads to a 403 is a button that
   // teaches people to distrust buttons.
   const mayEdit = row !== undefined && holdsPermission(bootstrap, CONTENT_EDIT, row.ownerDepartment);
@@ -69,6 +76,8 @@ export function DashboardScreen({
         <EmbeddingContext.Provider value={embedding}>
           <ContentRenderer body={readBody(row.body)} media={row.media} dashboard />
         </EmbeddingContext.Provider>
+      ) : failed ? (
+        <Failed onRetry={() => void dashboard.refetch()} />
       ) : dashboard.isPending ? null : (
         // An honest empty state rather than a blank page: a dashboard that was deleted, or never
         // published, has nothing to show and is told why.

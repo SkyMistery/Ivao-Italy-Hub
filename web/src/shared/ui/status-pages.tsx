@@ -1,16 +1,17 @@
 import { Button } from '@ivao/atmosphere-react';
-import { Link } from '@tanstack/react-router';
-import { FileQuestion, ShieldOff } from 'lucide-react';
+import { Link, useRouter, type ErrorComponentProps } from '@tanstack/react-router';
+import { CloudOff, FileQuestion, ShieldOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { ApiError } from '../api/problem';
 import { PageMetadata } from '../seo/PageMetadata';
 
 import { EmptyState } from './layout-pieces';
 
 /**
- * The two answers a router gives that are not a page: there is nothing here, and you may not see
- * what is here. Both are translated and both offer a way out, because a dead end in a back office
- * is a support message (design M0 §7.2).
+ * The answers a router gives that are not a page: there is nothing here, you may not see what is
+ * here, and what is here could not be read. All are translated and all offer a way out, because a
+ * dead end in a back office is a support message (design M0 §7.2).
  */
 
 export function NotFound() {
@@ -48,6 +49,57 @@ export function Forbidden() {
           <Link to="/">{t('forbidden.home')}</Link>
         </Button>
       }
+    />
+  );
+}
+
+/**
+ * The third answer: something is here, and it could not be read just now — a 500, the network, an answer nobody
+ * expected. Said in the reader's language and with a way to try again, never as the router's English screen with the raw
+ * message (issue #332, item 5). `onRetry` is what trying again means where it is drawn.
+ */
+export function Failed({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation();
+
+  return (
+    <>
+      <PageMetadata title={t('failed.title')} />
+      <EmptyState
+        Icon={CloudOff}
+        title={t('failed.title')}
+        description={t('failed.description')}
+        action={
+          <Button variant="secondary" onClick={onRetry}>
+            {t('failed.retry')}
+          </Button>
+        }
+      />
+    </>
+  );
+}
+
+/**
+ * What a route draws when its loader or its screen throws: the router's default (`createHubRouter`), so that no route is
+ * left to the English one. A 404 is `NotFound` and a 403 is `Forbidden`, as the guards say them; everything else is
+ * `Failed`, and trying again reads the route again.
+ */
+export function RouteError({ error, reset }: ErrorComponentProps) {
+  const router = useRouter();
+
+  if (error instanceof ApiError && error.status === 404) {
+    return <NotFound />;
+  }
+
+  if (error instanceof ApiError && error.status === 403) {
+    return <Forbidden />;
+  }
+
+  return (
+    <Failed
+      onRetry={() => {
+        // The loaders again, and the boundary cleared for what they bring.
+        void router.invalidate().then(reset);
+      }}
     />
   );
 }

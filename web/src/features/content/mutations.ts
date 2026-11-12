@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { emptyBody, type Body } from '../../blocks';
 import type { Department, LocalizedString } from '../../shared/api/bootstrap';
 import { AUTOSAVE_HEADER, api, unwrap, unwrapEmpty } from '../../shared/api/client';
+import { ApiError } from '../../shared/api/problem';
 import { NEW_ROW_VERSION } from '../../shared/api/rowVersion';
 import type { components } from '../../shared/api/schema';
 import { emptyLocalized } from '../../shared/i18n/localized';
@@ -302,6 +303,13 @@ export function useReviewContent(id: number) {
     onSuccess: async (content) => {
       queryClient.setQueryData(contentDetailKey(id), content);
       await queryClient.invalidateQueries({ queryKey: contentKey });
+    },
+    // The row moved on under the summary that was read (issue #332, item 2): the row and its summary again, so that what
+    // the approver answers next is what they now read.
+    onError: async (error) => {
+      if (error instanceof ApiError && error.status === 409) {
+        await queryClient.invalidateQueries({ queryKey: contentKey });
+      }
     },
   });
 }

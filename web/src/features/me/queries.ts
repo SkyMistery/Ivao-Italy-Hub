@@ -30,8 +30,28 @@ export const bootstrapQuery = queryOptions({
  * the cache: invalidating marks it stale and the root would still be given the old payload.
  */
 export async function sessionChanged(queryClient: QueryClient, router: AnyRouter): Promise<void> {
+  // Everything, not only the bootstrap (issue #332, item 9): the personal blocks, the `/me` dashboard, the threads and the
+  // tokens of the person who signed out are not the next person's to see, even for a moment on a shared computer.
+  queryClient.clear();
+  await router.invalidate();
+}
+
+/**
+ * The bootstrap again, after a write of the back office that changes it — a module closed, a calendar kind, a grant, a super
+ * administrator (issue #332, item 3). Invalidating the query only marked an answer nobody observes as stale: the root reads it
+ * once in `beforeLoad`, so the badge, the menu and the forms kept the old one until the second navigation. Removed and the
+ * router invalidated, as `sessionChanged` does for the session.
+ */
+export async function bootstrapChanged(queryClient: QueryClient, router: AnyRouter): Promise<void> {
   queryClient.removeQueries({ queryKey: bootstrapKey });
   await router.invalidate();
+}
+
+/** `bootstrapChanged`, bound to the application's query client and router. */
+export function useBootstrapChanged(): () => Promise<void> {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  return () => bootstrapChanged(queryClient, router);
 }
 
 /** Signs out and redraws the shell as anonymous, with no reload of the page. */
@@ -40,9 +60,8 @@ export function useLogout() {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: async () => {
-      await api.POST('/auth/logout');
-    },
+    // Unwrapped (issue #332, item 9): a refused sign-out is an error, and never runs the redraw as anonymous.
+    mutationFn: async (): Promise<void> => unwrapEmpty(await api.POST('/auth/logout')),
     onSuccess: async () => {
       // Home first, and only then the redraw. A back office screen sits behind a guard that sends
       // anybody without a session to `/auth/login`, so redrawing where we stand would answer a

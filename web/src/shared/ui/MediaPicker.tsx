@@ -11,6 +11,7 @@ import { ListFilter } from '../list/ListFilter';
 import { SearchBox } from '../list/SearchBox';
 
 import { EmptyState } from './layout-pieces';
+import { linkTarget } from './linkTarget';
 import { NOTHING_ASKED, type MediaBrowse } from './narrowLibrary';
 
 /**
@@ -215,7 +216,12 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
   const libraryHref = typeof query.meta?.libraryHref === 'string' ? query.meta.libraryHref : null;
   const library =
     libraryHref === null ? null : (
-      <Link to={libraryHref} className="text-primary text-sm underline-offset-2 hover:underline">
+      // The address carries a query (`?department=ED`): a path and its search, never the whole of it in `to`, where it
+      // matches no route (issue #332, item 12).
+      <Link
+        {...(linkTarget(libraryHref) as { to: string })}
+        className="text-primary text-sm underline-offset-2 hover:underline"
+      >
         {t('media.picker.open')}
       </Link>
     );
