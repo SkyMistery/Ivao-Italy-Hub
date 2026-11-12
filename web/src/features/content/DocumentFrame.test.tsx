@@ -55,6 +55,7 @@ function document(overrides: Partial<PublicContentDto> = {}): PublicContentDto {
     showFooter: true,
     publishedByName: 'Test User',
     media: {},
+    collectionNames: [],
     ...overrides,
   };
 }

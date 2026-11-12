@@ -10,6 +10,7 @@ import { registry } from './app/registry';
 import { createHubRouter } from './app/router';
 import { sessionChanged } from './features/me/queries';
 import { setUnauthorizedHandler } from './shared/api/client';
+import { retryQuery } from './shared/api/retry';
 
 // ⚠️ The two typefaces of IVAO, finally loaded. Atmosphere has always *asked* for them —
 // `--ivao-font-head: Poppins` and `--ivao-font-sans: "Nunito Sans"` — and never shipped them, so
@@ -36,7 +37,8 @@ import './styles/index.css';
 // 2026-09-30-la-pagina-dopo-una-consegna). Before anything imports one.
 reloadWhenAChunkIsGone();
 
-const queryClient = new QueryClient();
+// A 4xx is an answer and is not asked again; a failure of the server or the network is asked once (`retryQuery`).
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: retryQuery } } });
 
 // The router carries the query client, and the root route puts the bootstrap next to it: a guard
 // then reads `context.bootstrap` without a fetch of its own (design M0 §7.3). Building it lives in

@@ -3,6 +3,7 @@
     "title": "IVAO Division Hub"
   },
   "common": {
+    "notDone": "That was not done",
     "loading": "Loading...",
     "save": "Save",
     "cancel": "Cancel",
@@ -189,6 +190,11 @@
     "title": "This is not for you",
     "description": "You are signed in, but your staff positions do not open this page. If you think they should, talk to your director.",
     "home": "Back to the home page"
+  },
+  "failed": {
+    "title": "This page could not be loaded",
+    "description": "Something went wrong while reading it. Try again in a moment, or go back to where you were.",
+    "retry": "Try again"
   },
   "admin": {
     "title": "Administration"
@@ -2212,7 +2218,8 @@
       "description": "Copy it into your program now: the hub will not show it again. If you lose it, revoke it and make another.",
       "label": "The token",
       "copy": "Copy",
-      "copied": "Copied"
+      "copied": "Copied",
+      "copyFailed": "The browser did not let the hub copy it: select the token in the box and copy it by hand."
     },
     "revoke": {
       "action": "Revoke",

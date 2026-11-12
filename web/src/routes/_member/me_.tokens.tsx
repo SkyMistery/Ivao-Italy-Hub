@@ -9,7 +9,7 @@ import { tokensListQuery, type PersonalTokenIssuedDto } from '../../features/tok
 import { audienceWordKey, emptyToken, tokenSchema, type TokenFormValues } from '../../features/tokens/schema';
 import { SchemaForm } from '../../shared/forms';
 import { DataList, listSearchSchema } from '../../shared/list';
-import { ConfirmDialog, Notice, PageShell } from '../../shared/ui';
+import { ConfirmDialog, Notice, PageShell, useRefusalNotice } from '../../shared/ui';
 
 /**
  * The member's personal tokens (M2, T19a, note 2026-09-15-token-personali-e-agente-del-validatore §3.1): a program of
@@ -30,6 +30,7 @@ function MyTokensPage() {
   const navigate = Route.useNavigate();
   const create = useCreateToken();
   const revoke = useRevokeToken();
+  const refused = useRefusalNotice();
   const [issued, setIssued] = useState<PersonalTokenIssuedDto | null>(null);
 
   const audiences = useMemo(() => bootstrap.user?.tokenAudiences ?? [], [bootstrap.user]);
@@ -69,7 +70,13 @@ function MyTokensPage() {
               description={t('tokens.revoke.description', { name: row.name })}
               confirmText={t('tokens.revoke.action')}
               disabled={revoke.isPending}
-              onConfirm={() => revoke.mutate(row.id)}
+              onConfirm={() =>
+                revoke.mutate(row.id, {
+                  // A token revoked is no longer offered for copying (issue #332, item 12).
+                  onSuccess: () => setIssued((shown) => (shown?.row.id === row.id ? null : shown)),
+                  onError: refused,
+                })
+              }
             />
           )}
         />
@@ -99,7 +106,7 @@ function MyTokensPage() {
 /** The token just created, the one time it is shown: copy it now, or revoke it and make another. */
 function IssuedToken({ issued }: { issued: PersonalTokenIssuedDto }) {
   const { t } = useTranslation();
-  const [copied, setCopied] = useState(false);
+  const [copy, setCopy] = useState<'idle' | 'copied' | 'failed'>('idle');
 
   return (
     <Notice
@@ -119,14 +126,18 @@ function IssuedToken({ issued }: { issued: PersonalTokenIssuedDto }) {
               type="button"
               variant="secondary"
               onClick={() =>
-                void navigator.clipboard.writeText(issued.token).then(() => {
-                  setCopied(true);
-                })
+                // A browser that refuses the clipboard — a page not served over https, a permission denied — is said, and
+                // the token stays in the box to be copied by hand (issue #332, item 12).
+                void navigator.clipboard.writeText(issued.token).then(
+                  () => setCopy('copied'),
+                  () => setCopy('failed'),
+                )
               }
             >
-              {copied ? t('tokens.issued.copied') : t('tokens.issued.copy')}
+              {copy === 'copied' ? t('tokens.issued.copied') : t('tokens.issued.copy')}
             </Button>
           </div>
+          {copy === 'failed' ? <p role="alert">{t('tokens.issued.copyFailed')}</p> : null}
         </div>
       }
     />

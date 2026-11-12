@@ -6,6 +6,7 @@ import { z } from 'zod';
 import type { components } from '../api/schema';
 import { SchemaForm } from '../forms';
 import { useMoment } from '../i18n/useMoment';
+import { isErased } from './people';
 
 export type MessageThreadValue = components['schemas']['ContactThreadDto'];
 type Reply = components['schemas']['ContactReplyDto'];
@@ -42,18 +43,24 @@ export function MessageThread({
 
   const department = t('contacts.thread.department', { department: t(`departments.${thread.department}`) });
 
+  // A person by VID as the rest of the hub writes one (issue #332, item 11): "Deleted person" for a pseudonym, never its number.
+  const byVid = (vid: number) => (isErased(vid) ? t('people.deleted') : t('contacts.thread.sender', { vid }));
+
   const author = (reply: Reply) => {
     if (reply.side === 'Sender') {
-      return thread.readerIsSender
-        ? t('contacts.thread.you')
-        : t('contacts.thread.sender', { vid: thread.senderVid });
+      return thread.readerIsSender ? t('contacts.thread.you') : byVid(thread.senderVid);
     }
 
     if (thread.readerIsSender) {
       return department;
     }
 
-    const who = reply.authorName ?? (reply.authorVid === null ? '' : `VID ${String(reply.authorVid)}`);
+    const who =
+      reply.authorVid === null
+        ? (reply.authorName ?? '')
+        : isErased(reply.authorVid)
+          ? t('people.deleted')
+          : (reply.authorName ?? byVid(reply.authorVid));
     return `${who} · ${reply.side === 'Participant' ? t('contacts.thread.participant') : department}`;
   };
 
@@ -67,7 +74,9 @@ export function MessageThread({
         />
         <Badge variant="flat" color="gray" text={t(`contacts.options.status.${thread.status}`)} />
         {thread.participants.length > 0 ? (
-          <Subtle>{t('contacts.thread.participants', { vids: thread.participants.join(', ') })}</Subtle>
+          <Subtle>
+            {t('contacts.thread.participants', { vids: thread.participants.map(byVid).join(', ') })}
+          </Subtle>
         ) : null}
       </div>
 
@@ -93,11 +102,7 @@ export function MessageThread({
       <ol className="flex flex-col gap-3">
         <Entry
           mine={thread.readerIsSender}
-          author={
-            thread.readerIsSender
-              ? t('contacts.thread.you')
-              : t('contacts.thread.sender', { vid: thread.senderVid })
-          }
+          author={thread.readerIsSender ? t('contacts.thread.you') : byVid(thread.senderVid)}
           at={when(thread.createdAt)}
           body={thread.body}
         />

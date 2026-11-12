@@ -15,7 +15,7 @@ import { calendarSchema, type CalendarFormValues } from '../../features/calendar
 import { deptParam } from '../../shared/api/department';
 import { ProblemAlert, SchemaForm, type ChoiceOption } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
-import { ConfirmDialog, PageShell } from '../../shared/ui';
+import { ConfirmDialog, PageShell, useRefusalNotice } from '../../shared/ui';
 
 /**
  * The form of one calendar entry, and `new` for one that does not exist yet.
@@ -57,6 +57,7 @@ function CalendarEntryForm() {
   const create = useCreateCalendarEntry();
   const update = useUpdateCalendarEntry(Number(id));
   const remove = useDeleteCalendarEntry();
+  const refused = useRefusalNotice();
 
   const backToList = () => void navigate({ to: '/staff/$dept/calendar', params: { dept } });
 
@@ -88,7 +89,7 @@ function CalendarEntryForm() {
             description={t('calendar.delete.description')}
             confirmText={t('common.delete')}
             disabled={remove.isPending}
-            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToList })}
+            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToList, onError: refused })}
           />
         )
       }

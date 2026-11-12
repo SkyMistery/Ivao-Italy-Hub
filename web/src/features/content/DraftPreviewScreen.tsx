@@ -1,4 +1,5 @@
 import { Button } from '@ivao/atmosphere-react';
+import { useQuery } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +16,7 @@ import {
 import { PreviewLocaleContext } from '../../shared/i18n/previewLocale';
 import { resolveLocalized } from '../../shared/i18n/localized';
 import { PageMetadata } from '../../shared/seo/PageMetadata';
+import { collectionsOfKindQuery } from '../categories/queries';
 
 import { PublicEntryScreen } from './PublicEntryScreen';
 import type { ContentDetailDto, PublicContentDto } from './queries';
@@ -24,8 +26,12 @@ import type { ContentDetailDto, PublicContentDto } from './queries';
  *
  * What only a publication knows stands in as near as it can: the date is the last save's, and the footer of a document
  * stays off, because the edition it would name does not exist yet. A draft has no captures and no fingerprints of its files.
+ * The names of its collections are the vocabulary's, which whoever looks at a draft may read; a publication carries them.
  */
-function asPublicEntry(row: ContentDetailDto): PublicContentDto {
+function asPublicEntry(
+  row: ContentDetailDto,
+  collectionNames: PublicContentDto['collectionNames'],
+): PublicContentDto {
   return {
     id: row.id,
     kind: row.kind,
@@ -52,6 +58,7 @@ function asPublicEntry(row: ContentDetailDto): PublicContentDto {
     showFooter: false,
     publishedByName: null,
     media: {},
+    collectionNames,
   };
 }
 
@@ -93,6 +100,18 @@ export function DraftPreviewScreen({
   );
 
   const body = useMemo(() => readBody(row.body), [row.body]);
+
+  // The names a publication would carry (issue #332, item 12): the row's own department's first, as the server picks them.
+  const vocabulary = useQuery({ ...collectionsOfKindQuery(row.kind), enabled: row.collections.length > 0 });
+  const collectionNames = useMemo(() => {
+    const names = new Map<string, PublicContentDto['collectionNames'][number]>();
+    for (const collection of vocabulary.data?.items ?? []) {
+      if (!names.has(collection.key) || collection.ownerDepartment === row.ownerDepartment) {
+        names.set(collection.key, { key: collection.key, label: collection.label });
+      }
+    }
+    return [...names.values()];
+  }, [vocabulary.data, row.ownerDepartment]);
   const title = resolveLocalized(row.title, locale, locale);
   const isEntry = row.kind === 'News' || row.kind === 'Document';
 
@@ -118,7 +137,7 @@ export function DraftPreviewScreen({
         </div>
 
         {isEntry ? (
-          <PublicEntryScreen content={asPublicEntry(row)} embedding={embedding} staff />
+          <PublicEntryScreen content={asPublicEntry(row, collectionNames)} embedding={embedding} staff />
         ) : (
           <article className="flex flex-col">
             {startsWithPageTitle(body) ? null : <h1 className="sr-only">{title}</h1>}

@@ -13,7 +13,7 @@ import {
 import { calendarKindQuery, type CalendarKindDetailDto } from '../../features/admin/calendarKinds/queries';
 import { calendarKindSchema, type CalendarKindFormValues } from '../../features/admin/calendarKinds/schema';
 import { SchemaForm } from '../../shared/forms';
-import { ConfirmDialog, Notice, PageShell } from '../../shared/ui';
+import { ConfirmDialog, Notice, PageShell, useRefusalNotice } from '../../shared/ui';
 
 /**
  * One word of the division's calendar vocabulary, and `new` for one that does not exist yet. No
@@ -47,6 +47,7 @@ function CalendarKindForm() {
   const create = useCreateCalendarKind();
   const update = useUpdateCalendarKind(Number(id));
   const remove = useDeleteCalendarKind();
+  const refused = useRefusalNotice();
 
   const backToList = () => void navigate({ to: '/staff/admin/calendar-kinds' });
 
@@ -77,7 +78,7 @@ function CalendarKindForm() {
             description={t('calendarKinds.delete.description')}
             confirmText={t('common.delete')}
             disabled={remove.isPending}
-            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToList })}
+            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToList, onError: refused })}
           />
         )
       }

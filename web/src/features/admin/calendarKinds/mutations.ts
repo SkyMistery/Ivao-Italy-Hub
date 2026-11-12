@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { api, unwrap, unwrapEmpty } from '../../../shared/api/client';
 import { NEW_ROW_VERSION } from '../../../shared/api/rowVersion';
-import { bootstrapKey } from '../../me/queries';
+import { useBootstrapChanged } from '../../me/queries';
 
 import {
   calendarKindKey,
@@ -67,10 +67,11 @@ export function toFormValues(
 
 function useInvalidate() {
   const queryClient = useQueryClient();
+  const bootstrapChanged = useBootstrapChanged();
 
   return async () => {
     await queryClient.invalidateQueries({ queryKey: calendarKindsKey });
-    await queryClient.invalidateQueries({ queryKey: bootstrapKey });
+    await bootstrapChanged();
   };
 }
 
@@ -105,6 +106,7 @@ export function useUpdateCalendarKind(id: number) {
 
 export function useDeleteCalendarKind() {
   const queryClient = useQueryClient();
+  const bootstrapChanged = useBootstrapChanged();
 
   return useMutation({
     mutationFn: async (id: number): Promise<void> =>
@@ -115,7 +117,7 @@ export function useDeleteCalendarKind() {
     // (`decisions/2026-09-07-dopo-la-demo.md`, defect D2).
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: calendarKindsKey });
-      void queryClient.invalidateQueries({ queryKey: bootstrapKey });
+      void bootstrapChanged();
     },
   });
 }

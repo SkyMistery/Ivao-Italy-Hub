@@ -34,20 +34,50 @@ export type Department = components['schemas']['Department'];
 /** A field translated into the languages of the division. */
 export type LocalizedString = components['schemas']['LocalizedOfstring'];
 
+/** What a row says about itself that a permission may be narrowed to: its scope (a grant on one row) and its FIR. */
+export interface PermissionRow {
+  readonly resourceScope?: string | null;
+  readonly fir?: string | null;
+}
+
 /**
- * True when the user holds the permission on that department. A permission with no department is
- * held everywhere.
+ * True when the user holds the permission on that department — and, given a row, on that row — as the server's
+ * `PermissionSet.Has` answers it (issue #319, item 7). A permission with no department is held everywhere.
  *
- * Two functions, not one with an optional department, for the same reason the server has `Has` and
- * `HasAny` rather than one method (docs/internal/decisions/2026-09-03-has-and-has-any.md): a single
- * one leaves the caller guessing what leaving the department out was supposed to mean, and the
- * likeliest guess — "any department" — is the opposite of what it did.
+ * - **A grant on one row** (`resourceScope`) reaches only the row with the same scope. Without a row it reaches nothing: a
+ *   grant on one row gives no department (`CLAUDE.md` §2).
+ * - **A FIR team's permission** (`fir`) reaches only a row of that FIR, compared without regard to case as IVAO writes
+ *   them; never a row of another FIR, one with none, or no row.
+ * - **A permission held from outside** (`fromOutside`) counts on its department like any other: it is the permission on that
+ *   department's rows, and the handler asks no more.
+ *
+ * Without these the screen offered actions the server refused. Two functions, not one with an optional department, for the
+ * same reason the server has `Has` and `HasAny` rather than one method (docs/internal/decisions/2026-09-03-has-and-has-any.md):
+ * a single one leaves the caller guessing what leaving the department out was supposed to mean, and the likeliest guess —
+ * "any department" — is the opposite of what it did.
  */
-export function holdsPermission(bootstrap: Bootstrap, name: string, department: Department): boolean {
-  return bootstrap.permissions.some(
-    (permission) =>
-      permission.name === name && (permission.department === null || permission.department === department),
-  );
+export function holdsPermission(
+  bootstrap: Bootstrap,
+  name: string,
+  department: Department,
+  row: PermissionRow = {},
+): boolean {
+  const scope = row.resourceScope ?? null;
+  const fir = row.fir ?? null;
+
+  return bootstrap.permissions.some((permission) => {
+    // The server always says both, null for none; a permission written without them — a fixture of the smoke bench,
+    // which the old question never needed — is read the same way, and not as narrowed to `undefined`.
+    const heldScope = permission.resourceScope ?? null;
+    const heldFir = permission.fir ?? null;
+
+    return (
+      permission.name === name &&
+      (permission.department === null || permission.department === department) &&
+      (heldScope === null || heldScope === scope) &&
+      (heldFir === null || (fir !== null && heldFir.toLowerCase() === fir.toLowerCase()))
+    );
+  });
 }
 
 /**
@@ -113,7 +143,9 @@ export function reachableDepartments(bootstrap: Bootstrap): Department[] {
  * The departments this person may **create** a row of something in: those they reach and hold the
  * permission on. It is what a "new" button of a screen that is not about one department asks
  * (note 2026-09-13-contenuti-centralizzati): one answer, and the button goes there; several, and
- * the screen asks which. The server refuses any other department anyway.
+ * the screen asks which. The server refuses any other department anyway. A permission held on one
+ * row, or on the rows of one FIR, opens no department here (issue #319, item 7), as the server's
+ * `Has` on a department with no row: the rows these buttons create carry neither.
  */
 export function writableDepartments(bootstrap: Bootstrap, permission: string): Department[] {
   return reachableDepartments(bootstrap).filter((department) =>

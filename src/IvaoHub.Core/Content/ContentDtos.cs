@@ -156,7 +156,16 @@ public sealed record PublicContentDto(
     // for /media/{id}/{fingerprint}/file, which may be cached for a year, instead of the address of
     // the identifier alone, which is checked again at every read. A file replaced after publication
     // has a new fingerprint here at once, without publishing again.
-    IReadOnlyDictionary<string, string> Media);
+    IReadOnlyDictionary<string, string> Media,
+    // The name of each collection the version is filed in (issue #332, item 12): the vocabulary is read in the back office,
+    // where a visitor does not go, and a news item showed its raw keys. A key whose collection was deleted has no entry, and
+    // is shown as it is (design M1 section 3.4).
+    IReadOnlyList<CollectionNameDto> CollectionNames);
+
+/// <summary>A collection by its key and its name, as a visitor is shown it next to a news item or a document.</summary>
+/// <param name="Key">The key the row is filed under.</param>
+/// <param name="Label">Its name, in every language.</param>
+public sealed record CollectionNameDto(string Key, Localized<string> Label);
 
 /// <summary>
 /// One version of a row as its history in the editor shows it (note 2026-10-23-la-storia-delle-versioni): for the

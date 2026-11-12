@@ -146,6 +146,65 @@ public sealed class PageReviewTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AnApproverAnswersTheVersionTheyReadAndNotOneChangedSince()
+    {
+        // Issue #332, item 2: the author withdraws, changes the body and marks it ready again while the approver's tab is open.
+        var token = TestContext.Current.CancellationToken;
+        var (coordinator, director) = await PeopleAsync(token);
+
+        var slug = Stem();
+        var page = await CreateAsync(coordinator, ContentKind.Page, slug, Body("Letta"), token);
+
+        using var ready = await ReviewAsync(coordinator, page.Id, new { action = "Ready" }, token);
+        Assert.Equal(HttpStatusCode.OK, ready.StatusCode);
+
+        var summary = await director.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/{page.Id}/review", token);
+        var read = summary.GetProperty("rowVersion").GetString();
+
+        using var withdrawn = await ReviewAsync(coordinator, page.Id, new { action = "Withdraw" }, token);
+        Assert.Equal(HttpStatusCode.OK, withdrawn.StatusCode);
+        var draft = await withdrawn.Content.ReadFromJsonAsync<JsonElement>(token);
+        using var changed = await SendAsync(
+            coordinator,
+            HttpMethod.Put,
+            $"{ContentEndpoints.Pattern}/{page.Id}",
+            Payload(ContentKind.Page, slug, Body("Mai letta"), draft.GetProperty("rowVersion").GetString()),
+            token);
+        Assert.True(changed.StatusCode == HttpStatusCode.OK, await changed.Content.ReadAsStringAsync(token));
+        using var readyAgain = await ReviewAsync(coordinator, page.Id, new { action = "Ready" }, token);
+        Assert.Equal(HttpStatusCode.OK, readyAgain.StatusCode);
+
+        // Answered on what was read: refused, and nothing is online. Sending back is the approver's answer too.
+        using var approved = await ReviewAsync(director, page.Id, new { action = "Approve", rowVersion = read }, token);
+        Assert.Equal(HttpStatusCode.Conflict, approved.StatusCode);
+        using var sentBack = await ReviewAsync(director, page.Id, new { action = "SendBack", rowVersion = read }, token);
+        Assert.Equal(HttpStatusCode.Conflict, sentBack.StatusCode);
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            Assert.False(await database.ContentVersions.AsNoTracking().AnyAsync(row => row.ContentId == page.Id, token));
+        }
+
+        // Read again, and approved: what is online is what the second summary described.
+        var again = await director.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/{page.Id}/review", token);
+        Assert.NotEqual(read, again.GetProperty("rowVersion").GetString());
+        using var approvedAgain = await ReviewAsync(
+            director,
+            page.Id,
+            new { action = "Approve", rowVersion = again.GetProperty("rowVersion").GetString() },
+            token);
+        Assert.True(approvedAgain.StatusCode == HttpStatusCode.OK, await approvedAgain.Content.ReadAsStringAsync(token));
+
+        using var anonymous = _factory.CreateApiClient();
+        var online = await anonymous.GetFromJsonAsync<JsonElement>(
+            $"{ContentEndpoints.Pattern}/public/page?path={Uri.EscapeDataString($"test-shelf-review/{slug}")}",
+            token);
+        Assert.Equal("Mai letta", online.GetProperty("page").GetProperty("body").GetProperty("sections")[0]
+            .GetProperty("blocks")[0].GetProperty("props").GetProperty("text").GetProperty("it").GetString());
+    }
+
+    [Fact]
     public async Task TheSummarySaysWhichSectionChangedSinceWhatIsOnline()
     {
         var token = TestContext.Current.CancellationToken;

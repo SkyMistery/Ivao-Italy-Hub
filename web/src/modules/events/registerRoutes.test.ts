@@ -26,6 +26,8 @@ const held = (name: string, resourceScope: string | null = null): BootstrapPermi
   name,
   department: 'ED',
   resourceScope,
+  fir: null,
+  fromOutside: false,
 });
 
 test('the four registers open to no grant on one event', () => {

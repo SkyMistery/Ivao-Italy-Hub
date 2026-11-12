@@ -163,7 +163,13 @@ test('a request is accepted and assigned, and the trainer conducts it in the ses
   // Training.Conduct by their position, on the department and on no training of its own (A7b); on a training not assigned to
   // them it is worth Training.Edit, which they do not hold.
   const conductBefore = await conductHeld(trainer.request);
-  expect(conductBefore).toContainEqual({ name: 'Training.Conduct', department: 'TD', resourceScope: null });
+  expect(conductBefore).toContainEqual({
+    name: 'Training.Conduct',
+    department: 'TD',
+    resourceScope: null,
+    fir: null,
+    fromOutside: false,
+  });
   expect((await conflicts(trainer.request, requested)).status(), 'not theirs before the assignment').toBe(
     403,
   );
