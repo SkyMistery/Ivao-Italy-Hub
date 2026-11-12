@@ -160,6 +160,13 @@ export interface BlockRegistration {
    */
   readonly alignable?: boolean;
   /**
+   * Whether the block has a width of its own inside its column, and in which of its properties (design of the editor's
+   * phase 3, §5.3): today only the picture, `widthPercent`. Like the alignment, the block does not draw it: the
+   * renderer's wrapper takes that share of the column — never under 10 rem, and all of it in a column narrower than
+   * 24 rem —, draws a handle on its edge while the block is picked and composed, and the editor writes the property.
+   */
+  readonly resizable?: Resizable;
+  /**
    * What the line at the top of the block's properties panel needs besides its words, which sit
    * beside its name — `editorLabelKey` with `.about` for `.label`; a block without that key has no
    * line: the values the words name, and a screen of the hub the line leads to, labelled by the
@@ -172,6 +179,27 @@ export interface BlockRegistration {
   readonly about?: {
     readonly values?: Readonly<Record<string, string>>;
     readonly href?: string;
+  };
+}
+
+/**
+ * A width a block takes in its column (`BlockRegistration.resizable`): the property that holds it, in percent of the
+ * column, and the limits the handle and the panel keep to. The schema accepts any whole number between `min` and `max`,
+ * and `step` is the gesture's: an older body's value need not be a multiple of it.
+ */
+export interface Resizable {
+  readonly prop: string;
+  readonly min: number;
+  readonly max: number;
+  readonly step: number;
+  /**
+   * What a body written before the property existed said instead (the picture's `width`, `third | half | full`, before
+   * PR 3.10): the property it wrote, and what each of its values is worth. Such a body is never rewritten for it (design
+   * §2, principle 4): the renderer reads it, and the next write of the editor to the block moves it (`blocks/size.ts`).
+   */
+  readonly old?: {
+    readonly prop: string;
+    readonly values: Readonly<Record<string, number>>;
   };
 }
 

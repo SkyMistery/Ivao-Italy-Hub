@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { DEPARTMENTS } from '../shared/api/department';
 import { localized } from '../shared/forms';
+import type { Resizable } from '../shared/modules';
 import { CALENDAR_VIEWS } from '../shared/ui';
 
 /**
@@ -94,8 +95,18 @@ export const ACCENTS = ['brand', 'ocean', 'aurora', 'artifice'] as const;
 /** How many columns a grid has. Numbers, so the count never reads as text of the page. */
 export const GRID_COLUMNS = [2, 3, 4];
 
-/** How much of its column a picture takes. */
-export const IMAGE_WIDTHS = ['third', 'half', 'full'] as const;
+/**
+ * How much of its column a picture takes (design of the editor's phase 3, §5.3): a percentage, `widthPercent`, from a
+ * fifth of the column to all of it, in steps of five from the handle and the panel. A whole number of the schema and not
+ * a multiple of five, because a body written before PR 3.10 said `width: 'third'`, which is 33, and is read as it is.
+ */
+export const IMAGE_WIDTH = {
+  prop: 'widthPercent',
+  min: 20,
+  max: 100,
+  step: 5,
+  old: { prop: 'width', values: { third: 33, half: 50, full: 100 } },
+} as const satisfies Resizable;
 
 /** The shape a video is drawn in. */
 export const ASPECTS = ['16x9', '4x3', '1x1'] as const;
@@ -147,8 +158,12 @@ export const imageSchema = z.object({
   // (plan §16.5; decision of 6 September 2026).
   alt: localized().optional(),
   caption: localized().optional(),
-  width: z.enum(IMAGE_WIDTHS).default('full'),
+  // Drawn by the renderer's wrapper and changed from the handle on its edge or the panel's slider, never by the form
+  // (`BlockRegistration.resizable`). The `width` it replaces is read until the editor next writes the block.
+  widthPercent: z.number().int().min(IMAGE_WIDTH.min).max(IMAGE_WIDTH.max).default(IMAGE_WIDTH.max),
   rounded: z.boolean().default(true),
+  // A click opens the picture at the size of the window, named by its alternative text.
+  fullscreen: z.boolean().default(true),
 });
 
 export const videoSchema = z.object({

@@ -74,6 +74,12 @@ A page is a list of **sections**; a section holds **blocks** and may hold **rows
   out.
 - A block whose entry below says it **may be aligned** stands on the left of its column, or in the middle or on the
   right of it with `align`: `center` or `right`; for the left leave it out. On any other block leave it out.
+- A **picture** (`image`) takes `widthPercent` of its column: from 20 to 100, in steps of 5, and the whole column when
+  left out. It stands where its `align` puts it, and on a phone or in a narrow column it takes the whole column anyway.
+  A click opens it at full screen, named by its alternative text, unless `fullscreen` is `false`: so write the
+  alternative text of every picture that says something. A picture of the draft with `width` instead (`third`, `half`,
+  `full`) was written before `widthPercent` existed: leave it, and the site keeps the width it has; write `widthPercent`
+  only to change it.
 - Every block has `type` and `version`, both exactly as the block's entry below gives them, and `props`, which must
   satisfy that block's JSON Schema.
 - A block **already in the draft** keeps `renderMode`, `span` and `frozen` exactly as they are: they are choices made in
@@ -82,8 +88,9 @@ A page is a list of **sections**; a section holds **blocks** and may hold **rows
 
 ### Two things side by side
 
-Nothing inside a block puts it next to another block: the width of a picture only sizes it within its column. Two
-things side by side, such as a picture beside a list of steps, are two columns of a section, and there are two ways:
+Nothing inside a block puts it next to another block: the width of a picture only sizes it within its column, and the
+rest of the column stays empty. Two things side by side, such as a picture beside a list of steps, are two columns of a
+section, and there are two ways:
 
 - **Change the section's `layout`**, when everything in it belongs in columns. You may do it in any section that is not
   locked, including one made from the template or marked required. Choose `1/2+1/2`, `1/3+2/3` or `2/3+1/3` (the

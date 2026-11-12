@@ -87,6 +87,7 @@ import {
   headingSchema,
   heroSchema,
   iconGridSchema,
+  IMAGE_WIDTH,
   imageSchema,
   interactiveSchema,
   linkListSchema,
@@ -295,12 +296,20 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     component: ImageBlock,
     // The gallery shows the block with the first file of the library, whichever it is: there is no
     // fixture picture in the repository, and a made up address would be a broken one everywhere.
-    example: { mediaId: 1, caption: { en: 'A picture', it: "Un'immagine" }, width: 'full', rounded: true },
+    example: {
+      mediaId: 1,
+      caption: { en: 'A picture', it: "Un'immagine" },
+      widthPercent: 100,
+      rounded: true,
+      fullscreen: true,
+    },
     editorLabelKey: 'blocks.image.label',
     group: 'content',
     subgroup: 'media',
     icon: Image,
     alignable: true,
+    // A share of its column, from the handle on its edge or the panel (PR 3.10); the `width` of older bodies is read.
+    resizable: IMAGE_WIDTH,
   },
   {
     type: CORE_BLOCK_TYPES.video,
