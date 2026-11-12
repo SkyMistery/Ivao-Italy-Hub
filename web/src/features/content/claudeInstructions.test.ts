@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 
 import { registry } from '../../app/registry';
 import type { Body } from '../../blocks';
+import { GALLERY_LAYOUTS } from '../../blocks/schemas';
 import { TEXT_COLOURS } from '../../shared/ui/textColours';
 
 import {
@@ -268,6 +269,16 @@ describe('what the instructions offer', () => {
     expect(markdown).toContain('"markdown": true\n');
     for (const colour of TEXT_COLOURS) {
       expect(markdown).toContain(`\`${colour}\` (`);
+    }
+  });
+
+  test('the fixed part names every layout of the gallery, which its schema offers (PR 3.11, §5.2)', async () => {
+    const { markdown } = await composeInstructions(input({ blocks: [block('gallery')] }));
+
+    expect(markdown).toContain('A **gallery** (`gallery`) lays its pictures out by `layout`');
+    for (const layout of GALLERY_LAYOUTS) {
+      expect(markdown).toContain(`\`${layout}\``);
+      expect(markdown).toContain(`"${layout}"`);
     }
   });
 

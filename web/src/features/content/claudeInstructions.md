@@ -80,6 +80,11 @@ A page is a list of **sections**; a section holds **blocks** and may hold **rows
   alternative text of every picture that says something. A picture of the draft with `width` instead (`third`, `half`,
   `full`) was written before `widthPercent` existed: leave it, and the site keeps the width it has; write `widthPercent`
   only to change it.
+- A **gallery** (`gallery`) lays its pictures out by `layout`: `grid` (the default) in `columns`, `carousel` one picture
+  at a time with arrows, or `strip`, a row that scrolls sideways; `columns` counts only for the grid, and on paper every
+  gallery is printed as a grid. Each picture has its own `alt` and `caption`, like a picture block: write the
+  alternative text of every picture that says something. A click opens the pictures at full screen, one after another,
+  unless `lightbox` is `false`. A gallery of the draft without `layout` is a grid: leave it so unless asked.
 - Every block has `type` and `version`, both exactly as the block's entry below gives them, and `props`, which must
   satisfy that block's JSON Schema.
 - A block **already in the draft** keeps `renderMode`, `span` and `frozen` exactly as they are: they are choices made in
