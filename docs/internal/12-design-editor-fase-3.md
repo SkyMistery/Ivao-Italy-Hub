@@ -286,7 +286,7 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   stesso pezzo dell'immagine (§5.3), scritto una volta nei blocchi. Il commento di `gallerySchema` che lo escludeva si corregge.
 - **In stampa** il carosello e la striscia si disegnano come griglia, come le schede si aprono (`PrintContext`).
 - **File del nucleo**: `blocks/schemas.ts`, `blocks/blocks.tsx`. **Nota sua**: no.
-- **Com'è andata** (ramo `feat/gallery`, nota `2026-11-12-la-galleria`): nove scelte della sessione dentro il §5.2, e nessuna chiede la
+- **Com'è andata** (#487, ramo `feat/gallery`, nota `2026-11-12-la-galleria`): nove scelte della sessione dentro il §5.2, e nessuna chiede la
   risposta di Carmine. (1) `lightbox` resta il nome e apre il tutto schermo invece del file: nessun corpo salvato si
   sposta, e una galleria senza `layout` è la griglia di prima. (2) `FullScreenPicture` prende l'elenco delle foto e quella cliccata;
   ogni foto è un pulsante suo, così chiudendo il fuoco torna lì; le frecce stanno nella barra sopra la foto e fanno il giro, i tasti

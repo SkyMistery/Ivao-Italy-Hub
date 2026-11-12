@@ -1,6 +1,6 @@
 # La galleria: che cosa il design non diceva
 
-**Data:** 12 novembre 2026, PR 3.11 della fase 3 (`12-design-editor-fase-3.md` §5.2, riga 3.11 del §7).
+**Data:** 12 novembre 2026, PR 3.11 della fase 3 (#487; `12-design-editor-fase-3.md` §5.2, riga 3.11 del §7).
 **Stato:** scelte della sessione di lavoro, dentro quello che il §5.2 ha già deciso (approvato da Carmine il 31 ottobre 2026, §9).
 Nessuna cambia che cosa fa la funzione: dicono dove sta, come si scrive e come si legge. Nessuna si scosta dalla lettera del
 §5.2, quindi nessuna chiede la risposta di Carmine; il revisore le legge come scelte di una sessione.
