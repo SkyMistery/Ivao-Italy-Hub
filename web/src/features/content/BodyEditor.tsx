@@ -20,6 +20,7 @@ import {
   columnsOf,
   EmbeddingContext,
   PickingContext,
+  sizedAt,
   type BlockEnvelope,
   type Body,
   type PickAction,
@@ -284,6 +285,21 @@ export function BodyEditor({
     }
 
     return true;
+  };
+
+  // The width of a resizable block, from the handle on its edge or the slider of its panel (design of the editor's
+  // phase 3, §5.3): one step of the history per gesture, however many widths it went through, and any `width` of an
+  // older body taken out as the new one is written (`sizedAt`).
+  const resize = (id: string, width: number, gesture: number) => {
+    const found = findBlock(body, id);
+    const resizable = registry.blocks.find((known) => known.type === found?.block.type)?.resizable;
+    if (found === undefined || resizable === undefined) {
+      return;
+    }
+
+    change(updateBlock(body, id, { props: sizedAt(resizable, found.block.props, width) }), {
+      coalesce: `resize:${id}:${gesture}`,
+    });
   };
 
   const undo = () => !locked && restore(history.undo());
@@ -590,6 +606,7 @@ export function BodyEditor({
             change(updateBlock(body, block.block.id, { props }), { coalesce: `props:${block.block.id}` })
           }
           onEnvelope={(patch) => change(updateBlock(body, block.block.id, patch))}
+          onResize={(width, gesture) => resize(block.block.id, width, gesture)}
         />
       ) : null}
     </div>
@@ -767,6 +784,9 @@ export function BodyEditor({
     ...(dashboard
       ? { onSpan: (id: string, span: Span) => change(setSpan(body, id, span), { coalesce: `span:${id}` }) }
       : {}),
+    // The width of a block in its column, from the handle on its edge. Nowhere on a locked body; a locked section
+    // still takes it, because it is one of its blocks' properties, and those stay open.
+    ...(locked ? {} : { onResize: resize }),
   };
 
   // The editor's own buttons, handed to the owner to place among its own.

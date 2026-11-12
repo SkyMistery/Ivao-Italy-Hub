@@ -606,7 +606,16 @@ photograph is not something this hub can make read well, and should not be attem
 
 **The width belongs to the section**, and there are four: `narrow`, `default` (the reading column),
 `wide`, `full`. `full` is for `hero`, `gallery` and `image`; a section of text as wide as the screen
-is a line nobody finishes.
+is a line nobody finishes. **Inside its column, a picture has a width of its own**, a percentage of the
+column (`widthPercent`, from 20 to 100, in steps of 5 from the handle on its edge or the slider of its
+panel): never wider than the column, which stays inside the section; never narrower than 10 rem; and
+the whole column when the column is narrower than 24 rem — a phone, a third of a page — whatever the
+percentage says. The renderer's wrapper draws it, as it draws the alignment, for a block whose
+registration declares `resizable`; today only the picture. Where a picture narrower than its column
+stands is its alignment. A click opens it at full screen, in the core's `Dialog`, named by its
+alternative text (`fullscreen`, on by default). A picture saved before this rule (`width: third | half |
+full`) is drawn at 33, 50 and 100 %, and the next write of the editor to the block moves it to
+`widthPercent`.
 
 **A block's alignment is on its envelope, and only where it means something.** `align` sits beside
 `column` and `span`: `left`, `center` or `right`, and absent means left. A block that can be aligned
