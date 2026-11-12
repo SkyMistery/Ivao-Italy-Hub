@@ -18,8 +18,14 @@ export function resolveLocalized(
     return '';
   }
 
+  // An empty string is no translation: the forms send every language, '' included, so a row written only in Italian
+  // carries `en: ''` and must read in Italian rather than blank (issue #332, item 6).
   const base = locale.split('-')[0] ?? locale;
-  return value[locale] ?? value[base] ?? value[defaultLocale] ?? Object.values(value)[0] ?? '';
+  return (
+    [value[locale], value[base], value[defaultLocale], ...Object.values(value)].find(
+      (text) => text !== undefined && text !== null && text.trim().length > 0,
+    ) ?? ''
+  );
 }
 
 /** The languages that carry a non empty value; what `LocaleFields` marks as done. */

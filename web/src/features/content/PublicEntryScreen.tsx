@@ -78,8 +78,11 @@ export function PublicEntryScreen({
             {published}
           </time>
           <span>{t(`departments.${content.ownerDepartment}`)}</span>
+          {/* By name, in the reader's language; the key only of a collection that no longer exists (issue #332, item 12). */}
           {content.collections.map((collection) => (
-            <span key={collection}>{collection}</span>
+            <span key={collection}>
+              {read(content.collectionNames.find((named) => named.key === collection)?.label) || collection}
+            </span>
           ))}
         </div>
 

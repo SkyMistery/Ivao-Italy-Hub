@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { holdsPermission, type Bootstrap, type Department } from '../../shared/api/bootstrap';
 import type { ChoiceOption } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
-import { PageShell, useNotice } from '../../shared/ui';
+import { PageShell, useNotice, useRefusalNotice } from '../../shared/ui';
 import { NewCollection } from '../categories/NewCollection';
 import { categoriesOfKindQuery } from '../categories/queries';
 import { MEDIA_EDIT, useUploadMedia } from '../media/mutations';
@@ -79,6 +79,7 @@ export function ContentFormScreen({
   // save that worked said nothing, and neither did an action that went nowhere — which is how a
   // section was lost while copying a page across by hand.
   const notice = useNotice();
+  const refused = useRefusalNotice();
 
   const isNew = id === 'new';
   const locales = bootstrap.division.locales;
@@ -327,6 +328,8 @@ export function ContentFormScreen({
                     notice({ tone: 'success', title: t('content.editor.deleted') });
                     onFinished();
                   },
+                  // A refusal of the server is said, not swallowed by a dialog that closes (issue #332, item 4).
+                  onError: refused,
                 })
         }
       />

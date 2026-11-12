@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { bootstrapKey } from '../../me/queries';
+import { useBootstrapChanged } from '../../me/queries';
 import { api, unwrap, unwrapEmpty } from '../../../shared/api/client';
 
 import { grantKey, grantsKey, superadminsKey, type GrantDetailDto, type GrantWriteDto } from './queries';
@@ -79,10 +79,11 @@ export function toFormValues(grant: GrantDetailDto): GrantFormValues {
 
 function useInvalidate() {
   const queryClient = useQueryClient();
+  const bootstrapChanged = useBootstrapChanged();
 
   return async () => {
     await queryClient.invalidateQueries({ queryKey: grantsKey });
-    await queryClient.invalidateQueries({ queryKey: bootstrapKey });
+    await bootstrapChanged();
   };
 }
 
@@ -127,26 +128,28 @@ export function useDeleteGrant() {
 
 export function useAddSuperadmin() {
   const queryClient = useQueryClient();
+  const bootstrapChanged = useBootstrapChanged();
 
   return useMutation({
     mutationFn: async (vid: number): Promise<void> =>
       unwrapEmpty(await api.POST('/api/admin/superadmins/{vid}', { params: { path: { vid } } })),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: superadminsKey });
-      await queryClient.invalidateQueries({ queryKey: bootstrapKey });
+      await bootstrapChanged();
     },
   });
 }
 
 export function useRemoveSuperadmin() {
   const queryClient = useQueryClient();
+  const bootstrapChanged = useBootstrapChanged();
 
   return useMutation({
     mutationFn: async (vid: number): Promise<void> =>
       unwrapEmpty(await api.DELETE('/api/admin/superadmins/{vid}', { params: { path: { vid } } })),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: superadminsKey });
-      await queryClient.invalidateQueries({ queryKey: bootstrapKey });
+      await bootstrapChanged();
     },
   });
 }

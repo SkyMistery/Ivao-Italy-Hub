@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-router';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { AnyRouter } from '@tanstack/react-router';
 import { expect, test, vi } from 'vitest';
 
 import type { Bootstrap } from '../../shared/api/bootstrap';
@@ -37,7 +38,8 @@ vi.mock('../../shared/api/client', async () => ({
   api: { GET: api.get, POST: api.post },
 }));
 
-const { bootstrapQuery, useLogout } = await import('./queries');
+const { bootstrapChanged, bootstrapKey, bootstrapQuery, sessionChanged, useLogout } =
+  await import('./queries');
 
 function bootstrap(user: Bootstrap['user']): Bootstrap {
   return {
@@ -146,4 +148,81 @@ test('signing out redraws the shell as anonymous, without a reload', async () =>
   expect(api.post).toHaveBeenCalledWith('/auth/logout');
 
   queryClient.clear();
+});
+
+/** A router as far as these two functions use one. */
+function stubRouter(): AnyRouter & { invalidate: ReturnType<typeof vi.fn> } {
+  return { invalidate: vi.fn(() => Promise.resolve()) } as unknown as AnyRouter & {
+    invalidate: ReturnType<typeof vi.fn>;
+  };
+}
+
+test('a changed session forgets everything the previous person read (issue #332, item 9)', async () => {
+  const queryClient = new QueryClient();
+  queryClient.setQueryData(bootstrapKey, bootstrap(member));
+  queryClient.setQueryData(['me', 'tokens'], ['a token']);
+  queryClient.setQueryData(['blocks', 'my-events'], ['an event']);
+  const router = stubRouter();
+
+  await sessionChanged(queryClient, router);
+
+  expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+  expect(router.invalidate).toHaveBeenCalledOnce();
+});
+
+test('a refused sign-out leaves the person signed in and their data where it was (issue #332, item 9)', async () => {
+  api.post.mockImplementation(() => ({
+    data: undefined,
+    error: { title: 'refused' },
+    response: new Response(null, { status: 500 }),
+  }));
+  const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+  queryClient.setQueryData(['me', 'tokens'], ['a token']);
+
+  const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({});
+  const indexRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/',
+    component: function Screen() {
+      const logout = useLogout();
+      return (
+        <>
+          <p>{logout.isError ? 'refused' : 'waiting'}</p>
+          <button type="button" onClick={() => logout.mutate()}>
+            Sign out
+          </button>
+        </>
+      );
+    },
+  });
+  const router = createRouter({
+    routeTree: rootRoute.addChildren([indexRoute]),
+    history: createMemoryHistory({ initialEntries: ['/'] }),
+    context: { queryClient },
+  });
+
+  render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
+
+  await userEvent.click(await screen.findByRole('button', { name: 'Sign out' }));
+  expect(await screen.findByText('refused')).toBeInTheDocument();
+  expect(queryClient.getQueryData(['me', 'tokens'])).toEqual(['a token']);
+
+  queryClient.clear();
+});
+
+test('a write that changes the bootstrap removes it and runs the root again (issue #332, item 3)', async () => {
+  const queryClient = new QueryClient();
+  queryClient.setQueryData(bootstrapKey, bootstrap(member));
+  queryClient.setQueryData(['me', 'tokens'], ['a token']);
+  const router = stubRouter();
+
+  await bootstrapChanged(queryClient, router);
+
+  expect(queryClient.getQueryData(bootstrapKey)).toBeUndefined();
+  expect(queryClient.getQueryData(['me', 'tokens'])).toEqual(['a token']);
+  expect(router.invalidate).toHaveBeenCalledOnce();
 });

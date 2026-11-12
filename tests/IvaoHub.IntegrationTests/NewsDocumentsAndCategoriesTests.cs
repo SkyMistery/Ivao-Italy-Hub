@@ -361,6 +361,12 @@ public sealed class NewsDocumentsAndCategoriesTests(MariaDbFixture mariaDb) : IA
 
         Assert.Contains(shelf, Vocabulary(before));
 
+        // And the news item itself names it, for a visitor who cannot read the vocabulary (issue #332, item 12).
+        var entry = await anonymous.GetFromJsonAsync<JsonElement>(PublicUri(ContentKind.News, slug), token);
+        var named = Assert.Single(entry.GetProperty("collectionNames").EnumerateArray());
+        Assert.Equal(shelf, named.GetProperty("key").GetString());
+        Assert.Equal("Shelf", named.GetProperty("label").GetProperty("en").GetString());
+
         using var deleted = await SendAsync(
             staff,
             HttpMethod.Delete,
@@ -385,6 +391,11 @@ public sealed class NewsDocumentsAndCategoriesTests(MariaDbFixture mariaDb) : IA
 
         Assert.Equal(shelf, filed.GetProperty("collections")[0].GetString());
         Assert.DoesNotContain(shelf, Vocabulary(after));
+
+        // The item keeps its key, and has no name for it any more.
+        var orphan = await anonymous.GetFromJsonAsync<JsonElement>(PublicUri(ContentKind.News, slug), token);
+        Assert.Equal(shelf, orphan.GetProperty("collections")[0].GetString());
+        Assert.Empty(orphan.GetProperty("collectionNames").EnumerateArray());
     }
 
     // ---- helpers ---------------------------------------------------------------------------------

@@ -36,6 +36,8 @@ const held = (name: string, resourceScope: string | null = null): BootstrapPermi
   name,
   department: 'ED',
   resourceScope,
+  fir: null,
+  fromOutside: false,
 });
 
 const bootstrapHolding = (...permissions: BootstrapPermission[]): Bootstrap => ({

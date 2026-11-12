@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Department } from '../../shared/api/bootstrap';
-import { NO_CHOICE, ProblemAlert } from '../../shared/forms';
+import { NO_CHOICE, ProblemAlert, describeProblem } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 
 import { useCreateFromTemplate } from './mutations';
@@ -35,7 +35,7 @@ export function TemplatePicker({
   mayBeAtTheTop: boolean;
   onCreated: (id: number) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const read = useLocalized();
 
   const [templateId, setTemplateId] = useState<string>('');
@@ -79,12 +79,21 @@ export function TemplatePicker({
         <span className="font-medium">{t('content.newFromTemplate')}</span>
       </div>
 
-      <ProblemAlert summary={create.isError ? t('content.templateRefused') : null} />
+      {/* The server's reason — an address already taken, one the site keeps for itself — and the generic sentence only when
+          it gave none (issue #332, item 12). */}
+      <ProblemAlert
+        summary={
+          create.isError
+            ? (describeProblem(create.error, t, i18n.language) ?? t('content.templateRefused'))
+            : null
+        }
+      />
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex min-w-56 flex-col gap-1">
           <Label htmlFor="templateId">{t('content.fields.template')}</Label>
           <Select
+            id="templateId"
             {...(templateId === '' ? {} : { value: templateId })}
             onValueChange={setTemplateId}
             placeholder={t('content.chooseTemplate')}

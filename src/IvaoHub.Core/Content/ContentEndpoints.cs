@@ -206,6 +206,7 @@ public static class ContentEndpoints
             .Produces<ContentDetailDto>()
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict)
             .RequireAuthorization(CorePermissions.ContentEdit);
 
         group.MapGet("/{id:long}/review", DescribeReviewAsync)
@@ -586,6 +587,16 @@ public static class ContentEndpoints
             return Results.Problem(
                 statusCode: StatusCodes.Status403Forbidden,
                 title: catalog.Resolve(currentUser.Locale, CrudProblems.ForbiddenTitleKey));
+        }
+
+        // The answer is to what was read (issue #332, item 2). While a page waits nobody writes it, but its author may withdraw
+        // it, change it and mark it ready again under an approver's open tab: the status alone would publish a draft nobody
+        // read. A write between this and the save is the concurrency token's, as for every write of the row.
+        if (request.RowVersion is { } read && read != content.RowVersion)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.ConflictTitleKey));
         }
 
         var failure = await review.ActAsync(content, request, http.RequestAborted);
@@ -989,6 +1000,8 @@ public static class ContentEndpoints
             .Where(media => shownIds.Contains(media.Id) && media.DeletedAt == null)
             .ToListAsync(cancellationToken);
 
+        var collectionNames = await CollectionNamesAsync(database, content, version.Collections, cancellationToken);
+
         return new PublicContentDto(
             content.Id,
             content.Kind,
@@ -1015,7 +1028,40 @@ public static class ContentEndpoints
             files.ToDictionary(
                 media => media.Id.ToString(CultureInfo.InvariantCulture),
                 MediaUrl.Fingerprint,
-                StringComparer.Ordinal));
+                StringComparer.Ordinal),
+            collectionNames);
+    }
+
+    /// <summary>
+    /// The names of the collections a version is filed in, by key. Every department reads every collection (G20), and two
+    /// departments may have filed under the same key: the row's own department's name first, then the first in order — as
+    /// the vocabulary of a list block gathers them. Retired collections keep their name: the row is still filed there.
+    /// </summary>
+    private static async Task<IReadOnlyList<CollectionNameDto>> CollectionNamesAsync(
+        HubDbContext database,
+        ContentEntry content,
+        IReadOnlyList<string> keys,
+        CancellationToken cancellationToken)
+    {
+        if (keys.Count == 0)
+        {
+            return [];
+        }
+
+        var rows = await database.ContentCategories
+            .AsNoTracking()
+            .Where(category => category.Kind == content.Kind && keys.Contains(category.Key))
+            .OrderBy(category => category.Sort)
+            .ThenBy(category => category.Id)
+            .ToListAsync(cancellationToken);
+
+        return
+        [
+            .. rows
+                .OrderBy(category => category.OwnerDepartment == content.OwnerDepartment ? 0 : 1)
+                .DistinctBy(category => category.Key, StringComparer.Ordinal)
+                .Select(category => new CollectionNameDto(category.Key, category.Label)),
+        ];
     }
 
     /// <summary>
