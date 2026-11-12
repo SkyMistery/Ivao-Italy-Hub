@@ -3,12 +3,14 @@
 **Data:** 10 novembre 2026, fase 6, primo passo del codice (`11-design-pagine-dei-tour.md` §4; prima PR delle due, la pagina; l'elenco
 del §3 è la seconda, in fila).
 **Stato:** **scelte della sessione di lavoro**, dentro quello che il design ha già deciso (approvato da Carmine il 31 ottobre 2026,
-§8). Il punto 1 si scosta dalla lettera del §4 («`Hero` con il banner») e va **confermato da Carmine**; gli altri dicono dove e come,
-non che cosa. Il revisore li controlla uno per uno.
+§8). Il punto 1, che si scosta dalla lettera del §4 («`Hero` con il banner»), è **deciso da Carmine** in chat al master il
+12 novembre 2026, «(a) nel modulo», riportato sulla #482:
+https://github.com/SkyMistery/Ivao-Italy-Hub/pull/482#issuecomment-6830756471. Gli altri dicono dove e come, non che cosa. Il revisore li
+controlla uno per uno.
 **Classificazione** (`CLAUDE.md` §5): (a) e (b) dentro il modulo dei tour. Nessuna migrazione, nessun componente nuovo, il nucleo non
 cambia: il §6 del design lo chiede e la PR lo rispetta.
 
-## 1. La testata non è `Hero` del nucleo ⚖️
+## 1. La testata non è `Hero` del nucleo — deciso: (a)
 
 Il §4 dice «la testata (`Hero` con il banner)». `Hero` (`shared/ui/layout-pieces.tsx`) disegna il titolo come `H2` dentro un riquadro e
 **non prende un'immagine**: con `Hero` la pagina perderebbe il suo unico `H1` (l'accessibilità e i test e2e lo chiedono, `heading level 1`)
@@ -20,7 +22,12 @@ e il banner andrebbe comunque disegnato fuori. Le due strade:
 
 **Raccomandata la (a)**: `Hero` oggi non lo usa nessuna pagina (solo la galleria), il suo scopo è «la cima di una pagina pubblica, in una
 frase», e una testata con banner, stato, tipo, periodo e numeri è un pezzo del tour, scritto una volta (`TourHead`, `TourFace.tsx`) e
-ripreso dall'anteprima del back office al passo dopo. Se Carmine sceglie la (b), cambia solo l'involucro di `TourHead`.
+ripreso dall'anteprima del back office al passo dopo.
+
+**La risposta di Carmine** (12 novembre 2026, in chat al master, «(a) nel modulo»; riportata sulla #482:
+https://github.com/SkyMistery/Ivao-Italy-Hub/pull/482#issuecomment-6830756471): la (a). La testata di un tour è scritta nel modulo dei
+tour con i pezzi di Atmosphere (`TourHead`, come `EventHead` per un evento), con la striscia di `StatTile` del nucleo sotto; `Hero` non
+si usa e non si estende. Il §4 del design cambia: «`Hero` con il banner» diventa la testata scritta nel modulo.
 
 ## 2. I numeri della testata
 
@@ -67,7 +74,7 @@ rating minimo (il nome corto, e quello lungo sotto), aerei ammessi, award. Un nu
 ## Da portare nel piano
 
 - **Il design `11-design-pagine-dei-tour.md` §4**: la testata è scritta nel modulo con i pezzi di Atmosphere e `StatTile`, non con `Hero`
-  (punto 1, se Carmine lo conferma); i nomi delle schede nell'indirizzo, la scheda dei report dopo l'invio, i link del server che aprono
-  la scheda (punto 4).
+  (punto 1, deciso da Carmine il 12 novembre 2026); i nomi delle schede nell'indirizzo, la scheda dei report dopo l'invio, i link del
+  server che aprono la scheda (punto 4).
 - **Design M2 §8.1**: la pagina pubblica dice l'award del tour per nome (`PublicTourDto.Award`); la tabella delle tratte non ha più la
   riga dei totali, che sono nella testata.
