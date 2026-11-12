@@ -59,6 +59,26 @@ test('the title, the description and what the dialog shows are drawn as Atmosphe
   expect(within(dialog).getByText('What the dialog shows.')).toBeInTheDocument();
 });
 
+test('a dialog the size of the screen keeps its name for a screen reader, and draws only what it shows', async () => {
+  renderWithProviders(
+    <Dialog trigger="Open" title="A runway at dawn" size="screen">
+      <img src="/media/7/file" alt="A runway at dawn" />
+    </Dialog>,
+  );
+
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Open' }));
+  const dialog = screen.getByRole('dialog', { name: 'A runway at dawn' });
+
+  // As large as the picture, up to the window, and the title out of sight: the picture is what the dialog is about.
+  expect(dialog.className).toContain('w-max');
+  expect(dialog.className).toContain('max-w-[calc(100vw-2rem)]');
+  expect(dialog.className).not.toContain('sm:max-w-md');
+  expect(within(dialog).getByRole('heading', { name: 'A runway at dawn' }).parentElement).toHaveClass(
+    'sr-only',
+  );
+  expect(within(dialog).getByRole('button', { name: englishCommon.common.close })).toBeInTheDocument();
+});
+
 test('a dialog without its «X» draws none', async () => {
   const dialog = await open('it', false);
 

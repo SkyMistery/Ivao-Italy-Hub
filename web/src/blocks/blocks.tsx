@@ -31,7 +31,14 @@ import { ICONS } from '../shared/icons';
 import { useLocalized } from '../shared/i18n/useLocalized';
 import { useMoment } from '../shared/i18n/useMoment';
 import type { BlockComponentProps } from '../shared/modules';
-import { CALENDAR_VIEWS, CalendarView, MarkdownContent, NOTICE_TONES, type CalendarItem } from '../shared/ui';
+import {
+  CALENDAR_VIEWS,
+  CalendarView,
+  Dialog,
+  MarkdownContent,
+  NOTICE_TONES,
+  type CalendarItem,
+} from '../shared/ui';
 
 import { embedSource } from './allowlist';
 import { categoryLabel, shelfOf, type ContentListData } from './data';
@@ -438,37 +445,96 @@ function HeroActions({ props }: { props: Record<string, unknown> }) {
 
 // ---- image -----------------------------------------------------------------------------------
 
-/** How much of its column a picture takes. */
-const IMAGE_WIDTH = {
-  third: 'max-w-[33%]',
-  half: 'max-w-[50%]',
-  full: 'w-full',
-} as const;
-
+/**
+ * A picture drawn the whole width it is given. How much of its column that is — `widthPercent`, or the `width` of an
+ * older body — is the renderer's wrapper, like its alignment (`BlockRegistration.resizable`, design of the editor's
+ * phase 3, §5.3): the block draws neither.
+ */
 export function ImageBlock({ props }: BlockComponentProps) {
   const mediaFileUrl = useMediaFileUrl();
   const read = useLocalized();
   const id = media(props, 'mediaId');
   const caption = read(text(props, 'caption'));
+  // Empty is a decorative picture, and a decorative picture is one a screen reader skips.
+  // Anything else would be reading a file name aloud (design M1 §1.2, decision of 6 Sep 2026).
+  const alt = read(text(props, 'alt'));
 
   if (id === null) {
     return null;
   }
 
+  const picture = (
+    <img
+      src={mediaFileUrl(id)}
+      alt={alt}
+      className={`w-full ${flag(props, 'rounded', true) ? 'rounded-lg' : ''}`}
+      loading="lazy"
+    />
+  );
+
   return (
-    <figure
-      className={`flex flex-col gap-2 ${IMAGE_WIDTH[choice(props, 'width', ['third', 'half', 'full'] as const, 'full')]}`}
-    >
-      <img
-        src={mediaFileUrl(id)}
-        // Empty is a decorative picture, and a decorative picture is one a screen reader skips.
-        // Anything else would be reading a file name aloud (design M1 §1.2, decision of 6 Sep 2026).
-        alt={read(text(props, 'alt'))}
-        className={`w-full ${flag(props, 'rounded', true) ? 'rounded-lg' : ''}`}
-        loading="lazy"
-      />
+    <figure className="flex w-full flex-col gap-2">
+      {flag(props, 'fullscreen', true) ? (
+        <FullScreenPicture src={mediaFileUrl(id)} alt={alt} caption={caption}>
+          {picture}
+        </FullScreenPicture>
+      ) : (
+        picture
+      )}
       {caption === '' ? null : <figcaption className="text-muted-foreground text-sm">{caption}</figcaption>}
     </figure>
+  );
+}
+
+/**
+ * A picture that opens at the size of the window when it is clicked (design of the editor's phase 3, §5.3): the core's
+ * `Dialog` of the closed list, named by the alternative text, closed by its «X» or by Esc. Written once among the
+ * blocks, for the picture today and for the gallery's pictures in PR 3.11 (§5.2).
+ *
+ * The page's picture is the trigger, a button around it: a button and not a link, so the draft opened in a tab of its
+ * own (§4.7), where links are stopped, still opens it. While a page is composed the click picks the block instead,
+ * taken in the capture phase before it gets here (`BlockView`).
+ *
+ * The button's name says what it does and keeps the alternative text in it, which its own name would otherwise
+ * replace; a decorative picture has none, and the window is named by the caption, or by the block's name.
+ */
+function FullScreenPicture({
+  src,
+  alt,
+  caption,
+  children,
+}: {
+  src: string;
+  alt: string;
+  caption: string;
+  children: ReactNode;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Dialog
+      size="screen"
+      title={alt || caption || t('blocks.image.label')}
+      trigger={
+        <button
+          type="button"
+          aria-label={alt === '' ? t('blocks.image.enlarge') : t('blocks.image.enlargeNamed', { name: alt })}
+          className="focus-visible:ring-ring block w-full cursor-zoom-in rounded-lg focus-visible:ring-2 focus-visible:outline-hidden"
+        >
+          {children}
+        </button>
+      }
+    >
+      {/* The limits in the window's units, not in percent of the dialog: the dialog takes its width from the picture, and
+          a picture limited by the height has to say so to the width it gives. A picture smaller than the window keeps its
+          own size: stretched, it would be blurred. */}
+      <img
+        src={src}
+        alt={alt}
+        className="mx-auto max-h-[calc(100dvh-8rem)] max-w-[calc(100vw-3.5rem)] object-contain"
+      />
+      {caption === '' ? null : <p className="text-muted-foreground text-center text-sm">{caption}</p>}
+    </Dialog>
   );
 }
 

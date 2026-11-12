@@ -432,6 +432,76 @@ describe('where a block stands in its column (PR 3.9)', () => {
   });
 });
 
+describe('the width of a picture in its column (PR 3.10)', () => {
+  const runway = { en: 'A runway', xx: 'Una pista' };
+
+  /** A picture of the draft, written before PR 3.10 with `width`, or after with `widthPercent`. */
+  const picture = (props: Record<string, unknown>) => ({
+    id: 'blk-pic',
+    type: 'image',
+    version: 1,
+    props: { mediaId: 7, alt: runway, ...props },
+    renderMode: null,
+    frozen: null,
+    column: null,
+    span: null,
+    align: null,
+    source: null,
+  });
+
+  const draftWith = (block: ReturnType<typeof picture>) =>
+    context({
+      body: withSections([section({ id: 'sec-a', key: null, blocks: [text('blk-a'), block] })]) as Body,
+    });
+
+  const answered = async (ctx: ImportContext, block: Record<string, unknown>) => {
+    const file = await fileFor(ctx, {
+      body: withSections([section({ id: 'sec-a', blocks: [text('blk-a'), block] })]),
+    });
+    return allBlocks((await ready(file, ctx)).body)[1]!;
+  };
+
+  const captioned = { caption: { en: 'At dawn', xx: "All'alba" } };
+
+  test('an old picture nobody touched is left as it was written', async () => {
+    const ctx = draftWith(picture({ width: 'half' }));
+
+    const answer = await answered(ctx, picture({ width: 'half' }));
+    expect(answer.props.width).toBe('half');
+    expect(answer.props).not.toHaveProperty('widthPercent');
+  });
+
+  test('an old picture the file changed keeps its width, now in the new property', async () => {
+    const ctx = draftWith(picture({ width: 'half' }));
+
+    // The file dropped it, as today's JSON Schema of the block no longer has it: the draft's is kept.
+    const dropped = await answered(ctx, picture(captioned));
+    expect(dropped.props.widthPercent).toBe(50);
+    expect(dropped.props).not.toHaveProperty('width');
+
+    // The file kept one in the old place: the file's.
+    const kept = await answered(ctx, picture({ ...captioned, width: 'third' }));
+    expect(kept.props.widthPercent).toBe(33);
+    expect(kept.props).not.toHaveProperty('width');
+
+    // The file wrote the new one: the file's, the old one gone.
+    const chosen = await answered(ctx, picture({ ...captioned, width: 'third', widthPercent: 70 }));
+    expect(chosen.props.widthPercent).toBe(70);
+    expect(chosen.props).not.toHaveProperty('width');
+  });
+
+  test("the width of a picture of today's is the file's, and a file that leaves it out takes the whole column", async () => {
+    const ctx = draftWith(picture({ widthPercent: 40 }));
+
+    expect((await answered(ctx, picture({ ...captioned, widthPercent: 60 }))).props.widthPercent).toBe(60);
+    // Not the draft's: as with the alignment, only the old way of saying it is carried across.
+    expect(
+      (await answered(ctx, { ...picture(captioned), props: { mediaId: 7, ...captioned } })).props
+        .widthPercent,
+    ).toBe(100);
+  });
+});
+
 describe('the schema of every block', () => {
   test('a wrong value is refused, with the path of the field and what zod said', async () => {
     const file = await fileFor(context(), {

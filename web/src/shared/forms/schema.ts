@@ -619,6 +619,21 @@ export function suggestAddresses<T>(schema: T, suggestions: readonly Suggestion[
   return withMeta(schema, leadsSomewhere, { suggestions: [...suggestions] }) as T;
 }
 
+/**
+ * The same schema with one of its own properties carried and not drawn, as `hidden` does (a new schema, like
+ * `suggestAddresses`): for a value the screen writes with a control of its own beside the form — the width of a
+ * resizable block, which its handle changes too (design of the editor's phase 3, §5.3). Done here and not written on the
+ * block's schema, which is also what the instructions for Claude are made of: there the property is one to write.
+ */
+export function withoutDrawing<T>(schema: T, name: string): T {
+  if (!(schema instanceof z.ZodObject) || !Object.hasOwn(schema.shape, name)) {
+    return schema;
+  }
+
+  const field = schema.shape[name] as z.ZodType;
+  return schema.extend({ [name]: field.meta({ ...annotation(field), hidden: true }) }) as T;
+}
+
 /** Whether a property of this schema, at any depth, leads somewhere: an `address`, or a `markdown` text. */
 export function namesAddresses(schema: unknown): boolean {
   return names(schema, leadsSomewhere);
