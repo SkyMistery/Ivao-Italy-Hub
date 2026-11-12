@@ -166,7 +166,11 @@ export function RouteMap({ legs, tracks, className, label }: RouteMapProps) {
       console.debug('RouteMap', event.error?.message ?? event.error);
     });
 
-    drawn.on('load', () => {
+    // ⚠️ On `style.load`, never on `load` (note 2026-11-11-la-mappa-che-aspettava-la-mappa-di-base). `load` waits for every
+    // source, the base map's too, and when the archive is missing that source fails and `load` fires only at the next
+    // repaint: a page that is still loading always has one, a map opened later on a page at rest — the route tab of a
+    // tour — never does, and stayed without its legs. The legs need the style, not the ground under them.
+    drawn.once('style.load', () => {
       drawn.addSource('legs', { type: 'geojson', data: empty() });
       drawn.addLayer({
         id: 'legs-line',
