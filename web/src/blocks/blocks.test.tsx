@@ -189,14 +189,16 @@ describe('layout and containers', () => {
     expect(screen.getByRole('heading', { name: 'Still here' })).toBeInTheDocument();
   });
 
-  test('a gallery links to the file only when it is asked to', () => {
+  test('a gallery opens its pictures only when it is asked to, and never links to the file (PR 3.11)', () => {
     const { unmount } = draw(
       <GalleryBlock props={{ images: [{ mediaId: 4 }], columns: 3, lightbox: true }} />,
     );
-    expect(screen.getByRole('link')).toHaveAttribute('href', '/media/4/file');
+    expect(screen.getByRole('button', { name: englishCommon.blocks.image.enlarge })).toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
     unmount();
 
     draw(<GalleryBlock props={{ images: [{ mediaId: 4 }], columns: 3, lightbox: false }} />);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 

@@ -1258,20 +1258,35 @@
     },
     "gallery": {
       "label": "Gallery",
-      "about": "A grid of pictures from the library; a click opens the whole picture.",
+      "about": "Pictures from the library as a grid, a carousel or a strip that scrolls sideways, each with its alternative text and a caption; a click opens them at full screen.",
       "fields": {
         "images": "Pictures",
         "images.mediaId": "File",
+        "images.alt": "Alternative text",
+        "images.caption": "Caption",
+        "layout": "Layout",
         "columns": "Columns",
-        "lightbox": "Open the file when clicked"
+        "lightbox": "Opens at full screen when clicked"
+      },
+      "hints": {
+        "images.alt": "What the picture says, for somebody who cannot see it. Leave it empty when the picture is decoration.",
+        "columns": "Only for the grid."
       },
       "options": {
+        "layout": {
+          "grid": "Grid",
+          "carousel": "Carousel",
+          "strip": "Strip"
+        },
         "columns": {
           "2": "Two",
           "3": "Three",
           "4": "Four"
         }
-      }
+      },
+      "previous": "Previous picture",
+      "next": "Next picture",
+      "position": "{{index}} of {{count}}"
     },
     "logoGrid": {
       "label": "Logos",

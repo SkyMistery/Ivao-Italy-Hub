@@ -472,7 +472,22 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     kind: 'Content',
     schema: gallerySchema,
     component: GalleryBlock,
-    example: { images: [{ mediaId: 1 }, { mediaId: 2 }, { mediaId: 3 }], columns: 3, lightbox: true },
+    // The first three files of the library, as the picture's example; the first says what it shows, the others are
+    // decoration, so the gallery shows both.
+    example: {
+      images: [
+        {
+          mediaId: 1,
+          alt: { en: 'A picture of the library', it: 'Una foto della libreria' },
+          caption: { en: 'A caption', it: 'Una didascalia' },
+        },
+        { mediaId: 2 },
+        { mediaId: 3 },
+      ],
+      layout: 'grid',
+      columns: 3,
+      lightbox: true,
+    },
     editorLabelKey: 'blocks.gallery.label',
     group: 'layout',
     subgroup: 'grids',

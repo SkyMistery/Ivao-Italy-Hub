@@ -1258,20 +1258,35 @@
     },
     "gallery": {
       "label": "Galleria",
-      "about": "Una griglia di foto della libreria; un clic apre la foto intera.",
+      "about": "Foto della libreria in una griglia, in un carosello o in una striscia che scorre di lato, ognuna con il testo alternativo e una didascalia; un clic le apre a tutto schermo.",
       "fields": {
         "images": "Immagini",
         "images.mediaId": "File",
+        "images.alt": "Testo alternativo",
+        "images.caption": "Didascalia",
+        "layout": "Disposizione",
         "columns": "Colonne",
-        "lightbox": "Al clic apre il file"
+        "lightbox": "Si apre a tutto schermo con un clic"
+      },
+      "hints": {
+        "images.alt": "Cosa dice l'immagine, per chi non la vede. Lascialo vuoto se è decorativa.",
+        "columns": "Solo per la griglia."
       },
       "options": {
+        "layout": {
+          "grid": "Griglia",
+          "carousel": "Carosello",
+          "strip": "Striscia"
+        },
         "columns": {
           "2": "Due",
           "3": "Tre",
           "4": "Quattro"
         }
-      }
+      },
+      "previous": "Immagine precedente",
+      "next": "Immagine successiva",
+      "position": "{{index}} di {{count}}"
     },
     "logoGrid": {
       "label": "Loghi",
