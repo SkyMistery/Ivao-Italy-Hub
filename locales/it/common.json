@@ -719,6 +719,10 @@
           "9": "Tre quarti",
           "12": "Tutta la riga"
         }
+      },
+      "resize": {
+        "value": "{{value}}%",
+        "hint": "Sulla pagina fa lo stesso la maniglia sul suo bordo. In una colonna stretta, su un telefono per esempio, prende tutta la colonna."
       }
     },
     "slugPlaceholder": "la-mia-nuova-pagina",
@@ -1097,19 +1101,15 @@
         "mediaId": "File",
         "alt": "Testo alternativo",
         "caption": "Didascalia",
-        "width": "Dimensione",
-        "rounded": "Angoli arrotondati"
+        "widthPercent": "Larghezza nella colonna",
+        "rounded": "Angoli arrotondati",
+        "fullscreen": "Si apre a tutto schermo con un clic"
       },
       "hints": {
         "alt": "Cosa dice l'immagine, per chi non la vede. Lascialo vuoto se e' decorativa."
       },
-      "options": {
-        "width": {
-          "third": "Un terzo della colonna",
-          "half": "Meta' della colonna",
-          "full": "Tutta la colonna"
-        }
-      }
+      "enlarge": "Mostra l'immagine a tutto schermo",
+      "enlargeNamed": "Mostra a tutto schermo: {{name}}"
     },
     "video": {
       "label": "Video",

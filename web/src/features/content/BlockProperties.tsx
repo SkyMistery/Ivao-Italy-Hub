@@ -1,7 +1,15 @@
-import { Button, Label, Select } from '@ivao/atmosphere-react';
+import {
+  Button,
+  Label,
+  Select,
+  SliderRange,
+  SliderRoot,
+  SliderThumb,
+  SliderTrack,
+} from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { TextAlignCenter, TextAlignEnd, TextAlignStart } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
@@ -12,7 +20,10 @@ import {
   alignOf,
   carriesOldAlign,
   columnsOf,
+  newGesture,
   placedAt,
+  sizeOf,
+  sizedAt,
   spanOf,
   type Align,
   type Background,
@@ -28,13 +39,14 @@ import {
   namesCalendarKinds,
   suggestAddresses,
   suggestCollections,
+  withoutDrawing,
   writtenValues,
 } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { collectionsOfKindQuery } from '../categories/queries';
 import { bootstrapQuery } from '../me/queries';
 import { emptyLocalized } from '../../shared/i18n/localized';
-import { aboutKeyOf } from '../../shared/modules';
+import { aboutKeyOf, type Resizable } from '../../shared/modules';
 import type { MediaLibraryQuery } from '../../shared/ui';
 
 import { defaultProps } from './body';
@@ -371,6 +383,72 @@ function AlignField({ align, onAlign }: { align: Align; onAlign: (align: Align) 
   );
 }
 
+/**
+ * How much of its column a resizable block takes (design of the editor's phase 3, §5.3): the keyboard's road to what the
+ * handle on its edge does with the pointer, with the same limits and steps (`BlockRegistration.resizable`). A slider of
+ * Atmosphere's, built from its parts so that its thumb has a name, with the number written beside it.
+ *
+ * Outside the generated form, like the width of a tile: the handle writes the same property while the panel is open,
+ * and a live form keeps the values it was born with — the form would write the old width back with the next word typed
+ * into the caption. So the form carries the property without drawing it (`withoutDrawing`), and never writes it.
+ *
+ * One step of the history per gesture: a drag of the thumb, or a key (`onValueCommit` ends it, and so does the next
+ * press).
+ */
+function WidthField({
+  label,
+  resizable,
+  width,
+  onResize,
+}: {
+  label: string;
+  resizable: Resizable;
+  width: number;
+  onResize: (width: number, gesture: number) => void;
+}) {
+  const { t } = useTranslation();
+  const gesture = useRef<number | null>(null);
+  const value = t('content.editor.resize.value', { value: width });
+
+  return (
+    <div className="flex flex-col gap-1">
+      <span id="resizable-width" className="text-sm font-medium">
+        {label}
+      </span>
+      <div className="flex items-center gap-3">
+        <SliderRoot
+          min={resizable.min}
+          max={resizable.max}
+          step={resizable.step}
+          value={[width]}
+          onValueChange={([next]) => {
+            if (next === undefined || next === width) {
+              return;
+            }
+            gesture.current ??= newGesture();
+            onResize(next, gesture.current);
+          }}
+          onValueCommit={() => {
+            gesture.current = null;
+          }}
+          // A new press is a new gesture too: Radix does not commit a drag that ended where it started, even one that
+          // went somewhere on the way.
+          onPointerDown={() => {
+            gesture.current = null;
+          }}
+        >
+          <SliderTrack>
+            <SliderRange />
+          </SliderTrack>
+          <SliderThumb aria-labelledby="resizable-width" aria-valuetext={value} />
+        </SliderRoot>
+        <span className="text-muted-foreground w-12 shrink-0 text-right text-sm tabular-nums">{value}</span>
+      </div>
+      <p className="text-muted-foreground text-sm">{t('content.editor.resize.hint')}</p>
+    </div>
+  );
+}
+
 export function BlockProperties({
   block,
   section,
@@ -382,6 +460,7 @@ export function BlockProperties({
   onApplyProps,
   onEnvelope,
   onMoveTo,
+  onResize,
   dashboard = false,
   captures = true,
 }: {
@@ -406,6 +485,8 @@ export function BlockProperties({
   onEnvelope: (patch: Partial<BlockEnvelope>) => void;
   /** Moves the block to the end of the first column of that section. */
   onMoveTo: (sectionId: string) => void;
+  /** The width of a resizable block, from the slider: the editor's, the same as the handle's (`Picking.onResize`). */
+  onResize?: (width: number, gesture: number) => void;
   /** A tile of a dashboard: its width instead of a column (D2). */
   dashboard?: boolean;
   /** Whether a data block of this body can be captured at all: without it, no live/frozen choice (`BodyEditor`). */
@@ -465,6 +546,11 @@ export function BlockProperties({
       shaped = chooseCalendarKinds(shaped, [...inUse, ...retired]);
     }
 
+    // The width of a resizable block has a field of its own beside the form (`WidthField`).
+    if (registration.resizable !== undefined) {
+      shaped = withoutDrawing(shaped, registration.resizable.prop);
+    }
+
     return shaped;
   }, [registration, collections.data, leadsSomewhere, addresses, bootstrap, heldKinds, read, t]);
 
@@ -479,8 +565,17 @@ export function BlockProperties({
   // envelope's, and its first write — any write — moves it there, so that opening a block never changes a page by
   // itself (design §2, principle 4).
   const oldAlign = alignable && carriesOldAlign(block);
-  const applyProps = (props: Record<string, unknown>) =>
-    oldAlign ? onEnvelope(placedAt(block, alignOf(block), props)) : onApplyProps(props);
+  // The width of a resizable block is never the form's to write: whatever the form was born with, the block's own goes
+  // with every write, and a picture of an older body moves its `width` there with the first one — the same rule as the
+  // alignment of a group of buttons, by the decision of PR 3.9: opening a block changes nothing.
+  const resizable = registration.resizable;
+  const width = resizable === undefined ? null : sizeOf(resizable, block.props);
+  const withWidth = (props: Record<string, unknown>) =>
+    resizable === undefined || width === null ? props : sizedAt(resizable, props, width);
+  const applyProps = (written: Record<string, unknown>) => {
+    const props = withWidth(written);
+    return oldAlign ? onEnvelope(placedAt(block, alignOf(block), props)) : onApplyProps(props);
+  };
   // Beside the block's name, so a module's block has its line in its own language files too. Every
   // block has one since PR 3.0a (`app/blockAbout.test.ts`); the guard stays for a build whose
   // language files are late.
@@ -522,6 +617,15 @@ export function BlockProperties({
 
       {alignable ? (
         <AlignField align={alignOf(block)} onAlign={(align) => onEnvelope(placedAt(block, align))} />
+      ) : null}
+
+      {resizable !== undefined && width !== null && onResize !== undefined ? (
+        <WidthField
+          label={t(`${labels}.fields.${resizable.prop}`)}
+          resizable={resizable}
+          width={width}
+          onResize={onResize}
+        />
       ) : null}
 
       {registration.kind === 'Data' && registration.alwaysLive !== true && captures ? (
@@ -571,7 +675,7 @@ export function BlockProperties({
 
       <SchemaForm
         schema={schema}
-        defaults={withDefaults(registration.schema, block.props, locales)}
+        defaults={withWidth(withDefaults(registration.schema, block.props, locales))}
         locales={locales}
         // A module's block names its own prefix: its labels are in its own language files, not the
         // core's, which know nothing of tours (`BlockRegistration.propertyLabels`).

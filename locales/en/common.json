@@ -719,6 +719,10 @@
           "9": "Three quarters",
           "12": "The whole row"
         }
+      },
+      "resize": {
+        "value": "{{value}}%",
+        "hint": "On the page, the handle on its edge does the same. In a narrow column, on a phone for one, it takes the whole column."
       }
     },
     "slugPlaceholder": "my-new-page",
@@ -1097,19 +1101,15 @@
         "mediaId": "File",
         "alt": "Alternative text",
         "caption": "Caption",
-        "width": "Size",
-        "rounded": "Rounded corners"
+        "widthPercent": "Width in its column",
+        "rounded": "Rounded corners",
+        "fullscreen": "Opens at full screen when clicked"
       },
       "hints": {
         "alt": "What the picture says, for somebody who cannot see it. Leave it empty when the picture is decoration."
       },
-      "options": {
-        "width": {
-          "third": "A third of the column",
-          "half": "Half the column",
-          "full": "The whole column"
-        }
-      }
+      "enlarge": "Show the picture at full screen",
+      "enlargeNamed": "Show at full screen: {{name}}"
     },
     "video": {
       "label": "Video",

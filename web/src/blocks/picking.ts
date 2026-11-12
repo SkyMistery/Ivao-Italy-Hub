@@ -106,6 +106,13 @@ export interface Picking {
    * note 2026-09-13-le-dashboard-a-tutto-schermo §3.5). Absent for a page, whose blocks have no width.
    */
   readonly onSpan?: (id: string, span: Span) => void;
+  /**
+   * The width a block takes in its column, from the handle on its edge (design of the editor's phase 3, §5.3): the new
+   * value of the property its registration declares `resizable`, already on a step and within the limits. `gesture`
+   * tells one drag from the next (`newGesture`), so that every value of one drag is one step of the history and two
+   * drags are two. Absent on a body nothing may be written to: then there is no handle.
+   */
+  readonly onResize?: (id: string, width: number, gesture: number) => void;
   readonly BlockDraggable?: ComponentType<{
     id: string;
     type: string;
@@ -139,6 +146,18 @@ export interface PickAction {
 }
 
 export const PickingContext = createContext<Picking | null>(null);
+
+let gestures = 0;
+
+/**
+ * A number no other gesture of this page has had: the drag of a handle, or one move of the panel's slider. Counted for
+ * the whole page and not by the handle, which is drawn again whenever its block is picked again: counted there, two drags
+ * apart would both be the first, and would be undone as one.
+ */
+export function newGesture(): number {
+  gestures += 1;
+  return gestures;
+}
 
 /** `null` everywhere the editor has not said otherwise, which is everywhere the public reads. */
 export function usePicking(): Picking | null {
