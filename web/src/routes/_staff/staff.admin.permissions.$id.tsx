@@ -13,7 +13,7 @@ import {
 import { grantQuery, type GrantDetailDto } from '../../features/admin/grants/queries';
 import { grantSchema, type GrantFormValues } from '../../features/admin/grants/schema';
 import { SchemaForm } from '../../shared/forms';
-import { ConfirmDialog, PageShell } from '../../shared/ui';
+import { ConfirmDialog, PageShell, useRefusalNotice } from '../../shared/ui';
 
 /**
  * One grant, and `new` for one that does not exist yet. No field is written here: the schema is
@@ -42,6 +42,7 @@ function GrantForm() {
   const create = useCreateGrant();
   const update = useUpdateGrant(Number(id));
   const remove = useDeleteGrant();
+  const refused = useRefusalNotice();
 
   const backToList = () => void navigate({ to: '/staff/admin/permissions' });
 
@@ -71,7 +72,7 @@ function GrantForm() {
             description={t('grants.delete.description')}
             confirmText={t('common.delete')}
             disabled={remove.isPending}
-            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToList })}
+            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToList, onError: refused })}
           />
         )
       }

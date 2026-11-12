@@ -6,6 +6,7 @@ import { Route as MemberLayoutRoute } from '../routes/_member';
 import { Route as PublicLayoutRoute } from '../routes/_public';
 import { Route as StaffLayoutRoute } from '../routes/_staff';
 import type { RouteDefinition } from '../shared/modules';
+import { RouteError } from '../shared/ui';
 
 import { registry } from './registry';
 import { opensStaffRoute } from './staffRoute';
@@ -85,7 +86,9 @@ export function createHubRouter(queryClient: QueryClient) {
     }
   }
 
-  return createRouter({ routeTree, context: { queryClient } });
+  // No route is left to the router's English error screen (issue #332, item 5): a route that says nothing of its own draws
+  // the hub's, in the reader's language, with a way to try again.
+  return createRouter({ routeTree, context: { queryClient }, defaultErrorComponent: RouteError });
 }
 
 /** The search parameters of a module route, when its manifest declares them. */

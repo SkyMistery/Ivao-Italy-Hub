@@ -16,7 +16,7 @@ import { linkSchema, type LinkFormValues } from '../../features/links/schema';
 import { writableDepartments } from '../../shared/api/bootstrap';
 import { DEPARTMENTS } from '../../shared/api/department';
 import { SchemaForm } from '../../shared/forms';
-import { ConfirmDialog, PageShell } from '../../shared/ui';
+import { ConfirmDialog, PageShell, useRefusalNotice } from '../../shared/ui';
 
 /** What writing a link asks for, on the department of the row. */
 const LINKS_EDIT = 'Links.Edit';
@@ -64,6 +64,7 @@ function LinkForm() {
   const create = useCreateLink();
   const update = useUpdateLink(Number(id));
   const remove = useDeleteLink();
+  const refused = useRefusalNotice();
 
   const department =
     link?.ownerDepartment ?? search.department ?? writableDepartments(bootstrap, LINKS_EDIT)[0];
@@ -107,7 +108,7 @@ function LinkForm() {
             description={t('links.delete.description')}
             confirmText={t('common.delete')}
             disabled={remove.isPending}
-            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToList })}
+            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToList, onError: refused })}
           />
         )
       }

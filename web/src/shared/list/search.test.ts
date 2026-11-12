@@ -11,7 +11,18 @@ test('an empty search is the first page of the default size', () => {
 });
 
 test('the page size is capped where the engine caps it', () => {
-  expect(listSearchSchema.safeParse({ pageSize: 500 }).success).toBe(false);
+  // Never past the cap; since issue #332, item 5, an address over it reads as the default rather than as an error screen.
+  expect(listSearchSchema.parse({ pageSize: 100 }).pageSize).toBe(100);
+  expect(listSearchSchema.parse({ pageSize: 500 }).pageSize).toBe(25);
+});
+
+test('a parameter written by hand that the list does not accept reads as its default, and keeps the others (issue #332, item 5)', () => {
+  expect(listSearchSchema.parse({ page: 0, pageSize: 10, dir: 'sideways', sort: 7, q: 'tower' })).toEqual({
+    page: 1,
+    pageSize: 10,
+    dir: 'asc',
+    q: 'tower',
+  });
 });
 
 test('a parameter with nothing in it is not sent at all', () => {

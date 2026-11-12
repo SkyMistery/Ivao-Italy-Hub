@@ -5113,6 +5113,13 @@ export interface components {
          * @enum {unknown}
          */
         CheckRanBy: "Server" | "Agent";
+        /** @description A collection by its key and its name, as a visitor is shown it next to a news item or a document. */
+        CollectionNameDto: {
+            /** @description The key the row is filed under. */
+            key: string;
+            /** @description Its name, in every language. */
+            label: components["schemas"]["LocalizedOfstring"];
+        };
         /**
          * @description What happens when a trainer proposes a date that meets something in the calendar (design M3 §2.5).
          * @enum {unknown}
@@ -5470,6 +5477,11 @@ export interface components {
             blocks: components["schemas"]["BlockChangesDto"];
             /** @description The fields around the body that are not the ones online, by the name the form gives them. */
             fields: string[];
+            /**
+             * Format: date-time
+             * @description The version of the row this summary describes, which the approver sends back with their answer.
+             */
+            rowVersion: string;
         };
         /** @description One request to the review of a page. */
         ContentReviewRequest: {
@@ -5487,6 +5499,13 @@ export interface components {
              * @description Approving: the page it goes under, corrected; null at the top.
              */
             parentId?: null | number;
+            /**
+             * Format: date-time
+             * @description The version of the row the summary that was read described (DateTime ContentReviewDto.RowVersion): an approver who
+             *     publishes or sends back answers what they read, and the row that moved on since is refused with 409 (issue #332, item 2).
+             *     Null asks nothing, as the author's two actions do.
+             */
+            rowVersion?: null | string;
         };
         /** @description What the settings of the content say: the page of the staff that describes how the division writes. */
         ContentSettingsDto: {
@@ -9425,6 +9444,7 @@ export interface components {
             media: {
                 [key: string]: string;
             };
+            collectionNames: components["schemas"]["CollectionNameDto"][];
         };
         /**
          * @description An error a rule in force names, when the division made it public (design M2 §5.3). The same rows the block
@@ -14156,6 +14176,13 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

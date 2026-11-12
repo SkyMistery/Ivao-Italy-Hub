@@ -1,5 +1,6 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { expect, test, vi } from 'vitest';
 
 import englishCommon from '../../../../locales/en/common.json';
@@ -124,5 +125,46 @@ test('and a whole page pasted into the box is refused the same way', async () =>
   await user.tab();
 
   expect(await screen.findByText(words.fileIsAPage)).toBeInTheDocument();
+  expect(onEnvelope).not.toHaveBeenCalled();
+});
+
+test('an undo of the code shows in the box, and the next blur does not put the old code back (issue #332, item 12)', async () => {
+  const user = userEvent.setup();
+  const onEnvelope = vi.fn();
+
+  /** The editor around the panel: its undo puts the block back as it was. */
+  function Editor() {
+    const [source, setSource] = useState('<p>two</p>');
+    return (
+      <>
+        <button type="button" onClick={() => setSource('<p>one</p>')}>
+          undo
+        </button>
+        <BlockProperties
+          block={{ ...block, source }}
+          section={section}
+          sections={[{ value: 's_1', label: 'Intro' }]}
+          locales={['it', 'en']}
+          division={{ defaultLocale: 'it', timezone: 'Europe/Rome' }}
+          mediaLibrary={{
+            queryKey: ['media'],
+            queryFn: () => Promise.resolve({ items: [], page: 1, pageSize: 20, total: 0 }),
+          }}
+          onApplyProps={vi.fn()}
+          onEnvelope={onEnvelope}
+          onMoveTo={vi.fn()}
+        />
+      </>
+    );
+  }
+  renderWithProviders(<Editor />);
+
+  await user.click(screen.getByRole('button', { name: 'undo' }));
+  const box = screen.getByLabelText(words.source);
+  expect(box).toHaveValue('<p>one</p>');
+
+  // A blur with nothing typed applies nothing: the undone code stays undone.
+  await user.click(box);
+  await user.tab();
   expect(onEnvelope).not.toHaveBeenCalled();
 });

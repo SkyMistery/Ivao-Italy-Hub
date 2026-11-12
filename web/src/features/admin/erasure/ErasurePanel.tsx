@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { SchemaForm } from '../../../shared/forms';
-import { ConfirmDialog, Notice, SectionHeader } from '../../../shared/ui';
+import { ConfirmDialog, Notice, SectionHeader, useRefusalNotice } from '../../../shared/ui';
 
 import { erasurePreviewQuery, useErase, type ErasureLine } from './queries';
 
@@ -26,6 +26,7 @@ export function ErasurePanel({ locales }: { locales: readonly string[] }) {
   const [vid, setVid] = useState<number | undefined>(undefined);
   const preview = useQuery({ ...erasurePreviewQuery(vid ?? 0), enabled: vid !== undefined });
   const erase = useErase();
+  const refused = useRefusalNotice();
 
   return (
     <section className="flex flex-col gap-4">
@@ -73,7 +74,7 @@ export function ErasurePanel({ locales }: { locales: readonly string[] }) {
                 confirmText={t('erasure.confirm.trigger')}
                 confirmVariant="destructive"
                 disabled={erase.isPending}
-                onConfirm={() => erase.mutate(vid)}
+                onConfirm={() => erase.mutate(vid, { onError: refused })}
               />
             </div>
           )}

@@ -1,5 +1,8 @@
 import { CircleAlert, CircleCheck, Info, TriangleAlert } from 'lucide-react';
 import type { ComponentType } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { describeProblem } from '../forms/useProblemDetails';
 
 import { useToastQueue } from './Toaster';
 
@@ -94,3 +97,24 @@ const TOAST_TONES: Readonly<Record<Exclude<NoticeTone, 'error'>, string>> = {
   warning: 'border-semantic-yellow-600 dark:border-semantic-yellow-500',
   info: 'border-semantic-blue-600 dark:border-semantic-blue-500',
 };
+
+/**
+ * A refusal of the server said in the corner, for a write that has no form to show it on — a delete button, a switch, a line
+ * of a queue (issue #332, item 4): the dialog closed and nothing happened, and nobody was told why. The reason is the
+ * server's, read as every form reads it (`describeProblem`); it stays ten seconds, long enough to be read. A write whose form
+ * already maps the refusal field by field does not need it.
+ */
+export function useRefusalNotice(): (error: unknown) => void {
+  const notice = useNotice();
+  const { t, i18n } = useTranslation();
+
+  return (error) => {
+    const reason = describeProblem(error, t, i18n.language);
+    notice({
+      tone: 'error',
+      title: t('common.notDone'),
+      ...(reason === null ? {} : { description: reason }),
+      duration: 10_000,
+    });
+  };
+}
