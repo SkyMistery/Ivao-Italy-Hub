@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { registry } from '../app/registry';
 import { MediaFingerprints, useMediaFileUrl } from '../shared/api/mediaUrl';
 import { useLocalized } from '../shared/i18n/useLocalized';
-import type { BlockRegistration } from '../shared/modules';
+import type { BlockRegistration, Resizable } from '../shared/modules';
 
 import { blockDataQuery } from './data';
 import {
@@ -31,7 +31,15 @@ import {
   type SectionEnvelope,
   type Span,
 } from './envelope';
-import { stopClick, usePicking, type PickAction, type Picking, type SortableBinding } from './picking';
+import {
+  newGesture,
+  stopClick,
+  usePicking,
+  type PickAction,
+  type Picking,
+  type SortableBinding,
+} from './picking';
+import { sizeOf, snapped } from './size';
 
 /**
  * Drawing a page. The same component renders the published version for a visitor and the draft in
@@ -824,6 +832,119 @@ const ALIGN: Record<Exclude<Align, 'left'>, string> = {
   right: 'text-right *:ml-auto [&_[data-align-row]]:justify-end [&_li]:list-inside',
 };
 
+/**
+ * The share of its column a resizable block takes (design of the editor's phase 3, §5.3), drawn here once like the
+ * alignment: the percentage from its props, through a variable so that the query below can still win; never narrower
+ * than 10 rem, unless the column itself is; and the whole column when the column is narrower than 24 rem — a phone, a
+ * third of a page —, whatever the percentage says. The column is the container it measures (`Column`).
+ */
+const SIZED = 'relative w-(--block-width) min-w-[min(100%,10rem)] @max-sm:w-full';
+
+/** Where on the screen a drag of the handle is, as a share of the room the block stands in. */
+function widthAt(pointer: number, room: DOMRect, align: Align): number {
+  const share =
+    align === 'center'
+      ? // Both edges move: the pointer is half the width away from the middle.
+        (2 * (pointer - (room.left + room.width / 2))) / room.width
+      : align === 'right'
+        ? (room.right - pointer) / room.width
+        : (pointer - room.left) / room.width;
+
+  return share * 100;
+}
+
+/**
+ * The handle on the edge of a picked resizable block (design of the editor's phase 3, §5.3), the tiles' handle
+ * (`SpanHandle`) for a percentage: dragged, the block takes the share of its room that the pointer says, on the nearest
+ * step; while it is dragged, it says the number. On the right edge, or on the left for a block on the right of its
+ * column, whose left edge is the one that moves.
+ *
+ * ⚠️ **The pointer's only.** The keyboard's road is the slider of the panel (§5.3: «la tastiera ha il campo del
+ * pannello»), with the same limits and steps, so the handle is hidden from a screen reader and takes no focus: a second
+ * control for the same value would be read twice. Not drawn in a column narrower than 24 rem, where the block takes the
+ * whole column anyway and a drag would change nothing that can be seen.
+ */
+function ResizeHandle({
+  resizable,
+  width,
+  align,
+  onResize,
+}: {
+  resizable: Resizable;
+  width: number;
+  align: Align;
+  onResize: (width: number, gesture: number) => void;
+}) {
+  const { t } = useTranslation();
+  const [dragging, setDragging] = useState(false);
+
+  const onPointerDown = (event: PointerEvent<HTMLSpanElement>) => {
+    const room = event.currentTarget.closest('[data-resizable]')?.parentElement;
+    if (!(room instanceof HTMLElement)) {
+      return;
+    }
+
+    event.preventDefault();
+    // Before the block's own draggable, which would take the gesture for a move of the block.
+    event.stopPropagation();
+
+    const box = room.getBoundingClientRect();
+    const gesture = newGesture();
+    let current = width;
+    setDragging(true);
+
+    const move = (moving: globalThis.PointerEvent) => {
+      const next = snapped(resizable, widthAt(moving.clientX, box, align));
+      if (next !== current) {
+        current = next;
+        onResize(next, gesture);
+      }
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      setDragging(false);
+
+      // The click that ends the gesture lands on whatever is under the pointer, and would pick it: swallowed, that one
+      // only, as the tiles' handle does.
+      const swallow = (click: MouseEvent) => {
+        click.stopPropagation();
+        click.preventDefault();
+      };
+      window.addEventListener('click', swallow, { capture: true, once: true });
+      window.setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 0);
+    };
+
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+
+  const left = align === 'right';
+
+  return (
+    <span
+      aria-hidden
+      data-chrome=""
+      data-resize-handle=""
+      onPointerDown={onPointerDown}
+      onClick={(event) => event.stopPropagation()}
+      className={`bg-primary absolute top-1/2 z-40 h-10 w-3 -translate-y-1/2 cursor-ew-resize touch-none rounded-sm @max-sm:hidden ${
+        left ? '-left-1.5' : '-right-1.5'
+      }`}
+    >
+      {dragging ? (
+        <span
+          className={`bg-body text-foreground border-primary absolute top-1/2 -translate-y-1/2 rounded-md border px-1.5 py-0.5 text-xs whitespace-nowrap shadow-sm ${
+            left ? 'left-4' : 'right-4'
+          }`}
+        >
+          {t('content.editor.resize.value', { value: width })}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boolean }) {
   const picking = usePicking();
   const { t } = useTranslation();
@@ -842,12 +963,35 @@ export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boole
 
   // Only a block that declares it: on any other, an `align` on the envelope means nothing and draws nothing.
   const align = registration?.alignable === true ? alignOf(block) : 'left';
-  const drawn =
-    content === null || align === 'left' ? (
+  const resizable = registration?.resizable;
+  // Its share of the column, inside the alignment: the share is what the alignment pushes to one side. The handle is
+  // drawn on it while the block is picked and composed, and never for a visitor.
+  const sized =
+    content === null || resizable === undefined ? (
       content
     ) : (
-      <div data-align={align} className={ALIGN[align]}>
+      <div
+        data-resizable=""
+        style={{ '--block-width': `${sizeOf(resizable, block.props)}%` } as CSSProperties}
+        className={SIZED}
+      >
         {content}
+        {picking?.onResize !== undefined && picking.selected === block.id ? (
+          <ResizeHandle
+            resizable={resizable}
+            width={sizeOf(resizable, block.props)}
+            align={align}
+            onResize={(width, gesture) => picking.onResize?.(block.id, width, gesture)}
+          />
+        ) : null}
+      </div>
+    );
+  const drawn =
+    sized === null || align === 'left' ? (
+      sized
+    ) : (
+      <div data-align={align} className={ALIGN[align]}>
+        {sized}
       </div>
     );
 

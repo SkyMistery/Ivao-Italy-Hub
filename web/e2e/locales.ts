@@ -278,7 +278,11 @@ interface CommonStrings {
       readonly about: string;
       readonly fields: { readonly markdown: string };
     };
-    readonly image: { readonly label: string };
+    readonly image: {
+      readonly label: string;
+      readonly enlargeNamed: string;
+      readonly fields: { readonly widthPercent: string };
+    };
     readonly callout: {
       readonly label: string;
       readonly fields: { readonly tone: string; readonly title: string; readonly text: string };

@@ -9,6 +9,7 @@ export {
   collectionKindOf,
   suggestCollections,
   suggestAddresses,
+  withoutDrawing,
   namesAddresses,
   chooseCalendarKinds,
   namesCalendarKinds,
