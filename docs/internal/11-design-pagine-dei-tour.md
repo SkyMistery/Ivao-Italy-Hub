@@ -76,8 +76,10 @@ scelte che il §3 non scrive:
 passo dopo; i conti puri in `screens/tourPage.ts` (le schede che un tour ha, la prossima tratta, i gruppi delle tratte di un tour `Hub`,
 i gruppi delle regole, i numeri della testata), con i loro test. Le deviazioni:
 
-- ⚖️ **la testata non usa `Hero`**: `Hero` disegna il titolo come `H2` e non prende un'immagine; la testata è scritta con `H1`, `Lead` e
-  `Badge` di Atmosphere, il banner sopra e la striscia di `StatTile` sotto, come `EventHead` (nota, punto 1, da confermare);
+- **la testata non usa `Hero`** — deciso da Carmine il 12 novembre 2026, «(a) nel modulo» (nota, punto 1;
+  https://github.com/SkyMistery/Ivao-Italy-Hub/pull/482#issuecomment-6830756471): `Hero` disegna il titolo come `H2` e non prende
+  un'immagine; la testata è scritta nel modulo con `H1`, `Lead` e `Badge` di Atmosphere, il banner sopra e la striscia di `StatTile`
+  sotto, come `EventHead`;
 - **l'award per nome** è un campo nuovo della risposta pubblica, `PublicTourDto.Award`: il browser non ha un catalogo degli award;
 - **le schede nell'indirizzo** sono `overview` (che non si scrive), `route`, `rules`, `reports`; dopo l'invio di un report la pagina torna
   su `?tab=reports`, e i link del server (la mail della decisione, i riferimenti dei chiarimenti) aprono la scheda giusta;
