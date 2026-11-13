@@ -7,6 +7,12 @@ import {
   Button,
   CardContent,
   CardRoot,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  CarouselRoot,
+  type CarouselApi,
   H1,
   H2,
   H3,
@@ -20,7 +26,7 @@ import {
   AccordionContent,
 } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
-import { CircleCheck, Info, OctagonAlert, TriangleAlert } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CircleCheck, Info, OctagonAlert, TriangleAlert } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -44,7 +50,7 @@ import { embedSource } from './allowlist';
 import { categoryLabel, shelfOf, type ContentListData } from './data';
 import { useEmbedding } from './embedding';
 import { usePrinting } from './print';
-import { ACCENTS, CALLOUT_TONES, COORDINATION_DIRECTIONS, STATION_KINDS } from './schemas';
+import { ACCENTS, CALLOUT_TONES, COORDINATION_DIRECTIONS, GALLERY_LAYOUTS, STATION_KINDS } from './schemas';
 
 /**
  * How the blocks of the core are drawn (design M0 §5.4, design M1 §1). All but one draw what an
@@ -472,10 +478,12 @@ export function ImageBlock({ props }: BlockComponentProps) {
     />
   );
 
+  const src = mediaFileUrl(id);
+
   return (
     <figure className="flex w-full flex-col gap-2">
       {flag(props, 'fullscreen', true) ? (
-        <FullScreenPicture src={mediaFileUrl(id)} alt={alt} caption={caption}>
+        <FullScreenPicture pictures={[{ src, alt, caption }]} start={0}>
           {picture}
         </FullScreenPicture>
       ) : (
@@ -486,54 +494,128 @@ export function ImageBlock({ props }: BlockComponentProps) {
   );
 }
 
+/** A picture as the blocks hand it to the full screen: its file, and its words already in the language on screen. */
+interface ShownPicture {
+  readonly src: string;
+  /** Empty is decoration. */
+  readonly alt: string;
+  readonly caption: string;
+}
+
 /**
  * A picture that opens at the size of the window when it is clicked (design of the editor's phase 3, §5.3): the core's
  * `Dialog` of the closed list, named by the alternative text, closed by its «X» or by Esc. Written once among the
- * blocks, for the picture today and for the gallery's pictures in PR 3.11 (§5.2).
+ * blocks, for the picture block and for the gallery (§5.2, PR 3.11), which hands it every picture it has and the one
+ * that was clicked: with more than one, two arrows in the bar of the window — and the arrow keys — go through the others,
+ * round from the last to the first, and the window takes the name of the picture it shows.
  *
  * The page's picture is the trigger, a button around it: a button and not a link, so the draft opened in a tab of its
  * own (§4.7), where links are stopped, still opens it. While a page is composed the click picks the block instead,
- * taken in the capture phase before it gets here (`BlockView`).
+ * taken in the capture phase before it gets here (`BlockView`). Each picture of a gallery is a trigger of its own, so
+ * that closing the window puts the focus back on the one that opened it, as a dialog should.
  *
  * The button's name says what it does and keeps the alternative text in it, which its own name would otherwise
  * replace; a decorative picture has none, and the window is named by the caption, or by the block's name.
  */
 function FullScreenPicture({
-  src,
-  alt,
-  caption,
+  pictures,
+  start,
   children,
 }: {
-  src: string;
-  alt: string;
-  caption: string;
+  pictures: readonly ShownPicture[];
+  /** The picture the trigger shows, where the window opens. */
+  start: number;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [at, setAt] = useState(start);
+  const many = pictures.length > 1;
+  const opened = pictures[start] ?? { src: '', alt: '', caption: '' };
+  const shown = pictures[at] ?? opened;
+
+  const count = pictures.length;
+  // Round, both ways: past the last picture comes the first again, as in every window of pictures a reader has met.
+  const step = (by: -1 | 1) => setAt((current) => (current + by + count) % count);
+
+  // The arrow keys anywhere in the window, not only on its arrows: the focus may be on the «X». A modal window keeps the
+  // focus inside it, so nothing else on the page hears them while it is open.
+  useEffect(() => {
+    if (!open || count < 2) {
+      return;
+    }
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        const by = event.key === 'ArrowLeft' ? -1 : 1;
+        setAt((current) => (current + by + count) % count);
+      }
+    };
+
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, count]);
 
   return (
     <Dialog
       size="screen"
-      title={alt || caption || t('blocks.image.label')}
+      open={open}
+      onOpenChange={(next) => {
+        // Every time it opens, it opens on the picture that was clicked.
+        if (next) {
+          setAt(start);
+        }
+        setOpen(next);
+      }}
+      title={shown.alt || shown.caption || t(many ? 'blocks.gallery.label' : 'blocks.image.label')}
       trigger={
         <button
           type="button"
-          aria-label={alt === '' ? t('blocks.image.enlarge') : t('blocks.image.enlargeNamed', { name: alt })}
+          aria-label={
+            opened.alt === ''
+              ? t('blocks.image.enlarge')
+              : t('blocks.image.enlargeNamed', { name: opened.alt })
+          }
           className="focus-visible:ring-ring block w-full cursor-zoom-in rounded-lg focus-visible:ring-2 focus-visible:outline-hidden"
         >
           {children}
         </button>
       }
     >
-      {/* The limits in the window's units, not in percent of the dialog: the dialog takes its width from the picture, and
-          a picture limited by the height has to say so to the width it gives. A picture smaller than the window keeps its
-          own size: stretched, it would be blurred. */}
-      <img
-        src={src}
-        alt={alt}
-        className="mx-auto max-h-[calc(100dvh-8rem)] max-w-[calc(100vw-3.5rem)] object-contain"
-      />
-      {caption === '' ? null : <p className="text-muted-foreground text-center text-sm">{caption}</p>}
+      {/* With arrows, the window is at least as wide as its bar, however small the picture: the bar is out of the flow,
+          and the window takes its width from what is in it. */}
+      <div className={`grid gap-3 ${many ? 'min-w-[min(15rem,calc(100vw-3.5rem))]' : ''}`}>
+        {/* The limits in the window's units, not in percent of the dialog: the dialog takes its width from the picture,
+            and a picture limited by the height has to say so to the width it gives. A picture smaller than the window
+            keeps its own size: stretched, it would be blurred. */}
+        <img
+          src={shown.src}
+          alt={shown.alt}
+          className="mx-auto max-h-[calc(100dvh-8rem)] max-w-[calc(100vw-3.5rem)] object-contain"
+        />
+        {shown.caption === '' ? null : (
+          <p className="text-muted-foreground text-center text-sm">{shown.caption}</p>
+        )}
+      </div>
+      {many ? (
+        // In the bar above the picture, across from the «X»: the picture keeps the whole room it had alone, and the
+        // arrows never sit on it.
+        <div className="absolute top-2 left-3 flex items-center gap-2">
+          <Button variant="outline" size="icon" className="size-8 rounded-full" onClick={() => step(-1)}>
+            <ChevronLeft aria-hidden className="size-4" />
+            <span className="sr-only">{t('blocks.gallery.previous')}</span>
+          </Button>
+          {/* Said when it changes: the window's name changes with the picture, and a name is not read again. */}
+          <span aria-live="polite" className="text-muted-foreground text-sm tabular-nums">
+            {t('blocks.gallery.position', { index: at + 1, count: pictures.length })}
+          </span>
+          <Button variant="outline" size="icon" className="size-8 rounded-full" onClick={() => step(1)}>
+            <ChevronRight aria-hidden className="size-4" />
+            <span className="sr-only">{t('blocks.gallery.next')}</span>
+          </Button>
+        </div>
+      ) : null}
     </Dialog>
   );
 }
@@ -1078,36 +1160,155 @@ export function IconGridBlock({ props }: BlockComponentProps) {
 
 // ---- gallery ---------------------------------------------------------------------------------
 
+/**
+ * Pictures of the library three ways (design of the editor's phase 3, §5.2): the grid, with its columns; Atmosphere's
+ * carousel, one picture at a time; a strip that scrolls sideways and stops on a picture. Each picture says what it shows
+ * and may carry a caption; a click opens it at full screen with the arrows to the others (`FullScreenPicture`). On
+ * paper the carousel and the strip are the grid: nothing scrolls there, and every picture is printed.
+ *
+ * A body written before PR 3.11 has no `layout` and is the grid it was, with its columns; its pictures, without words,
+ * are decoration as they always were.
+ */
 export function GalleryBlock({ props }: BlockComponentProps) {
   const mediaFileUrl = useMediaFileUrl();
+  const read = useLocalized();
+  const printing = usePrinting();
   const lightbox = flag(props, 'lightbox', true);
+  const layout = printing ? 'grid' : choice(props, 'layout', GALLERY_LAYOUTS, 'grid');
+
+  const pictures: ShownPicture[] = entries(props, 'images').flatMap((image) => {
+    const id = media(image, 'mediaId');
+    return id === null
+      ? []
+      : [{ src: mediaFileUrl(id), alt: read(text(image, 'alt')), caption: read(text(image, 'caption')) }];
+  });
+
+  if (pictures.length === 0) {
+    return null;
+  }
+
+  // The picture as each way draws it, in the frame that way gives it: a crop of the same shape for every picture, so
+  // that the rows and the slides line up whatever was uploaded. The whole picture is the full screen's.
+  const drawn = (picture: ShownPicture, index: number, frame: string) => {
+    const shown = (
+      <img
+        src={picture.src}
+        alt={picture.alt}
+        className={`w-full rounded-md object-cover ${frame}`}
+        loading="lazy"
+      />
+    );
+
+    return (
+      <figure className="flex flex-col gap-1">
+        {lightbox ? (
+          <FullScreenPicture pictures={pictures} start={index}>
+            {shown}
+          </FullScreenPicture>
+        ) : (
+          shown
+        )}
+        {picture.caption === '' ? null : (
+          <figcaption className="text-muted-foreground text-sm">{picture.caption}</figcaption>
+        )}
+      </figure>
+    );
+  };
+
+  if (layout === 'carousel') {
+    return <GalleryCarousel pictures={pictures} drawn={drawn} />;
+  }
+
+  if (layout === 'strip') {
+    return <GalleryStrip pictures={pictures} drawn={drawn} />;
+  }
 
   return (
     <ul className={`grid grid-cols-2 gap-3 ${gridOf(count(props, 'columns', 3))}`}>
-      {entries(props, 'images').map((image, index) => {
-        const id = media(image, 'mediaId');
-        if (id === null) {
-          return null;
+      {pictures.map((picture, index) => (
+        <li key={index}>{drawn(picture, index, 'aspect-square')}</li>
+      ))}
+    </ul>
+  );
+}
+
+interface GalleryWay {
+  readonly pictures: readonly ShownPicture[];
+  readonly drawn: (picture: ShownPicture, index: number, frame: string) => ReactNode;
+}
+
+/**
+ * One picture at a time, with Atmosphere's two arrows on its sides — inside the block, where Atmosphere puts them
+ * outside the carousel, past the edge of a column — and a swipe on a touch screen. Each slide is named by where it is.
+ *
+ * ⚠️ The arrow keys are handled here and not by Atmosphere: its handler is on the carousel in the capture phase, and
+ * for React the full screen window opened from a slide is inside the carousel even though the browser draws it
+ * elsewhere (a portal). Left to it, the arrows of the window would turn the carousel behind the window too.
+ */
+function GalleryCarousel({ pictures, drawn }: GalleryWay) {
+  const { t } = useTranslation();
+  const [api, setApi] = useState<CarouselApi>();
+
+  return (
+    <CarouselRoot
+      setApi={setApi}
+      aria-label={t('blocks.gallery.label')}
+      onKeyDownCapture={(event) => {
+        if (!(event.target instanceof Node) || !event.currentTarget.contains(event.target)) {
+          return;
         }
 
-        const picture = (
-          <img
-            src={mediaFileUrl(id)}
-            alt=""
-            className="aspect-square w-full rounded-md object-cover"
-            loading="lazy"
-          />
-        );
+        if (event.key === 'ArrowLeft') {
+          event.preventDefault();
+          api?.scrollPrev();
+        } else if (event.key === 'ArrowRight') {
+          event.preventDefault();
+          api?.scrollNext();
+        }
+      }}
+    >
+      <CarouselContent>
+        {pictures.map((picture, index) => (
+          <CarouselItem
+            key={index}
+            aria-label={t('blocks.gallery.position', { index: index + 1, count: pictures.length })}
+          >
+            {drawn(picture, index, 'aspect-video')}
+          </CarouselItem>
+        ))}
+      </CarouselContent>
+      {/* Their names in the language on screen: Atmosphere's are English words written into the library, and a name
+          given to a button is the one read. On a disc of the page's own ground: Atmosphere's outline arrow is
+          transparent, and over a photograph it was as readable as the photograph let it be. */}
+      <CarouselPrevious aria-label={t('blocks.gallery.previous')} className="bg-background/90 left-2" />
+      <CarouselNext aria-label={t('blocks.gallery.next')} className="bg-background/90 right-2" />
+    </CarouselRoot>
+  );
+}
 
-        return (
-          <li key={index}>
-            {/* "Lightbox" here is the file itself, opened in a tab of its own. A dialog of our own
-                making would be a custom component, and that list is closed (design M1 §12). */}
-            {lightbox ? <OutsideLink href={mediaFileUrl(id)}>{picture}</OutsideLink> : picture}
+/**
+ * As many pictures as fit, the next one showing its edge so that a reader knows there is more, scrolled sideways and
+ * stopping on a picture: CSS alone (`scroll-snap`). The strip takes the focus itself, so that a keyboard scrolls it even
+ * when its pictures do not open.
+ */
+function GalleryStrip({ pictures, drawn }: GalleryWay) {
+  const { t } = useTranslation();
+
+  return (
+    <div
+      role="region"
+      aria-label={t('blocks.gallery.label')}
+      tabIndex={0}
+      className="focus-visible:ring-ring snap-x snap-mandatory overflow-x-auto rounded-md pb-2 focus-visible:ring-2 focus-visible:outline-hidden"
+    >
+      <ul className="flex gap-3">
+        {pictures.map((picture, index) => (
+          <li key={index} className="w-[min(80%,18rem)] shrink-0 snap-start">
+            {drawn(picture, index, 'aspect-[4/3]')}
           </li>
-        );
-      })}
-    </ul>
+        ))}
+      </ul>
+    </div>
   );
 }
 

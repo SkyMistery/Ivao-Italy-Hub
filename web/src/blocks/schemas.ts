@@ -302,13 +302,32 @@ export const interactiveSchema = z.object({
   minHeight: z.number().int().default(320),
 });
 
+/**
+ * How a gallery lays its pictures out (design of the editor's phase 3, §5.2): the grid it always was, Atmosphere's
+ * carousel with its two arrows, or a strip that scrolls sideways and stops on a picture (CSS alone, `scroll-snap`).
+ * On paper the carousel and the strip are drawn as the grid, since there is nothing to scroll there (`PrintContext`).
+ */
+export const GALLERY_LAYOUTS = ['grid', 'carousel', 'strip'] as const;
+
 export const gallerySchema = z.object({
   // One object per picture, for the same reason the table's rows are: a list of bare numbers is
-  // not something the generator draws, and a media is never a number anyway.
-  images: z.array(z.object({ mediaId: z.number().int().meta({ media: true }) })),
+  // not something the generator draws, and a media is never a number anyway. Each says what it shows
+  // and may carry a line under it, as the picture block does (PR 3.11): until then every picture of a
+  // gallery was drawn as decoration, which a reader who cannot see it was never told about (#378).
+  images: z.array(
+    z.object({
+      mediaId: z.number().int().meta({ media: true }),
+      // Empty is decoration, as on the picture block: never the name of the file read aloud.
+      alt: localized().optional(),
+      caption: localized().optional(),
+    }),
+  ),
+  layout: z.enum(GALLERY_LAYOUTS).default('grid'),
+  // Only the grid has columns: the carousel shows one picture at a time, and the strip as many as fit.
   columns: z.number().int().default(3).meta({ choices: GRID_COLUMNS }),
-  // The picture becomes a link to the file itself, opened in a tab of its own. Not a dialog of our
-  // own making: that would be a custom component, and the closed list is closed (design M1 §12).
+  // A click opens the picture at the size of the window, with the arrows to the others of the gallery: the core's
+  // `Dialog` of the closed list and the same piece as the picture block's (PR 3.11, design of the editor's phase 3,
+  // §5.2). Until PR 3.11 it opened the file in a tab of its own; the name stayed, so no body written before moves.
   lightbox: z.boolean().default(true),
 });
 

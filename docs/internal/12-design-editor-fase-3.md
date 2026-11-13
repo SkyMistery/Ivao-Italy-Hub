@@ -286,6 +286,18 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   stesso pezzo dell'immagine (§5.3), scritto una volta nei blocchi. Il commento di `gallerySchema` che lo escludeva si corregge.
 - **In stampa** il carosello e la striscia si disegnano come griglia, come le schede si aprono (`PrintContext`).
 - **File del nucleo**: `blocks/schemas.ts`, `blocks/blocks.tsx`. **Nota sua**: no.
+- **Com'è andata** (#487, ramo `feat/gallery`, nota `2026-11-12-la-galleria`): nove scelte della sessione dentro il §5.2, e nessuna chiede la
+  risposta di Carmine. (1) `lightbox` resta il nome e apre il tutto schermo invece del file: nessun corpo salvato si
+  sposta, e una galleria senza `layout` è la griglia di prima. (2) `FullScreenPicture` prende l'elenco delle foto e quella cliccata;
+  ogni foto è un pulsante suo, così chiudendo il fuoco torna lì; le frecce stanno nella barra sopra la foto e fanno il giro, i tasti
+  freccia valgono in tutta la finestra, il numero «2 di 4» si legge quando cambia. (3) Il carosello è fatto dei pezzi di Atmosphere e
+  non del suo `Carousel` composto, che scrive le frecce in inglese e fuori dalla colonna; ⚠️ i tasti li gestisce la galleria, perché
+  quelli di Atmosphere giravano il carosello anche dalla finestra aperta da una slide (un portale è dentro il carosello per React).
+  (4) Cornici ritagliate: quadrate nella griglia, 16:9 nel carosello, 4:3 nella striscia, che mostra il bordo della foto dopo e prende
+  il fuoco. (5) Le colonne restano nel pannello con «Solo per la griglia»: il form generato non nasconde un campo secondo un altro.
+  (6) Mentre si compone il clic sceglie il blocco; in stampa ogni modo è la griglia. (7) La parte fissa delle istruzioni dice la
+  galleria; ⚠️ l'impronta `rules` cambia. (8) Della #378 restano i PDF scelti come foto, che sono di ogni campo di foto. (9) Uno stub
+  di `IntersectionObserver` nei test, per il carosello in jsdom.
 
 ### 5.3 Immagine: la larghezza trascinando, e a tutto schermo (V, risposta (b))
 

@@ -15,6 +15,21 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 };
 
+// Atmosphere's `Carousel` (Embla underneath, the gallery's carousel since PR 3.11) watches which
+// slides are in view on mount, and jsdom has no `IntersectionObserver` at all. A stub that never
+// reports is enough for the same reason: no test here reads what is in view.
+globalThis.IntersectionObserver ??= class {
+  readonly root = null;
+  readonly rootMargin = '0px';
+  readonly thresholds = [0];
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+} as unknown as typeof IntersectionObserver;
+
 // `ThemeProvider` asks the operating system whether it prefers dark, and jsdom has no
 // `matchMedia` at all. Answering "no preference" is the right stub: a test that cares about a
 // theme sets it explicitly, and one that does not should get the light one deterministically.

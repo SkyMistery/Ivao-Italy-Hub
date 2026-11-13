@@ -283,6 +283,12 @@ interface CommonStrings {
       readonly enlargeNamed: string;
       readonly fields: { readonly widthPercent: string };
     };
+    readonly gallery: {
+      readonly label: string;
+      readonly previous: string;
+      readonly next: string;
+      readonly position: string;
+    };
     readonly callout: {
       readonly label: string;
       readonly fields: { readonly tone: string; readonly title: string; readonly text: string };
