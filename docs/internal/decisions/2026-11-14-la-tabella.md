@@ -16,7 +16,7 @@ oggi. Una tabella scritta prima non ha `rowStyle` e si disegna com'era: nessun c
 
 Scostamento dalla lettera, quindi una domanda per Carmine, mandata al master dalla sessione di lavoro il 14 novembre 2026 con la
 raccomandazione `rowStyle`. **Decisa da Carmine**, in chat al master il 14 novembre 2026, con le sue parole: «Sì, rowStyle». Il master
-la riporta come commento sulla PR: _link al commento da aggiungere qui_.
+la riporta come commento sulla PR: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/506#issuecomment-6876652306.
 
 ## 2. I tre stili
 
