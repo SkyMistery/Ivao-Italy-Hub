@@ -330,10 +330,11 @@ there is no language, so the pseudonym would stay a number. Like every column, i
 when the server declares it in `CrudOptions.Sortable`, and then it sorts by the name, which is what
 the cell shows.
 
-An empty list says the core's sentence under its title, which speaks of what a department creates.
-A list whose rows are not a department's — a module's, since modules do not belong to departments —
-says its own with `emptyDescription`, a sentence of its language file; `emptyAction` still offers
-what to do next.
+An empty list says the core's sentence under its title, that whatever is added will show up there:
+it names nobody who adds, so it is true of every list, a department's or a module's, and to whoever
+only reads it. A list that has something more precise to say — when its rows come, where they come
+from — says its own with `emptyDescription`, a sentence of its language file; `emptyAction` still
+offers what to do next.
 
 A column can be written in place: `col.number('sort', { editable: true })` draws a field in the cell
 and `col.badge('visibility', 'content', { editable: ['Public', 'Members', 'Staff'] })` a select — a badge cannot
