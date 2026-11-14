@@ -5,8 +5,8 @@
   riporta sulla PR: [il commento del master](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/493#issuecomment-6874727366).
 - **Chi**: una sessione di lavoro di Carmine (issue #321, punto 3; lotto 3 della revisione del codice,
   `2026-10-20-la-revisione-del-codice.md`)
-- **Classificazione** (`CLAUDE.md` §5): **(b)**, estensione di un meccanismo del nucleo, il CRUD generico (`MapCrud`): `CrudSaving`
-  dice anche «è una cancellazione». Nessun meccanismo nuovo.
+- **Classificazione** (`CLAUDE.md` §5): **(b)**, estensione di un meccanismo del nucleo, il CRUD generico (`MapCrud`): un gancio in
+  più, `BeforeDelete`, accanto agli altri. Nessun meccanismo nuovo.
 
 ## Che cosa succede oggi
 
@@ -38,26 +38,31 @@ che non ha toccato.
 
 ## Perché nessun meccanismo esistente bastava
 
-Il CRUD generico ha quattro ganci per riga: `BeforeAuthorize`, `BeforeSave`, `AfterSave`, `Delete`. Una cancellazione ne fa girare uno
-solo, `BeforeAuthorize`, sulla riga salvata; ma `CrudSaving`, quello che il gancio riceve, diceva solo `IsNew`, e un aggiornamento e una
-cancellazione gli arrivavano uguali. `BeforeSave` su una cancellazione non gira, e farcelo girare avrebbe fatto girare anche quello che
-i contenuti ci fanno (l'indirizzo, lo spostamento delle figlie) su una riga che sparisce. `Delete` sostituisce la rimozione e non può
-rifiutare. `DeletePolicy` chiede un permesso, non un fatto di altre righe. Un controllo nell'endpoint, fuori dal CRUD, sarebbe stato il
-«controllo scritto a mano» che `CLAUDE.md` §2 vieta.
+Il CRUD generico ha quattro ganci per riga: `BeforeAuthorize`, `BeforeSave`, `AfterSave`, `Delete`. Nessuno va bene per una
+cancellazione da rifiutare:
+
+- `BeforeAuthorize` gira sulla riga salvata, ma **prima** del permesso: è fatto per prendere valori da altre righe prima che il
+  permesso sia chiesto (la cura di una riga figlia degli Eventi). Un rifiuto lì risponderebbe 400 «ha delle figlie» a chi non può
+  nemmeno cancellare la pagina, invece di un 403, e gli direbbe che ci sono figlie che magari non vede. La prima versione di questa PR
+  faceva così, con un `CrudSaving.IsDelete`; la revisione del master
+  ([il rilievo 2](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/493#issuecomment-6874881009)) l'ha fermata, e `IsDelete` è tolto.
+- `BeforeSave` su una cancellazione non gira, e farcelo girare avrebbe fatto girare anche quello che i contenuti ci fanno (l'indirizzo,
+  lo spostamento delle figlie) su una riga che sparisce.
+- `Delete` sostituisce la rimozione e non può rifiutare. `DeletePolicy` chiede un permesso, non un fatto di altre righe.
+- Un controllo nell'endpoint, fuori dal CRUD, sarebbe stato il «controllo scritto a mano» che `CLAUDE.md` §2 vieta.
 
 ## Che cosa si tocca
 
-- `CrudSaving` riceve `IsDelete` (in fondo, con `false` di default: chi lo costruisce oggi non cambia), passato a `BeforeAuthorize`
-  dalla cancellazione. È l'unica estensione del meccanismo; i ganci che già c'erano (Eventi) non lo leggono e fanno quello che facevano.
+- `CrudOptions.BeforeDelete`, un gancio nuovo con la stessa forma di `BeforeSave`: gira sulla riga salvata **dopo** il permesso di
+  scrivere e il `DeletePolicy`, prima della rimozione, e rifiuta come `BeforeSave`. È l'unica estensione del meccanismo; chi non lo
+  imposta non cambia.
 - `ContentAddresses.DeletionProblemAsync`: se la riga è una pagina (non un modello) e una riga ha `ParentId` uguale — letta fuori dal
   filtro della query, perché una figlia di un altro dipartimento o in bozza conta lo stesso — rifiuta con
   `errors.content.address.hasChildren` sul campo `id`. Sta con gli indirizzi, che sono la cosa di cui parla.
-- Il CRUD dei contenuti, in `ContentEndpoints`, la chiede da `BeforeAuthorize` quando `IsDelete`.
+- Il CRUD dei contenuti, in `ContentEndpoints`, la chiede da `BeforeDelete`.
 - La chiave nuova in `locales/*/errors.json`; il test d'integrazione `PageAddressTests.APageWithPagesUnderItIsNotDeletedUntilTheyAreGone`
-  (madre con figlia: 400; figlia cancellata, poi la madre: 204).
+  (chi non ha `Content.Edit` sulla madre: 403, non 400; madre con figlia: 400; figlia cancellata, poi la madre: 204).
 - Il form della pagina non cambia: il rifiuto arriva nel riquadro dei rifiuti del pulsante «Elimina» (`useRefusalNotice`, #332).
-- ⚠️ `BeforeAuthorize` gira **prima** del permesso: chi non può cancellare la pagina e prova lo stesso si sente dire che ha delle figlie
-  invece di un 403. Non rivela niente che l'albero delle pagine non dica già a chi scrive.
 
 **Le pagine già orfane**, se ce ne sono sulla prova o in produzione, restano come sono: le sposta chi ha `Content.Approve`, da
 «Posizione» nel form, oppure si cerca il genitore che manca con una query
@@ -77,4 +82,5 @@ La raccomandazione impedisce che ne nascano altre; non le ripara.
 ## Da portare nel piano
 
 - §9.3 (il modello dei contenuti): una pagina con figlie non si cancella; le figlie si spostano o si cancellano prima.
-- §16 (i meccanismi generici), il CRUD generico: `CrudSaving.IsDelete`, letto da `BeforeAuthorize`.
+- §16 (i meccanismi generici), il CRUD generico: il gancio `BeforeDelete`, dopo il permesso, per ciò che una cancellazione può
+  rifiutare guardando altre righe.

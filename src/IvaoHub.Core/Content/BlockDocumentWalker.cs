@@ -254,9 +254,23 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     /// <summary>A ceiling on every pattern here: a body is user written, and a search must not hang.</summary>
     private static readonly TimeSpan OneSecond = TimeSpan.FromSeconds(1);
 
-    /// <summary><c>[text](/somewhere)</c> and <c>![alt](/picture.png)</c> keep the half a reader reads.</summary>
+    /// <summary>
+    /// <c>[text](/somewhere)</c> and <c>![alt](/picture.png)</c> keep the half a reader reads. The text may hold brackets of
+    /// its own, one level deep, as CommonMark allows (<c>[see [here]](/somewhere)</c>): without them a link went unread by
+    /// the checks (#321, point 5, the review of #493).
+    /// </summary>
     private static readonly Regex LinkPattern =
-        new(@"!?\[([^\]]*)\]\((?<target>[^)]*)\)", RegexOptions.Compiled, OneSecond);
+        new(@"!?\[((?:[^\[\]]|\[[^\[\]]*\])*)\]\((?<target>[^)]*)\)", RegexOptions.Compiled, OneSecond);
+
+    /// <summary>
+    /// The definition of a link by reference, on a line of its own: <c>[r]: /somewhere "Title"</c>, used as <c>[text][r]</c>.
+    /// Its address is a link's like any other (#321, point 5, the review of #493). The whole line, title included, or it is
+    /// not a definition: <c>[Nota]: questo è il testo</c> is a line of prose, for CommonMark as for this pattern.
+    /// </summary>
+    private static readonly Regex ReferencePattern = new(
+        @"^[ ]{0,3}\[[^\]]+\]:[ \t]*(?:<(?<target>[^>\n]*)>|(?<target>\S+))(?:[ \t]+(?:""[^""\n]*""|'[^'\n]*'|\([^)\n]*\)))?[ \t]*\r?$",
+        RegexOptions.Compiled | RegexOptions.Multiline,
+        OneSecond);
 
     /// <summary>
     /// <c>:ocean[parola]</c> keeps its words, whatever the name (design of the editor, phase 3, §4.6): the renderer draws a
@@ -914,6 +928,11 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
                     {
                         found.Add(new BlockDocumentLink(path, TargetOf(link.Groups["target"].Value)));
                     }
+                }
+
+                foreach (Match reference in ReferencePattern.Matches(text))
+                {
+                    found.Add(new BlockDocumentLink(path, reference.Groups["target"].Value));
                 }
 
                 break;

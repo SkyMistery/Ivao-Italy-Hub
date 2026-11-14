@@ -464,28 +464,70 @@ public sealed class BlockDocumentWalkerTests
     public void AnAddressOfThisSiteIsReadAsTheRouterReadsIt(string written, string? expected) =>
         Assert.Equal(expected, SiteDestinations.OnThisSite(written));
 
+    /// <summary>
+    /// The cases of <c>tests/fixtures/content-addresses.json</c>, which the browser's half of the rule
+    /// (<c>web/src/shared/ui/followable.test.ts</c>) reads too: the two halves cannot drift.
+    /// </summary>
+    public static TheoryData<string, bool> ContentAddresses()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "IvaoHub.sln")))
+        {
+            directory = directory.Parent;
+        }
+
+        var cases = JsonNode.Parse(File.ReadAllText(
+            Path.Combine(directory!.FullName, "tests", "fixtures", "content-addresses.json")))!;
+
+        var data = new TheoryData<string, bool>();
+        foreach (var address in cases["followable"]!.AsArray())
+        {
+            data.Add(address!.GetValue<string>(), true);
+        }
+
+        foreach (var address in cases["refused"]!.AsArray())
+        {
+            data.Add(address!.GetValue<string>(), false);
+        }
+
+        return data;
+    }
+
     [Theory]
-    [InlineData("", true)]
-    [InlineData("/", true)]
-    [InlineData("/about?x=1#team", true)]
-    [InlineData("#team", true)]
-    [InlineData("https://example.org/about", true)]
-    [InlineData("HTTP://example.org", true)]
-    [InlineData("mailto:staff@example.org", true)]
-    [InlineData("tel:+390000000", true)]
-    [InlineData("javascript:alert(1)", false)]
-    [InlineData("JavaScript:alert(1)", false)]
-    [InlineData(" javascript:alert(1)", false)]
-    [InlineData("java\tscript:alert(1)", false)]
-    [InlineData("data:text/html,<p>x</p>", false)]
-    [InlineData("vbscript:x", false)]
-    [InlineData("//elsewhere.example", false)]
-    [InlineData("/\\elsewhere.example", false)]
-    [InlineData("/\t/elsewhere.example", false)]
-    [InlineData("about/team", false)]
-    [InlineData("www.example.org", false)]
+    [MemberData(nameof(ContentAddresses))]
     public void AnAddressInTheContentIsOneToFollowOrRefused(string written, bool followable) =>
         Assert.Equal(followable, SiteDestinations.IsFollowable(written));
+
+    [Fact]
+    public void AMarkdownLinkWithBracketsInItsTextOrByReferenceIsALinkToo()
+    {
+        // The review of #493: CommonMark allows both, and the pattern read neither.
+        var body = JsonNode.Parse("""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s1", "blocks": [
+            { "id": "b1", "type": "text", "props": { "markdown": {
+              "it": "[vedi [qui]](//elsewhere.example)",
+              "en": "[there][r]\n\n  [r]: //elsewhere.example \"Title\"\n[ok]: </about>\n[Nota]: questo è il testo" } } }
+          ] } ]
+        }
+        """);
+
+        Assert.Equal(
+            [
+                new BlockDocumentLink("sections[0].blocks[0].props.markdown.it", "//elsewhere.example"),
+                new BlockDocumentLink("sections[0].blocks[0].props.markdown.en", "//elsewhere.example"),
+                new BlockDocumentLink("sections[0].blocks[0].props.markdown.en", "/about"),
+            ],
+            Walker.Links(body));
+
+        Assert.Equal(
+            [
+                new BlockDocumentError("errors.url.unsafe", "sections[0].blocks[0].props.markdown.it"),
+                new BlockDocumentError("errors.url.unsafe", "sections[0].blocks[0].props.markdown.en"),
+            ],
+            Walker.ValidateEnvelope(body, ["text"]).Errors);
+    }
 
     [Fact]
     public void AnAddressThatIsNotOneToFollowIsRefusedWhereItSits()

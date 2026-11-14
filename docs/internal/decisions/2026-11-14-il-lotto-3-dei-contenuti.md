@@ -38,6 +38,23 @@ rifiutare: esce da quell'elenco e va nel test nuovo dei rifiuti, e al suo posto 
 Sul client non si aggiunge niente agli schemi zod: la regola sta sul server, il rifiuto torna come `ProblemDetails` sul percorso del
 campo e l'editor lo mostra accanto al blocco (`CLAUDE.md` §2, «Rules are not written twice»). `web/src/blocks/schemas.ts` non si tocca.
 
+**Il Markdown, dopo la revisione** ([il rilievo 1 del master](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/493#issuecomment-6874881009)). Il walker trova i link del Markdown con un'espressione, e
+CommonMark ne ammette due forme che non leggeva: il testo con parentesi dentro (`[vedi [qui]](//altrove)`) e il link per riferimento
+(`[testo][r]` con `[r]: //altrove` su una riga sua). E `react-markdown`, che li disegna, lascia passare `//altrove`. Quindi:
+
+- sul server il walker legge tutte e due le forme (parentesi annidate di un livello; la riga di definizione intera, titolo compreso,
+  così che una riga di prosa come `[Nota]: questo è il testo` resti prosa, come per CommonMark), e le rifiuta al salvataggio e alla
+  pubblicazione come le altre;
+- nel browser `MarkdownContent` ha un `urlTransform` che applica la stessa regola a ogni `href` disegnato (`isFollowable`, in
+  `web/src/shared/ui/followable.ts`): è la rete per una forma che un'espressione non vede, non un secondo controllo da far valere. Gli
+  indirizzi delle immagini restano al trasformatore della libreria, com'erano.
+
+La regola sta così in due lingue, C# e TypeScript, come gli sfondi di una sezione. Le due metà **si tengono d'accordo con un file solo
+di casi**, `tests/fixtures/content-addresses.json`, che leggono il test del server (`BlockDocumentWalkerTests`) e quello del browser
+(`followable.test.ts`): un caso nuovo si aggiunge lì, e tutte e due lo devono rispettare. Gli `href` dei blocchi non passano dal
+`urlTransform`: li disegna `blocks.tsx`, che è della 3.12 in questo momento, e il server li legge sempre (una proprietà `href` a
+qualunque profondità, senza espressioni), quindi non hanno il buco del Markdown.
+
 ## 2. Le pagine sotto cui mettere una pagina (punto 6)
 
 `GET /api/content/pages` lo chiamano solo i selettori del genitore: il form della pagina, la scelta del modello e il pannello di chi
@@ -56,6 +73,10 @@ Che cosa cambia per chi scrive: nel selettore non vede più le bozze degli altri
 genitore qualunque pagina (`ContentAddresses`): l'elenco è un'offerta, non la regola, e la regola non cambia. Il test che c'era
 (`PageAddressTests.TheTopOfTheSiteIsNotACoordinatorsToWriteIn`) offriva al coordinatore degli eventi una **bozza** del web team: ora la
 pubblica prima, e controlla anche che una bozza del web team non sia offerta e che la bozza del suo dipartimento lo sia.
+
+**Il titolo, dopo la revisione** ([il rilievo 3 del master](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/493#issuecomment-6874881009)): una pagina online è offerta con il titolo della sua versione
+pubblicata, quello che il sito mostra, e non con un titolo nuovo che aspetta l'approvazione nella bozza. Una pagina offerta perché chi
+chiede la può modificare, e non è online, ha il titolo della bozza, che è l'unico che ha.
 
 ## Da portare nel piano
 

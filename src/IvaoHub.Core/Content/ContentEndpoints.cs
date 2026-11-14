@@ -139,12 +139,10 @@ public static class ContentEndpoints
                 options.ToDetail = mapper.ToDetail;
                 options.Apply = mapper.Apply;
 
-                // A page with pages under it is not deleted (note 2026-11-14-la-pagina-con-figlie): the one hook a delete
-                // runs, and the only thing it asks there.
-                options.BeforeAuthorize = (content, saving) =>
-                    saving.IsDelete
-                        ? saving.Services.GetRequiredService<ContentAddresses>().DeletionProblemAsync(content, saving.CancellationToken)
-                        : Task.FromResult<IReadOnlyDictionary<string, string[]>?>(null);
+                // A page with pages under it is not deleted (note 2026-11-14-la-pagina-con-figlie), asked once whoever deletes
+                // is known to be allowed to.
+                options.BeforeDelete = (content, saving) =>
+                    saving.Services.GetRequiredService<ContentAddresses>().DeletionProblemAsync(content, saving.CancellationToken);
 
                 // Where a page sits in the site, which only other rows can say (note
                 // 2026-09-13-contenuti-centralizzati, 3.7): free, not reserved, not too deep, at the
@@ -931,12 +929,14 @@ public static class ContentEndpoints
         IAuthorizationService authorization,
         HttpContext http)
     {
-        // `database.Contents`: what the site shows whoever asks, through the query filter (`VisibilityQueryFilter`).
-        var online = await database.Contents
-            .AsNoTracking()
-            .Where(row => row.Kind == ContentKind.Page && !row.IsTemplate)
-            .Select(row => row.Id)
-            .ToListAsync(http.RequestAborted);
+        // `database.Contents`: what the site shows whoever asks, through the query filter (`VisibilityQueryFilter`), under
+        // the title the site shows — the published version's, not a new one waiting for approval (the review of #493).
+        var online = await (
+                from row in database.Contents.AsNoTracking()
+                where row.Kind == ContentKind.Page && !row.IsTemplate
+                join version in database.ContentVersions.AsNoTracking() on row.PublishedVersionId equals (long?)version.Id
+                select new { row.Id, version.Title })
+            .ToDictionaryAsync(row => row.Id, row => row.Title, http.RequestAborted);
 
         // And every other page the one handler lets them edit, a draft of their department above all: a section is built
         // under its own first page before that page comes out. Only what the handler needs, and the four columns read.
@@ -956,12 +956,15 @@ public static class ContentEndpoints
             })
             .ToListAsync(http.RequestAborted);
 
-        var shown = online.ToHashSet();
         var rows = new List<ContentEntry>();
         foreach (var page in pages)
         {
-            if (shown.Contains(page.Id)
-                || (await authorization.AuthorizeAsync(http.User, page, CorePermissions.ContentEdit)).Succeeded)
+            if (online.TryGetValue(page.Id, out var published))
+            {
+                page.Title = published;
+                rows.Add(page);
+            }
+            else if ((await authorization.AuthorizeAsync(http.User, page, CorePermissions.ContentEdit)).Succeeded)
             {
                 rows.Add(page);
             }
