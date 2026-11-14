@@ -58,6 +58,7 @@ import { defaultProps } from './body';
 const MAX_SOURCE_BYTES = 64 * 1024;
 
 import { SectionFrame } from './SectionFrame';
+import { TableTools } from './TableTools';
 import { sectionSettingsSchema, type SectionFormValues } from './schema';
 import { asSuggestions, useAddressesToLinkTo } from './siteAddresses';
 import type { SectionRule } from './templateRules';
@@ -481,7 +482,13 @@ export function BlockProperties({
    */
   mediaLibrary: MediaLibraryQuery;
   uploadMedia?: ((file: File, category?: string) => Promise<number>) | undefined;
-  onApplyProps: (props: Record<string, unknown>) => void;
+  /**
+   * The block's new props. As the form writes them, a moment after each pause in typing, and the editor remembers a run
+   * of them as one step to undo. `step` says this write is a step of its own, which closes the run: a table pasted,
+   * imported, made or written in its grid (`TableTools`) is one act, and an undo takes back that act and not what was
+   * typed before it too.
+   */
+  onApplyProps: (props: Record<string, unknown>, options?: { step?: boolean }) => void;
   onEnvelope: (patch: Partial<BlockEnvelope>) => void;
   /** Moves the block to the end of the first column of that section. */
   onMoveTo: (sectionId: string) => void;
@@ -495,6 +502,8 @@ export function BlockProperties({
   const { t, i18n } = useTranslation();
   const read = useLocalized();
   const registration = registry.blocks.find((candidate) => candidate.type === block.type);
+  // How many times a table's tools have written it (`TableTools`): the form is drawn again after each.
+  const [toolWrites, setToolWrites] = useState(0);
 
   // The collections a list block may name, of every department, grouped by the department that
   // wrote them (G20). Asked only by a block that has such a property.
@@ -551,6 +560,11 @@ export function BlockProperties({
       shaped = withoutDrawing(shaped, registration.resizable.prop);
     }
 
+    // The rows of a table are written in its grid (`TableTools`), not field by field.
+    if (registration.editedAsGrid === true) {
+      shaped = withoutDrawing(shaped, 'rows');
+    }
+
     return shaped;
   }, [registration, collections.data, leadsSomewhere, addresses, bootstrap, heldKinds, read, t]);
 
@@ -572,10 +586,15 @@ export function BlockProperties({
   const width = resizable === undefined ? null : sizeOf(resizable, block.props);
   const withWidth = (props: Record<string, unknown>) =>
     resizable === undefined || width === null ? props : sizedAt(resizable, props, width);
-  const applyProps = (written: Record<string, unknown>) => {
+  const applyProps = (written: Record<string, unknown>, options?: { step?: boolean }) => {
     const props = withWidth(written);
-    return oldAlign ? onEnvelope(placedAt(block, alignOf(block), props)) : onApplyProps(props);
+    return oldAlign ? onEnvelope(placedAt(block, alignOf(block), props)) : onApplyProps(props, options);
   };
+  // A table's tools write its columns and rows from outside the form, and the form — which carries the rows without
+  // drawing them, and writes all it holds with every keystroke — is drawn again from what they wrote; and from what an
+  // undo puts back, so that the next keystroke does not write the table it took away. Nothing typed into the form
+  // changes the rows, so the form is never drawn again under somebody typing.
+  const gridWrites = registration.editedAsGrid === true ? fingerprint(block.props.rows) : 0;
   // Beside the block's name, so a module's block has its line in its own language files too. Every
   // block has one since PR 3.0a (`app/blockAbout.test.ts`); the guard stays for a build whose
   // language files are late.
@@ -645,6 +664,17 @@ export function BlockProperties({
 
       {registration.carriesSource === true ? <SourceField block={block} onEnvelope={onEnvelope} /> : null}
 
+      {registration.editedAsGrid === true ? (
+        <TableTools
+          props={block.props}
+          locales={locales}
+          onApply={(props) => {
+            setToolWrites((count) => count + 1);
+            applyProps(props, { step: true });
+          }}
+        />
+      ) : null}
+
       {dashboard ? (
         // The width of the tile: the same six the handle on its edge snaps to (D2).
         <div className="flex flex-col gap-1">
@@ -674,6 +704,7 @@ export function BlockProperties({
       ) : null}
 
       <SchemaForm
+        key={`${toolWrites}:${gridWrites}`}
         schema={schema}
         defaults={withWidth(withDefaults(registration.schema, block.props, locales))}
         locales={locales}
@@ -691,6 +722,20 @@ export function BlockProperties({
       />
     </div>
   );
+}
+
+/**
+ * A short mark of a value, for a key: the same value gives the same mark. Not a hash to trust with anything but telling
+ * two tables apart (djb2 over the JSON).
+ */
+function fingerprint(value: unknown): number {
+  const json = JSON.stringify(value) ?? '';
+  let hash = 5381;
+  for (let index = 0; index < json.length; index++) {
+    hash = ((hash << 5) + hash + json.charCodeAt(index)) | 0;
+  }
+
+  return hash;
 }
 
 /** The calendar kinds a block's properties already name, out of its `kinds[] { kind }`. */

@@ -50,7 +50,14 @@ import { embedSource } from './allowlist';
 import { categoryLabel, shelfOf, type ContentListData } from './data';
 import { useEmbedding } from './embedding';
 import { usePrinting } from './print';
-import { ACCENTS, CALLOUT_TONES, COORDINATION_DIRECTIONS, GALLERY_LAYOUTS, STATION_KINDS } from './schemas';
+import {
+  ACCENTS,
+  CALLOUT_TONES,
+  COORDINATION_DIRECTIONS,
+  GALLERY_LAYOUTS,
+  STATION_KINDS,
+  TABLE_ROW_STYLES,
+} from './schemas';
 
 /**
  * How the blocks of the core are drawn (design M0 §5.4, design M1 §1). All but one draw what an
@@ -961,10 +968,23 @@ const CELL_ALIGN = {
   right: 'text-right',
 } as const;
 
+/**
+ * How the rows are told apart (`rowStyle`, PR 3.12). Atmosphere draws a line under every row, which is `lines`; the other
+ * two take it away. The band of `striped` is the colour of the text, faint: it reads on every one of the eight
+ * backgrounds and in both themes, where a colour of its own would have had to be measured against each (the rule of no
+ * free colour, `docs/UI-GUIDELINES.md`). The heading keeps its line in all three: it is not one of the rows.
+ */
+const ROW_STYLE = {
+  lines: undefined,
+  striped: 'border-b-0 even:bg-current/5',
+  plain: 'border-b-0',
+} as const;
+
 export function TableBlock({ props }: BlockComponentProps) {
   const read = useLocalized();
   const columns = entries(props, 'columns');
   const caption = read(text(props, 'caption'));
+  const rowClass = ROW_STYLE[choice(props, 'rowStyle', TABLE_ROW_STYLES, 'lines')];
 
   const alignOf = (index: number) =>
     CELL_ALIGN[choice(columns[index] ?? {}, 'align', ['left', 'center', 'right'] as const, 'left')];
@@ -983,6 +1003,7 @@ export function TableBlock({ props }: BlockComponentProps) {
           className: alignOf(index),
         }))}
         rows={entries(props, 'rows').map((row) => ({
+          ...(rowClass === undefined ? {} : { className: rowClass }),
           columns: entries(row, 'cells').map((cell, index) => ({
             value: read(text(cell, 'text')),
             className: alignOf(index),
