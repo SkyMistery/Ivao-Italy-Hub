@@ -601,9 +601,13 @@ export function BodyEditor({
           mediaLibrary={mediaLibrary}
           uploadMedia={uploadMedia}
           // Applied at every pause in typing, and remembered as one step: a sentence written into
-          // a block is one thing to undo, not one per pause (`useBodyHistory`).
-          onApplyProps={(props) =>
-            change(updateBlock(body, block.block.id, { props }), { coalesce: `props:${block.block.id}` })
+          // a block is one thing to undo, not one per pause (`useBodyHistory`). A write that is an act
+          // of its own — a table pasted or written in its grid — is a step of its own (PR 3.12).
+          onApplyProps={(props, options) =>
+            change(
+              updateBlock(body, block.block.id, { props }),
+              options?.step === true ? undefined : { coalesce: `props:${block.block.id}` },
+            )
           }
           onEnvelope={(patch) => change(updateBlock(body, block.block.id, patch))}
           onResize={(width, gesture) => resize(block.block.id, width, gesture)}

@@ -1193,7 +1193,7 @@
     },
     "table": {
       "label": "Tabella",
-      "about": "Una tabella di righe e colonne di testo, con una didascalia.",
+      "about": "Una tabella di righe e colonne di testo, con una didascalia; incollata da un foglio di calcolo, importata da un file o scritta in una griglia.",
       "fields": {
         "caption": "Didascalia",
         "columns": "Colonne",
@@ -1201,14 +1201,53 @@
         "columns.align": "Allineamento",
         "rows": "Righe",
         "rows.cells": "Celle",
-        "rows.cells.text": "Testo"
+        "rows.cells.text": "Testo",
+        "rowStyle": "Aspetto delle righe"
       },
       "options": {
         "columns.align": {
           "left": "A sinistra",
           "center": "Centrato",
           "right": "A destra"
+        },
+        "rowStyle": {
+          "lines": "Una linea sotto ognuna",
+          "striped": "A fasce",
+          "plain": "Semplici"
         }
+      },
+      "tools": {
+        "header": "La prima riga è l'intestazione",
+        "paste": "Incolla da Excel",
+        "fromFile": "Importa un file",
+        "hint": "Copia le celle in Excel, Fogli Google o LibreOffice e incolla, oppure importa un file CSV, XLSX o ODS: la tabella si sostituisce, e Annulla la rimette com'era. Il testo va nella lingua sullo schermo ({{language}}); le altre restano da scrivere.",
+        "create": "Una tabella vuota",
+        "rows": "Righe",
+        "columns": "Colonne",
+        "make": "Crea",
+        "replaced": "Ora la tabella ha {{columns}} e {{rows}}.",
+        "columnCount_one": "una colonna",
+        "columnCount_other": "{{count}} colonne",
+        "rowCount_one": "una riga",
+        "rowCount_other": "{{count}} righe",
+        "clipboard": "Il browser non ha lasciato leggere alla pagina quello che hai copiato. Daglielo, oppure importa il foglio come file.",
+        "empty": "Non c'è niente con cui fare una tabella.",
+        "tooLarge": "{{rows}} righe e {{columns}} colonne: una tabella tiene al massimo {{maxRows}} righe e {{maxColumns}} colonne.",
+        "unreadable": "Questo file non si legge come un foglio."
+      },
+      "grid": {
+        "open": "Modifica nella griglia",
+        "title": "La tabella",
+        "description": "Una casella per cella, una scheda per lingua. La pagina non cambia finché non applichi.",
+        "cells": "Intestazioni e celle",
+        "heading": "Intestazione della colonna {{column}}",
+        "cell": "Riga {{row}}, colonna {{column}}",
+        "addRow": "Aggiungi una riga",
+        "addColumn": "Aggiungi una colonna",
+        "removeRow": "Togli la riga {{row}}",
+        "removeColumn": "Togli la colonna {{column}}",
+        "none": "La tabella non ha ancora colonne: aggiungine una.",
+        "apply": "Applica"
       }
     },
     "cardGrid": {

@@ -117,6 +117,12 @@ export const TIMELINE_VARIANTS = ['steps', 'timeline'] as const;
 /** How a cell is set. Kept apart from `ALIGNMENTS` because a table cell also right-aligns. */
 export const CELL_ALIGNMENTS = ['left', 'center', 'right'] as const;
 
+/**
+ * How the rows of a table are told apart (design of the editor's phase 3, §5.1): a line under each, which is how every
+ * table was drawn before PR 3.12; a band of colour on every other one; or nothing but the space between them.
+ */
+export const TABLE_ROW_STYLES = ['lines', 'striped', 'plain'] as const;
+
 /** Which button of a group is the one being asked for. */
 export const BUTTON_VARIANTS = ['primary', 'secondary', 'ghost'] as const;
 
@@ -207,7 +213,12 @@ export const timelineSchema = z.object({
 export const tableSchema = z.object({
   caption: localized().optional(),
   columns: z.array(z.object({ label: localized(), align: z.enum(CELL_ALIGNMENTS).default('left') })),
+  // Written in the grid of the properties panel, and pasted, imported or created there, rather than field by field in
+  // the generated form (PR 3.12, `BlockRegistration.editedAsGrid`).
   rows: z.array(z.object({ cells: z.array(z.object({ text: localized() })) })),
+  // Not `rows`, as design §5.1 calls it: that is the name of the rows themselves, above. A table written before PR 3.12
+  // has none, and draws the line it always had.
+  rowStyle: z.enum(TABLE_ROW_STYLES).default('lines'),
 });
 
 // ---- the operational document (G14) --------------------------------------------------------
