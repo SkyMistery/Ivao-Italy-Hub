@@ -79,8 +79,8 @@ export function ruleFor(
  * Only the lock reaches down; `required` and `allowedBlocks` stay the row's own, and a locked row offers
  * neither a removal nor a block to add anyway.
  *
- * ⚖️ A row the template keys and leaves unlocked inside a locked section is locked too: proposed, not yet
- * decided by the maintainer (`decisions/2026-11-14-il-blocco-del-template-sulle-righe.md`).
+ * A row the template keys and leaves unlocked inside a locked section is locked too: a free row goes outside the
+ * locked section (decided by the maintainer, `decisions/2026-11-14-il-blocco-del-template-sulle-righe.md`).
  */
 export function ruleInside(around: SectionRule, own: SectionRule): SectionRule {
   return around.locked && !own.locked ? { ...own, locked: true } : own;

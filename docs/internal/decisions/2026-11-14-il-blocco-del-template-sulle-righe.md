@@ -1,7 +1,7 @@
 # Il blocco del template arriva alle righe della sezione
 
 - **Data**: 14 novembre 2026
-- **Stato**: **Proposta**. Correzione di un difetto (issue #460). La domanda che la issue lascia aperta (sotto, «La domanda per Carmine») la porta a Carmine il master; finché non risponde, la PR fa ciò che la raccomandazione dice. Se risponde diversamente, cambia una funzione sola (`ruleInside`)
+- **Stato**: **decisa da Carmine** il 14 novembre 2026, come raccomandato: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/513#issuecomment-6883306581. Correzione di un difetto (issue #460); la domanda che la issue lasciava aperta è sotto, «La domanda per Carmine»
 - **Chi**: la sessione di lavoro `fix/editor-460-461`
 - **Classificazione** (`CLAUDE.md` §5): **(b)**. Il meccanismo c'è (`templateRules.ts`: le regole del template lette per `key`); lo si estende alle righe, invece di una toppa in ogni lettore
 
@@ -20,7 +20,7 @@ Il piano e il design non dicono che cosa succede a una riga **a cui il template 
 - **Raccomandata: bloccata anche lei.** Una sola regola, la stessa per la struttura, la barra sulla pagina e l'import: «dentro una sezione `locked` non si ristruttura niente». Il prezzo: chi scrive un template non può più dire «cornice fissa, riga libera dentro», e le impostazioni di quella riga sulla pagina diventano di sola lettura.
 - **L'alternativa: libera.** La riga con una `key` sua e senza `locked` resta libera; il blocco arriva solo alle righe senza `key`. Si cambia `ruleInside`. Il prezzo: in una sezione «fissa» una riga si può spostare, duplicare ed eliminare, e la forma della sezione cambia lo stesso.
 
-La risposta, con il link al commento di Carmine: _da scrivere qui prima del merge_.
+**La risposta di Carmine** (14 novembre 2026, https://github.com/SkyMistery/Ivao-Italy-Hub/pull/513#issuecomment-6883306581): **bloccata anche lei**, come fa la PR. Il blocco di una sezione `locked` arriva alle sue righe, anche a quella a cui il template dà una `key` e che lascia libera. Chi scrive un template e vuole una riga libera la mette fuori dalla sezione bloccata.
 
 ## Che cosa cambia
 
@@ -31,4 +31,4 @@ La risposta, con il link al commento di Carmine: _da scrivere qui prima del merg
 
 ## Da portare nel piano
 
-- **§9.3** (il template), a `locked`: il blocco vale anche per le righe della sezione, a ogni profondità, senza `key` e (secondo la risposta di Carmine) con una `key` lasciata libera dal template; `required` e `allowedBlocks` restano della riga. Sulla pagina una sezione bloccata non si trascina, come nella struttura.
+- **§9.3** (il template), a `locked`: il blocco vale anche per le righe della sezione, a ogni profondità, con o senza `key`, anche una riga a cui il template dà una `key` e che lascia libera (una riga libera va fuori dalla sezione bloccata); `required` e `allowedBlocks` restano della riga. Sulla pagina una sezione bloccata non si trascina, come nella struttura.
