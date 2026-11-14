@@ -40,7 +40,7 @@ public sealed class JobCatchUp(
     /// </summary>
     public static readonly TimeSpan Quiet = TimeSpan.FromSeconds(3);
 
-    /// <summary>After the start, the latest the first check comes, quiet or not: most processes of the host live less than a minute.</summary>
+    /// <summary>After the start, the latest the first check comes, quiet or not: few processes of the host live a minute.</summary>
     public static readonly TimeSpan Latest = TimeSpan.FromSeconds(30);
 
     /// <summary>Between two checks: the shortest schedule of the hub, the queue of the mail, is one minute.</summary>
