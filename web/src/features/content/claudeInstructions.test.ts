@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 
 import { registry } from '../../app/registry';
 import type { Body } from '../../blocks';
-import { GALLERY_LAYOUTS, TABLE_ROW_STYLES } from '../../blocks/schemas';
+import { ACCORDION_OPENINGS, GALLERY_LAYOUTS, TABLE_ROW_STYLES } from '../../blocks/schemas';
 import { TEXT_COLOURS } from '../../shared/ui/textColours';
 
 import {
@@ -290,6 +290,27 @@ describe('what the instructions offer', () => {
       expect(markdown).toContain(`\`${style}\``);
       expect(markdown).toContain(`"${style}"`);
     }
+  });
+
+  test('the fixed part says questions and answers: one text per answer, and every way the page opens (PR 3.13, §5.4)', async () => {
+    const { markdown } = await composeInstructions(input({ blocks: [block('accordion')] }));
+
+    expect(markdown).toContain('**Questions and answers** (`accordion`)');
+    expect(markdown).toContain('never write two entries for one question');
+    for (const opening of ACCORDION_OPENINGS) {
+      expect(markdown).toContain(`\`${opening}\``);
+      expect(markdown).toContain(`"${opening}"`);
+    }
+  });
+
+  test('the fixed part says the word under a figure is the site’s unless asked (PR 3.13, §5.7)', async () => {
+    const { markdown } = await composeInstructions(
+      input({ blocks: [block('stats'), block('networkStats')] }),
+    );
+
+    expect(markdown).toContain(
+      'only when the person asks for a word of their own, and then in every language',
+    );
   });
 
   test('the draft is there with its identifiers, and the header to copy at the end', async () => {

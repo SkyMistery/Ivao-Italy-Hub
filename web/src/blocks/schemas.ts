@@ -367,7 +367,23 @@ export const tabsSchema = z.object({
   ),
 });
 
+/**
+ * How a block of questions and answers stands when the page opens (design of the editor's phase 3, §5.4): every answer
+ * closed, which is how every one was drawn before PR 3.13; the first one open; or all of them, which also lets several
+ * stay open at once.
+ */
+export const ACCORDION_OPENINGS = ['closed', 'first', 'all'] as const;
+
+/**
+ * Questions and answers (design of the editor's phase 3, §5.4). An answer is one text in Markdown, which may hold several
+ * paragraphs and a list (Carmine, 31 October 2026, answer 2): never a list of answers, and never blocks.
+ */
 export const accordionSchema = z.object({
+  // Above the questions, and optional: a block of questions under a heading of its own needs none.
+  title: localized().optional(),
+  numbered: z.boolean().default(false),
+  initially: z.enum(ACCORDION_OPENINGS).default('closed'),
+  // Kept as it was before PR 3.13: with `initially` at `all` it is true whatever it says, because every answer is open.
   allowMultiple: z.boolean().default(false),
   items: z.array(
     z.object({ question: localized(), answer: localized().meta({ multiline: true, markdown: true }) }),
@@ -415,7 +431,8 @@ export const dividerSchema = z.object({
 // `figures[] { figure }`, `kinds[] { kind }` — and that is deliberate. The generator draws lists of
 // *objects*; a list of bare values is a kind of field it has not got, and inventing one for three
 // schemas would be a sixth extension for a shape nothing else asks for. It is the same trade G3
-// made for `table.rows` and `gallery.images`, and it costs one key in the JSON.
+// made for `table.rows` and `gallery.images`, and it costs one key in the JSON. Since PR 3.13 a figure also carries
+// its own word (`label`), so two of the three hold more than the one value anyway.
 
 /**
  * The figures of the division a `stats` block may show. A closed set, and this is it: a module
@@ -442,13 +459,16 @@ export const CALENDAR_RANGES = ['upcoming', 'week', 'month'] as const;
 /** How a list of rows is set out. */
 export const LIST_LAYOUTS = ['list', 'cards'] as const;
 
+// The word under each figure is the hub's, from the key of the figure; `label` writes another one in its place, and left
+// empty it is the hub's again (design of the editor's phase 3, §5.7). Words, not the question: the server answers the
+// numbers and never reads it.
 export const statsSchema = z.object({
-  metrics: z.array(z.object({ metric: z.enum(STATS_METRICS) })),
+  metrics: z.array(z.object({ metric: z.enum(STATS_METRICS), label: localized().optional() })),
   columns: z.number().int().default(3).meta({ choices: GRID_COLUMNS }),
 });
 
 export const networkStatsSchema = z.object({
-  figures: z.array(z.object({ figure: z.enum(NETWORK_FIGURES) })),
+  figures: z.array(z.object({ figure: z.enum(NETWORK_FIGURES), label: localized().optional() })),
   // Who is on frequency right now, under the figures. Off by default: a page that wants the two
   // numbers and not the list is the common one.
   showPositions: z.boolean().default(false),

@@ -546,7 +546,12 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     kind: 'Content',
     schema: accordionSchema,
     component: AccordionBlock,
+    // A title, numbers and the first answer open: the gallery shows what PR 3.13 added (design of the editor's phase 3,
+    // §5.4), which the block without them draws as it always did.
     example: {
+      title: { en: 'Before you connect', it: 'Prima di collegarti' },
+      numbered: true,
+      initially: 'first',
       allowMultiple: false,
       items: [
         {
@@ -641,7 +646,12 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     component: StatsBlock,
     example: {
       columns: 3,
-      metrics: [{ metric: 'knownMembers' }, { metric: 'staffMembers' }, { metric: 'publishedNews' }],
+      // One figure with a word of its own (design of the editor's phase 3, §5.7); the other two keep the hub's.
+      metrics: [
+        { metric: 'knownMembers', label: { en: 'pilots and controllers', it: 'piloti e controllori' } },
+        { metric: 'staffMembers' },
+        { metric: 'publishedNews' },
+      ],
     },
     exampleData: {
       metrics: [

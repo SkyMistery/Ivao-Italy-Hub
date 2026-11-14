@@ -90,6 +90,12 @@ A page is a list of **sections**; a section holds **blocks** and may hold **rows
   is written in every language, an empty cell too — a cell with nothing to say takes a dash. `rowStyle` tells the rows
   apart: `lines` (the default) a line under each, `striped` a band on every other one, `plain` nothing. A table of the
   draft without `rowStyle` has lines: leave it so unless asked.
+- **Questions and answers** (`accordion`) may have a `title` above the questions, and `numbered` numbers them. Each
+  answer is one text, which may hold several paragraphs and a list: never write two entries for one question.
+  `initially` is how the page opens: `closed` (the default), `first` with the first answer open, or `all` with every
+  answer open. A block of the draft without `initially` opens closed: leave it so unless asked.
+- The figures of `stats` and `networkStats` are counted by the site, and so is the word under each one: write a `label`
+  only when the person asks for a word of their own, and then in every language.
 - Every block has `type` and `version`, both exactly as the block's entry below gives them, and `props`, which must
   satisfy that block's JSON Schema.
 - A block **already in the draft** keeps `renderMode`, `span` and `frozen` exactly as they are: they are choices made in
