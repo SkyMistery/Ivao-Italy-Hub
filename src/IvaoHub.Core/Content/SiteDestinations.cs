@@ -39,6 +39,44 @@ public sealed class SiteDestinations(HubDbContext database, ContentAddresses add
     private const string StaffSegment = "staff";
 
     /// <summary>
+    /// The schemes an address written into the content may name: the web, a mail, a phone. Anything else
+    /// (<c>javascript:</c>, <c>data:</c>, a scheme nobody knows) is not an address somebody follows.
+    /// </summary>
+    private static readonly string[] FollowableSchemes =
+        [Uri.UriSchemeHttp, Uri.UriSchemeHttps, Uri.UriSchemeMailto, "tel"];
+
+    /// <summary>
+    /// Whether an address written into the content may be drawn as a link: nothing yet, a path of this site, an anchor
+    /// of the page, or a whole address of the web, a mail or a phone (#321, point 5). Everything else is refused when it
+    /// is written, rather than sanitised later, as a link of the library and a menu entry already are: a
+    /// <c>javascript:</c> address, and a path that leaves the site while looking like one (<c>//elsewhere.example</c>,
+    /// <c>/\elsewhere.example</c>, or a path with a tab or a line break in it, which the browser drops).
+    /// <para>The one rule, for every <c>href</c> of a body, its Markdown links and the address of an entry of the
+    /// calendar. Whether an address of this site arrives is <see cref="ReachableAsync"/>'s, at publication.</para>
+    /// </summary>
+    public static bool IsFollowable(string? address)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            return true;
+        }
+
+        if (address.Any(char.IsControl))
+        {
+            return false;
+        }
+
+        if (address.StartsWith('/'))
+        {
+            return address.Length == 1 || (address[1] != '/' && address[1] != '\\');
+        }
+
+        return address.StartsWith('#')
+            || (Uri.TryCreate(address, UriKind.Absolute, out var parsed)
+                && FollowableSchemes.Contains(parsed.Scheme, StringComparer.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
     /// The address as this site reads it, without what the router does not look at (<c>?</c>, <c>#</c>, a last slash);
     /// null when it is not an address of this site. <c>//elsewhere.example</c> leaves the site while looking like a path.
     /// </summary>

@@ -96,10 +96,13 @@ public sealed partial class ContentWriteDtoValidator : AbstractValidator<Content
             .Must(collections => collections is null || collections.All(JsonQuery.IsCollectionKey))
             .WithMessage("errors.content.collectionInvalid");
 
-        RuleFor(content => content.Slug)
-            .NotEmpty().WithMessage("errors.required")
-            .MaximumLength(MaxSlugLength).WithMessage("errors.text.tooLong")
-            .Must(slug => slug is null || SlugPattern().IsMatch(slug)).WithMessage("errors.slug.invalid");
+        RuleFor(content => content.Slug).Custom((slug, context) =>
+        {
+            if (SlugProblem(slug) is { } problem)
+            {
+                context.AddFailure(problem);
+            }
+        });
 
         RuleFor(content => content.SchemaVersion)
             .Equal(BlockDocumentWalker.SupportedSchemaVersion)
@@ -204,6 +207,17 @@ public sealed partial class ContentWriteDtoValidator : AbstractValidator<Content
                 && !allowed.Contains(descriptor.Audience))
             .Select(block => block.Path);
     }
+
+    /// <summary>
+    /// What is wrong with a slug, as an i18n key, or <c>null</c> when nothing is. The one rule for a slug: the form
+    /// holds the author to it and the review holds the approver who corrects the address (#321, point 2), who
+    /// before could save <c>news/x</c> or 200 characters the unique index does not hold.
+    /// </summary>
+    public static string? SlugProblem(string? slug) =>
+        string.IsNullOrWhiteSpace(slug) ? "errors.required"
+        : slug.Length > MaxSlugLength ? "errors.text.tooLong"
+        : !SlugPattern().IsMatch(slug) ? "errors.slug.invalid"
+        : null;
 
     /// <summary>
     /// What may appear in an address. Lower case, digits and single dashes: the slug is part of a

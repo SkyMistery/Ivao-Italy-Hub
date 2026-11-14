@@ -50,8 +50,10 @@ public sealed class CalendarWriteDtoValidator : AbstractValidator<CalendarWriteD
                     .AnyAsync(row => row.Key == kind && row.IsActive, cancellationToken))
             .WithMessage("errors.calendar.kindUnknown");
 
+        // Drawn as a link on the calendar: by the rule of the addresses of a page (#321, point 5).
         RuleFor(entry => entry.Url)
-            .MaximumLength(MaxUrlLength).WithMessage("errors.text.tooLong");
+            .MaximumLength(MaxUrlLength).WithMessage("errors.text.tooLong")
+            .Must(SiteDestinations.IsFollowable).WithMessage(BlockDocumentWalker.UnfollowableAddressKey);
 
         // An entry that ends before it starts is not a short entry, it is a mistake somebody made
         // in two fields; the calendar would draw it as nothing at all.

@@ -1,4 +1,5 @@
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Localization;
 using Microsoft.AspNetCore.Diagnostics;
@@ -14,7 +15,10 @@ namespace IvaoHub.Core.Services;
 /// Turns the two failures the domain raises on its own into the answers the API promises:
 /// <see cref="ForbiddenDomainException"/>, which the save changes interceptor throws when a write
 /// crosses a department, into 403; and a concurrency failure, which means somebody else saved the
-/// row first, into 409 (design M0 sections 3.4 and 3.9).
+/// row first, into 409 (design M0 sections 3.4 and 3.9). A key a unique index already holds and a
+/// deadlock are the same news from the database — another write of the same rows won — and are a 409
+/// too (<see cref="WriteConflicts"/>, #321 point 4): two publications of one page at once, two new
+/// pages on one free address.
 /// <para>A third, <see cref="DomainRefusalException"/>, is a rule of the domain saying no — the
 /// last super administrator cannot be removed — and it comes out as the same 400 with i18n keys
 /// per field that a validator produces, because a form has one way of showing a refusal.</para>
@@ -33,17 +37,33 @@ public sealed class DomainExceptionHandler(
     {
         ArgumentNullException.ThrowIfNull(httpContext);
 
+        var conflict = exception is DomainRefusalException or ForbiddenDomainException or DbUpdateConcurrencyException
+            ? null
+            : WriteConflicts.AnotherWriteWon(exception);
+
         var (status, titleKey) = exception switch
         {
             DomainRefusalException => (StatusCodes.Status400BadRequest, CrudProblems.ValidationTitleKey),
             ForbiddenDomainException => (StatusCodes.Status403Forbidden, CrudProblems.ForbiddenTitleKey),
             DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, CrudProblems.ConflictTitleKey),
+            _ when conflict is not null => (StatusCodes.Status409Conflict, CrudProblems.ConflictTitleKey),
             _ => (0, string.Empty),
         };
 
         if (status == 0)
         {
             return false;
+        }
+
+        // Every unique index of the application answers here, and a check missing in front of one used to be a logged 500: told
+        // only "somebody saved first", it would leave nothing to find it by (the review of #494). The index, never the value.
+        if (conflict is not null)
+        {
+            logger.LogWarning(
+                "A write lost to another write of the same rows and was answered 409: {Code} on {Path}, key {Key}.",
+                conflict.ErrorCode,
+                httpContext.Request.Path,
+                WriteConflicts.KeyOf(conflict));
         }
 
         if (exception is ForbiddenDomainException forbidden)

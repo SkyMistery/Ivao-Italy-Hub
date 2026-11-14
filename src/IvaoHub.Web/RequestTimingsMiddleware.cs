@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime;
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Services;
 
 namespace IvaoHub.Web;
@@ -28,7 +29,8 @@ internal static class RequestTimingsMiddleware
             return app;
         }
 
-        long requests = 0;
+        var blocks = app.Services.GetRequiredService<BlockRegistry>();
+        var running = new RequestsInFlight();
         var pid = Environment.ProcessId;
 
         return app.Use(async (context, next) =>
@@ -41,7 +43,8 @@ internal static class RequestTimingsMiddleware
                 return;
             }
 
-            var number = Interlocked.Increment(ref requests);
+            // Its number, and the others it overlaps (issue #402): the column says when jit_ms and alloc_kb are its own.
+            var ticket = running.Begin();
             var uptime = timings.Elapsed;
             var started = Stopwatch.GetTimestamp();
             var jit = JitInfo.GetCompilationTime();
@@ -70,17 +73,18 @@ internal static class RequestTimingsMiddleware
             finally
             {
                 RequestTiming.Current = null;
+                var others = running.End(ticket);
                 try
                 {
                     var first = Interlocked.Read(ref firstByte);
                     log.TryWrite(new RequestTimingsLine(
                         DateTime.UtcNow,
                         pid,
-                        number,
+                        ticket.Number,
                         uptime,
                         KnownMethods.Contains(context.Request.Method) ? context.Request.Method : "OTHER",
                         failed && !context.Response.HasStarted ? StatusCodes.Status500InternalServerError : context.Response.StatusCode,
-                        Route(context),
+                        Route(context, blocks),
                         Stopwatch.GetElapsedTime(started),
                         first < 0 ? null : Stopwatch.GetElapsedTime(started, first),
                         timing.Commands,
@@ -91,7 +95,8 @@ internal static class RequestTimingsMiddleware
                         timing.CallTime,
                         JitInfo.GetCompilationTime() - jit,
                         JitInfo.GetCompiledMethodCount() - jitMethods,
-                        (GC.GetTotalAllocatedBytes() - allocated) / 1024));
+                        (GC.GetTotalAllocatedBytes() - allocated) / 1024,
+                        others));
                 }
 #pragma warning disable CA1031 // The line of a request is lost, never the request.
                 catch (Exception)
@@ -102,9 +107,14 @@ internal static class RequestTimingsMiddleware
         });
     }
 
-    /// <summary>The pattern the endpoint declares, never the path that was asked.</summary>
-    private static string Route(HttpContext context) => context.GetEndpoint() switch
+    /// <summary>
+    /// The pattern the endpoint declares, never the path that was asked. A data block's is the one exception, and still no
+    /// text of the request (issue #402): the type the registry holds, when the asked one is registered; the pattern if not.
+    /// </summary>
+    private static string Route(HttpContext context, BlockRegistry blocks) => context.GetEndpoint() switch
     {
+        RouteEndpoint { RoutePattern.RawText: ContentEndpoints.BlockDataPattern }
+            when blocks.Find(context.GetRouteValue("type") as string) is { } block => RequestTimingsLine.DataBlockRoute(block.Type),
         RouteEndpoint { RoutePattern.RawText: { Length: > 0 } pattern } => pattern.StartsWith('/') ? pattern : "/" + pattern,
         null => RequestTimingsLine.NoEndpoint(context.Request.Path.Value),
         _ => "(endpoint without a route)",

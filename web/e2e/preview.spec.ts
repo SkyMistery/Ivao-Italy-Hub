@@ -99,6 +99,15 @@ test('the preview runs a fragment the way the hub does, and switches what the hu
   expect(reach).toBe('refused');
 });
 
+test('a fragment goes in as it is written, dollar signs and all, as the hub puts it in', async ({ page }) => {
+  // #321, point 7: `String.replace` with a string read `$&`, `$'` and `` $` `` inside the fragment,
+  // where the server's ordinal `Replace` puts it in untouched.
+  await page.goto(previewFile());
+  await showFragment(page, '<p id="money">a $& b $\' c $` d $$ e</p>');
+
+  await expect(page.frameLocator('#frame').locator('#money')).toHaveText("a $& b $' c $` d $$ e");
+});
+
 test('what the hub would refuse, the preview says out loud', async ({ page }) => {
   await page.goto(previewFile());
 
