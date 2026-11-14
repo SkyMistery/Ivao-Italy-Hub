@@ -226,8 +226,7 @@ public sealed class PilotBookings(
                 {
                     await database.SaveChangesAsync(cancellationToken);
                 }
-                catch (Exception exception) when (!DatabaseErrors.Deadlocked(exception)
-                    && (WriteConflicts.AnotherWriteWon(exception) is not null || DatabaseErrors.LostTheSlot(exception)))
+                catch (Exception exception) when (WriteConflicts.DuplicateKey(exception) is not null || DatabaseErrors.LostTheSlot(exception))
                 {
                     // Taken by another pilot in the same instant, or deleted by the staff: this leg alone fails, the rest go on.
                     database.Entry(booking).State = EntityState.Detached;
