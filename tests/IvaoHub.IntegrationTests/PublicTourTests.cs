@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Awards;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
@@ -42,6 +43,7 @@ public sealed class PublicTourTests(MariaDbFixture mariaDb) : IAsyncLifetime
     private readonly List<long> _tours = [];
     private readonly List<long> _rules = [];
     private readonly List<long> _errors = [];
+    private readonly List<long> _awards = [];
 
     public async ValueTask InitializeAsync()
     {
@@ -62,6 +64,9 @@ public sealed class PublicTourTests(MariaDbFixture mariaDb) : IAsyncLifetime
             await database.Tours.IgnoreQueryFilters().Where(tour => _tours.Contains(tour.Id)).ExecuteDeleteAsync(token);
             await database.Rules.Where(rule => _rules.Contains(rule.Id)).ExecuteDeleteAsync(token);
             await database.Errors.Where(error => _errors.Contains(error.Id)).ExecuteDeleteAsync(token);
+
+            var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            await hub.Awards.Where(award => _awards.Contains(award.Id)).ExecuteDeleteAsync(token);
         }
 
         await FoTestAirports.RemoveAsync(_factory.Services, token);
@@ -135,6 +140,9 @@ public sealed class PublicTourTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(["3 NM"], rule.GetProperty("values").EnumerateArray().Select(value => value.GetString()));
         var error = Assert.Single(page.GetProperty("errors").EnumerateArray());
         Assert.Equal(Id(shown), Id(error));
+
+        // No award given: the page says none rather than leaving the field out.
+        Assert.Equal(JsonValueKind.Null, page.GetProperty("award").ValueKind);
 
         // Hidden: gone from the cards and gone from its address, for everybody (design M2 §1.2.2).
         await StatusAsync(coordinator, tourId, TourStatusAction.Hide, token);
@@ -225,6 +233,36 @@ public sealed class PublicTourTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // only one it can assert about, so what is asserted is the count.
         var one = await BlockAsync(visitor, """{"limit":1}""", token);
         Assert.Single(one);
+    }
+
+    /// <summary>
+    /// The head of the page of a tour names the award it gives (design <c>11-design-pagine-dei-tour</c> §4, phase 6): by name,
+    /// to a visitor who has no catalogue of awards to read, out of the core's catalogue that every reader may read.
+    /// </summary>
+    [Fact]
+    public async Task ThePageOfATourNamesTheAwardItGivesToAnybody()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(_factory, CoordinatorVid, token);
+        using var visitor = Anonymous();
+
+        var awardName = $"fo-test t10 award {Guid.NewGuid():N}"[..32];
+        var awardId = await SeedAwardAsync(awardName, token);
+
+        var slug = $"fo-test-public-{Guid.NewGuid():N}"[..28];
+        var tour = await CreatedAsync(
+            coordinator,
+            TourEndpoints.Pattern,
+            Payload(slug, released: true, preview: false) with { AwardId = awardId },
+            token);
+        _tours.Add(Id(tour));
+        await OkAsync(await coordinator.PostAsJsonAsync(Legs(Id(tour)), Leg(Rome, Milan), token), token);
+        await ReadyAsync(coordinator, Id(tour), token);
+
+        var page = await OkAsync(await visitor.GetAsync($"{PublicCards}/{slug}", token), token);
+        var award = page.GetProperty("award");
+        Assert.Equal(awardId, Id(award));
+        Assert.Equal(awardName, award.GetProperty("name").GetProperty("en").GetString());
     }
 
     /// <summary>
@@ -435,6 +473,18 @@ public sealed class PublicTourTests(MariaDbFixture mariaDb) : IAsyncLifetime
         response.EnsureSuccessStatusCode();
 
         return client;
+    }
+
+    private async Task<long> SeedAwardAsync(string name, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+        var award = new Award { OwnerDepartment = Department.FOD, Name = Text(name, Locales), IsActive = true };
+        hub.Awards.Add(award);
+        await hub.SaveChangesAsync(cancellationToken);
+        _awards.Add(award.Id);
+        return award.Id;
     }
 
     private async Task SeedUserAsync(int vid, string position, CancellationToken cancellationToken)

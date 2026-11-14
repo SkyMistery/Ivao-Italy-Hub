@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
@@ -22,12 +23,26 @@ namespace IvaoHub.Modules.FlightOps.Tours;
 /// </summary>
 public sealed class PublicTours(
     FlightOpsDbContext database,
+    HubDbContext hub,
     LegBook legs,
     EffectiveRules effective,
     RatingVocabulary ratings,
     IClock clock)
 {
     private static readonly ShapeMapper Shapes = new();
+
+    /// <summary>
+    /// The tabs of the page of a tour a link of the server opens (design <c>11-design-pagine-dei-tour</c> §4): the legs, the
+    /// rules, the pilot's reports. The page keeps its open tab in <c>?tab=</c>, and these are three of the names its
+    /// address takes (<c>TOUR_PAGE_TABS</c> in the browser); a name it does not know opens the first tab.
+    /// </summary>
+    public const string RouteTab = "?tab=route";
+
+    /// <inheritdoc cref="RouteTab"/>
+    public const string RulesTab = "?tab=rules";
+
+    /// <inheritdoc cref="RouteTab"/>
+    public const string ReportsTab = "?tab=reports";
 
     /// <summary>The states a card may be in: a closed tour is history, and history is not on the front page.</summary>
     public static readonly IReadOnlyList<TourStateKind> CardStates =
@@ -204,7 +219,25 @@ public sealed class PublicTours(
             grid.TotalEstimatedMinutes,
             parent is null ? null : new PublicParentDto(parent.Id, parent.Slug!, parent.Title),
             subtours,
-            tour.OwnerDepartment);
+            tour.OwnerDepartment,
+            await AwardAsync(tour.AwardId, cancellationToken));
+    }
+
+    /// <summary>
+    /// The award a tour gives, by name, from the core's catalogue — shared for reading, so the anonymous reader of the page
+    /// reads it as the back office does. An award deleted since leaves the tour without one on its page.
+    /// </summary>
+    private async Task<PublicAwardDto?> AwardAsync(long? awardId, CancellationToken cancellationToken)
+    {
+        if (awardId is not { } id)
+        {
+            return null;
+        }
+
+        return await hub.Awards.AsNoTracking()
+            .Where(award => award.Id == id)
+            .Select(award => new PublicAwardDto(award.Id, award.Name))
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     /// <summary>Ready, not hidden, not archived, not a template, with an address and both its dates, and released or shown as a preview.</summary>

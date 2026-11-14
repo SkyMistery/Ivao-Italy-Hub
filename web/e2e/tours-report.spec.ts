@@ -20,6 +20,7 @@ const words = JSON.parse(
   public: {
     myReports: string;
     sendReport: string;
+    tabs: { route: string };
     legProgress: Record<string, string>;
     reportStatus: Record<string, string>;
   };
@@ -109,6 +110,8 @@ const tour = {
   totalEstimatedMinutes: 120,
   parent: null,
   subtours: [],
+  department: 'FOD',
+  award: null,
 };
 
 const accepted = {
@@ -217,14 +220,17 @@ test('a pilot sees where they are, chooses the flight and sends the report', asy
 
   await page.goto(`/tours/${SLUG}`);
 
-  // The legs as the server says they are, and the report of the first.
+  // The legs as the server says they are, in the tab of the route (design 11 §4), and the report of the first in the tab of
+  // the reports.
+  await page.getByRole('tab', { name: words.public.tabs.route }).click();
   const legs = page.getByRole('table');
   await expect(legs.getByText(words.public.legProgress.Done!, { exact: true })).toBeVisible();
   await expect(legs.getByText(words.public.legProgress.Locked!, { exact: true })).toBeVisible();
+  await page.getByRole('tab', { name: words.public.myReports }).click();
   await expect(page.getByRole('heading', { name: words.public.myReports })).toBeVisible();
   await expect(page.getByText(words.public.reportStatus.Accepted!, { exact: true })).toBeVisible();
 
-  // «Send the report» goes to the next leg.
+  // «Send the report», in «Your tour» above the tabs, goes to the next leg.
   await page.getByRole('link', { name: words.public.sendReport }).click();
   await expect(page).toHaveURL(new RegExp(`/tours/${SLUG}/report\\?leg=2$`));
   await expect(page.getByRole('heading', { level: 1, name: words.report.title })).toBeVisible();
@@ -239,7 +245,8 @@ test('a pilot sees where they are, chooses the flight and sends the report', asy
   await page.getByLabel(words.report.fields.star!, { exact: true }).fill('ODINA1A');
   await page.getByRole('button', { name: words.report.send }).click();
 
-  await expect(page).toHaveURL(new RegExp(`/tours/${SLUG}$`));
+  // Back on the tab of the reports, where the one just sent is.
+  await expect(page).toHaveURL(new RegExp(`/tours/${SLUG}\\?tab=reports$`));
   expect(sent).toHaveLength(1);
   expect(sent[0]).toMatchObject({
     legId: 2,
@@ -268,7 +275,7 @@ test('without an archive the controllers are not available, and the report still
   await expect(page.getByText(words.report.atc.unavailable)).toBeVisible();
   await page.getByRole('button', { name: words.report.send }).click();
 
-  await expect(page).toHaveURL(new RegExp(`/tours/${SLUG}$`));
+  await expect(page).toHaveURL(new RegExp(`/tours/${SLUG}\\?tab=reports$`));
   expect(sent[0]).toMatchObject({ atcContacts: [], exemptions: [] });
 });
 

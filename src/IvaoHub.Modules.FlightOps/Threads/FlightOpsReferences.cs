@@ -106,7 +106,7 @@ public sealed class FlightOpsReferences(
         string url;
         if (pirep.Vid == currentUser.Vid)
         {
-            url = $"/tours/{tour.Slug ?? await ParentSlugAsync(tour, cancellationToken)}";
+            url = $"/tours/{tour.Slug ?? await ParentSlugAsync(tour, cancellationToken)}{PublicTours.ReportsTab}";
         }
         else if (http.HttpContext is { } context
             && (await authorization.AuthorizeAsync(context.User, TourPermissions.Validate)).Succeeded)
@@ -142,7 +142,7 @@ public sealed class FlightOpsReferences(
                 ("number", leg.Number.ToString(CultureInfo.InvariantCulture)),
                 ("from", leg.DepartureIcao),
                 ("to", leg.ArrivalIcao))),
-            $"/tours/{slug}",
+            $"/tours/{slug}{PublicTours.RouteTab}",
             []);
     }
 
@@ -167,7 +167,7 @@ public sealed class FlightOpsReferences(
                 ("tour", Title(pilot.Tour, locale)),
                 ("code", rule.Rule.Code),
                 ("title", rule.Rule.Title.Resolve(locale, division.Value.DefaultLocale) ?? string.Empty))),
-            $"/tours/{slug}",
+            $"/tours/{slug}{PublicTours.RulesTab}",
             []);
     }
 

@@ -359,7 +359,7 @@ test('a tour from a template, its legs imported, flown, checked, validated, disp
     );
 
     // ---------------------------------------------------------------- disputed by the pilot, upheld by the assistant
-    await pilot.goto(`/tours/${slug}`);
+    await pilot.goto(`/tours/${slug}?tab=reports`);
     await pilot.getByRole('button', { name: words.public.disputeAction, exact: true }).click();
     const dialog = pilot.getByRole('alertdialog');
     await dialog
@@ -382,7 +382,7 @@ test('a tour from a template, its legs imported, flown, checked, validated, disp
       assistant.getByText(words.review.options.status.Queued, { exact: true }).first(),
     ).toBeVisible();
 
-    await pilot.goto(`/tours/${slug}`);
+    await pilot.goto(`/tours/${slug}?tab=reports`);
     await expect(pilot.getByText(words.public.dispute.Upheld)).toBeVisible();
 
     // ---------------------------------------------------------------- taken again, and accepted

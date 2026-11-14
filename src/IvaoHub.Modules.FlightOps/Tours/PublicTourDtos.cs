@@ -87,6 +87,8 @@ public sealed record PublicSubtourDto(
 /// <para>What is here depends on the kind: a <c>Distance</c> tour carries the miles it asks for, an <c>Open</c> tour its
 /// goal and the filters and sequence rules every flight has to respect (§2.6.1), a <c>Container</c> its subtours and no
 /// legs of its own, a <c>Hub</c> tour its rotations.</para>
+/// <para>The award is the one the tour gives, by name: the head of the page says it next to the legs and the miles (design
+/// <c>11-design-pagine-dei-tour</c> §4, phase 6). None when the tour gives none.</para>
 /// </summary>
 public sealed record PublicTourDto(
     long Id,
@@ -123,10 +125,17 @@ public sealed record PublicTourDto(
     int? TotalEstimatedMinutes,
     PublicParentDto? Parent,
     IReadOnlyList<PublicSubtourDto> Subtours,
-    Department Department);
+    Department Department,
+    PublicAwardDto? Award);
 
 /// <summary>The container a subtour belongs to, so that its page can lead back to it.</summary>
 public sealed record PublicParentDto(long Id, string Slug, Localized<string> Title);
+
+/// <summary>
+/// The award a tour gives, as a reader needs it: its name. The core's catalogue is shared for reading (<c>Award</c>), and a
+/// visitor has no catalogue to look an identifier up in.
+/// </summary>
+public sealed record PublicAwardDto(long Id, Localized<string> Name);
 
 /// <summary>
 /// An error a rule in force names, when the division made it public (design M2 §5.3). The same rows the block

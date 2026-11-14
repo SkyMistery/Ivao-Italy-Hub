@@ -74,6 +74,8 @@ test('a pilot reports a flight on a tour, sees it in the queue and withdraws it'
     // ---------------------------------------------------------------- the pilot's page: nothing flown yet
     await page.goto(`/tours/${slug}`);
     await expect(page.getByRole('heading', { level: 1, name: tourName.en })).toBeVisible();
+    // The legs are in the tab of the route (design 11 §4); «Send the report» is in «Your tour», above the tabs.
+    await page.getByRole('tab', { name: flightops.public.tabs.route }).click();
     const legs = page.getByRole('table');
     await expect(legs.getByText(flightops.public.legProgress.Todo, { exact: true })).toBeVisible();
 
@@ -91,8 +93,10 @@ test('a pilot reports a flight on a tour, sees it in the queue and withdraws it'
     });
 
     // ---------------------------------------------------------------- in the queue
-    await expect(page).toHaveURL(new RegExp(`/tours/${slug}$`));
+    // Back on the tab of the reports, where the one just sent is; the leg waits, in the tab of the route.
+    await expect(page).toHaveURL(new RegExp(`/tours/${slug}\\?tab=reports$`));
     await expect(page.getByText(flightops.public.reportStatus.Queued, { exact: true })).toBeVisible();
+    await page.getByRole('tab', { name: flightops.public.tabs.route }).click();
     await expect(legs.getByText(flightops.public.legProgress.Pending, { exact: true })).toBeVisible();
 
     // The same flight again: it is claimed, so the tracker has nothing left to offer for this leg.
@@ -104,11 +108,13 @@ test('a pilot reports a flight on a tour, sees it in the queue and withdraws it'
     );
 
     // ---------------------------------------------------------------- withdrawn: the leg is to fly again
+    await page.getByRole('tab', { name: flightops.public.myReports }).click();
     await page.getByRole('button', { name: flightops.public.withdraw }).click();
     await whileWaitingFor(page, 'POST', '/withdraw', async () => {
       await page.getByRole('alertdialog').getByRole('button', { name: flightops.public.withdraw }).click();
     });
     await expect(page.getByText(flightops.public.reportStatus.Withdrawn, { exact: true })).toBeVisible();
+    await page.getByRole('tab', { name: flightops.public.tabs.route }).click();
     await expect(legs.getByText(flightops.public.legProgress.Todo, { exact: true })).toBeVisible();
 
     expect(complaints.filter((text) => !text.includes('favicon'))).toEqual([]);
@@ -128,6 +134,8 @@ function englishFlightOps() {
     public: {
       sendReport: string;
       withdraw: string;
+      myReports: string;
+      tabs: { route: string };
       legProgress: { Todo: string; Pending: string };
       reportStatus: { Queued: string; Withdrawn: string };
     };

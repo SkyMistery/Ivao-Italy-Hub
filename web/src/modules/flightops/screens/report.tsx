@@ -290,7 +290,8 @@ function ReportForm({
       tone: 'success',
       title: t(report === null ? 'flightops:report.sent' : 'flightops:report.resent'),
     });
-    await navigate({ href: back });
+    // Back on the tab of the pilot's reports, where the one just sent is (design 11 §4): the first tab is the briefing.
+    await navigate({ href: `${back}?tab=reports` });
   };
 
   return (

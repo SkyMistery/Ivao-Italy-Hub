@@ -59,6 +59,25 @@ Letto nel codice di `main` (0.14.0), `web/src/modules/flightops/screens/`.
      loro titolo; gli errori pubblici in fondo; «Chiedi su questa regola» resta dov'è.
   4. **I miei rapporti** (solo per chi ne ha): com'è oggi.
 
+**Com'è andata** (prima PR della fase 6, ramo `feat/tour-pages`, nota `2026-11-10-la-pagina-di-un-tour`): la pagina è `PublicTourPage`
+(`screens/public.tsx`) con tre pezzi nuovi del modulo — `TourHead` (`screens/TourFace.tsx`), che l'anteprima del back office riprenderà al
+passo dopo; i conti puri in `screens/tourPage.ts` (le schede che un tour ha, la prossima tratta, i gruppi delle tratte di un tour `Hub`,
+i gruppi delle regole, i numeri della testata), con i loro test. Le deviazioni:
+
+- **la testata non usa `Hero`** — deciso da Carmine il 12 novembre 2026, «(a) nel modulo» (nota, punto 1;
+  https://github.com/SkyMistery/Ivao-Italy-Hub/pull/482#issuecomment-6830756471): `Hero` disegna il titolo come `H2` e non prende
+  un'immagine; la testata è scritta nel modulo con `H1`, `Lead` e `Badge` di Atmosphere, il banner sopra e la striscia di `StatTile`
+  sotto, come `EventHead`;
+- **l'award per nome** è un campo nuovo della risposta pubblica, `PublicTourDto.Award`: il browser non ha un catalogo degli award;
+- **le schede nell'indirizzo** sono `overview` (che non si scrive), `route`, `rules`, `reports`; dopo l'invio di un report la pagina torna
+  su `?tab=reports`, e i link del server (la mail della decisione, i riferimenti dei chiarimenti) aprono la scheda giusta;
+- **su telefono** la tabella resta una tabella, con le righe disposte come blocchi; partenza e arrivo sono una colonna sola, «Percorso»;
+  la riga dei totali è sparita, perché i totali sono nella testata;
+- **«Correggi il report»** in «Il tuo tour», quando ciò che ferma il pilota è un report da modificare.
+
+⚠️ Gli spec e2e che aprivano la pagina e leggevano subito la tabella, la mappa o i report adesso aprono la scheda (`?tab=…` o un clic):
+`tours-map`, `tours-report` (smoke e completo), `tours-public`, `tours-dispute`, `tours-round`.
+
 ## 5. Le schermate per creare un tour (q)
 
 - **Un tour nuovo è un percorso a passi**, nell'ordine in cui lo si scrive: (1) **Tipo**, con una riga che spiega ogni tipo; (2) **Nome,

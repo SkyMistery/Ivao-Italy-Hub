@@ -156,6 +156,9 @@ test('a released tour is read by a visitor, with its legs on the map', async ({
     await expect(reader).toHaveURL(new RegExp(`/tours/${slug}$`));
     await expect(reader.getByRole('heading', { level: 1, name: tourName.en })).toBeVisible();
 
+    // The route is a tab of its own (design 11 §4).
+    await reader.getByRole('tab', { name: flightops.public.tabs.route }).click();
+
     // The legs, in order, with their distances and a flight plan for each.
     const legs = reader.getByRole('row');
     await expect(legs.filter({ hasText: benchAirports.rome }).first()).toBeVisible();
@@ -202,6 +205,6 @@ function englishFlightOps() {
       options: { kind: { Free: string } };
       actions: { ready: string; hide: string };
     };
-    public: { simbrief: string };
+    public: { simbrief: string; tabs: { route: string } };
   };
 }

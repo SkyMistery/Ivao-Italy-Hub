@@ -989,7 +989,6 @@
     "period": "Dal {{from}} al {{to}}",
     "partOf": "Fa parte di {{title}}",
     "subtours": "Sottotour",
-    "legs": "Tratte",
     "legNumber": "#",
     "legsAndDistance_one": "{{count}} tratta · {{distance}} NM",
     "legsAndDistance_other": "{{count}} tratte · {{distance}} NM",
@@ -999,7 +998,6 @@
     "onLeg": "sulla tratta {{number}}",
     "simbrief": "SimBrief",
     "notReleased": "Non ancora rilasciata",
-    "total": "Totale",
     "facts": {
       "title": "Che cosa chiede il tour",
       "aircraft": "Aerei",
@@ -1024,7 +1022,7 @@
       "Pending": "In attesa",
       "Locked": "Bloccata"
     },
-    "signInToReport": "Accedi per volare il tour e inviare i report",
+    "signInToReport": "Entra per volare questo tour",
     "pilot": "Il tuo tour",
     "finished": "Hai completato questo tour.",
     "goalProgress": "Obiettivo: {{done}} su {{target}}",
@@ -1067,6 +1065,35 @@
     "fields": {
       "text": "Che cosa va riguardato",
       "body": "Che cosa non va"
+    },
+    "signInLead": "Il tuo avanzamento, la prossima tratta e i tuoi report sono qui quando entri.",
+    "notStarted": "Non ancora iniziato",
+    "nextLeg": "Prossima tratta",
+    "correctReport": "Correggi il report",
+    "noBriefing": "Questo tour non ha ancora un briefing.",
+    "route": "Percorso",
+    "betweenHubs": "Fra due hub",
+    "rotation": "Rotazione {{number}} da {{hub}}",
+    "amends": "Modifica {{code}}",
+    "tabs": {
+      "overview": "Panoramica",
+      "route": "Percorso",
+      "rules": "Regole"
+    },
+    "figures": {
+      "legs": "Tratte",
+      "distance": "Distanza",
+      "time": "Tempo stimato",
+      "timeWith": "Aereo di riferimento: {{type}}",
+      "toComplete_one": "{{count}} da completare",
+      "toComplete_other": "{{count}} da completare",
+      "moreAircraft_one": "e {{count}} altro",
+      "moreAircraft_other": "e altri {{count}}",
+      "award": "Award"
+    },
+    "ruleGroups": {
+      "division": "Regole di ogni tour",
+      "tour": "Regole di questo tour"
     }
   },
   "report": {
