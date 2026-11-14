@@ -4,8 +4,8 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { LocaleTabs } from '../../shared/forms';
-import { readWorkbook, rowsOfPastedText } from '../../shared/files/sheet';
-import { usePreviewLocale } from '../../shared/i18n/previewLocale';
+import { SHEET_FILE_TYPES, readWorkbook, rowsOfPastedText } from '../../shared/files/sheet';
+import { useLocaleOnScreen } from '../../shared/i18n/previewLocale';
 import { Dialog } from '../../shared/ui';
 
 import {
@@ -25,10 +25,16 @@ import {
   type TableShape,
 } from './tableGrid';
 
-/** What a file of a table may be: what SheetJS reads, as `LegImport` takes it. */
-const SHEET_FILES = '.csv,.xlsx,.xls,.ods,text/csv';
+/**
+ * What the tools last said: a refusal, or what a table they wrote now holds — said only while the block holds that table
+ * (`table`, its mark), so that an undo takes the line away with the table it spoke of.
+ */
+type Said = { tone: 'refused'; text: string } | { tone: 'done'; text: string; table: string } | null;
 
-type Said = { tone: 'done' | 'refused'; text: string } | null;
+/** The mark of the table a block holds: its columns and rows, which are what the tools write. */
+function tableMark(props: Record<string, unknown>): string {
+  return JSON.stringify([props.columns, props.rows]) ?? '';
+}
 
 /**
  * The table's own tools in the properties panel (design of the editor's phase 3, §5.1, PR 3.12): paste from a
@@ -50,8 +56,7 @@ export function TableTools({
 }) {
   const { t, i18n } = useTranslation();
   const id = useId();
-  const preferred = usePreviewLocale() ?? i18n.language;
-  const locale = locales.includes(preferred) ? preferred : (locales[0] ?? preferred);
+  const locale = useLocaleOnScreen(locales) ?? i18n.language;
   const language = new Intl.DisplayNames([i18n.language], { type: 'language' }).of(locale) ?? locale;
 
   const [header, setHeader] = useState(true);
@@ -59,10 +64,15 @@ export function TableTools({
   const [said, setSaid] = useState<Said>(null);
 
   const replaceWith = (table: TableShape) => {
-    onApply(withTable(props, table));
+    const written = withTable(props, table);
+    onApply(written);
     setSaid({
       tone: 'done',
-      text: t('blocks.table.tools.replaced', { columns: table.columns.length, rows: table.rows.length }),
+      text: t('blocks.table.tools.replaced', {
+        columns: t('blocks.table.tools.columnCount', { count: table.columns.length }),
+        rows: t('blocks.table.tools.rowCount', { count: table.rows.length }),
+      }),
+      table: tableMark(written),
     });
   };
 
@@ -98,17 +108,29 @@ export function TableTools({
   };
 
   const importFile = async (file: File) => {
-    const workbook = await readWorkbook(file);
-    if (workbook === null) {
+    let made: SheetTable = { kind: 'empty' };
+    try {
+      // A short date of Excel is written in the language the table is written in.
+      const workbook = await readWorkbook(file, { locale });
+      if (workbook === null) {
+        setSaid({ tone: 'refused', text: t('blocks.table.tools.unreadable') });
+        return;
+      }
+
+      // The first sheet that holds something: a workbook may open on an empty one. The others are not read.
+      for (const name of workbook.sheets) {
+        made = tableFromSheet(workbook.cells(name, { formatted: true }), { header, locale, locales });
+        if (made.kind !== 'empty') {
+          break;
+        }
+      }
+    } catch {
+      // A sheet read but not made rows: a file that cannot be read, said, not a promise rejected with nothing on screen.
       setSaid({ tone: 'refused', text: t('blocks.table.tools.unreadable') });
       return;
     }
 
-    // The first sheet that holds something: a workbook may open on an empty one.
-    const made = workbook.sheets
-      .map((name) => tableFromSheet(workbook.cells(name, { formatted: true }), { header, locale, locales }))
-      .find((candidate) => candidate.kind !== 'empty');
-    take(made ?? { kind: 'empty' });
+    take(made);
   };
 
   const rows = Number(size.rows);
@@ -144,7 +166,7 @@ export function TableTools({
           {t('blocks.table.tools.fromFile')}
           <input
             type="file"
-            accept={SHEET_FILES}
+            accept={SHEET_FILE_TYPES}
             className="sr-only"
             onChange={(event) => {
               const file = event.target.files?.[0];
@@ -198,14 +220,16 @@ export function TableTools({
         </div>
       </fieldset>
 
-      {said === null ? null : (
-        <p
-          role={said.tone === 'refused' ? 'alert' : 'status'}
-          className={`text-sm ${said.tone === 'refused' ? 'text-destructive' : 'text-muted-foreground'}`}
-        >
+      {/* Mounted before it says anything, and never hidden: a live region is announced when its text changes, not when it
+          appears with it. Empty, it takes back the gap above it. A refusal is an alert, announced as it appears. */}
+      <p role="status" className="text-muted-foreground text-sm empty:-mt-3">
+        {said?.tone === 'done' && said.table === tableMark(props) ? said.text : null}
+      </p>
+      {said?.tone === 'refused' ? (
+        <p role="alert" className="text-destructive text-sm">
           {said.text}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -249,8 +273,10 @@ function TableGrid({
               {t('common.cancel')}
             </Button>
           </DialogClose>
+          {/* A table without columns has rows of nothing, which the check before publishing would let through. */}
           <Button
             type="button"
+            disabled={draft.columns.length === 0}
             onClick={() => {
               onApply(withTable(props, draft));
               setOpen(false);

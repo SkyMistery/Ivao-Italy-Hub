@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import * as XLSX from 'xlsx';
 import { afterEach, expect, test, vi } from 'vitest';
 
 import englishCommon from '../../../../locales/en/common.json';
@@ -41,9 +42,21 @@ const section = {
   sections: [],
 };
 
-/** The panel as the editor holds it: what it applies becomes the block it is drawn with next. */
-function Editor({ onApply, start }: { onApply: (props: Record<string, unknown>) => void; start: object }) {
-  const [current, setCurrent] = useState<Record<string, unknown>>({ ...start });
+/**
+ * The panel as the editor holds it: what it applies becomes the block it is drawn with next, and an undo — the editor's,
+ * from outside the panel — puts back the props before the last write.
+ */
+function Editor({
+  onApply,
+  start,
+  locales,
+}: {
+  onApply: (props: Record<string, unknown>) => void;
+  start: object;
+  locales: readonly string[];
+}) {
+  const [history, setHistory] = useState<Record<string, unknown>[]>([{ ...start }]);
+  const current = history.at(-1) ?? {};
   const block: BlockEnvelope = {
     id: 'b_1',
     type: 'table',
@@ -58,30 +71,47 @@ function Editor({ onApply, start }: { onApply: (props: Record<string, unknown>) 
   };
 
   return (
-    <BlockProperties
-      block={block}
-      section={section}
-      sections={[{ value: 's_1', label: 'Intro' }]}
-      locales={['it', 'en']}
-      division={{ defaultLocale: 'it', timezone: 'Europe/Rome' }}
-      mediaLibrary={{
-        queryKey: ['media'],
-        queryFn: () => Promise.resolve({ items: [], page: 1, pageSize: 20, total: 0 }),
-      }}
-      onApplyProps={(next) => {
-        onApply(next);
-        setCurrent(next);
-      }}
-      onEnvelope={vi.fn()}
-      onMoveTo={vi.fn()}
-    />
+    <>
+      <button
+        type="button"
+        onClick={() => setHistory((written) => written.slice(0, Math.max(1, written.length - 1)))}
+      >
+        Undo
+      </button>
+      <BlockProperties
+        block={block}
+        section={section}
+        sections={[{ value: 's_1', label: 'Intro' }]}
+        locales={locales}
+        division={{ defaultLocale: 'it', timezone: 'Europe/Rome' }}
+        mediaLibrary={{
+          queryKey: ['media'],
+          queryFn: () => Promise.resolve({ items: [], page: 1, pageSize: 20, total: 0 }),
+        }}
+        onApplyProps={(next) => {
+          onApply(next);
+          setHistory((written) => [...written, next]);
+        }}
+        onEnvelope={vi.fn()}
+        onMoveTo={vi.fn()}
+      />
+    </>
   );
 }
 
-function draw(start: object = props) {
+function draw(start: object = props, locales: readonly string[] = ['it', 'en']) {
   const onApply = vi.fn<(props: Record<string, unknown>) => void>();
-  renderWithProviders(<Editor onApply={onApply} start={start} />);
+  renderWithProviders(<Editor onApply={onApply} start={start} locales={locales} />);
   return { onApply, last: () => onApply.mock.lastCall?.[0] };
+}
+
+/** «The table now has …», as the language files put it together. */
+function replacedLine(columns: number, rows: number) {
+  const count = (one: string, other: string, n: number) => (n === 1 ? one : say(other, { count: n }));
+  return say(words.tools.replaced, {
+    columns: count(words.tools.columnCount_one, words.tools.columnCount_other, columns),
+    rows: count(words.tools.rowCount_one, words.tools.rowCount_other, rows),
+  });
 }
 
 function clipboardHolds(read: () => Promise<string>) {
@@ -110,7 +140,23 @@ test('a paste from Excel replaces the table, the first row its heading, in the l
       { cells: [{ text: both('', 'LIRR_CTR') }, { text: both('', '') }] },
     ],
   });
-  expect(screen.getByRole('status')).toHaveTextContent(say(words.tools.replaced, { columns: 2, rows: 2 }));
+  expect(screen.getByRole('status')).toHaveTextContent(replacedLine(2, 2));
+});
+
+test('the line that says what happened counts in words, is there before it says anything, and goes with an undo', async () => {
+  const user = userEvent.setup();
+  draw();
+  // A live region is announced when its text changes, not when it is mounted with it: it waits, empty.
+  expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  clipboardHolds(() => Promise.resolve('Only\nrow\n'));
+
+  await user.click(screen.getByRole('button', { name: words.tools.paste }));
+  expect(screen.getByRole('status')).toHaveTextContent(replacedLine(1, 1));
+  expect(replacedLine(1, 1)).toBe('The table now has one column and one row.');
+
+  // Undone, the table is no longer the one the line speaks of.
+  await user.click(screen.getByRole('button', { name: 'Undo' }));
+  expect(screen.getByRole('status')).toBeEmptyDOMElement();
 });
 
 test('without the heading ticked, the first row is a row', async () => {
@@ -147,7 +193,7 @@ test('a file is read as a sheet, and one that is not is refused', async () => {
     screen.getByLabelText(words.tools.fromFile),
     new File(['Day;From\r\nFriday;20:00z\r\n'], 'hours.csv', { type: 'text/csv' }),
   );
-  expect(await screen.findByRole('status')).toBeInTheDocument();
+  await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(replacedLine(2, 1)));
   expect(last()?.rows).toEqual([{ cells: [{ text: both('', 'Friday') }, { text: both('', '20:00z') }] }]);
 
   onApply.mockClear();
@@ -157,6 +203,32 @@ test('a file is read as a sheet, and one that is not is refused', async () => {
   );
   expect(await screen.findByRole('alert')).toHaveTextContent(words.tools.unreadable);
   expect(onApply).not.toHaveBeenCalled();
+});
+
+test('a CSV in UTF-8 without its mark keeps its accents, and a short date of Excel is written in the language on screen', async () => {
+  const user = userEvent.setup();
+  const { last } = draw(props, ['it']);
+
+  // Google Sheets and LibreOffice write UTF-8 without the mark.
+  await user.upload(
+    screen.getByLabelText(words.tools.fromFile),
+    new File([new TextEncoder().encode('Giorno;Ora\r\nLunedì;18:00\r\n')], 'orari.csv', { type: 'text/csv' }),
+  );
+  await waitFor(() =>
+    expect(last()?.rows).toEqual([{ cells: [{ text: { it: 'Lunedì' } }, { text: { it: '18:00' } }] }]),
+  );
+
+  // 1 October 2026 in Excel's format 14, what an Italian Excel gives a date typed as 01/10/2026.
+  const sheet = XLSX.utils.aoa_to_sheet([['Giorno'], [null]]);
+  sheet.A2 = { t: 'n', v: 46296, z: 'm/d/yy' };
+  sheet['!ref'] = 'A1:A2';
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, 'Orari');
+  await user.upload(
+    screen.getByLabelText(words.tools.fromFile),
+    new File([XLSX.write(book, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer], 'orari.xlsx'),
+  );
+  await waitFor(() => expect(last()?.rows).toEqual([{ cells: [{ text: { it: '01/10/2026' } }] }]));
 });
 
 test('N × M makes an empty table, within the limits', async () => {
@@ -233,6 +305,39 @@ test('the grid has a tab per language, and a dialog closed without applying chan
   await user.click(screen.getByRole('button', { name: words.grid.open }));
   await user.click(within(screen.getByRole('dialog')).getByRole('tab', { name: /Italian/ }));
   expect(screen.getByLabelText(say(words.grid.cell, { row: 1, column: 1 }))).toHaveValue('Lunedì');
+});
+
+test('a grid without columns cannot be applied: its rows would be blank rows', async () => {
+  const user = userEvent.setup();
+  draw();
+
+  await user.click(screen.getByRole('button', { name: words.grid.open }));
+  const dialog = screen.getByRole('dialog', { name: words.grid.title });
+  await user.click(within(dialog).getByRole('button', { name: say(words.grid.removeColumn, { column: 2 }) }));
+  await user.click(within(dialog).getByRole('button', { name: say(words.grid.removeColumn, { column: 1 }) }));
+
+  expect(within(dialog).getByRole('button', { name: words.grid.apply })).toBeDisabled();
+});
+
+test('an undo of headings written in the grid draws the form again, and the form does not write them back', async () => {
+  const user = userEvent.setup();
+  const { last } = draw();
+
+  // Only the headings change: the rows stay what they were.
+  await user.click(screen.getByRole('button', { name: words.grid.open }));
+  const dialog = screen.getByRole('dialog', { name: words.grid.title });
+  const heading = within(dialog).getByLabelText(say(words.grid.heading, { column: 1 }));
+  await user.clear(heading);
+  await user.type(heading, 'Weekday');
+  await user.click(within(dialog).getByRole('button', { name: words.grid.apply }));
+  expect(last()?.columns).toEqual([{ label: both('Giorno', 'Weekday'), align: 'left' }, props.columns[1]]);
+
+  await user.click(screen.getByRole('button', { name: 'Undo' }));
+  await user.type(screen.getByDisplayValue('Hours'), '!');
+
+  await waitFor(() => expect(last()?.caption).toEqual(both('Orari', 'Hours!')));
+  expect(last()?.columns).toEqual(props.columns);
+  expect(last()?.rows).toEqual(props.rows);
 });
 
 test('after a tool writes, the form writes what the tool wrote and not the table it held before', async () => {

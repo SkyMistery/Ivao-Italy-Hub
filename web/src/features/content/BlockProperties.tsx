@@ -502,8 +502,16 @@ export function BlockProperties({
   const { t, i18n } = useTranslation();
   const read = useLocalized();
   const registration = registry.blocks.find((candidate) => candidate.type === block.type);
-  // How many times a table's tools have written it (`TableTools`): the form is drawn again after each.
-  const [toolWrites, setToolWrites] = useState(0);
+  // A table's tools write its columns and rows from outside the form, and so does an undo; the form — which carries the
+  // rows without drawing them, and writes all it holds with every keystroke — would write back the table it was drawn
+  // with. So it is drawn again whenever the block's table is not the one the form itself last wrote (`table`, its mark),
+  // and only then: what is typed into the form is that table, and nothing is drawn again under somebody typing, a heading
+  // included.
+  const tableNow = registration?.editedAsGrid === true ? tableMarkOf(block.props) : 0;
+  const [formTable, setFormTable] = useState({ table: tableNow, drawing: 0 });
+  if (formTable.table !== tableNow) {
+    setFormTable({ table: tableNow, drawing: formTable.drawing + 1 });
+  }
 
   // The collections a list block may name, of every department, grouped by the department that
   // wrote them (G20). Asked only by a block that has such a property.
@@ -590,11 +598,6 @@ export function BlockProperties({
     const props = withWidth(written);
     return oldAlign ? onEnvelope(placedAt(block, alignOf(block), props)) : onApplyProps(props, options);
   };
-  // A table's tools write its columns and rows from outside the form, and the form — which carries the rows without
-  // drawing them, and writes all it holds with every keystroke — is drawn again from what they wrote; and from what an
-  // undo puts back, so that the next keystroke does not write the table it took away. Nothing typed into the form
-  // changes the rows, so the form is never drawn again under somebody typing.
-  const gridWrites = registration.editedAsGrid === true ? fingerprint(block.props.rows) : 0;
   // Beside the block's name, so a module's block has its line in its own language files too. Every
   // block has one since PR 3.0a (`app/blockAbout.test.ts`); the guard stays for a build whose
   // language files are late.
@@ -668,10 +671,7 @@ export function BlockProperties({
         <TableTools
           props={block.props}
           locales={locales}
-          onApply={(props) => {
-            setToolWrites((count) => count + 1);
-            applyProps(props, { step: true });
-          }}
+          onApply={(props) => applyProps(props, { step: true })}
         />
       ) : null}
 
@@ -704,7 +704,7 @@ export function BlockProperties({
       ) : null}
 
       <SchemaForm
-        key={`${toolWrites}:${gridWrites}`}
+        key={formTable.drawing}
         schema={schema}
         defaults={withWidth(withDefaults(registration.schema, block.props, locales))}
         locales={locales}
@@ -718,18 +718,25 @@ export function BlockProperties({
         // language would otherwise travel as `{ en: "", it: "" }`, and publication — which reads
         // the body without knowing what a block means — would read that as a translation hole and
         // refuse the page (`writtenValues`).
-        onChange={(values) => applyProps(writtenValues(registration.schema, values))}
+        onChange={(values) => {
+          const written = writtenValues(registration.schema, values);
+          if (registration.editedAsGrid === true) {
+            // The table the form writes is the one it holds: the block coming back with it is not a reason to draw it.
+            setFormTable((drawn) => ({ ...drawn, table: tableMarkOf(written) }));
+          }
+          applyProps(written);
+        }}
       />
     </div>
   );
 }
 
 /**
- * A short mark of a value, for a key: the same value gives the same mark. Not a hash to trust with anything but telling
- * two tables apart (djb2 over the JSON).
+ * A short mark of a table's columns and rows: the same table gives the same mark. Not a hash to trust with anything but
+ * telling two tables apart (djb2 over the JSON).
  */
-function fingerprint(value: unknown): number {
-  const json = JSON.stringify(value) ?? '';
+function tableMarkOf(props: Record<string, unknown>): number {
+  const json = JSON.stringify([props.columns, props.rows]) ?? '';
   let hash = 5381;
   for (let index = 0; index < json.length; index++) {
     hash = ((hash << 5) + hash + json.charCodeAt(index)) | 0;
