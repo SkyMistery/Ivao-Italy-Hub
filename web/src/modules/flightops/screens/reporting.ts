@@ -1,5 +1,6 @@
 import { ApiError } from '../../../shared/api/problem';
 import type { ChoiceOption } from '../../../shared/forms';
+import type { MomentOptions } from '../../../shared/i18n/useMoment';
 import type { RouteMapLeg, RouteMapStatus } from '../../../shared/ui';
 import type {
   AtcContactDto,
@@ -227,4 +228,18 @@ export function initialReferences(
   ];
 
   return choices.map((choice) => choice.value).filter((value) => wanted.includes(value));
+}
+
+/**
+ * The end of a flight on the network, as its line writes it after the start (#334, item 4): the time alone on the start's day, and
+ * the date with it on another — a flight that lands at 02:45 the next day never reads as a bare 02:45. As the events' `endOfHours`
+ * and the training's `spanText` write theirs; `moment` is `useMoment`'s formatter, handed in so that a test reads this alone.
+ */
+export function sessionEnd(
+  session: Pick<TrackerSessionDto, 'startedAt' | 'endedAt'>,
+  moment: (value: unknown, options?: MomentOptions) => string,
+): string {
+  return moment(session.startedAt, { time: false }) === moment(session.endedAt, { time: false })
+    ? moment(session.endedAt, { date: false })
+    : moment(session.endedAt);
 }

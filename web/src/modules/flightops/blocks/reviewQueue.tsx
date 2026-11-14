@@ -26,7 +26,13 @@ export function ReviewQueueBlock({ data }: BlockComponentProps) {
   const { t } = useTranslation();
   const read = useLocalized();
   const moment = useMoment();
-  const items = (data as ReviewQueueData | null | undefined)?.items;
+  const answer = data as ReviewQueueData | null | undefined;
+  const items = answer?.items;
+
+  // `null` is a request that failed, `undefined` one on its way: the two never read the same (the core's `NoRows`).
+  if (answer === null) {
+    return <p className="text-muted-foreground text-sm">{t('flightops:blocks.unavailable')}</p>;
+  }
 
   if (items === undefined || items.length === 0) {
     return (

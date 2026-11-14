@@ -979,7 +979,8 @@
       "none": "Non hai ancora iniziato un tour.",
       "toTours": "Vedi i tour",
       "summary": "{{legs}} leg accettate · {{hours}} h {{minutes}} min volati · {{tours}} tour completati"
-    }
+    },
+    "unavailable": "Al momento non si riesce a leggere. Riprova più tardi."
   },
   "public": {
     "title": "Tour",
