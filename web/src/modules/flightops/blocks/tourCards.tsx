@@ -26,7 +26,13 @@ export interface TourCardsData {
 export function TourCardsBlock({ data }: BlockComponentProps) {
   const { t } = useTranslation();
   const read = useLocalized();
-  const items = (data as TourCardsData | null | undefined)?.items;
+  const answer = data as TourCardsData | null | undefined;
+  const items = answer?.items;
+
+  // `null` is a request that failed, `undefined` one on its way: the two never read the same (the core's `NoRows`).
+  if (answer === null) {
+    return <p className="text-muted-foreground text-sm">{t('flightops:blocks.unavailable')}</p>;
+  }
 
   if (items === undefined) {
     return <p className="text-muted-foreground text-sm">{t('common.loading')}</p>;
