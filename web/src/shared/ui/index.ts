@@ -30,14 +30,9 @@ export {
 export { MediaPicker, type PickableMedia, type MediaPage, type MediaLibraryQuery } from './MediaPicker';
 export { narrowLibrary, NOTHING_ASKED, type MediaBrowse } from './narrowLibrary';
 export { NotFound, Forbidden, Failed, RouteError } from './status-pages';
-export {
-  RouteMap,
-  BASE_MAP_URL,
-  type RouteMapAirport,
-  type RouteMapLeg,
-  type RouteMapProps,
-  type RouteMapStatus,
-  type RouteMapTrack,
-} from './RouteMap';
+// ⚠️ The map through its lazy half, and its types with `export type` (issue #400, `LazyRouteMap.tsx`): a value exported
+// from './RouteMap' here puts MapLibre back into the entry chunk of every page, and an inline `{ type … }` its stylesheet.
+export { RouteMap } from './LazyRouteMap';
+export type { RouteMapAirport, RouteMapLeg, RouteMapProps, RouteMapStatus, RouteMapTrack } from './RouteMap';
 export { boundsOf, greatCirclePath, trackPath, GREAT_CIRCLE_SEGMENTS, type GeoPoint } from './greatCircle';
 export { UI_KIT_COMPONENTS, type UiKitComponent } from './catalog';
