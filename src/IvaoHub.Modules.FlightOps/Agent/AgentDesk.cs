@@ -1,3 +1,4 @@
+using System.Data;
 using System.Globalization;
 using System.Security.Claims;
 using System.Text.Json;
@@ -29,6 +30,9 @@ public enum AgentWriteResult
     Refused,
     Forbidden,
     NotWaiting,
+
+    /// <summary>The report changed between its reading and the write — a decision, a reopening, a review taken.</summary>
+    Changed,
 }
 
 /// <summary>
@@ -62,64 +66,85 @@ public sealed partial class AgentDesk(
 
     /// <summary>
     /// The reports waiting — queued, or in somebody's review — that the member may decide, the ones waiting longest first; with
-    /// <paramref name="pending"/>, only those with an agent's check and no result from an agent since they were queued.
+    /// <paramref name="pending"/>, only those with an agent's check and no result from an agent since they were queued. At most
+    /// <see cref="MaxQueue"/>, counted after both filters (issue #328, item 2): the waiting reports are read a page at a time,
+    /// oldest first, until the queue is full or none is left, so a validator of one tour is not starved by two hundred older
+    /// reports of the others.
     /// </summary>
     public async Task<IReadOnlyList<AgentQueueItemDto>> QueueAsync(bool pending, CancellationToken cancellationToken)
     {
-        var waiting = await CrudSource.BackOffice<Pirep>(database).AsNoTracking()
-            .Where(report => report.Status == PirepStatus.Queued || report.Status == PirepStatus.InReview)
-            .OrderBy(report => report.QueuedAt)
-            .ThenBy(report => report.Id)
-            .Take(MaxQueue)
-            .ToListAsync(cancellationToken);
+        var mine = new List<(Pirep Report, List<string> Wanted, DateTime? RanAt)>(MaxQueue);
+        var seen = new HashSet<long>();
 
-        var mine = new List<Pirep>(waiting.Count);
-        foreach (var report in waiting)
+        for (var skip = 0; mine.Count < MaxQueue; skip += MaxQueue)
         {
-            if (await reviews.MayValidateAsync(report))
+            var page = await CrudSource.BackOffice<Pirep>(database).AsNoTracking()
+                .Where(report => report.Status == PirepStatus.Queued || report.Status == PirepStatus.InReview)
+                .OrderBy(report => report.QueuedAt)
+                .ThenBy(report => report.Id)
+                .Skip(skip)
+                .Take(MaxQueue)
+                .ToListAsync(cancellationToken);
+
+            var decidable = new List<Pirep>(page.Count);
+            foreach (var report in page)
             {
-                mine.Add(report);
+                // A report that moved between two pages while they were read is counted once.
+                if (seen.Add(report.Id) && await reviews.MayValidateAsync(report))
+                {
+                    decidable.Add(report);
+                }
+            }
+
+            var ids = decidable.Select(report => report.Id).ToList();
+            var lastRun = await database.CheckResults.AsNoTracking()
+                .Where(result => ids.Contains(result.PirepId) && result.RanBy == CheckRanBy.Agent)
+                .GroupBy(result => result.PirepId)
+                .Select(group => new { PirepId = group.Key, RanAt = group.Max(result => result.RanAt) })
+                .ToDictionaryAsync(row => row.PirepId, row => row.RanAt, cancellationToken);
+
+            foreach (var report in decidable.TakeWhile(_ => mine.Count < MaxQueue))
+            {
+                var wanted = checks.WantedOfTheAgent(PirepSubmission.Snapshot(report)).Keys.ToList();
+                DateTime? ranAt = lastRun.TryGetValue(report.Id, out var at) && at >= report.QueuedAt ? at : null;
+                if (!pending || (wanted.Count > 0 && ranAt is null))
+                {
+                    mine.Add((report, wanted, ranAt));
+                }
+            }
+
+            if (page.Count < MaxQueue)
+            {
+                break;
             }
         }
 
-        var ids = mine.Select(report => report.Id).ToList();
-        var tourIds = mine.Select(report => report.TourId).Distinct().ToList();
+        var tourIds = mine.Select(entry => entry.Report.TourId).Distinct().ToList();
         var titles = await CrudSource.BackOffice<Tour>(database).AsNoTracking()
             .Where(tour => tourIds.Contains(tour.Id))
             .ToDictionaryAsync(tour => tour.Id, tour => tour.Title, cancellationToken);
-        var lastRun = await database.CheckResults.AsNoTracking()
-            .Where(result => ids.Contains(result.PirepId) && result.RanBy == CheckRanBy.Agent)
-            .GroupBy(result => result.PirepId)
-            .Select(group => new { PirepId = group.Key, RanAt = group.Max(result => result.RanAt) })
-            .ToDictionaryAsync(row => row.PirepId, row => row.RanAt, cancellationToken);
 
-        var items = new List<AgentQueueItemDto>(mine.Count);
-        foreach (var report in mine)
-        {
-            var wanted = checks.WantedOfTheAgent(PirepSubmission.Snapshot(report)).Keys.ToList();
-            DateTime? ranAt = lastRun.TryGetValue(report.Id, out var at) && at >= report.QueuedAt ? at : null;
-            if (pending && (wanted.Count == 0 || ranAt is not null))
+        return
+        [
+            .. mine.Select(entry =>
             {
-                continue;
-            }
-
-            var leg = PirepSubmission.LegSnapshot(report);
-            items.Add(new AgentQueueItemDto(
-                report.Id,
-                report.TourId,
-                titles.GetValueOrDefault(report.TourId) ?? Localized<string>.Empty,
-                leg.Number,
-                report.DepartureIcao,
-                report.ArrivalIcao,
-                report.Vid,
-                report.TakeoffAt,
-                report.QueuedAt,
-                report.Status.ToString(),
-                wanted,
-                ranAt));
-        }
-
-        return items;
+                var (report, wanted, ranAt) = entry;
+                var leg = PirepSubmission.LegSnapshot(report);
+                return new AgentQueueItemDto(
+                    report.Id,
+                    report.TourId,
+                    titles.GetValueOrDefault(report.TourId) ?? Localized<string>.Empty,
+                    leg.Number,
+                    report.DepartureIcao,
+                    report.ArrivalIcao,
+                    report.Vid,
+                    report.TakeoffAt,
+                    report.QueuedAt,
+                    report.Status.ToString(),
+                    wanted,
+                    ranAt);
+            }),
+        ];
     }
 
     /// <summary>A report with its flights and errors, when it exists and is not withdrawn; tracked for a write.</summary>
@@ -214,6 +239,18 @@ public sealed partial class AgentDesk(
             return (AgentWriteResult.Refused, problems, null);
         }
 
+        // The report as it was read, held until the results are saved (issue #328, item 8): the save touches only the results
+        // and the suggestions, so without the lock a decision taken meanwhile would get suggestions it never saw, and the
+        // contract promises a 409. A decision waits for this write, or this write sees the decision's version and stops.
+        await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        var unchanged = await database.Database
+            .SqlQuery<long>($"SELECT id AS `Value` FROM fo_pireps WHERE id = {pirep.Id} AND row_version = {pirep.RowVersion} FOR UPDATE")
+            .ToListAsync(cancellationToken);
+        if (unchanged.Count == 0)
+        {
+            return (AgentWriteResult.Changed, null, null);
+        }
+
         var now = clock.UtcNow;
         var sent = results.Select(result => result.Key).ToHashSet(StringComparer.Ordinal);
         var replaced = await database.CheckResults
@@ -245,6 +282,7 @@ public sealed partial class AgentDesk(
         FlightChecks.Suggest(pirep, PirepSubmission.Snapshot(pirep), [.. failed, .. results.Where(result => result.Outcome == CheckOutcome.Failed).Select(result => result.Key)]);
 
         await database.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return (
             AgentWriteResult.Done,
