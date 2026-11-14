@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using MySqlConnector;
 
 namespace IvaoHub.Core.Data;
@@ -12,18 +13,34 @@ namespace IvaoHub.Core.Data;
 /// <para>The chain is walked whatever the outer exception: EF reports a deadlock as an <see cref="InvalidOperationException"/>, not a
 /// <c>DbUpdateException</c>, with the <see cref="MySqlException"/> two levels down (CONTRIBUTING.md).</para>
 /// </summary>
-public static class WriteConflicts
+public static partial class WriteConflicts
 {
-    public static bool AnotherWriteWon(Exception? exception)
+    /// <summary>The database's own answer when another write won, or <c>null</c> when the failure is anything else.</summary>
+    public static MySqlException? AnotherWriteWon(Exception? exception)
     {
         for (; exception is not null; exception = exception.InnerException)
         {
-            if (exception is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry or MySqlErrorCode.LockDeadlock })
+            if (exception is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry or MySqlErrorCode.LockDeadlock } conflict)
             {
-                return true;
+                return conflict;
             }
         }
 
-        return false;
+        return null;
     }
+
+    /// <summary>
+    /// The name of the unique index a duplicate key met, read off the database's message (<c>… for key 'name'</c>), or <c>null</c>.
+    /// Only the name: the message carries the value too, and a value may be a person's data, which a log does not keep.
+    /// </summary>
+    public static string? KeyOf(MySqlException conflict)
+    {
+        ArgumentNullException.ThrowIfNull(conflict);
+
+        var match = KeyPattern().Match(conflict.Message);
+        return match.Success ? match.Groups["key"].Value : null;
+    }
+
+    [GeneratedRegex(@"for key '(?<key>[^']+)'", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex KeyPattern();
 }

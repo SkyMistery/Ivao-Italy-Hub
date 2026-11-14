@@ -37,18 +37,33 @@ public sealed class DomainExceptionHandler(
     {
         ArgumentNullException.ThrowIfNull(httpContext);
 
+        var conflict = exception is DomainRefusalException or ForbiddenDomainException or DbUpdateConcurrencyException
+            ? null
+            : WriteConflicts.AnotherWriteWon(exception);
+
         var (status, titleKey) = exception switch
         {
             DomainRefusalException => (StatusCodes.Status400BadRequest, CrudProblems.ValidationTitleKey),
             ForbiddenDomainException => (StatusCodes.Status403Forbidden, CrudProblems.ForbiddenTitleKey),
             DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, CrudProblems.ConflictTitleKey),
-            _ when WriteConflicts.AnotherWriteWon(exception) => (StatusCodes.Status409Conflict, CrudProblems.ConflictTitleKey),
+            _ when conflict is not null => (StatusCodes.Status409Conflict, CrudProblems.ConflictTitleKey),
             _ => (0, string.Empty),
         };
 
         if (status == 0)
         {
             return false;
+        }
+
+        // Every unique index of the application answers here, and a check missing in front of one used to be a logged 500: told
+        // only "somebody saved first", it would leave nothing to find it by (the review of #494). The index, never the value.
+        if (conflict is not null)
+        {
+            logger.LogWarning(
+                "A write lost to another write of the same rows and was answered 409: {Code} on {Path}, key {Key}.",
+                conflict.ErrorCode,
+                httpContext.Request.Path,
+                WriteConflicts.KeyOf(conflict));
         }
 
         if (exception is ForbiddenDomainException forbidden)
