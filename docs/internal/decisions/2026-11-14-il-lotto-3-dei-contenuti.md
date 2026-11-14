@@ -74,6 +74,10 @@ genitore qualunque pagina (`ContentAddresses`): l'elenco è un'offerta, non la r
 (`PageAddressTests.TheTopOfTheSiteIsNotACoordinatorsToWriteIn`) offriva al coordinatore degli eventi una **bozza** del web team: ora la
 pubblica prima, e controlla anche che una bozza del web team non sia offerta e che la bozza del suo dipartimento lo sia.
 
+**Il titolo, dopo la revisione** ([il rilievo 3 del master](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/493#issuecomment-6874881009)): una pagina online è offerta con il titolo della sua versione
+pubblicata, quello che il sito mostra, e non con un titolo nuovo che aspetta l'approvazione nella bozza. Una pagina offerta perché chi
+chiede la può modificare, e non è online, ha il titolo della bozza, che è l'unico che ha.
+
 ## Da portare nel piano
 
 - §9.7 (i contratti trasversali) o §16 (i meccanismi generici), dove si parla degli indirizzi dei blocchi: un indirizzo scritto in un

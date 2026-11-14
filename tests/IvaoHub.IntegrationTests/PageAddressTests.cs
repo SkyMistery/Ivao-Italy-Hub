@@ -6,6 +6,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -116,8 +117,18 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         // The page of the web team is offered to go under, although its row is not theirs to read: it is online. A draft
         // of the web team is not offered (#321, point 6, decided by Carmine on 14 November 2026).
+        // Its title is the one the site shows, not a new one waiting in its draft (the review of #493, item 3).
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            var row = await database.Contents.IgnoreQueryFilters().FirstAsync(content => content.Id == shelf.Id, token);
+            row.Title = new Localized<string>([new("it", "Titolo nuovo"), new("en", "New title")]);
+            await database.SaveChangesAsync(token);
+        }
+
         var tree = await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/pages", token);
-        Assert.Contains(tree.EnumerateArray(), node => node.GetProperty("id").GetInt64() == shelf.Id);
+        var offered = Assert.Single(tree.EnumerateArray(), node => node.GetProperty("id").GetInt64() == shelf.Id);
+        Assert.Equal("Page", offered.GetProperty("title").GetProperty("en").GetString());
         Assert.DoesNotContain(tree.EnumerateArray(), node => node.GetProperty("id").GetInt64() == draftOfTheWebTeam.Id);
 
         // At the top: refused on the field that chose it.
