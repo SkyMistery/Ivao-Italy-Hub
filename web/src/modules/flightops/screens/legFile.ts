@@ -83,8 +83,11 @@ export interface LegWorkbook extends LegFile {
 const EXCEL_EPOCH_DAYS = 25569;
 const DAY_MS = 86_400_000;
 
-/** `2026-10-01`, `2026-10-01 18:00`, `2026-10-01T18:00:00Z`: read as UTC, like every instant the hub writes. */
-const ISO = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?Z?$/;
+/**
+ * `2026-10-01`, `2026-10-01 18:00`, `2026-10-01T18:00:00Z`, `2026-10-01T18:00:00.000Z` (what `toISOString` writes, to the
+ * second): read as UTC, like every instant the hub writes.
+ */
+const ISO = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?Z?$/;
 
 /**
  * The codes of one cell — callsigns or flight numbers — as a sheet writes them when a route is flown more than once
@@ -108,7 +111,11 @@ export function splitCodes(value: string | null | undefined): string[] {
   return [...new Set(codes)];
 }
 
-/** A release: an Excel date (a number of days) or an ISO text, in UTC; undefined when it is neither. */
+/**
+ * A release: an Excel date (a number of days, from a workbook's date cell) or an ISO text, in UTC; undefined when it is
+ * neither. A CSV is text (the core's reader guesses nothing from it), so a date of a CSV written any other way —
+ * `01/10/2026`, `18:00` — is refused on its row, never read in some order.
+ */
 export function releaseOf(cell: Cell | undefined): string | null | undefined {
   if (typeof cell === 'number') {
     return new Date(Math.round(((cell - EXCEL_EPOCH_DAYS) * DAY_MS) / 60_000) * 60_000).toISOString();
