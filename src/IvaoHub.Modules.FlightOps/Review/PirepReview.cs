@@ -1,3 +1,4 @@
+using System.Data;
 using System.Text.Json;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
@@ -255,9 +256,14 @@ public sealed class PirepReview(
         pirep.ThresholdOverridden = overridden;
         pirep.OverrideReason = overridden ? overrideReason : null;
 
-        // An acceptance that finishes the tour completes it, and signals the award, in this same save (§3.11).
-        await completion.RecordAsync(pirep, cancellationToken);
-        await database.SaveChangesAsync(cancellationToken);
+        // An acceptance that finishes the tour completes it, and signals the award, in this same save (§3.11) — under the lock of
+        // the pilot's enrolment, held to the commit (issue #328, item 3).
+        await using (var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken))
+        {
+            await completion.RecordAsync(pirep, cancellationToken);
+            await database.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
 
         await TellThePilotAsync(pirep, cancellationToken);
         return (ReviewResult.Done, null);

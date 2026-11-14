@@ -421,6 +421,43 @@ public sealed partial class PirepTests
         }
     }
 
+    /// <summary>
+    /// Two acceptances at once that between them finish the tour (issue #328, item 3): each read the other still in review, and
+    /// neither completed it nor signalled the award. Under the lock of the pilot's enrolment the second reads the first accepted.
+    /// </summary>
+    [Fact]
+    public async Task TwoAcceptancesAtOnceStillCompleteTheTour()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        var (tourId, legs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        var first = Id(await CreatedAsync(pilot, Reports(tourId), Payload(legs[0], _flights.Add(PilotVid, "XAA100", Rome, Milan, DateTime.UtcNow.AddDays(-1))), token));
+        var second = Id(await CreatedAsync(pilot, Reports(tourId), Payload(legs[1], _flights.Add(PilotVid, "XAA100", Milan, London, DateTime.UtcNow.AddDays(-1).AddHours(3))), token));
+
+        await GrantValidateAsync(ValidatorVid, tourId, token);
+        await GrantValidateAsync(SecondValidatorVid, tourId, token);
+        using var validator = await SignedInAsync(ValidatorVid, token);
+        using var other = await SignedInAsync(SecondValidatorVid, token);
+
+        var one = await TakeAsync(validator, first, token);
+        var two = await TakeAsync(other, second, token);
+
+        var decided = await Task.WhenAll(
+            validator.PostAsJsonAsync($"{ReviewEndpoints.Pattern}/{first}/decide", Decision(PirepStatus.Accepted, [], RowVersion(one)), token),
+            other.PostAsJsonAsync($"{ReviewEndpoints.Pattern}/{second}/decide", Decision(PirepStatus.Accepted, [], RowVersion(two)), token));
+        foreach (var answer in decided)
+        {
+            using (answer)
+            {
+                Assert.True(answer.StatusCode == HttpStatusCode.OK, $"{answer.StatusCode}: {await answer.Content.ReadAsStringAsync(token)}");
+            }
+        }
+
+        Assert.NotNull((await EnrolmentAsync(tourId, PilotVid, token)).CompletedAt);
+    }
+
     private static ReviewDecisionDto Decision(PirepStatus outcome, long[] errors, DateTime rowVersion) =>
         new(outcome, errors, NoteToPilot: null, StaffNote: null, OverrideReason: null, rowVersion);
 
