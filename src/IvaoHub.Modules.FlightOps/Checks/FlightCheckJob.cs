@@ -36,28 +36,43 @@ public sealed class FlightCheckJob(
 
     public Task Execute(IJobExecutionContext context) => RunAsync(context.CancellationToken);
 
-    /// <summary>Returns how many reports were checked.</summary>
+    /// <summary>
+    /// Returns how many reports were checked. A report that fails is written in the log and left for the next run; the others
+    /// of the batch are checked all the same (issue #328, item 9): one report that always fails does not stop the job for the
+    /// rest of the queue.
+    /// </summary>
     public async Task<int> RunAsync(CancellationToken cancellationToken = default)
     {
         var startedAt = clock.UtcNow;
         var done = 0;
+        var failed = new List<string>();
 
+        List<long> ids;
         try
         {
-            var ids = await CrudSource.BackOffice<Pirep>(database).AsNoTracking()
+            ids = await CrudSource.BackOffice<Pirep>(database).AsNoTracking()
                 .Where(report => (report.Status == PirepStatus.Queued || report.Status == PirepStatus.InReview)
                     && (report.ChecksRanAt == null || report.ChecksRanAt < report.QueuedAt))
                 .OrderBy(report => report.QueuedAt)
                 .Select(report => report.Id)
                 .Take(Batch)
                 .ToListAsync(cancellationToken);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogError(exception, "The job of the checks failed.");
+            await LogAsync(startedAt, "failed", Shortened(exception.Message), cancellationToken);
+            return 0;
+        }
 
-            if (ids.Count == 0)
-            {
-                return 0;
-            }
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
 
-            foreach (var id in ids)
+        foreach (var id in ids)
+        {
+            try
             {
                 var pirep = await CrudSource.BackOffice<Pirep>(database)
                     .Include(report => report.Flights)
@@ -69,20 +84,32 @@ public sealed class FlightCheckJob(
                 {
                     done++;
                 }
-
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                logger.LogError(exception, "The checks of report {PirepId} failed.", id);
+                failed.Add(string.Create(CultureInfo.InvariantCulture, $"report {id}: {exception.Message}"));
+            }
+            finally
+            {
                 database.ChangeTracker.Clear();
             }
+        }
 
-            await LogAsync(startedAt, "succeeded", string.Create(CultureInfo.InvariantCulture, $"{done} of {ids.Count} report(s) checked"), cancellationToken);
-            return done;
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException)
+        var summary = string.Create(CultureInfo.InvariantCulture, $"{done} of {ids.Count} report(s) checked");
+        if (failed.Count == 0)
         {
-            logger.LogError(exception, "The job of the checks failed.");
-            await LogAsync(startedAt, "failed", exception.Message.Length <= MaxMessageLength ? exception.Message : exception.Message[..MaxMessageLength], cancellationToken);
-            return done;
+            await LogAsync(startedAt, "succeeded", summary, cancellationToken);
         }
+        else
+        {
+            await LogAsync(startedAt, "failed", Shortened(string.Join("; ", [summary, .. failed])), cancellationToken);
+        }
+
+        return done;
     }
+
+    private static string Shortened(string message) => message.Length <= MaxMessageLength ? message : message[..MaxMessageLength];
 
     private async Task LogAsync(DateTime startedAt, string status, string message, CancellationToken cancellationToken)
     {
