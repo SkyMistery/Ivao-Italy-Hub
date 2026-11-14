@@ -224,21 +224,34 @@ export function legRowsOf(sheet: readonly (readonly Cell[])[]): LegFile {
  * summary. A file SheetJS cannot read is one problem, not an exception.
  */
 export async function readLegFile(file: Blob, sheet?: string): Promise<LegWorkbook> {
+  const unreadable: LegWorkbook = {
+    sheets: [],
+    sheet: null,
+    rows: [],
+    lines: [],
+    problems: [{ line: null, key: 'unreadable' }],
+  };
+
   const workbook = await readWorkbook(file);
   if (workbook === null) {
-    return { sheets: [], sheet: null, rows: [], lines: [], problems: [{ line: null, key: 'unreadable' }] };
+    return unreadable;
   }
 
-  const sheets = [...workbook.sheets];
-  const chosen =
-    sheet !== undefined && sheets.includes(sheet)
-      ? sheet
-      : (sheets.find((name) => headerOf(workbook.cells(name)) !== null) ?? sheets[0]);
-  if (chosen === undefined) {
-    return { sheets, sheet: null, rows: [], lines: [], problems: [{ line: null, key: 'empty' }] };
-  }
+  // A sheet is made rows only here, after the file was read: whatever throws while it is, is a file that cannot be read.
+  try {
+    const sheets = [...workbook.sheets];
+    const chosen =
+      sheet !== undefined && sheets.includes(sheet)
+        ? sheet
+        : (sheets.find((name) => headerOf(workbook.cells(name)) !== null) ?? sheets[0]);
+    if (chosen === undefined) {
+      return { sheets, sheet: null, rows: [], lines: [], problems: [{ line: null, key: 'empty' }] };
+    }
 
-  return { sheets, sheet: chosen, ...legRowsOf(workbook.cells(chosen)) };
+    return { sheets, sheet: chosen, ...legRowsOf(workbook.cells(chosen)) };
+  } catch {
+    return unreadable;
+  }
 }
 
 /**

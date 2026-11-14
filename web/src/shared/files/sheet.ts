@@ -25,12 +25,53 @@ export interface Workbook {
   cells(name: string, options?: { formatted?: boolean }): SheetCell[][];
 }
 
-/** A file read as a workbook; `null` when SheetJS cannot read it, which is a thing to say and not an exception. */
-export async function readWorkbook(file: Blob): Promise<Workbook | null> {
-  const XLSX = await import('xlsx');
+/**
+ * Excel's built-in format 14, its short date, as SheetJS names it when it reads a workbook (`SSF`'s table, whose types
+ * the library does not give). The name of a format with no order of its own, not a pattern of any language's.
+ */
+const EXCEL_SHORT_DATE = 'm/d/yy';
 
+/** What a file of a sheet may be, for a file control's `accept`: what `readWorkbook` reads. */
+export const SHEET_FILE_TYPES = '.csv,.xlsx,.xls,.ods,text/csv';
+
+/**
+ * A file read as a workbook; `null` when it cannot be read — SheetJS refuses it, or the library itself does not load
+ * (a deploy since the page was opened) —, which is a thing to say and not an exception.
+ *
+ * `locale` is the language a date of the sheet is written in when it is read `formatted`: Excel's short date (its format
+ * 14, what an Italian Excel gives a date typed as `01/10/2026`) is stored with no order of its own, and SheetJS would
+ * write it in the American one (`10/1/26`). Every other format of a date is the sheet's own and is kept, and so is a
+ * date of a CSV, which is the text it was written as.
+ */
+export async function readWorkbook(file: Blob, options?: { locale?: string }): Promise<Workbook | null> {
   try {
-    const workbook = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: 'array', dense: true });
+    const XLSX = await import('xlsx');
+    const contents = textOf(new Uint8Array(await file.arrayBuffer()));
+    const isText = typeof contents === 'string';
+    // `dateNF` is not handed to SheetJS: it would read the dates of a CSV in that order, and its times as dates.
+    const shortDate = !isText && options?.locale !== undefined ? shortDateFormat(options.locale) : null;
+    const workbook = XLSX.read(contents, {
+      type: isText ? 'string' : 'array',
+      dense: true,
+      cellNF: shortDate !== null,
+    });
+
+    if (shortDate !== null) {
+      for (const sheet of Object.values(workbook.Sheets)) {
+        for (const row of sheet['!data'] ?? []) {
+          for (const cell of row ?? []) {
+            if (cell?.t === 'n' && cell.z === EXCEL_SHORT_DATE && typeof cell.v === 'number') {
+              cell.w = XLSX.utils.format_cell({ t: 'n', v: cell.v, z: shortDate });
+            }
+            // The format was read only for this: with it a value of a date would come as a `Date` of the browser's time
+            // zone, where every other read has the number of days.
+            if (cell !== undefined) {
+              delete cell.z;
+            }
+          }
+        }
+      }
+    }
 
     return {
       sheets: workbook.SheetNames,
@@ -49,6 +90,62 @@ export async function readWorkbook(file: Blob): Promise<Workbook | null> {
   } catch {
     return null;
   }
+}
+
+/** The first bytes of a workbook that is not text: a ZIP (XLSX, ODS), a compound file (XLS), UTF-16 with its mark. */
+const BINARY_SIGNATURES: readonly (readonly number[])[] = [
+  [0x50, 0x4b, 0x03, 0x04],
+  [0xd0, 0xcf, 0x11, 0xe0],
+  [0xff, 0xfe],
+  [0xfe, 0xff],
+];
+
+/**
+ * A file of text (a CSV) as a string, its bytes otherwise. SheetJS reads the bytes of a CSV as UTF-8 only when it begins
+ * with the mark of UTF-8, and Google Sheets and LibreOffice write it without: «Lunedì» came in as «LunedÃ¬». So the text is
+ * decoded here — UTF-8 if the bytes are UTF-8, else Windows-1252, what an older Excel writes —, and SheetJS is handed a
+ * string. What SheetJS reads by its own signature (a workbook, UTF-16) stays bytes, and so does a file with a zero byte,
+ * which no text has (the oldest XLS, with no signature of their own).
+ */
+function textOf(bytes: Uint8Array): string | Uint8Array {
+  if (
+    BINARY_SIGNATURES.some((signature) => signature.every((byte, at) => bytes[at] === byte)) ||
+    bytes.includes(0)
+  ) {
+    return bytes;
+  }
+
+  try {
+    // `ignoreBOM: false`, the default, takes the mark away.
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder('windows-1252').decode(bytes);
+  }
+}
+
+/**
+ * The short date of a language as SheetJS writes a format: the order and the separators of `Intl`'s numeric date
+ * (`dd/mm/yyyy` in Italian, `mm/dd/yyyy` in American English), never a pattern written here. A separator is quoted, so
+ * that no letter of a language's is read as a code of the format.
+ */
+export function shortDateFormat(locale: string): string {
+  const parts = new Intl.DateTimeFormat(locale, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).formatToParts(new Date(2000, 0, 1));
+
+  return parts
+    .map((part) =>
+      part.type === 'day'
+        ? 'dd'
+        : part.type === 'month'
+          ? 'mm'
+          : part.type === 'year'
+            ? 'yyyy'
+            : `"${part.value.replace(/"/g, '')}"`,
+    )
+    .join('');
 }
 
 /** A cell as trimmed text; `null` when it holds nothing but spaces. A date is written as ISO, in UTC. */

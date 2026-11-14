@@ -16,6 +16,7 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ApiError } from '../../../shared/api/problem';
+import { SHEET_FILE_TYPES } from '../../../shared/files/sheet';
 import { describeProblem } from '../../../shared/forms';
 import { Notice } from '../../../shared/ui';
 import {
@@ -171,7 +172,7 @@ export function LegImport({ tour, onClose }: { tour: TourDetailDto; onClose: () 
           <Input
             id={fileId}
             type="file"
-            accept=".xlsx,.xls,.ods,.csv"
+            accept={SHEET_FILE_TYPES}
             disabled={change.isPending}
             onChange={(event) => void choose(event.target.files?.[0])}
           />
