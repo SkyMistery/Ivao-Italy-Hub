@@ -554,7 +554,7 @@ Aggiungere un modulo = un progetto `IvaoHub.Modules.<Nome>` + una cartella `web/
 
 ### 7.2 Layout e route
 
-Tre layout: `_public` (Navbar Atmosphere + NavigationMenu dal bootstrap + footer legale HQ), `_member` (`/me/*`, richiede `user`), `_staff` (`/staff/*`, Sidebar con i dipartimenti visibili: i propri o tutti; `/staff/admin/*` richiede `Admin.Access`). Un `NotFound` e un `Forbidden` tradotti.
+Tre layout: `_public` (Navbar Atmosphere + NavigationMenu dal bootstrap + footer legale HQ), `_member` (`/me/*`, richiede `user`), `_staff` (`/staff/*`, Sidebar con i dipartimenti visibili: i propri o tutti; `/staff/admin/*` richiede `Admin.Access`). Un `NotFound` e un `Forbidden` tradotti. **Dal 12 nov 2026** (#481, nota `2026-11-10-gli-errori-detti-per-quello-che-sono`, piano 1.53) anche un **`Failed`** («la pagina non si è potuta caricare», con «Riprova»), e **`RouteError` è l'errore predefinito del router** (`createHubRouter`, `defaultErrorComponent`): un `ApiError` 404 è `NotFound`, un 403 `Forbidden`, il resto `Failed`.
 
 ### 7.3 Le tre ricette TanStack Router (da copiare, mai reinventare)
 

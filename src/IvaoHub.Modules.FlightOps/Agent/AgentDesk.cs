@@ -69,28 +69,37 @@ public sealed partial class AgentDesk(
     /// <paramref name="pending"/>, only those with an agent's check and no result from an agent since they were queued. At most
     /// <see cref="MaxQueue"/>, counted after both filters (issue #328, item 2): the waiting reports are read a page at a time,
     /// oldest first, until the queue is full or none is left, so a validator of one tour is not starved by two hundred older
-    /// reports of the others.
+    /// reports of the others. Each page starts after the last report read, by <c>(QueuedAt, Id)</c>: a report decided between
+    /// two pages does not shift the next one.
     /// </summary>
     public async Task<IReadOnlyList<AgentQueueItemDto>> QueueAsync(bool pending, CancellationToken cancellationToken)
     {
         var mine = new List<(Pirep Report, List<string> Wanted, DateTime? RanAt)>(MaxQueue);
-        var seen = new HashSet<long>();
+        (DateTime QueuedAt, long Id)? after = null;
 
-        for (var skip = 0; mine.Count < MaxQueue; skip += MaxQueue)
+        while (mine.Count < MaxQueue)
         {
-            var page = await CrudSource.BackOffice<Pirep>(database).AsNoTracking()
-                .Where(report => report.Status == PirepStatus.Queued || report.Status == PirepStatus.InReview)
+            var waiting = CrudSource.BackOffice<Pirep>(database).AsNoTracking()
+                .Where(report => report.Status == PirepStatus.Queued || report.Status == PirepStatus.InReview);
+            if (after is var (queuedAt, id))
+            {
+                waiting = waiting.Where(report => report.QueuedAt > queuedAt || (report.QueuedAt == queuedAt && report.Id > id));
+            }
+
+            var page = await waiting
                 .OrderBy(report => report.QueuedAt)
                 .ThenBy(report => report.Id)
-                .Skip(skip)
                 .Take(MaxQueue)
                 .ToListAsync(cancellationToken);
+            if (page.Count > 0)
+            {
+                after = (page[^1].QueuedAt, page[^1].Id);
+            }
 
             var decidable = new List<Pirep>(page.Count);
             foreach (var report in page)
             {
-                // A report that moved between two pages while they were read is counted once.
-                if (seen.Add(report.Id) && await reviews.MayValidateAsync(report))
+                if (await reviews.MayValidateAsync(report))
                 {
                     decidable.Add(report);
                 }

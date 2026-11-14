@@ -980,7 +980,8 @@
       "none": "You have not started a tour yet.",
       "toTours": "See the tours",
       "summary": "{{legs}} legs accepted · {{hours}} h {{minutes}} min flown · {{tours}} tours completed"
-    }
+    },
+    "unavailable": "This cannot be read right now. Try again later."
   },
   "public": {
     "title": "Tours",

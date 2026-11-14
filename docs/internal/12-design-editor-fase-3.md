@@ -110,6 +110,11 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   per ogni salvataggio, a mano o importato.
 - **I colori del testo e la sintassi del §4.6** entrano nella parte fissa delle istruzioni quando la loro PR è unita, non prima: le
   istruzioni non promettono a Claude una sintassi che il renderer non conosce.
+- **Il modo vecchio di dire una cosa non si perde all'import** (piano 1.52 e 1.53): come l'`align` vecchio di un gruppo di pulsanti
+  (3.9), il `width` vecchio di una foto (3.10) passa nel modo nuovo quando il file non scrive quello nuovo, dal blocco del file o
+  altrimenti da quello della bozza. ⚠️ **L'impronta `rules` cambia con ogni PR che cambia uno schema** (3.9, 3.10, 3.11): un file per
+  Claude scaricato prima è rifiutato (`content.import.rulesChanged`), e le note di rilascio lo dicono. La nota del 30 ottobre non si
+  modifica dopo il merge: questi legami stanno qui.
 
 ## 4. L'editor
 
@@ -278,8 +283,9 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 
 ### 5.2 Galleria (XII)
 
-- **Tre modi**: `layout: 'grid' | 'carousel' | 'strip'` — la griglia di oggi; il **carosello** di Atmosphere (`Carousel`, con i tasti
-  avanti e indietro); la **striscia** che scorre di lato (solo CSS, `scroll-snap`). Le colonne valgono solo per la griglia.
+- **Tre modi**: `layout: 'grid' | 'carousel' | 'strip'` — la griglia di oggi; il **carosello** di Atmosphere (~~`Carousel`~~ **i pezzi
+  del `Carousel`**, non il composto, che scrive le frecce in inglese e fuori dal blocco — #487, piano 1.53 —, con i tasti avanti e
+  indietro, gestiti dalla galleria); la **striscia** che scorre di lato (solo CSS, `scroll-snap`). Le colonne valgono solo per la griglia.
 - **Ogni immagine** ha `alt` e `caption`, tradotti e facoltativi. Il testo alternativo mancava: è un difetto di accessibilità che si
   chiude qui.
 - **Il clic** apre l'immagine a tutto schermo nel `Dialog` dell'elenco chiuso, con avanti e indietro fra le immagini della galleria; lo
@@ -301,16 +307,19 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 
 ### 5.3 Immagine: la larghezza trascinando, e a tutto schermo (V, risposta (b))
 
-- **La larghezza** diventa una percentuale della **colonna** in cui sta il blocco: `widthPercent`, da 20 a 100, a passi di 5. I limiti
+- **La larghezza** diventa una percentuale della **colonna** in cui sta il blocco: `widthPercent`, da 20 a 100, a passi di 5 (i passi
+  sono della maniglia e del cursore; lo schema accetta ogni intero, perché un terzo è 33 — #485, piano 1.53). I limiti
   che la risposta di Carmine chiedeva:
   - **non più larga della sezione**: 100 % è la colonna, e la colonna sta dentro la larghezza della sezione;
   - **non più stretta di un minimo leggibile**: 20 %, e mai sotto i 10 rem (`min-width: min(100%, 10rem)`);
   - **in percentuale, perché segua lo schermo**: e quando la colonna è stretta (una query del contenitore, sotto i 24 rem: un
     telefono, una colonna di un terzo) l'immagine prende tutta la larghezza, qualunque percentuale abbia.
 - **I corpi salvati**: `width` (`third | half | full`) resta letto quando `widthPercent` manca — 33, 50, 100 — dal renderer, e il pannello
-  lo traduce aprendo il blocco. Nessuna pagina cambia da sola.
+  lo traduce ~~aprendo il blocco~~ **alla sua prima scrittura sul blocco**, perché aprire un blocco non è una modifica (Carmine, in chat
+  al master l'11 novembre 2026, «Sì, come la 3.9»; nota `2026-11-10-la-larghezza-dell-immagine`, punto 1). Nessuna pagina cambia da sola.
 - **Trascinando**: sull'immagine scelta, una maniglia sul bordo destro. Mentre si trascina dice la percentuale; un gesto è un passo di
-  Annulla (come la larghezza di una tessera della dashboard). La tastiera ha il campo del pannello. **Il meccanismo** è generico e
+  Annulla (come la larghezza di una tessera della dashboard). La tastiera ha il campo del pannello (un cursore **fuori** dal form generato, che porta la proprietà senza disegnarla:
+  `withoutDrawing`, piano 1.53). **Il meccanismo** è generico e
   imita quello delle tessere (`Picking.onSpan`, `ContentRenderer.tsx:379`): una registrazione dichiara
   `resizable: { prop: 'widthPercent', min: 20, max: 100, step: 5 }`, il renderer disegna la maniglia sull'involucro del blocco scelto, e
   l'editor scrive la proprietà. Un visitatore non ha maniglie (il contesto è `null`). Oggi lo dichiara solo l'immagine.

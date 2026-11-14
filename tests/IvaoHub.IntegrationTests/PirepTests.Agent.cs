@@ -280,6 +280,88 @@ public sealed partial class PirepTests
     }
 
     /// <summary>
+    /// A report decided while the queue is read, between two of its pages, does not push a waiting one out of the queue (the
+    /// reviewer on #492): with the pages counted by position, the second page started one report too far, and the first report
+    /// behind the decided one was missing until the next poll. The pages start after the last report read.
+    /// </summary>
+    [Fact]
+    public async Task AReportDecidedBetweenTwoPagesDoesNotHideTheNextOne()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        var (tourId, legs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        await CheckedRuleAsync(coordinator, tourId, CheckCatalog.SemicircularLevels, token);
+        var (otherTourId, otherLegs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        var id = Id(await CreatedAsync(pilot, Reports(tourId), Payload(legs[0], _flights.Add(PilotVid, "XAA196", Rome, Milan, DateTime.UtcNow.AddDays(-1))), token));
+
+        // A full first page of reports the validator may not decide, and theirs right behind it, first of the second page.
+        var since = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        long firstOther;
+        await using (var scope = _host.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+            var model = await Everything<Pirep>(database).AsNoTracking().SingleAsync(report => report.Id == id, token);
+            var others = new List<Pirep>();
+            for (var count = 0; count < AgentDesk.MaxQueue; count++)
+            {
+                var other = (Pirep)database.Entry(model).CurrentValues.ToObject();
+                other.Id = 0;
+                other.TourId = otherTourId;
+                other.ScopeTourId = otherTourId;
+                other.LegId = otherLegs[0];
+                other.Vid = OtherPilotVid;
+                other.QueuedAt = since.AddMinutes(count);
+                other.ChecksRanAt = DateTime.UtcNow;
+                others.Add(other);
+            }
+
+            database.Pireps.AddRange(others);
+            await database.SaveChangesAsync(token);
+            firstOther = others[0].Id;
+
+            await Everything<Pirep>(database).Where(report => report.Id == id)
+                .ExecuteUpdateAsync(set => set.SetProperty(report => report.QueuedAt, since.AddMinutes(AgentDesk.MaxQueue)), token);
+        }
+
+        await GrantValidateAsync(ValidatorVid, tourId, token);
+        try
+        {
+            using var validator = await SignedInAsync(ValidatorVid, token);
+            using var agent = await AgentAsync(validator, token);
+
+            // Just before the second page is read, somebody decides the first report of the first one.
+            _commands.Before(
+                command => command.CommandText.Contains("fo_pireps", StringComparison.Ordinal)
+                    && command.CommandText.Contains("rules_snapshot_json", StringComparison.Ordinal)
+                    && command.CommandText.Contains("ORDER BY", StringComparison.Ordinal)
+                    && command.CommandText.Contains("queued_at", StringComparison.Ordinal),
+                async () =>
+                {
+                    await using var scope = _host.Services.CreateAsyncScope();
+                    var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+                    await Everything<Pirep>(database).Where(report => report.Id == firstOther)
+                        .ExecuteUpdateAsync(set => set.SetProperty(report => report.Status, PirepStatus.Accepted), token);
+                },
+                skip: 1);
+
+            var queue = await AgentOkAsync(agent, AgentEndpoints.PirepsPattern, token);
+
+            Assert.True(_commands.Fired);
+            Assert.Contains(queue.EnumerateArray(), entry => entry.GetProperty("id").GetInt64() == id);
+        }
+        finally
+        {
+            _commands.Clear();
+            await CleanTokensAsync(token);
+            await using var scope = _host.Services.CreateAsyncScope();
+            var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+            await Everything<Pirep>(database).Where(report => report.TourId == otherTourId).ExecuteDeleteAsync(token);
+        }
+    }
+
+    /// <summary>
     /// The agent's results wait for a decision under way on the report and are then refused, as the contract says (issue #328,
     /// item 8): before, they waited for the same row and then landed on the decided report.
     /// </summary>

@@ -57,7 +57,8 @@ scelte che il §3 non scrive:
 
 ## 4. La pagina di un tour (`/tours/{slug}`)
 
-- **La testata** (`Hero` con il banner): titolo, stato, tipo, periodo; sotto, una striscia di `StatTile` — leg, miglia, tempo stimato,
+- **La testata** (~~`Hero` con il banner~~ **scritta nel modulo** con i pezzi di Atmosphere e `StatTile`, con il banner: Carmine, il
+  12 novembre 2026, «(a) nel modulo», sotto in «Com'è andata»; piano 1.53): titolo, stato, tipo, periodo; sotto, una striscia di `StatTile` — leg, miglia, tempo stimato,
   rating minimo, aerei ammessi, award. È la carta d'identità del tour: oggi le stesse cose sono sparse fra intestazione, «Il tour
   chiede» e la riga dei totali.
 - **Il tuo tour**, subito sotto, per chi è entrato: la barra, **la prossima leg con «Invia il rapporto» e SimBrief**, e — se non può
