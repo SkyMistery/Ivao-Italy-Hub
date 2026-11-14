@@ -77,6 +77,7 @@ test('the release is UTC, from a date cell or an ISO text, and anything else is 
   // 46296.75 is 2026-10-01 18:00 in Excel's days.
   expect(releaseOf(46296.75)).toBe('2026-10-01T18:00:00.000Z');
   expect(releaseOf('2026-10-01 18:00')).toBe('2026-10-01T18:00:00.000Z');
+  expect(releaseOf('2026-10-01T18:00:30.250Z')).toBe('2026-10-01T18:00:30.000Z');
   expect(releaseOf('2026-10-01')).toBe('2026-10-01T00:00:00.000Z');
   expect(releaseOf('')).toBeNull();
   expect(releaseOf('01/10/2026')).toBeUndefined();
@@ -111,6 +112,35 @@ test('a CSV with semicolons and a real XLSX read the same', async () => {
   expect(xlsx.problems).toEqual([]);
   expect(xlsx.rows[0]?.callsigns).toEqual(['DLH1']);
   expect(xlsx.rows[0]?.releaseAt).toBe('2026-10-01T18:00:00.000Z');
+});
+
+test('a release in a CSV is its text: an ISO one is UTC, any other date or time is refused on its row, not guessed', async () => {
+  const written = [
+    '2026-10-01T18:00:00Z',
+    // What `toISOString` writes, an export of the hub's: SheetJS made it a number, and it stays a release as text.
+    '2026-10-01T18:00:00.000Z',
+    '2026-10-01 18:00',
+    '2026-10-01',
+    // SheetJS guessed these in its American order: the first of October came in as 10 January.
+    '01/10/2026',
+    '01/10/2026 18:00',
+    '10/1/2026',
+    '18:00',
+  ];
+  const csv = await readLegFile(
+    new Blob([
+      `departure;arrival;release\r\n${written.map((release) => `EDDF;EDDM;${release}`).join('\r\n')}\r\n`,
+    ]),
+  );
+
+  expect(csv.rows.map((row) => row.releaseAt)).toEqual([
+    '2026-10-01T18:00:00.000Z',
+    '2026-10-01T18:00:00.000Z',
+    '2026-10-01T18:00:00.000Z',
+    '2026-10-01T00:00:00.000Z',
+  ]);
+  expect(csv.lines).toEqual([2, 3, 4, 5]);
+  expect(csv.problems).toEqual([6, 7, 8, 9].map((line) => ({ line, key: 'release', column: 'release' })));
 });
 
 test('a CSV in UTF-8 without its mark, as Google Sheets and LibreOffice write it, is read as UTF-8', async () => {
