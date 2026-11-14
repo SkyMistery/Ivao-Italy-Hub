@@ -1,3 +1,4 @@
+import { cellText as text, readWorkbook, type SheetCell as Cell } from '../../../shared/files/sheet';
 import type { LegImportRowDto } from '../api';
 
 /**
@@ -10,7 +11,8 @@ import type { LegImportRowDto } from '../api';
  * order and case, and where a sheet has both "Departure" (the city) and "Departure ICAO", the code wins. A column the
  * import does not know is ignored, and so is a row with nothing in it; any other row is a leg, and one that is not
  * gets refused on its row (Carmine: the file is cleaned, not guessed). The order of the rows is the order of the tour:
- * there is no column of numbers. The library is loaded only when a file is read, so that nobody else downloads it.
+ * there is no column of numbers. The workbook is read by the core's reader of sheets (`shared/files/sheet.ts`), which the
+ * table block reads its files with too (design of the editor's phase 3, §5.1): this file knows what a leg is, and nothing else.
  *
  * A hub tour's file has two columns more, "Hub" and "Rotation" (note 2026-10-28-hub-e-rotazioni-da-file): the rows of a
  * rotation of a hub, or — both empty — a connection between two hubs. Read here as text; whether the file makes sense as a
@@ -77,23 +79,12 @@ export interface LegWorkbook extends LegFile {
   readonly sheet: string | null;
 }
 
-type Cell = string | number | boolean | Date | null;
-
 /** Midnight of 1 January 1970 in Excel's days (the 1900 system, with its leap year that was not). */
 const EXCEL_EPOCH_DAYS = 25569;
 const DAY_MS = 86_400_000;
 
 /** `2026-10-01`, `2026-10-01 18:00`, `2026-10-01T18:00:00Z`: read as UTC, like every instant the hub writes. */
 const ISO = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?Z?$/;
-
-function text(cell: Cell | undefined): string | null {
-  if (cell === null || cell === undefined) {
-    return null;
-  }
-
-  const value = (cell instanceof Date ? cell.toISOString() : String(cell)).trim();
-  return value === '' ? null : value;
-}
 
 /**
  * The codes of one cell — callsigns or flight numbers — as a sheet writes them when a route is flown more than once
@@ -233,30 +224,21 @@ export function legRowsOf(sheet: readonly (readonly Cell[])[]): LegFile {
  * summary. A file SheetJS cannot read is one problem, not an exception.
  */
 export async function readLegFile(file: Blob, sheet?: string): Promise<LegWorkbook> {
-  const XLSX = await import('xlsx');
-
-  try {
-    const workbook = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: 'array', dense: true });
-    const cells = (name: string) => {
-      const found = workbook.Sheets[name];
-      return found === undefined
-        ? []
-        : XLSX.utils.sheet_to_json<Cell[]>(found, { header: 1, raw: true, defval: null, blankrows: true });
-    };
-
-    const sheets = workbook.SheetNames;
-    const chosen =
-      sheet !== undefined && sheets.includes(sheet)
-        ? sheet
-        : (sheets.find((name) => headerOf(cells(name)) !== null) ?? sheets[0]);
-    if (chosen === undefined) {
-      return { sheets, sheet: null, rows: [], lines: [], problems: [{ line: null, key: 'empty' }] };
-    }
-
-    return { sheets, sheet: chosen, ...legRowsOf(cells(chosen)) };
-  } catch {
+  const workbook = await readWorkbook(file);
+  if (workbook === null) {
     return { sheets: [], sheet: null, rows: [], lines: [], problems: [{ line: null, key: 'unreadable' }] };
   }
+
+  const sheets = [...workbook.sheets];
+  const chosen =
+    sheet !== undefined && sheets.includes(sheet)
+      ? sheet
+      : (sheets.find((name) => headerOf(workbook.cells(name)) !== null) ?? sheets[0]);
+  if (chosen === undefined) {
+    return { sheets, sheet: null, rows: [], lines: [], problems: [{ line: null, key: 'empty' }] };
+  }
+
+  return { sheets, sheet: chosen, ...legRowsOf(workbook.cells(chosen)) };
 }
 
 /**
