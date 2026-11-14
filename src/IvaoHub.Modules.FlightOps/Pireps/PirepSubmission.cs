@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -131,9 +132,24 @@ public sealed class PirepSubmission(
         ];
     }
 
+    /// <summary>The prefix of the lock a pilot's send holds (issue #328, item 6); the database and the VID follow.</summary>
+    public const string SendLockPrefix = "fo-send:";
+
+    /// <summary>How long a send waits for the pilot's other send before it is refused.</summary>
+    private static readonly TimeSpan SendLockWait = TimeSpan.FromSeconds(30);
+
+    /// <summary>The name of the lock of a pilot's sends, in the database <paramref name="databaseName"/>.</summary>
+    public static string SendLockName(string databaseName, int vid) =>
+        DatabaseLock.NameFor(SendLockPrefix, string.Create(CultureInfo.InvariantCulture, $"{databaseName}:{vid}"));
+
     /// <summary>
     /// Sends a report, or sends again one the validator returned (<paramref name="correcting"/>, tracked, with its flights).
     /// Returns the report written, or the refusals field by field.
+    /// <para>One send of a pilot at a time (issue #328, item 6): the checks of the leg and of the day read the pilot's reports
+    /// and the save writes one, so two sends at once each found the other missing — two reports pending on one leg, the daily
+    /// limit passed. A lock of the database on the pilot (the core's <see cref="DatabaseLock"/>, as <c>ModuleGrants</c> takes
+    /// it) is held from the first read to the save. Still held by the other send after the wait, a refusal to send again; one
+    /// the database cannot be asked for goes ahead without it, and the unique claim of the session still holds.</para>
     /// </summary>
     public async Task<(Pirep? Pirep, IReadOnlyDictionary<string, string[]>? Problems)> SendAsync(
         PilotTour pilot,
@@ -144,6 +160,26 @@ public sealed class PirepSubmission(
         ArgumentNullException.ThrowIfNull(pilot);
         ArgumentNullException.ThrowIfNull(payload);
 
+        var vid = currentUser.Vid;
+        await using var held = await DatabaseLock.TakeAsync(
+            database.Database.GetConnectionString(),
+            name => SendLockName(name, vid),
+            SendLockWait,
+            cancellationToken);
+        if (held.Busy)
+        {
+            return (null, new Refusals().Add("tour", "flightops:errors.reportBusy").Errors);
+        }
+
+        return await SendHeldAsync(pilot, payload, correcting, cancellationToken);
+    }
+
+    private async Task<(Pirep? Pirep, IReadOnlyDictionary<string, string[]>? Problems)> SendHeldAsync(
+        PilotTour pilot,
+        PirepWriteDto payload,
+        Pirep? correcting,
+        CancellationToken cancellationToken)
+    {
         var problems = new Refusals();
         var now = clock.UtcNow;
         var vid = currentUser.Vid;

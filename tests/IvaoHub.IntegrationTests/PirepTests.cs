@@ -625,6 +625,63 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal("ROTUN5A", corrected.GetProperty("sid").GetString());
     }
 
+    /// <summary>
+    /// Two sends at once on the same leg (issue #328, item 6): each read the pilot's reports before the other wrote, and both
+    /// were taken — two reports pending on one leg. One send of a pilot at a time: the second reads the first and is refused.
+    /// </summary>
+    [Fact]
+    public async Task TwoSendsAtOnceOnOneLegTakeOne()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        var (tourId, legs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        var one = _flights.Add(PilotVid, "XAA100", Rome, Milan, DateTime.UtcNow.AddDays(-1));
+        var two = _flights.Add(PilotVid, "XAA100", Rome, Milan, DateTime.UtcNow.AddDays(-1).AddHours(2));
+
+        var answers = await Task.WhenAll(
+            pilot.PostAsJsonAsync(Reports(tourId), Payload(legs[0], one), token),
+            pilot.PostAsJsonAsync(Reports(tourId), Payload(legs[0], two), token));
+        try
+        {
+            Assert.Equal([HttpStatusCode.Created, HttpStatusCode.BadRequest], answers.Select(answer => answer.StatusCode).Order());
+        }
+        finally
+        {
+            foreach (var answer in answers)
+            {
+                answer.Dispose();
+            }
+        }
+
+        await using var scope = _host.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+        Assert.Equal(1, await Everything<Pirep>(database).CountAsync(report => report.LegId == legs[0] && report.Vid == PilotVid, token));
+
+        // The lock itself: while another send of the pilot holds it, a send waits, and goes once it is let go.
+        var next = _flights.Add(PilotVid, "XAA100", Milan, London, DateTime.UtcNow.AddDays(-1).AddHours(5));
+        HttpResponseMessage sent;
+        await using (var other = await DatabaseLock.TakeAsync(
+            database.Database.GetConnectionString(),
+            name => PirepSubmission.SendLockName(name, PilotVid),
+            TimeSpan.FromSeconds(5),
+            token))
+        {
+            Assert.True(other.Held);
+            var sending = pilot.PostAsJsonAsync(Reports(tourId), Payload(legs[1], next), token);
+            await Task.Delay(TimeSpan.FromSeconds(2), token);
+            Assert.False(sending.IsCompleted);
+            await other.DisposeAsync();
+            sent = await sending;
+        }
+
+        using (sent)
+        {
+            Assert.Equal(HttpStatusCode.Created, sent.StatusCode);
+        }
+    }
+
     private static string Reports(long tourId) => $"/api/flightops/tours/{tourId}/reports";
 
     private static PirepWriteDto Payload(long legId, long sessionId) => new(
