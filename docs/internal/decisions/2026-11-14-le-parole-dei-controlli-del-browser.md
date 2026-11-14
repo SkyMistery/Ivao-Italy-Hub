@@ -1,9 +1,10 @@
 # Le parole dei controlli che il browser fa con lo schema
 
 **Data:** 14 novembre 2026, issue #386 (giro dei tester). Ramo `fix/forms-words-2`, in coda alla #501 (#384).
-**Stato:** Decisa da Carmine il 14 novembre 2026: la (A), «Sì, la A», data in chat alla sessione master e scritta sulla issue
-(https://github.com/SkyMistery/Ivao-Italy-Hub/issues/386#issuecomment-6875853798). Che cosa è stato deciso, esattamente: «La
-decisione», in fondo.
+**Stato:** Decisa da Carmine il 14 novembre 2026, in chat alla sessione master, in due risposte scritte sulla issue: la (A), «Sì,
+la A» (https://github.com/SkyMistery/Ivao-Italy-Hub/issues/386#issuecomment-6875853798), e, sulla variante proposta da questa
+nota, la mappa per tutta l'applicazione, «No, a tutta l'app»
+(https://github.com/SkyMistery/Ivao-Italy-Hub/issues/386#issuecomment-6875960000).
 **Classificazione** (`CLAUDE.md` §5): (c). Un meccanismo nuovo del nucleo: le parole di un controllo che oggi nessuno traduce.
 
 ## Che cosa serve
@@ -24,57 +25,47 @@ copiare le regole.
 `useProblemDetails` traduce solo le risposte del server. `CLAUDE.md` §2 «Validation» dice che le regole non si scrivono due volte:
 le regole ci sono già, una volta, nello schema; mancano le **parole** del browser, e oggi non c'è un posto che le dica.
 
-## Le strade
+## La decisione: (A), una mappa d'errori di zod per tutta l'applicazione
 
-**(A) — raccomandata. Una mappa d'errori del nucleo, nel generatore.** Un solo pezzo in `web/src/shared/forms/` traduce i
-problemi di zod nelle chiavi che il server già usa, risolte con la stessa `t` della lingua sullo schermo:
+Un solo pezzo del nucleo, `web/src/shared/forms/zodWords.ts` (`speakTheServersWords`), dà a zod **una volta, all'avvio della SPA**
+(`z.config({ customError })`, chiamata da `web/src/main.tsx` con l'istanza i18next dell'applicazione) le chiavi che il server già
+usa, risolte quando il controllo gira, nella lingua sullo schermo:
 
 | Problema di zod | Chiave |
 |---|---|
 | `too_big` su un testo | `errors.text.tooLong` (del server) |
-| `too_small` su un testo con minimo 1, `invalid_type` su un valore assente | `errors.required` (del server) |
-| `too_small` su un numero | `errors.number.min` (del server) |
-| `too_big` su un numero | `errors.number.range` (del server) |
-| tutto il resto (formato, elenco troppo corto o lungo, scelta non valida) | **una chiave nuova**, `errors.invalid` («Questo valore non è valido.» / «This value is not valid.») |
+| un valore assente (`invalid_type` su `undefined` o `null`), un testo o un elenco vuoto sotto un minimo di uno (`too_small`) | `errors.required` (del server) |
+| tutto il resto (numeri, formati, elenchi, scelte non valide) | **una chiave nuova**, `errors.invalid` («Questo valore non è valido.» / «This value is not valid.») |
 
-La mappa si dà **solo al generatore** (`zodResolver(schema, { error })`, l'opzione di zod 4 per una validazione), non a tutto
-zod con `z.config`: i messaggi si leggono solo sotto un campo di un modulo generato, e le altre letture di zod (`validateSearch`
-delle rotte, i payload) non ne hanno bisogno. Uno schema che un giorno scrivesse un messaggio suo lo terrebbe: in zod 4 il messaggio
-dello schema vince su quello della validazione.
+Nessuno schema toccato, nessuna regola copiata, ogni modulo coperto in un colpo. Un messaggio scritto da uno schema vince (zod 4:
+l'errore dello schema viene prima di quello della configurazione).
 
-Tocca: un file nuovo in `shared/forms/` con il suo test, una riga in `SchemaForm.tsx`, `errors.invalid` in `locales/en` e
-`locales/it`. Nessuno schema, nessuna regola copiata, ogni modulo coperto in un colpo.
+**Che cosa cambia fuori dai moduli generati.** La mappa è di tutto zod, e cambia **solo le parole** di un controllo, mai il suo
+esito: se un valore passa, e che cosa un `.catch` mette al posto di uno sbagliato, restano di zod. Le rotte che leggono l'indirizzo
+con `validateSearch` (`listSearchSchema` e simili) leggono lo stesso indirizzo nello stesso modo; `zodWords.test.tsx` lo prova con
+gli stessi indirizzi letti prima e dopo la mappa. ⚠️ **Una lettura mostra i messaggi**: l'import di una pagina scritta con Claude
+(`features/content/claudeFile.ts`) mette il messaggio di zod come dettaglio, in caratteri tecnici, sotto ogni problema del file
+(`content.import.propInvalid`, `envelopeInvalid`). Lì l'inglese di zod («Invalid input: expected string, received number») diventa
+la frase della mappa («Questo valore non è valido.»): nella lingua sullo schermo, ma meno precisa per chi corregge il file. Il
+percorso del campo e la frase della chiave restano. Se quel dettaglio deve restare tecnico, è una scelta a parte.
 
-**(B) — alternativa. Lasciare al server le regole che il server controlla.** Togliere dagli schemi del browser `max`, `min` e
+## Le alternative
+
+**La stessa mappa, data solo al generatore — proposta da questa nota, non presa da Carmine** («No, a tutta l'app», secondo link).
+`zodResolver(schema, { error })`, l'opzione di zod 4 per una sola validazione, in `SchemaForm`: le parole cambiavano solo sotto i
+campi dei moduli generati, dove si leggono, e le altre letture di zod (`validateSearch`, i payload, l'import da Claude) restavano
+come sono. La ragione era toccare il meno possibile; la ragione per non prenderla è che ogni lettura di zod nel browser parli la
+lingua della divisione, i moduli generati e il resto allo stesso modo. La proposta aveva anche le chiavi dei numeri del server
+(`errors.number.min`, `errors.number.range`); la decisione non le nomina, e i numeri dicono `errors.invalid`.
+
+**(B) — non presa. Lasciare al server le regole che il server controlla.** Togliere dagli schemi del browser `max`, `min` e
 simili, e lasciare che la risposta del server (già tradotta) arrivi sul campo. È la strada già presa per un caso: la #491 (lotto 10,
 punto 2, `49f0bdda`) ha tolto i `min`/`max` dagli schemi **live** dei tour (`disputeSchema`, `legIssueReportSchema`,
 `diversionSchema`, `atcDeclarationSchema`), ma per un'altra ragione: un modulo live applica solo quello che lo schema accetta, e lo
-schermo restava fermo all'ultimo testo valido. Come regola generale costa: ≈ 220 controlli da togliere in tutti i moduli, nessun
-avviso prima del salvataggio, e nei moduli live nessun avviso finché non si conferma. E resterebbero comunque i controlli che solo
-il browser può fare (un campo richiesto di un modulo che non va al server, un formato): parlerebbero ancora inglese.
-
-**Raccomandazione: (A).** Una regola, un posto, le parole del server; (B) resta giusta dove la #491 l'ha usata, per i moduli
-live.
-
-## La decisione
-
-Carmine ha scelto la (A) **nella forma in cui il master gliel'ha posta** (il commento linkato sopra), che differisce in due punti da
-quella scritta qui sopra; vale la decisione, e il codice la segue:
-
-- **La mappa è di tutto zod, data una volta all'avvio della SPA** (`z.config({ customError })`), non solo al generatore. Sta in
-  `web/src/shared/forms/zodWords.ts` (`speakTheServersWords`), chiamata da `web/src/main.tsx` con l'istanza i18next
-  dell'applicazione; la frase si risolve quando il controllo gira, nella lingua sullo schermo. Le letture di zod che non mostrano
-  i loro messaggi (`validateSearch`, i payload) non cambiano. ⚠️ **Una li mostra**: l'import di una pagina scritta con Claude
-  (`features/content/claudeFile.ts`) mette il messaggio di zod come dettaglio, in caratteri tecnici, sotto ogni problema del file
-  (`content.import.propInvalid`, `envelopeInvalid`). Lì l'inglese di zod («Invalid input: expected string, received number»)
-  diventa la frase della mappa («Questo valore non è valido.»): nella lingua sullo schermo, ma meno precisa per chi corregge il
-  file. Il percorso del campo e la frase della chiave restano. Se quel dettaglio deve restare tecnico, è una scelta a parte.
-- **Tre chiavi, non cinque**: un testo troppo lungo → `errors.text.tooLong`; un valore assente, o un testo o un elenco vuoto sotto un
-  minimo di uno → `errors.required`; tutto il resto, numeri compresi → la chiave nuova `errors.invalid`. Le chiavi dei numeri del
-  server (`errors.number.min`, `errors.number.range`) non entrano: la decisione non le nomina.
-
-Resta com'era scritto: nessuno schema toccato, nessuna regola copiata, un messaggio scritto da uno schema vince (zod 4: l'errore dello
-schema viene prima di quello della configurazione). La (B) non è presa.
+schermo restava fermo all'ultimo testo valido. Come regola generale costava: ≈ 220 controlli da togliere in tutti i moduli, nessun
+avviso prima del salvataggio, e nei moduli live nessun avviso finché non si conferma. E sarebbero rimasti i controlli che solo il
+browser può fare (un campo richiesto di un modulo che non va al server, un formato), ancora in inglese. Resta giusta dove la #491
+l'ha usata, per i moduli live.
 
 ## Da portare nel piano
 

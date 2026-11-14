@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import italianErrors from '../../../../locales/it/errors.json';
 import { createTestI18n, renderWithProviders } from '../../test/harness';
+import { departmentListSearchSchema } from '../list/search';
 
 import { SchemaForm } from './SchemaForm';
 import { speakTheServersWords, zodIssueKey } from './zodWords';
@@ -44,6 +45,30 @@ test('a message a schema writes itself still wins', () => {
 
   const result = z.string().max(1, 'its own').safeParse('ab');
   expect(result.error?.issues[0]?.message).toBe('its own');
+});
+
+test('the map changes the words of a check, never its result: an address read by a route is read the same', () => {
+  // The routes read their search with zod too (`validateSearch`), and the map is zod's for the whole application. What it
+  // answers is a message: whether a value passes, and what `.catch` puts in place of a wrong one, are zod's as before.
+  const written = [
+    { page: 0, pageSize: 500, dir: 'x', q: 7 },
+    { page: 3, pageSize: 50, sort: 'title', dir: 'desc', q: 'tour' },
+    {},
+  ];
+  const strict = z.object({ id: z.number().int().min(1) });
+  const before = [
+    ...written.map((search) => departmentListSearchSchema.safeParse(search)),
+    strict.safeParse({ id: 0 }),
+  ].map((result) => ({ success: result.success, data: result.data }));
+
+  speakTheServersWords(createTestI18n());
+
+  const after = [
+    ...written.map((search) => departmentListSearchSchema.safeParse(search)),
+    strict.safeParse({ id: 0 }),
+  ].map((result) => ({ success: result.success, data: result.data }));
+  expect(after).toEqual(before);
+  expect(strict.safeParse({ id: 0 }).error?.issues[0]?.message).toBe('This value is not valid.');
 });
 
 test('the generated form says the server’s words in the language on screen, under a field checked in the browser', async () => {
