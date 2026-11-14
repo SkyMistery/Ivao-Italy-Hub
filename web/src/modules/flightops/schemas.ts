@@ -788,7 +788,14 @@ export const reportSearchSchema = z.object({
 
 export type ReportSearch = z.output<typeof reportSearchSchema>;
 
-/** The bounds the server holds (`PirepValidation`). */
+/**
+ * The bounds the server holds (`PirepValidation`), for the forms that are sent with a button.
+ *
+ * ⚠️ A **live** form (`SchemaForm`'s `onChange`: the diversion, the controllers, a dispute, an issue on a leg) has no bound and
+ * no `min`: it applies only what its schema accepts, so a text emptied or written past the bound would leave the screen holding
+ * the last one that passed — the button on, sending what is no longer on the screen (#334, item 2). There the screen reads the
+ * text as it is (`trim() === ''`) and the server says what is too long, as Events and Training do.
+ */
 const MAX_PROCEDURE = 16;
 const MAX_TEXT = 2000;
 
@@ -808,12 +815,12 @@ export type ReportDetailsValues = z.output<typeof reportDetailsSchema>;
 
 export const DIVERSION_REASONS = ['Weather', 'Technical', 'Medical', 'AtcInstruction', 'Other'] as const;
 
-/** A flight that ended elsewhere (§3.4): where, why, and a line about it. Applied as it is written, no button. */
+/** A flight that ended elsewhere (§3.4): where, why, and a line about it. Applied as it is written, no button: no bound. */
 export const diversionSchema = z.object({
-  // The server says whether the airport is one (`diversionIcao`): the browser only keeps it to four letters.
-  diversionIcao: z.string().trim().toUpperCase().max(4),
+  // The server says whether the airport is one (`diversionIcao`): the screen looks for the second flight only at four letters.
+  diversionIcao: z.string().trim().toUpperCase(),
   diversionReason: z.enum(DIVERSION_REASONS).optional(),
-  diversionNote: z.string().trim().max(MAX_TEXT).meta({ multiline: true }),
+  diversionNote: z.string().trim().meta({ multiline: true }),
 });
 
 export type DiversionValues = z.output<typeof diversionSchema>;
@@ -822,22 +829,22 @@ export const EXEMPTION_KINDS = ['FreeSpeed', 'DirectRouting', 'LevelChange', 'Ot
 
 /**
  * The controllers the pilot adds to the ones proposed, and the exemptions they received (design M2 §3.3): the position of
- * an exemption is chosen among the contacted ones, which is why the schema is built with them. Applied as it is written;
- * the server refuses a callsign, a frequency or an exemption that is not one, and says which list.
+ * an exemption is chosen among the contacted ones, which is why the schema is built with them. Applied as it is written,
+ * so with no bound; the server refuses a callsign, a frequency or an exemption that is not one, and says which list.
  */
 export function atcDeclarationSchema(contacted: readonly string[]) {
   return z.object({
     added: z.array(
       z.object({
-        callsign: z.string().trim().toUpperCase().max(24),
-        frequency: z.string().trim().max(7),
+        callsign: z.string().trim().toUpperCase(),
+        frequency: z.string().trim(),
       }),
     ),
     exemptions: z.array(
       z.object({
         callsign: z.string().meta({ choices: [...contacted] }),
         kind: z.enum(EXEMPTION_KINDS),
-        note: z.string().trim().max(MAX_TEXT),
+        note: z.string().trim(),
       }),
     ),
   });
@@ -892,16 +899,16 @@ export const disputeDecisionSchema = z.object({
 
 export type DisputeDecisionValues = z.output<typeof disputeDecisionSchema>;
 
-/** A pilot disputing a rejection (§3.8): what they want looked at again. */
+/** A pilot disputing a rejection (§3.8): what they want looked at again. A live form: the dialog keeps Confirm off while empty. */
 export const disputeSchema = z.object({
-  text: z.string().trim().min(1).max(MAX_TEXT).meta({ multiline: true }),
+  text: z.string().trim().meta({ multiline: true }),
 });
 
 export type DisputeValues = z.output<typeof disputeSchema>;
 
-/** A pilot reporting a problem on a leg (§3.11): what they saw. */
+/** A pilot reporting a problem on a leg (§3.11): what they saw. A live form: the dialog keeps Confirm off while empty. */
 export const legIssueReportSchema = z.object({
-  body: z.string().trim().min(1).max(MAX_TEXT).meta({ multiline: true }),
+  body: z.string().trim().meta({ multiline: true }),
 });
 
 export type LegIssueReportValues = z.output<typeof legIssueReportSchema>;
