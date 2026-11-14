@@ -1,9 +1,10 @@
 # Il lotto 3 dei contenuti: le scelte che la issue non scrive
 
 - **Data**: 14 novembre 2026
-- **Stato**: scelte di una sessione di lavoro, dentro la direzione della issue #321 (lotto 3 della revisione del codice,
-  `2026-10-20-la-revisione-del-codice.md`). Nessuna chiede la risposta di Carmine: il revisore le legge come scelte di una sessione.
-  La domanda vera del lotto, la pagina con figlie, è in `2026-11-14-la-pagina-con-figlie.md`.
+- **Stato**: il §1 è una scelta di una sessione di lavoro, dentro la direzione della issue #321 (lotto 3 della revisione del codice,
+  `2026-10-20-la-revisione-del-codice.md`): il revisore la legge come tale. Il §2 l'ha decisa Carmine in chat al master il
+  14 novembre 2026 («Filtrare»), perché cambia quello che chi scrive vede. La pagina con figlie è in
+  `2026-11-14-la-pagina-con-figlie.md`.
 - **Classificazione** (`CLAUDE.md` §5): **(b)**, difetti del nucleo corretti con i meccanismi che ci sono.
 
 ## 1. Quali indirizzi si possono scrivere in un contenuto (punto 5)
@@ -37,6 +38,25 @@ rifiutare: esce da quell'elenco e va nel test nuovo dei rifiuti, e al suo posto 
 Sul client non si aggiunge niente agli schemi zod: la regola sta sul server, il rifiuto torna come `ProblemDetails` sul percorso del
 campo e l'editor lo mostra accanto al blocco (`CLAUDE.md` §2, «Rules are not written twice»). `web/src/blocks/schemas.ts` non si tocca.
 
+## 2. Le pagine sotto cui mettere una pagina (punto 6)
+
+`GET /api/content/pages` lo chiamano solo i selettori del genitore: il form della pagina, la scelta del modello e il pannello di chi
+approva. Leggeva con `CrudSource.BackOffice` **tutte** le pagine di ogni dipartimento, bozze comprese, mentre il commento diceva che
+passavano solo indirizzo e titolo «che il sito già mostra a chiunque».
+
+Le due strade erano filtrare o correggere il commento. **Carmine: «Filtrare»** (in chat al master, 14 novembre 2026). Ora l'elenco è:
+
+- le pagine che il sito mostra a chi chiede: `database.Contents`, con il filtro di visibilità (`VisibilityQueryFilter`), quindi le pagine
+  con una versione pubblicata e la visibilità di chi chiede, come gli indirizzi del sito (`2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere`);
+- più ogni altra pagina, bozze comprese, che **l'handler unico** lascia modificare a chi chiede (`IAuthorizationService` con
+  `Content.Edit` sulla riga, come `ContentEndpoints` fa già per `Content.EmbedCode` e `Content.Publish`): le bozze del suo dipartimento,
+  perché una sezione si costruisce sotto la sua prima pagina prima che esca. Il super amministratore le ha tutte.
+
+Che cosa cambia per chi scrive: nel selettore non vede più le bozze degli altri dipartimenti. Il server continua ad accettare come
+genitore qualunque pagina (`ContentAddresses`): l'elenco è un'offerta, non la regola, e la regola non cambia. Il test che c'era
+(`PageAddressTests.TheTopOfTheSiteIsNotACoordinatorsToWriteIn`) offriva al coordinatore degli eventi una **bozza** del web team: ora la
+pubblica prima, e controlla anche che una bozza del web team non sia offerta e che la bozza del suo dipartimento lo sia.
+
 ## Da portare nel piano
 
 - §9.7 (i contratti trasversali) o §16 (i meccanismi generici), dove si parla degli indirizzi dei blocchi: un indirizzo scritto in un
@@ -44,3 +64,5 @@ campo e l'editor lo mostra accanto al blocco (`CLAUDE.md` §2, «Rules are not w
   e alla pubblicazione (`SiteDestinations.IsFollowable`). Anche l'indirizzo di una voce del calendario.
 - `docs/UI-GUIDELINES.md`, «How a block names an address»: l'ultima frase («An address of somewhere else is not checked») va letta
   come «where it leads is not checked; what it looks like is». Corretta in questa PR, con un paragrafo sulla forma.
+- §9.3 (il modello dei contenuti), dove si parla della posizione di una pagina: il selettore del genitore offre le pagine online che chi
+  scrive può leggere e le pagine, bozze comprese, che può modificare (decisione di Carmine del 14 novembre 2026).

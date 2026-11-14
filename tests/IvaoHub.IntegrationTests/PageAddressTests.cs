@@ -108,13 +108,17 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
         using var superadmin = _factory.CreateApiClient();
         await _factory.SignInAsync(superadmin, SuperadminVid, token);
         var shelf = await CreateAsync(superadmin, $"{Stem()}-shelf", parentId: null, token);
+        await PublishAsync(superadmin, shelf.Id, token);
+        var draftOfTheWebTeam = await CreateAsync(superadmin, $"{Stem()}-draft", parentId: null, token);
 
         using var coordinator = _factory.CreateApiClient();
         await _factory.SignInAsync(coordinator, EventsCoordinatorVid, token);
 
-        // The page of the web team is offered to go under, although its row is not theirs to read.
+        // The page of the web team is offered to go under, although its row is not theirs to read: it is online. A draft
+        // of the web team is not offered (#321, point 6, decided by Carmine on 14 November 2026).
         var tree = await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/pages", token);
         Assert.Contains(tree.EnumerateArray(), node => node.GetProperty("id").GetInt64() == shelf.Id);
+        Assert.DoesNotContain(tree.EnumerateArray(), node => node.GetProperty("id").GetInt64() == draftOfTheWebTeam.Id);
 
         // At the top: refused on the field that chose it.
         using var top = await SendAsync(
@@ -134,6 +138,11 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Payload("mine", shelf.Id, department: Department.ED),
             token);
         Assert.Equal(HttpStatusCode.Created, under.StatusCode);
+
+        // A draft of their own department is offered: a section is built under its first page before it comes out.
+        var mine = (await under.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64();
+        var after = await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/pages", token);
+        Assert.Contains(after.EnumerateArray(), node => node.GetProperty("id").GetInt64() == mine);
     }
 
     [Fact]
