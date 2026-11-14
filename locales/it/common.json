@@ -457,10 +457,10 @@
     "edit": "Modifica pagina",
     "newFromTemplate": "Nuova da un template",
     "chooseTemplate": "Scegli un template",
-    "templateRefused": "La pagina non e' stata creata. Controlla che l'indirizzo sia libero e scritto con lettere minuscole, cifre e trattini.",
+    "templateRefused": "La pagina non è stata creata. Controlla che l'indirizzo sia libero e scritto con lettere minuscole, cifre e trattini.",
     "delete": {
       "title": "Eliminare questa pagina?",
-      "description": "Sparisce subito dal sito, insieme a tutto quello che ne e' stato pubblicato, e non si torna indietro."
+      "description": "Sparisce subito dal sito, insieme a tutto quello che ne è stato pubblicato, e non si torna indietro."
     },
     "fields": {
       "title": "Titolo",
@@ -572,8 +572,8 @@
       "howToDivide": "Per mettere cose una accanto all'altra usa le colonne; per una parte dentro questa sezione, una riga; per raggruppare, le Schede o le Domande."
     },
     "editor": {
-      "structure": "Di cosa e' fatta questa pagina",
-      "properties": "Proprieta'",
+      "structure": "Di cosa è fatta questa pagina",
+      "properties": "Proprietà",
       "noSections": "Questa pagina non ha ancora sezioni.",
       "untitledSection": "Sezione senza nome",
       "addSection": "Aggiungi una sezione",
@@ -603,7 +603,7 @@
       "remove": "Elimina",
       "duplicate": "Duplica",
       "moveUp": "Sposta su",
-      "moveDown": "Sposta giu'",
+      "moveDown": "Sposta giù",
       "locked": "Fissata dal template",
       "lockedSection": "Il template fissa questa sezione. I suoi blocchi si possono comunque modificare, uno alla volta.",
       "setKey": "Fissa la chiave",
@@ -620,7 +620,7 @@
         "stopped": "Qualcun altro ha salvato questa pagina mentre la modificavi. Ricarica per vedere la sua versione; quello che hai cambiato da allora non è salvato.",
         "leave": "Lasciare questa pagina? Le modifiche dall'ultimo salvataggio andranno perse."
       },
-      "publishRefused": "Questa pagina non si puo' ancora pubblicare",
+      "publishRefused": "Questa pagina non si può ancora pubblicare",
       "publishDialog": {
         "title": "Pubblicare questa versione?",
         "description": "Prima si salva ciò che è sullo schermo, poi lo vedono i lettori. Una riga su che cosa è cambiato resta con la versione, per lo staff.",
@@ -902,7 +902,7 @@
   },
   "blocks": {
     "captured": "Catturato alla pubblicazione",
-    "unknown": "Questa pagina usa un blocco di tipo \"{{type}}\" che questo browser non sa disegnare. Probabilmente e' un modulo non installato.",
+    "unknown": "Questa pagina usa un blocco di tipo \"{{type}}\" che questo browser non sa disegnare. Probabilmente è un modulo non installato.",
     "unknownShort": "Blocco sconosciuto ({{type}})",
     "groups": {
       "content": "Contenuto",
@@ -1107,7 +1107,7 @@
         "fullscreen": "Si apre a tutto schermo con un clic"
       },
       "hints": {
-        "alt": "Cosa dice l'immagine, per chi non la vede. Lascialo vuoto se e' decorativa."
+        "alt": "Cosa dice l'immagine, per chi non la vede. Lascialo vuoto se è decorativa."
       },
       "enlarge": "Mostra l'immagine a tutto schermo",
       "enlargeNamed": "Mostra a tutto schermo: {{name}}"
@@ -1115,7 +1115,7 @@
     "video": {
       "label": "Video",
       "about": "Un video di un sito che l'hub sa incorniciare, dal suo indirizzo: la libreria non tiene video.",
-      "notAllowed": "Questo indirizzo non e' su un sito da cui l'hub sa riprodurre un video.",
+      "notAllowed": "Questo indirizzo non è su un sito da cui l'hub sa riprodurre un video.",
       "fields": {
         "url": "Indirizzo",
         "caption": "Didascalia",
@@ -1135,23 +1135,23 @@
     "embed": {
       "label": "Pagina incorporata",
       "about": "Una pagina di un altro sito, in un riquadro. Si possono incorporare solo questi siti: {{hosts}}.",
-      "notAllowed": "Questo indirizzo non e' su un sito che l'hub sa incorporare.",
+      "notAllowed": "Questo indirizzo non è su un sito che l'hub sa incorporare.",
       "fields": {
         "url": "Indirizzo",
         "title": "Nome del riquadro",
         "height": "Altezza in pixel"
       },
       "hints": {
-        "title": "Viene letto al posto del riquadro, per questo non e' facoltativo.",
+        "title": "Viene letto al posto del riquadro, per questo non è facoltativo.",
         "url": "L'indirizzo della pagina, come il sito lo mostra nella barra del browser."
       }
     },
     "interactive": {
       "label": "Disegno interattivo",
       "about": "Un disegno o uno strumento interattivo scritto in codice, in un riquadro isolato dal resto della pagina; lo aggiunge solo chi può scrivere codice.",
-      "unavailable": "Questo blocco interattivo non ha ancora niente da mostrare qui. Salva la pagina e si disegnera' da se'.",
-      "refused": "Lo vedi solo tu: il browser ha rifiutato a questa animazione qualcosa che ha chiesto ({{detail}}). Un frame qui non ha rete ne' storage — vedi le linee guida.",
-      "threw": "Lo vedi solo tu: questa animazione si e' fermata con un errore ({{detail}}).",
+      "unavailable": "Questo blocco interattivo non ha ancora niente da mostrare qui. Salva la pagina e si disegnerà da sé.",
+      "refused": "Lo vedi solo tu: il browser ha rifiutato a questa animazione qualcosa che ha chiesto ({{detail}}). Un frame qui non ha rete né storage — vedi le linee guida.",
+      "threw": "Lo vedi solo tu: questa animazione si è fermata con un errore ({{detail}}).",
       "fields": {
         "title": "Nome",
         "description": "Descrizione",
@@ -1161,7 +1161,7 @@
       "sourceHint": "Incolla quello che le linee guida hanno prodotto. Gira in un frame suo: niente rete, nessun accesso a questo sito.",
       "fromFile": "Oppure scegli un file dal computer",
       "fileTooLarge": "Quel file supera {{max}} byte. Un'animazione che spiega una procedura sta in 5-15 KB.",
-      "fileIsAPage": "Quel file e' una pagina web intera. Qui va solo il frammento — niente doctype, niente <html>, niente <head>. Le linee guida dicono che cosa deve contenere.",
+      "fileIsAPage": "Quel file è una pagina web intera. Qui va solo il frammento — niente doctype, niente <html>, niente <head>. Le linee guida dicono che cosa deve contenere.",
       "sourceCount": "{{bytes}} byte su {{max}}",
       "guidelines": "Scarica le linee guida",
       "preview": "Scarica l'anteprima locale"
@@ -1371,7 +1371,7 @@
       "label": "Domande e risposte",
       "about": "Delle domande, ognuna con la sua risposta che si apre con un clic: per le domande frequenti.",
       "fields": {
-        "allowMultiple": "Piu' di una aperta insieme",
+        "allowMultiple": "Più di una aperta insieme",
         "items": "Voci",
         "items.question": "Domanda",
         "items.answer": "Risposta"
