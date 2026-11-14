@@ -732,6 +732,13 @@ describe('the rules of the template', () => {
     expect(
       (await refused(await fileFor(rowCtx, { body: added }), rowCtx)).problems.map((p) => p.key),
     ).toEqual(['content.import.sectionLocked']);
+
+    // A row more is one change, said once: by the locked section whose shape it changes, not by the row too.
+    const moreRows = structuredClone(withRow) as unknown as { sections: { sections: unknown[] }[] };
+    moreRows.sections[1]!.sections.push(section({ key: null }));
+    expect(
+      (await refused(await fileFor(rowCtx, { body: moreRows }), rowCtx)).problems.map((p) => [p.key, p.path]),
+    ).toEqual([['content.import.sectionLocked', 'sections[1]']]);
   });
 
   test('a section that lists its blocks takes only those', async () => {

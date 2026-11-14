@@ -73,10 +73,14 @@ export function ruleFor(
 
 /**
  * The rule of a row, from its own and from the one of the section it is a row of (issue #460). A locked
- * section is fixed structure, "si compila, non si ristruttura" (design M1 §1.4): its rows are part of
- * that structure, so they are locked with it whatever key they carry — or lack, since a row with no key
- * has no rule of its own to read. Only the lock reaches down; `required` and `allowedBlocks` stay the
- * row's own, and a locked row offers neither a removal nor a block to add anyway.
+ * section is fixed structure, "si compila, non si ristruttura" (plan §9.3), and in the editor it "mostra i
+ * campi, non la struttura" (design M1 §1.4): its rows are part of that structure, so they are locked
+ * with it whatever key they carry — or lack, since a row with no key has no rule of its own to read.
+ * Only the lock reaches down; `required` and `allowedBlocks` stay the row's own, and a locked row offers
+ * neither a removal nor a block to add anyway.
+ *
+ * ⚖️ A row the template keys and leaves unlocked inside a locked section is locked too: proposed, not yet
+ * decided by the maintainer (`decisions/2026-11-14-il-blocco-del-template-sulle-righe.md`).
  */
 export function ruleInside(around: SectionRule, own: SectionRule): SectionRule {
   return around.locked && !own.locked ? { ...own, locked: true } : own;

@@ -647,7 +647,9 @@ function settleBody(
       pending.push({ owner: settled.id, field: null, kind: 'picture' });
     }
 
-    if (rule.locked && (before === undefined || shapeOf(before) !== shapeOf(settled))) {
+    // A row new to a locked section is said by that section, whose shape it changes: once, not twice (review of #513).
+    const changed = before === undefined ? !around.locked : shapeOf(before) !== shapeOf(settled);
+    if (rule.locked && changed) {
       problems.push({ path, key: 'content.import.sectionLocked', values: { name: nameOfSection(settled) } });
     }
 

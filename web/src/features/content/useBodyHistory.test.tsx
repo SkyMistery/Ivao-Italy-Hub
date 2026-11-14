@@ -252,9 +252,11 @@ test('⌘Z is the editor’s outside a field and the browser’s inside one', ()
   expect(undo).toHaveBeenCalledTimes(2);
 });
 
-test('a key still reaches its command when the editor is drawn again while the key travels (issue #461)', () => {
-  // In a browser, the form of the panel applies its last keystroke on a key pressed outside it, and React draws the
-  // editor before the next listener of that key runs: the commands must still be listening, with the new screen.
+test('a key still reaches its command when the editor is drawn again while the key travels (what #461 relies on)', () => {
+  // Not the fix of #461, and green on main too: the assumption the fix stands on, kept here so that it fails if a
+  // change to these hooks breaks it. In a browser, the form of the panel applies its last keystroke on a key pressed
+  // outside it, and React draws the editor before the next listener of that key runs: the commands must still be
+  // listening, with the new screen.
   function Redrawn({ release, undo }: { release: () => boolean; undo: () => boolean }) {
     const [drawn, setDrawn] = useState(0);
     useSelectionShortcuts({ remove: () => false, duplicate: () => false, release: () => release() });

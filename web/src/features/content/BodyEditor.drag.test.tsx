@@ -1,3 +1,4 @@
+import type * as DndKit from '@dnd-kit/core';
 import type { DndContextProps, DragEndEvent } from '@dnd-kit/core';
 import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -16,15 +17,16 @@ import { BodyEditor } from './BodyEditor';
  * the page's one `DndContext`, caught here as it is drawn.
  */
 
-const dropped: { onDragEnd?: DndContextProps['onDragEnd'] } = {};
+const dropped: { onDragEnd?: (event: DragEndEvent) => void } = {};
 
 vi.mock('@dnd-kit/core', async (original) => {
-  const actual = await original<typeof import('@dnd-kit/core')>();
+  const actual = await original<typeof DndKit>();
+  const Real = actual.DndContext;
   return {
     ...actual,
     DndContext: (props: DndContextProps) => {
-      dropped.onDragEnd = props.onDragEnd;
-      return <actual.DndContext {...props} />;
+      dropped.onDragEnd = (event) => props.onDragEnd?.(event);
+      return <Real {...props} />;
     },
   };
 });
@@ -67,7 +69,10 @@ function drawLocked() {
       mediaLibrary={mediaLibrary}
       holds={() => false}
       template={{
-        body: { schemaVersion: 1, sections: [framed('t1', [], { key: 'fixed', locked: true })] } as unknown as Body,
+        body: {
+          schemaVersion: 1,
+          sections: [framed('t1', [], { key: 'fixed', locked: true })],
+        } as unknown as Body,
         title: { en: 'Template' },
         department: 'WD',
         canManage: false,
