@@ -17,6 +17,7 @@ internal sealed class StartsWatch
     private readonly BuildInfo _build;
     // Kept for the life of the process: a registration that is collected stops listening.
     private readonly List<PosixSignalRegistration> _signals = [];
+    private readonly RequestsInFlight _running = new();
     private volatile bool _started;
     private long _requests;
     private long _probes;
@@ -67,12 +68,15 @@ internal sealed class StartsWatch
                 return;
             }
 
+            // The ones running when the stop begins are written on the STOP line (issue #402).
+            var ticket = watch._running.Begin();
             try
             {
                 await next();
             }
             finally
             {
+                watch._running.End(ticket);
                 if (Interlocked.Increment(ref watch._requests) == 1)
                 {
                     // After the response: the route table is built inside the first request, before any middleware.
@@ -137,7 +141,8 @@ internal sealed class StartsWatch
             first < 0 ? null : TimeSpan.FromTicks(first),
             ProcessMemory.Now(),
             JitInfo.GetCompilationTime(),
-            Interlocked.Read(ref _probes)));
+            Interlocked.Read(ref _probes),
+            _running.Running));
     }
 
     /// <summary>
