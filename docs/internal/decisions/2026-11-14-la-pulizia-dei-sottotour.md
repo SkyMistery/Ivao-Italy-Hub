@@ -2,7 +2,7 @@
 
 - **Data**: 14 novembre 2026
 - **Stato**: **decisa da Carmine il 14 novembre 2026**, in chat al master: **A, «Col contenitore»** (la domanda: «quando la
-  conservazione dei dati pulisce un sottotour?»). Il master riporta la decisione in un commento sulla PR del punto 10 (§4)
+  conservazione dei dati pulisce un sottotour?»). Riportata dal master in https://github.com/SkyMistery/Ivao-Italy-Hub/pull/496#issuecomment-6874810397
 - **Chi**: la sessione di lavoro `fix/review-lot8-tours` (lotto 8 della revisione del codice, il server dei tour)
 - **Classificazione** (`CLAUDE.md` §5): **(b)**, tutta nel modulo: cambia quando `TourRetentionJob` considera pronto un sottotour; il
   nucleo non si tocca
@@ -49,7 +49,7 @@ per i tour «in attesa». Il costo — i dati pesanti di un sottotour tenuti fin
 ## 4. La risposta di Carmine
 
 **A, «Col contenitore»** (Carmine, in chat al master, 14 novembre 2026): un sottotour si pulisce solo insieme al suo contenitore, e
-finché il contenitore non è scaduto aspetta. Il commento del master sulla PR che lo riporta: *(link da aggiungere prima del merge)*.
+finché il contenitore non è scaduto aspetta. Il commento del master sulla PR che lo riporta: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/496#issuecomment-6874810397.
 
 ## Da portare nel piano
 
