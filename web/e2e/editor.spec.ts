@@ -135,9 +135,9 @@ test('a section is inserted between two others, by the pointer or the keyboard, 
   // Two sections from the end of the page, with their names, the first one on a ground.
   const named = async (name: string) => {
     await page.getByRole('button', { name: editor.addSection, exact: true }).click();
+    // ⚠️ And the next click at once, with no wait for the name to show (issue #461): a click inside the pause of the
+    // form applies what was typed before the click is answered, so the ground chosen right after keeps the name.
     await page.locator('#content-properties input:visible').first().fill(name);
-    // Applied a moment after the typing stops, and on the section's label as soon as it is.
-    await expect(labels.filter({ hasText: name })).toBeVisible();
   };
   await named('First');
   await page

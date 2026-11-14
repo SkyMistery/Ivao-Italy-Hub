@@ -1,5 +1,5 @@
 import { SidebarProvider, useSidebar } from '@ivao/atmosphere-react';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Profiler, useState } from 'react';
 import { expect, test, vi } from 'vitest';
@@ -453,6 +453,23 @@ test('a row inside a section a template locks is locked with it, key or no key (
   // The outline reads the same rule: no "Add row" anywhere in the locked section.
   await user.click(screen.getByRole('button', { name: editor.outline }));
   expect(screen.queryByRole('button', { name: editor.addRow })).not.toBeInTheDocument();
+});
+
+test('a name typed in the panel survives the selection let go of right after (issue #461)', async () => {
+  const user = userEvent.setup();
+  const { last } = drawBody({ schemaVersion: 1, sections: [framed('a'), framed('b')] });
+
+  await user.click(screen.getByText('1 · a'));
+  // The name is the first field of the section's panel (`#content-properties`, as the e2e reaches it).
+  const name = within(document.getElementById('content-properties')!).getAllByRole('textbox')[0]!;
+  await user.clear(name);
+  await user.type(name, 'Named');
+
+  // Out of the field by the keyboard, and Escape at once: the panel goes, inside the pause of the form.
+  await user.tab();
+  await user.keyboard('{Escape}');
+  expect(document.querySelector('[data-picked]')).toBeNull();
+  expect(last().sections[0]!.title).toEqual({ en: 'Named' });
 });
 
 test('a section a template locks takes no row, and its neighbours take a section', () => {

@@ -26,7 +26,7 @@ import {
   type FieldErrors,
   type UseFormReturn,
 } from 'react-hook-form';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { z } from 'zod';
 
 import { formatMoment } from '../i18n/useMoment';
@@ -206,7 +206,8 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   const hint = !enter.oneLine ? null : enter.multiline ? t('form.submitHintOneLine') : t('form.submitHint');
 
   useProposedSlugs(form, fields, division?.defaultLocale);
-  useLiveValues(form, schema, onChange);
+  const formElement = useRef<HTMLFormElement>(null);
+  useLiveValues(form, schema, onChange, formElement);
 
   const submit = form.handleSubmit(async (values) => {
     if (onSubmit === undefined) {
@@ -224,6 +225,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   return (
     <FormProvider {...form}>
       <form
+        ref={formElement}
         {...(id === undefined ? {} : { id })}
         onSubmit={(event) => {
           // ⚠️ A form drawn in a dialog of another form (a new collection made from the page of a
@@ -363,11 +365,19 @@ const LIVE_DELAY = 150;
  * them before the mouse comes up, and the click is lost — «Save» of an event pressed right after a
  * keystroke sent nothing (`decisions/2026-11-08-l-ultima-battuta.md`). A key that presses a button
  * (Enter, Space) is a click too.
+ *
+ * ⚠️ And so is **a key pressed anywhere but in a field of the form** (issue #461), in the capture phase too: Escape, ⌘D
+ * or ⌘Z on the page act on what is picked, and the editor's panel — this form — goes with the selection. Unmounted inside
+ * its pause, the form took the keystroke with it. A key in one of its fields is more writing, and the pause goes on; Tab
+ * leaves a field from inside it, so only the key after it applies. A field is what the editor's keys leave alone too
+ * (`isEditableTarget`): a key there never takes the form away. Not at the unmount itself: the screen that drops the form has
+ * already answered the key with the body it held, and applying then would write over what that key did.
  */
 function useLiveValues<TValues extends Record<string, unknown>>(
   form: UseFormReturn<TValues, unknown, TValues>,
   schema: z.ZodType<TValues, TValues>,
   onChange: ((values: TValues) => void) | undefined,
+  element: RefObject<HTMLFormElement | null>,
 ): void {
   const latest = useRef({ schema, onChange });
 
@@ -382,12 +392,28 @@ function useLiveValues<TValues extends Record<string, unknown>>(
       clearTimeout(timer);
       timer = undefined;
       document.removeEventListener('click', apply, true);
+      document.removeEventListener('keydown', applyOnKeyOutside, true);
 
       const parsed = latest.current.schema.safeParse(form.getValues());
       if (parsed.success) {
         latest.current.onChange?.(parsed.data);
       }
     };
+
+    function applyOnKeyOutside(event: KeyboardEvent) {
+      const target = event.target;
+      const writing =
+        target instanceof HTMLElement &&
+        element.current?.contains(target) === true &&
+        (target instanceof HTMLInputElement ||
+          target instanceof HTMLTextAreaElement ||
+          target instanceof HTMLSelectElement ||
+          target.isContentEditable);
+
+      if (!writing) {
+        apply();
+      }
+    }
 
     const subscription = form.watch((_values, { name }) => {
       // `name` is the field somebody changed. A reset reports none, and is not an edit.
@@ -399,14 +425,16 @@ function useLiveValues<TValues extends Record<string, unknown>>(
       timer = setTimeout(apply, LIVE_DELAY);
       // Once only, however many letters: the same listener in the same phase is not added twice.
       document.addEventListener('click', apply, true);
+      document.addEventListener('keydown', applyOnKeyOutside, true);
     });
 
     return () => {
       clearTimeout(timer);
       document.removeEventListener('click', apply, true);
+      document.removeEventListener('keydown', applyOnKeyOutside, true);
       subscription.unsubscribe();
     };
-  }, [form]);
+  }, [form, element]);
 }
 
 /**
