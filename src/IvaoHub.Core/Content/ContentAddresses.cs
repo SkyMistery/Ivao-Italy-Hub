@@ -81,6 +81,32 @@ public sealed class ContentAddresses(HubDbContext database, ICurrentUser current
         [.. ReservedSegments.Concat(modules.ReservedSegments).Distinct(StringComparer.OrdinalIgnoreCase)];
 
     /// <summary>
+    /// Whether a page may go: not while pages sit under it, whoever's they are (#321, point 3, decided by Carmine on 14 November
+    /// 2026, note 2026-11-14-la-pagina-con-figlie). <c>ParentId</c> has no foreign key, and a page whose parent is gone stays
+    /// online at its old address but can no longer be saved: every save asks for the parent and finds none. So the delete is
+    /// refused, and whoever deletes moves or deletes the pages under it first. Read past the query filter, like the rest of an
+    /// address: a page of another department, or a draft, is a page under it all the same.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<string, string[]>?> DeletionProblemAsync(
+        ContentEntry content,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+
+        if (content.Kind != ContentKind.Page || content.IsTemplate)
+        {
+            return null;
+        }
+
+        var hasChildren = await CrudSource.BackOffice<ContentEntry>(database)
+            .AnyAsync(row => row.ParentId == content.Id, cancellationToken);
+
+        return hasChildren
+            ? new Dictionary<string, string[]>(StringComparer.Ordinal) { ["id"] = ["errors.content.address.hasChildren"] }
+            : null;
+    }
+
+    /// <summary>
     /// Everything <c>BeforeSave</c> does for a content row: refuses an address that may not be
     /// used, writes <see cref="ContentEntry.ParentPath"/>, and moves the pages under a page that
     /// moved, leaving the old addresses of the published ones behind.

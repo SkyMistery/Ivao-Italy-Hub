@@ -734,8 +734,13 @@ would check it.
 Publication reads every `href` and every link of a piece of Markdown, without a schema. An address
 that starts with `/` has to arrive: a screen, a first segment the application or a module answers for,
 or a content online. And it has to arrive for the readers of the page: a page for everybody does not
-lead to a page for the staff. An address of somewhere else is not checked, and a draft is free to point
-at a page that comes out later.
+lead to a page for the staff. Where an address of somewhere else leads is not checked, and a draft is free
+to point at a page that comes out later.
+
+What an address may look like is checked earlier, on every save: nothing yet, a path that starts with a
+single `/`, an anchor (`#…`), or a whole address `http://`, `https://`, `mailto:` or `tel:`. Anything else
+— `javascript:`, `//elsewhere`, a relative `about/team` — is refused next to the field
+(`errors.url.unsafe`), and publication refuses it too on a page saved before the rule.
 
 ### How a block sits on a dashboard
 

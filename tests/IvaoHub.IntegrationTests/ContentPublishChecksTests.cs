@@ -117,15 +117,38 @@ public sealed class ContentPublishChecksTests(MariaDbFixture mariaDb) : IAsyncLi
     [InlineData("/tours/whatever-the-module-says")]
     [InlineData("/me")]
     [InlineData("https://example.org/nobody-knows")]
-    [InlineData("//example.org/nobody-knows")]
     [InlineData("#a-part-of-this-page")]
     [InlineData("mailto:somebody@example.org")]
+    [InlineData("tel:+390000000")]
     public async Task WhatTheApplicationAnswersForAndWhatLeavesTheSiteAreNotAsked(string address)
     {
         var token = TestContext.Current.CancellationToken;
         var page = await WriteAsync(Visibility.Public, ButtonTo(address), token);
 
         Assert.Empty(await ProblemsAsync(page.Id, Link, token));
+    }
+
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("//example.org/nobody-knows")]
+    public async Task AnAddressThatIsNotOneToFollowIsRefusedOnTheSaveAndOnThePublication(string address)
+    {
+        // #321, point 5. `//example.org` was "not asked" here until then: it leaves the site while looking like a path.
+        var token = TestContext.Current.CancellationToken;
+
+        using var saved = await SendAsync(HttpMethod.Post, ContentEndpoints.Pattern, Payload(ButtonTo(address)), token);
+        Assert.Equal(HttpStatusCode.BadRequest, saved.StatusCode);
+        var refused = (await saved.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("errors");
+        Assert.Equal("errors.url.unsafe", refused.GetProperty(Link)[0].GetString());
+
+        // A page saved before the save asked is refused when it goes out, not passed over.
+        var page = await WriteAsync(Visibility.Public, ButtonTo("/"), token);
+        await SetBodyAsync(page.Id, ButtonTo(address), token);
+
+        Assert.Equal(["errors.url.unsafe"], await ProblemsAsync(page.Id, Link, token));
+        using var published = await PublishAsync(page.Id, token);
+        Assert.Equal(HttpStatusCode.BadRequest, published.StatusCode);
+        Assert.False(await IsOnlineAsync(page.Id, token));
     }
 
     [Fact]
@@ -301,21 +324,7 @@ public sealed class ContentPublishChecksTests(MariaDbFixture mariaDb) : IAsyncLi
         using var created = await SendAsync(
             HttpMethod.Post,
             ContentEndpoints.Pattern,
-            new
-            {
-                kind = kind.ToString(),
-                slug,
-                ownerDepartment = nameof(Department.WD),
-                visibility = visibility.ToString(),
-                isTemplate = false,
-                title = new Dictionary<string, string> { ["it"] = "Controllo", ["en"] = "Check" },
-                summary = (Dictionary<string, string>?)null,
-                seo = (Dictionary<string, object>?)null,
-                body = JsonNode.Parse(body),
-                schemaVersion = 1,
-                rowVersion = "0001-01-01T00:00:00",
-                parentId = kind == ContentKind.Page ? _shelf : (long?)null,
-            },
+            Payload(body, slug, visibility, kind),
             cancellationToken);
         Assert.True(created.StatusCode == HttpStatusCode.Created, await created.Content.ReadAsStringAsync(cancellationToken));
 
@@ -323,6 +332,26 @@ public sealed class ContentPublishChecksTests(MariaDbFixture mariaDb) : IAsyncLi
         var url = kind == ContentKind.Page ? $"/{row.GetProperty("path").GetString()}" : $"/news/{slug}";
         return new Written(row.GetProperty("id").GetInt64(), slug, url);
     }
+
+    private object Payload(
+        string body,
+        string? slug = null,
+        Visibility visibility = Visibility.Public,
+        ContentKind kind = ContentKind.Page) => new
+    {
+        kind = kind.ToString(),
+        slug = slug ?? $"chk-{Guid.NewGuid():N}"[..20],
+        ownerDepartment = nameof(Department.WD),
+        visibility = visibility.ToString(),
+        isTemplate = false,
+        title = new Dictionary<string, string> { ["it"] = "Controllo", ["en"] = "Check" },
+        summary = (Dictionary<string, string>?)null,
+        seo = (Dictionary<string, object>?)null,
+        body = JsonNode.Parse(body),
+        schemaVersion = 1,
+        rowVersion = "0001-01-01T00:00:00",
+        parentId = kind == ContentKind.Page ? _shelf : (long?)null,
+    };
 
     /// <summary>The keys of what stands in the way at one path, empty when it has nothing to say about that path.</summary>
     private async Task<string[]> ProblemsAsync(long id, string path, CancellationToken cancellationToken)

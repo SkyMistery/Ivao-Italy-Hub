@@ -153,23 +153,32 @@ public sealed class ContentPublishService(
         JsonNode body,
         CancellationToken cancellationToken)
     {
-        var links = walker.Links(body)
+        var all = walker.Links(body);
+        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
+
+        void Refuse(string path, string key)
+        {
+            // A piece of Markdown can hold two links, on one path.
+            var field = $"body.{path}";
+            errors[field] = errors.TryGetValue(field, out var held) ? [.. held.Union([key])] : [key];
+        }
+
+        // Refused and not passed over: the save refuses it too, and this is for a page saved before it asked
+        // (#321, point 5).
+        foreach (var link in all.Where(link => !SiteDestinations.IsFollowable(link.Address)))
+        {
+            Refuse(link.Path, BlockDocumentWalker.UnfollowableAddressKey);
+        }
+
+        var links = all
             .Select(link => (link.Path, Address: SiteDestinations.OnThisSite(link.Address)))
             .Where(link => link.Address is not null)
             .Select(link => (link.Path, Address: link.Address!))
             .ToList();
 
-        if (links.Count == 0)
-        {
-            return null;
-        }
-
-        var reachable = await destinations.ReachableAsync(
-            [.. links.Select(link => link.Address)],
-            content.Id,
-            cancellationToken);
-
-        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        var reachable = links.Count == 0
+            ? new Dictionary<string, SiteDestination>()
+            : await destinations.ReachableAsync([.. links.Select(link => link.Address)], content.Id, cancellationToken);
 
         foreach (var (path, address) in links)
         {
@@ -185,9 +194,7 @@ public sealed class ContentPublishService(
 
             if (key is not null)
             {
-                // A piece of Markdown can hold two links, on one path.
-                var field = $"body.{path}";
-                errors[field] = errors.TryGetValue(field, out var held) ? [.. held.Union([key])] : [key];
+                Refuse(path, key);
             }
         }
 
@@ -470,7 +477,7 @@ public sealed class ContentPublishService(
             var descriptor = blocks.Find(block.Type);
             var frozen = descriptor is { AlwaysLive: false }
                 && string.Equals(
-                    (block.Node["renderMode"] as JsonValue)?.GetValue<string>(),
+                    BlockDocumentNode.TextOf(block.Node["renderMode"]),
                     "frozen",
                     StringComparison.Ordinal);
 

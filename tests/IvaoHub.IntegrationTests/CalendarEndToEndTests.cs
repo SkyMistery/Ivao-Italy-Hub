@@ -176,7 +176,31 @@ public sealed class CalendarEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifeti
         return new Uri($"/api/blocks/data/{CoreBlocks.Calendar}?props={encoded}", UriKind.Relative);
     }
 
-    private static object Payload(Department department, Visibility visibility = Visibility.Public) => new
+    [Fact]
+    public async Task AnAddressThatIsNotOneToFollowIsRefusedAndAWholeOneIsSaved()
+    {
+        // #321, point 5: the address of an entry is drawn as a link on the calendar, and only its
+        // length was checked.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(EventsCoordinatorVid, position: "IT-EC", cancellationToken: token);
+
+        using var staff = _factory.CreateApiClient();
+        await _factory.SignInAsync(staff, EventsCoordinatorVid, token);
+
+        foreach (var url in new[] { "javascript:alert(1)", "//elsewhere.example" })
+        {
+            using var refused = await SendAsync(staff, HttpMethod.Post, CalendarEndpoints.Pattern, Payload(Department.ED, url: url), token);
+            Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+
+            var errors = (await refused.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("errors");
+            Assert.Equal("errors.url.unsafe", errors.GetProperty("url")[0].GetString());
+        }
+
+        using var saved = await SendAsync(staff, HttpMethod.Post, CalendarEndpoints.Pattern, Payload(Department.ED, url: "/events"), token);
+        Assert.Equal(HttpStatusCode.Created, saved.StatusCode);
+    }
+
+    private static object Payload(Department department, Visibility visibility = Visibility.Public, string? url = null) => new
     {
         ownerDepartment = department.ToString(),
         visibility = visibility.ToString(),
@@ -186,7 +210,7 @@ public sealed class CalendarEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifeti
         startsAtUtc = DateTime.UtcNow.AddDays(1).ToString("O"),
         endsAtUtc = (string?)null,
         allDay = false,
-        url = (string?)null,
+        url,
     };
 
     /// <summary>
