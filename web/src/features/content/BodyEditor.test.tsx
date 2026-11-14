@@ -433,7 +433,9 @@ test('a row inside a section a template locks is locked with it, key or no key (
     {
       schemaVersion: 1,
       sections: [
-        framed('fixed', [framed('r1', [framed('r1a')]), framed('r2', [], { key: 'inner' })], { key: 'fixed' }),
+        framed('fixed', [framed('r1', [framed('r1a')]), framed('r2', [], { key: 'inner' })], {
+          key: 'fixed',
+        }),
       ],
     },
     // The template locks the section and says nothing about `inner`: what it holds is fixed all the same.

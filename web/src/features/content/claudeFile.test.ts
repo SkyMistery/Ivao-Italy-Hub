@@ -720,14 +720,18 @@ describe('the rules of the template', () => {
     // Its texts may change, as the section's own may.
     const rewritten = structuredClone(withRow);
     rewritten.sections[1]!.sections[0]!.blocks[0] = text('blk-row', 'Rewritten');
-    expect((await ready(await fileFor(rowCtx, { body: rewritten }), rowCtx)).body.sections[1]?.sections).toHaveLength(1);
+    expect(
+      (await ready(await fileFor(rowCtx, { body: rewritten }), rowCtx)).body.sections[1]?.sections,
+    ).toHaveLength(1);
 
     // Its shape may not: a block more in the row is what the editor would not have let go.
-    const added = structuredClone(withRow) as unknown as { sections: { sections: { blocks: unknown[] }[] }[] };
+    const added = structuredClone(withRow) as unknown as {
+      sections: { sections: { blocks: unknown[] }[] }[];
+    };
     added.sections[1]!.sections[0]!.blocks.push({ type: 'text', version: 1, props: text('').props });
-    expect((await refused(await fileFor(rowCtx, { body: added }), rowCtx)).problems.map((p) => p.key)).toEqual([
-      'content.import.sectionLocked',
-    ]);
+    expect(
+      (await refused(await fileFor(rowCtx, { body: added }), rowCtx)).problems.map((p) => p.key),
+    ).toEqual(['content.import.sectionLocked']);
   });
 
   test('a section that lists its blocks takes only those', async () => {
