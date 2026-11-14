@@ -368,6 +368,7 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
         {
             ban.ToTable("fo_bans");
             ban.HasKey(row => row.Id);
+            ban.Ignore(row => row.StakeholderVid);
             ban.Property(row => row.Reason).HasMaxLength(PirepValidation.MaxTextLength).IsRequired();
             ban.HasRowVersion(row => row.RowVersion);
 

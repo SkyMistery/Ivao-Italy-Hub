@@ -419,10 +419,12 @@ public sealed class Enrolment : IAuditable, IProjectable
 /// <summary>
 /// A ban (design M2 §3.9), <c>fo_bans</c>: the pilot sends no report on the tours it names — one, or all of them — while it
 /// runs. Their reports already sent are validated as usual. T11 reads it; the bans' list and form write it (T15a, <c>BanEndpoints</c>).
+/// <para>It is about the pilot it names (<see cref="IHasStakeholder"/>): <c>Tours.Ban</c> is denied to them, super administrator
+/// included, so nobody shortens or lifts their own ban (issue #328, item 11).</para>
 /// </summary>
 [Audited]
 [PermissionArea(TourPermissions.Area)]
-public sealed class Ban : IOwnedByDepartment, IAuditable
+public sealed class Ban : IOwnedByDepartment, IAuditable, IHasStakeholder
 {
     public long Id { get; set; }
 
@@ -451,6 +453,8 @@ public sealed class Ban : IOwnedByDepartment, IAuditable
     public int UpdatedBy { get; set; }
 
     public DateTime RowVersion { get; set; }
+
+    public int? StakeholderVid => Vid;
 
     /// <summary>Whether it holds on this tour at this moment; a subtour is covered by a ban on its container too.</summary>
     public bool Holds(long tourId, long? parentTourId, DateTime at) =>

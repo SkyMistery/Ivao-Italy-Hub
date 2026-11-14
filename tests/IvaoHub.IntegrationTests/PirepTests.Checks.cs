@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using IvaoHub.Core.Airspace;
+using IvaoHub.Core.Data;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Weather;
 using IvaoHub.Modules.FlightOps.Checks;
@@ -141,6 +142,120 @@ public sealed partial class PirepTests
             .SingleAsync(row => row.PirepId == first && row.CheckKey == CheckCatalog.RepeatedRoute && row.RanBy == CheckRanBy.Server, token);
         Assert.Equal(CheckOutcome.Failed, result.Outcome);
         Assert.Equal("flightops:evidence.routeFlownBefore", Assert.Single(FlightChecks.Evidence(result)).Key);
+    }
+
+    /// <summary>
+    /// A report whose checks fail is left for the next run, and the others of the batch are checked all the same (issue #328,
+    /// item 9): before, the first failure stopped the job, run after run, for the whole queue behind it.
+    /// </summary>
+    [Fact]
+    public async Task OneReportThatFailsDoesNotStopTheJob()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        var (tourId, legs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        var broken = Id(await CreatedAsync(pilot, Reports(tourId), Payload(legs[0], _flights.Add(PilotVid, "XAA100", Rome, Milan, DateTime.UtcNow.AddDays(-2))), token));
+        var sound = Id(await CreatedAsync(pilot, Reports(tourId), Payload(legs[1], _flights.Add(PilotVid, "XAA100", Milan, London, DateTime.UtcNow.AddDays(-1))), token));
+        var startedAt = DateTime.UtcNow.AddSeconds(-1);
+
+        await using var scope = _host.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+        try
+        {
+            // The first of the queue cannot be read; the second waits right behind it. Both with their checks to run.
+            var since = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            await Everything<Pirep>(database).Where(report => report.Id == broken)
+                .ExecuteUpdateAsync(
+                    set => set
+                        .SetProperty(report => report.RulesSnapshotJson, "{}")
+                        .SetProperty(report => report.QueuedAt, since)
+                        .SetProperty(report => report.ChecksRanAt, (DateTime?)null),
+                    token);
+            await Everything<Pirep>(database).Where(report => report.Id == sound)
+                .ExecuteUpdateAsync(
+                    set => set
+                        .SetProperty(report => report.QueuedAt, since.AddMinutes(1))
+                        .SetProperty(report => report.ChecksRanAt, (DateTime?)null),
+                    token);
+
+            await scope.ServiceProvider.GetRequiredService<FlightCheckJob>().RunAsync(token);
+
+            Assert.NotNull(await Everything<Pirep>(database).Where(report => report.Id == sound).Select(report => report.ChecksRanAt).SingleAsync(token));
+            Assert.Null(await Everything<Pirep>(database).Where(report => report.Id == broken).Select(report => report.ChecksRanAt).SingleAsync(token));
+
+            var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            var failed = $"report {broken}:";
+            Assert.True(await hub.JobsLog.AsNoTracking().AnyAsync(
+                entry => entry.Job == FlightCheckJob.JobName
+                    && entry.StartedAt >= startedAt
+                    && entry.Status == "failed"
+                    && entry.Message!.Contains(failed),
+                token));
+        }
+        finally
+        {
+            // Out of the queue at once: the job of the other tests should not meet it.
+            await Everything<Pirep>(database).Where(report => report.Id == broken)
+                .ExecuteUpdateAsync(set => set.SetProperty(report => report.Status, PirepStatus.Withdrawn), token);
+        }
+    }
+
+    /// <summary>
+    /// A call inside a check that does not answer in time — a <see cref="TaskCanceledException"/>, though nobody cancelled the
+    /// job — costs that report only (the reviewer on #492): before, it escaped the report's catch as if it were the job's own
+    /// cancellation, and the rest of the batch waited with no line in the log.
+    /// </summary>
+    [Fact]
+    public async Task ATimeoutInsideAReportsChecksDoesNotStopTheJob()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        var (tourId, legs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        var slow = Id(await CreatedAsync(pilot, Reports(tourId), Payload(legs[0], _flights.Add(PilotVid, "XAA101", Rome, Milan, DateTime.UtcNow.AddDays(-2))), token));
+        var sound = Id(await CreatedAsync(pilot, Reports(tourId), Payload(legs[1], _flights.Add(PilotVid, "XAA101", Milan, London, DateTime.UtcNow.AddDays(-1))), token));
+        var startedAt = DateTime.UtcNow.AddSeconds(-1);
+
+        await using var scope = _host.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+        try
+        {
+            var since = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            await Everything<Pirep>(database).Where(report => report.Id == slow)
+                .ExecuteUpdateAsync(set => set.SetProperty(report => report.QueuedAt, since).SetProperty(report => report.ChecksRanAt, (DateTime?)null), token);
+            await Everything<Pirep>(database).Where(report => report.Id == sound)
+                .ExecuteUpdateAsync(set => set.SetProperty(report => report.QueuedAt, since.AddMinutes(1)).SetProperty(report => report.ChecksRanAt, (DateTime?)null), token);
+
+            // The read of the first report times out, as an HTTP call that does not answer does.
+            _commands.Before(
+                command => command.CommandText.Contains("fo_pireps", StringComparison.Ordinal)
+                    && command.Parameters.Cast<System.Data.Common.DbParameter>().Any(parameter => Equals(parameter.Value, slow)),
+                () => Task.FromException(new TaskCanceledException("The call did not answer in time.")));
+
+            await scope.ServiceProvider.GetRequiredService<FlightCheckJob>().RunAsync(token);
+
+            Assert.True(_commands.Fired);
+            Assert.NotNull(await Everything<Pirep>(database).Where(report => report.Id == sound).Select(report => report.ChecksRanAt).SingleAsync(token));
+            Assert.Null(await Everything<Pirep>(database).Where(report => report.Id == slow).Select(report => report.ChecksRanAt).SingleAsync(token));
+
+            var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            var failed = $"report {slow}:";
+            Assert.True(await hub.JobsLog.AsNoTracking().AnyAsync(
+                entry => entry.Job == FlightCheckJob.JobName
+                    && entry.StartedAt >= startedAt
+                    && entry.Status == "failed"
+                    && entry.Message!.Contains(failed),
+                token));
+        }
+        finally
+        {
+            _commands.Clear();
+            await Everything<Pirep>(database).Where(report => report.Id == slow || report.Id == sound)
+                .ExecuteUpdateAsync(set => set.SetProperty(report => report.Status, PirepStatus.Withdrawn), token);
+        }
     }
 
     /// <summary>
