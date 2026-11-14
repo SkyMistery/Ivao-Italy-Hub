@@ -2,7 +2,7 @@
 
 - **Data**: 14 novembre 2026
 - **Stato**: Decisa da Carmine in chat al master, 14 novembre 2026: «Si rifiuta» (l'alternativa 1). Il link al commento che la
-  riporta sulla PR è sotto, in «Risposta di Carmine».
+  riporta sulla PR: [il commento del master](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/493#issuecomment-6874727366).
 - **Chi**: una sessione di lavoro di Carmine (issue #321, punto 3; lotto 3 della revisione del codice,
   `2026-10-20-la-revisione-del-codice.md`)
 - **Classificazione** (`CLAUDE.md` §5): **(b)**, estensione di un meccanismo del nucleo, il CRUD generico (`MapCrud`): `CrudSaving`
@@ -71,8 +71,8 @@ La raccomandazione impedisce che ne nascano altre; non le ripara.
 
 ## Risposta di Carmine
 
-«Si rifiuta» — l'alternativa 1, data in chat al master il 14 novembre 2026 e riportata dal master sulla PR: _(link al commento da
-aggiungere quando il master lo pubblica)_.
+«Si rifiuta» — l'alternativa 1, data in chat al master il 14 novembre 2026 e riportata dal master sulla PR #493:
+[https://github.com/SkyMistery/Ivao-Italy-Hub/pull/493#issuecomment-6874727366](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/493#issuecomment-6874727366).
 
 ## Da portare nel piano
 

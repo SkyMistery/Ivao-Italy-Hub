@@ -3,7 +3,7 @@
 - **Data**: 14 novembre 2026
 - **Stato**: il §1 è una scelta di una sessione di lavoro, dentro la direzione della issue #321 (lotto 3 della revisione del codice,
   `2026-10-20-la-revisione-del-codice.md`): il revisore la legge come tale. Il §2 l'ha decisa Carmine in chat al master il
-  14 novembre 2026 («Filtrare»), perché cambia quello che chi scrive vede. La pagina con figlie è in
+  14 novembre 2026 («Filtrare»), perché cambia quello che chi scrive vede ([il commento del master che la riporta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/493#issuecomment-6874727366)). La pagina con figlie è in
   `2026-11-14-la-pagina-con-figlie.md`.
 - **Classificazione** (`CLAUDE.md` §5): **(b)**, difetti del nucleo corretti con i meccanismi che ci sono.
 
