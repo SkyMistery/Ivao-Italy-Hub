@@ -8,7 +8,6 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using MySqlConnector;
 
 namespace IvaoHub.Core.Services;
 
@@ -165,7 +164,7 @@ public sealed class InitialisationMarker(HubDbContext database, IClock clock, IL
                 // Whatever the database did with our changes, the next attempt reads the row again.
                 database.ChangeTracker.Clear();
 
-                if (attempt < WriteAttempts && IsAnotherWriter(exception))
+                if (attempt < WriteAttempts && WriteConflicts.AnotherWriteWon(exception) is not null)
                 {
                     // Another process initialised at the same moment and wrote the row first: its mark is as true as ours,
                     // and ours is written over it, as an update this time. On MariaDB the two can also meet as a deadlock --
@@ -184,22 +183,6 @@ public sealed class InitialisationMarker(HubDbContext database, IClock clock, IL
         }
     }
 
-    /// <summary>
-    /// A duplicate key or a deadlock: another process wrote the same row at the same moment, and trying again resolves it.
-    /// EF reports a deadlock wrapped, as a transient failure, so the whole chain is looked at.
-    /// </summary>
-    private static bool IsAnotherWriter(Exception? exception)
-    {
-        for (; exception is not null; exception = exception.InnerException)
-        {
-            if (exception is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry or MySqlErrorCode.LockDeadlock })
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
 }
 
 /// <summary>

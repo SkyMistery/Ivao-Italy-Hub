@@ -2,7 +2,6 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using MySqlConnector;
 
 namespace IvaoHub.Core.Ivao;
 
@@ -107,7 +106,7 @@ public sealed class RunwayDirectory(
             await database.SaveChangesAsync(cancellationToken);
             return true;
         }
-        catch (DbUpdateException exception) when (IsDuplicate(exception)
+        catch (DbUpdateException exception) when (WriteConflicts.DuplicateKey(exception) is not null
             && exception.Entries.All(entry => entry.Entity is IvaoRunway))
         {
             foreach (var row in rows)
@@ -118,19 +117,6 @@ public sealed class RunwayDirectory(
             logger.LogInformation("The runways of {Icao} were written by another request first.", icao);
             return false;
         }
-    }
-
-    private static bool IsDuplicate(Exception? exception)
-    {
-        for (; exception is not null; exception = exception.InnerException)
-        {
-            if (exception is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry })
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     public async Task<IReadOnlyList<IvaoRunway>> GetAsync(
