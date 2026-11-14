@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using IvaoHub.Core.Content;
+using IvaoHub.Core.Data;
+using IvaoHub.Modules.FlightOps;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Review;
@@ -174,6 +177,63 @@ public sealed partial class PirepTests
             "status",
             "flightops:errors.reviewPurged",
             token);
+    }
+
+    /// <summary>
+    /// A subtour is archived only with its container (Carmine, 14 November 2026, issue #328 item 10): a subtour closed fourteen
+    /// months ago inside a container still open waits, and its completion still counts — the pilot completes the container by
+    /// flying the other subtour. Once the container is due, the container and both subtours are archived in one run.
+    /// </summary>
+    [Fact]
+    public async Task ASubtourWaitsForItsContainerBeforeTheRetention()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        var containerId = await TourAsync(coordinator, TourKind.Container, parent: null, awardId: null, requiredNm: null, requiredSubtours: 2, token);
+        var (firstId, firstLegs) = await SubtourAsync(coordinator, containerId, TourKind.Sequential, requiredNm: null, [(Rome, Milan)], token);
+        var (secondId, secondLegs) = await SubtourAsync(coordinator, containerId, TourKind.Sequential, requiredNm: null, [(Milan, London)], token);
+        await ReadyAsync(coordinator, containerId, token);
+
+        await GrantValidateAsync(ValidatorVid, containerId, token);
+        using var validator = await SignedInAsync(ValidatorVid, token);
+
+        await AcceptedAsync(pilot, validator, firstId, firstLegs[0], Rome, Milan, DateTime.UtcNow.AddDays(-2), token);
+        Assert.NotNull((await EnrolmentAsync(firstId, PilotVid, token)).CompletedAt);
+
+        var now = DateTime.UtcNow;
+        await using (var scope = _host.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+            await MoveAsync(database, firstId, now.AddMonths(-16), now.AddMonths(-14), token);
+            await scope.ServiceProvider.GetRequiredService<TourRetentionJob>().RunAsync(token);
+
+            Assert.Null((await Everything<Tour>(database).AsNoTracking().SingleAsync(tour => tour.Id == firstId, token)).PurgedAt);
+        }
+
+        // Still counted: the second subtour completes the container.
+        Assert.NotNull((await EnrolmentAsync(firstId, PilotVid, token)).CompletedAt);
+        await AcceptedAsync(pilot, validator, secondId, secondLegs[0], Milan, London, DateTime.UtcNow.AddDays(-1), token);
+        Assert.NotNull((await EnrolmentAsync(containerId, PilotVid, token)).CompletedAt);
+
+        // The container due — its award handled, as whoever assigns does —: it goes, and both subtours with it.
+        await using (var scope = _host.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+            var source = Enrolment.ReferenceOf((await EnrolmentAsync(containerId, PilotVid, token)).Id);
+            await scope.ServiceProvider.GetRequiredService<HubDbContext>().AwardSignals
+                .Where(signal => signal.SourceModule == FlightOpsModule.ModuleKey && signal.SourceId == source)
+                .ExecuteUpdateAsync(set => set.SetProperty(signal => signal.Status, AwardSignalStatus.Handled), token);
+            await MoveAsync(database, containerId, now.AddMonths(-16), now.AddMonths(-14), token);
+            await MoveAsync(database, secondId, now.AddMonths(-16), now.AddMonths(-14), token);
+            await scope.ServiceProvider.GetRequiredService<TourRetentionJob>().RunAsync(token);
+
+            var ids = new[] { containerId, firstId, secondId };
+            Assert.Equal(
+                3,
+                await Everything<Tour>(database).CountAsync(tour => ids.Contains(tour.Id) && tour.PurgedAt != null, token));
+        }
     }
 
     private static async Task MoveAsync(FlightOpsDbContext database, long tourId, DateTime releaseAt, DateTime closeAt, CancellationToken cancellationToken) =>
