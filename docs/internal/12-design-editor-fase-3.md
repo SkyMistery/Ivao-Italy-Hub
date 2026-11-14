@@ -437,7 +437,7 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   così un tasto nell'etichetta non fa una richiesta e un blocco senza parole ha la chiave di prima. Toccati in più del §5.7:
   `blocks/data.ts`, `blocks/ContentRenderer.tsx`. ⚖️ I blocchi di dati
   dei moduli che mostrano numeri hanno le stesse etichette, come dice il secondo punto, e `events.atcCoverage` è uno di questi: non in
-  questa PR, ma con la issue #518 per gli eventi (Carmine, 14 novembre 2026, nota §2 con il link alla risposta). Il server non è cambiato.
+  questa PR, ma con la issue #518 per gli eventi e la #521 per i blocchi dei tour (Carmine, 14 novembre 2026, nota §2 con i link alle risposte). Il server non è cambiato.
 
 ### 5.8 La tabella delle frequenze dalle postazioni dell'hub (XX)
 

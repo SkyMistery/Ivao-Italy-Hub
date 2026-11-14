@@ -49,7 +49,12 @@ non scrivono e che il codice ha dovuto scegliere, come le note della 3.10, della
   ha le stesse etichette, come dice la lettera del §5.7, ed **`events.atcCoverage` è uno di questi** (disponibilità, pezzi scoperti,
   trasferimenti, oggi dentro frasi con il plurale). **Non in questa PR**: per il modulo Eventi c'è la issue #518, assegnata a
   `dalberone`. Risposta di Carmine in chat al master il 14 novembre 2026, «Sì a tutte e cinque, come raccomandi», riportata dal master
-  sulla PR: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/511#issuecomment-6883307038. Questa PR non tocca i blocchi dei moduli.
+  sulla PR: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/511#issuecomment-6883307038.
+- **I blocchi di dati dei tour** (§5.7, secondo punto: «i tour […] seguono nella stessa PR se ne hanno») ⚖️ — **deciso da Carmine**:
+  una **issue a parte**, come per gli eventi, la #521; i blocchi dei tour che mostrano numeri (`openIssues`, `reviewQueue`, il
+  riepilogo di `myTours`, `errorCatalog`) non si toccano qui. Risposta di Carmine in chat al master il 14 novembre 2026, «Issue a
+  parte per i tour», riportata dal master sulla PR: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/511#issuecomment-6883857820.
+  Questa PR non tocca i blocchi dei moduli.
 - Il server non cambia: legge di ogni voce solo `metric` e `figure` (`BlockProps.Entries`), e il testo dell'etichetta entra nel testo
   della ricerca come ogni stringa delle `props`.
 
@@ -109,7 +114,7 @@ e `LocaleTabs`.
 - **Il design dell'editor, `12-design-editor-fase-3.md` §5.4**: `allowMultiple` resta, e `initially: 'all'` lo rende vero; il titolo è
   un `h2` sopra le domande (`h3`); il numero fa parte della domanda.
 - **§5.7**: l'etichetta è della prima voce che chiede il numero; vuota, la parola dell'hub; un blocco di dati di un modulo che mostra
-  numeri ha le stesse etichette, `events.atcCoverage` con la issue #518 (decisa da Carmine, §2).
+  numeri ha le stesse etichette, `events.atcCoverage` con la issue #518 e i blocchi dei tour con la #521 (decise da Carmine, §2).
 - **§16** (meccanismi generici): il form generato disegna il suggerimento anche sotto un interruttore.
 - **§16, «Data blocks»** (caso (b), §3): una richiesta dal vivo porta solo la domanda — le `props` senza i campi `localized`, anche
   dentro gli elenchi (`questionOf`, `web/src/blocks/data.ts`) — e le parole restano fuori; un blocco senza parole chiede quello che
