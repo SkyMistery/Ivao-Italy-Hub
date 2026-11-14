@@ -45,7 +45,7 @@ public static class TourPermissions
         new(ReopenDecisions, IsGlobal: false, DeniedToStakeholder: true),
         new(ManageValidators, IsGlobal: false),
         new(ViewPilots, IsGlobal: false),
-        new(Ban, IsGlobal: false),
+        new(Ban, IsGlobal: false, DeniedToStakeholder: true),
         new(ManageSettings, IsGlobal: false),
     ];
 }

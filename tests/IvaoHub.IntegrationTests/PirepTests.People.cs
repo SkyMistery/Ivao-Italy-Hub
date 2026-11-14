@@ -327,6 +327,39 @@ public sealed partial class PirepTests
     }
 
     /// <summary>
+    /// A ban is about its pilot (issue #328, item 11): whoever holds <c>Tours.Ban</c> neither bans themselves nor changes their
+    /// own ban — the one handler, as on a report — and their own pilot page does not offer it; another holder does.
+    /// </summary>
+    [Fact]
+    public async Task NobodyChangesTheirOwnBan()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var assistant = await SignedInAsync(AssistantVid, token);
+
+        var (tourId, _) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        var ban = new BanWriteDto(AssistantVid, tourId, DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow.AddDays(30), "fo-test-pirep own ban", default);
+
+        using (var self = await assistant.PostAsJsonAsync(BanEndpoints.Pattern, ban, token))
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, self.StatusCode);
+        }
+
+        var written = await CreatedAsync(coordinator, BanEndpoints.Pattern, ban, token);
+        var shorter = ban with { EndsAt = DateTime.UtcNow.AddMinutes(1), RowVersion = written.GetProperty("rowVersion").GetDateTime() };
+        using (var shortened = await assistant.PutAsJsonAsync($"{BanEndpoints.Pattern}/{Id(written)}", shorter, token))
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, shortened.StatusCode);
+        }
+
+        var own = await OkAsync(await assistant.GetAsync($"{PilotEndpoints.Pattern}/{AssistantVid}", token), token);
+        Assert.False(own.GetProperty("canBan").GetBoolean());
+
+        var changed = await OkAsync(await coordinator.PutAsJsonAsync($"{BanEndpoints.Pattern}/{Id(written)}", shorter, token), token);
+        Assert.Equal(Id(written), Id(changed));
+    }
+
+    /// <summary>
     /// The pilot's own tours (T15b, note 2026-09-24-le-pagine-delle-persone §3.1), from the endpoint the cards read and from the
     /// block `flightops.myTours`, which answer the same: the tour started with how far and the next leg, the report sent back
     /// «to modify» with the tour's address, the summary with the minutes the tracker recorded. Hidden, the tour leaves the list

@@ -156,7 +156,7 @@ public sealed class Pilots(
             await ThreadsAsync(vid, cancellationToken),
             await BanEndpoints.RowsAsync(bans, database, reviews, now, cancellationToken),
             standings,
-            currentUser.HasAny(TourPermissions.Ban));
+            currentUser.HasAny(TourPermissions.Ban) && vid != currentUser.Vid);
     }
 
     /// <summary>
