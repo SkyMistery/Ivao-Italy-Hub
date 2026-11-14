@@ -202,6 +202,15 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var training = await CreateAsync(client, $"{Stem()}-training", parentId: null, token);
         var guide = await CreateAsync(client, "guide", training.Id, token);
 
+        // Whoever may not delete the page is told that, and nothing about what is under it (the review of #493, item 2).
+        await SeedUserAsync(EventsCoordinatorVid, token, position: "IT-EC");
+        using var coordinator = _factory.CreateApiClient();
+        await _factory.SignInAsync(coordinator, EventsCoordinatorVid, token);
+        using (var notTheirs = await SendAsync(coordinator, HttpMethod.Delete, $"{ContentEndpoints.Pattern}/{training.Id}", null, token))
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, notTheirs.StatusCode);
+        }
+
         using (var refused = await SendAsync(client, HttpMethod.Delete, $"{ContentEndpoints.Pattern}/{training.Id}", null, token))
         {
             Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);

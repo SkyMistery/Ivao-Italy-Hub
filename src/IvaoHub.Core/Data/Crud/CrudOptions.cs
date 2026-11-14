@@ -228,6 +228,15 @@ public sealed class CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto>
     public Func<TEntity, CrudSaving, Task<IReadOnlyDictionary<string, string[]>?>>? BeforeAuthorize { get; set; }
 
     /// <summary>
+    /// What a delete of this resource may refuse only by looking at other rows — run on the stored row **after** the permissions
+    /// are checked, so that whoever may not delete the row is told so and nothing else, before the row is removed. Refusing
+    /// works as in <see cref="BeforeSave"/>.
+    /// <para>A page with pages under it is the reason it exists (#321, point 3, note 2026-11-14-la-pagina-con-figlie): its
+    /// children would be left online at their old address and refused on every save.</para>
+    /// </summary>
+    public Func<TEntity, CrudSaving, Task<IReadOnlyDictionary<string, string[]>?>>? BeforeDelete { get; set; }
+
+    /// <summary>
     /// What follows a create or an update once it is saved — never a delete, never a refused write: a mail about the row. It
     /// cannot refuse anything any more, and it does not run in the row's transaction, like the mails after a decision.
     /// <para>A ban tells its pilot (M2, T15): the mail goes only when the ban is really written.</para>
@@ -297,15 +306,9 @@ public sealed record CrudSearchField<TEntity>(
 /// <param name="CurrentUser">Who is writing.</param>
 /// <param name="IsNew">True on a create, false on an update.</param>
 /// <param name="CancellationToken">The request's.</param>
-/// <param name="IsDelete">
-/// True when <see cref="CrudOptions{TEntity, TListDto, TDetailDto, TWriteDto}.BeforeAuthorize"/> runs ahead of a delete, the one
-/// hook a delete runs: what a resource may refuse to lose is a fact of other rows, as for a page with pages under it (#321,
-/// point 3, note 2026-11-14-la-pagina-con-figlie).
-/// </param>
 public sealed record CrudSaving(
     DbContext Database,
     IServiceProvider Services,
     Auth.ICurrentUser CurrentUser,
     bool IsNew,
-    CancellationToken CancellationToken,
-    bool IsDelete = false);
+    CancellationToken CancellationToken);

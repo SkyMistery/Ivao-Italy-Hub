@@ -376,7 +376,7 @@ public static class MapCrudExtensions
             return NotFound(scope);
         }
 
-        if (await BeforeAuthorizeAsync(scope, options, entity, isNew: false, http.RequestAborted, isDelete: true) is { } unresolved)
+        if (await BeforeAuthorizeAsync(scope, options, entity, isNew: false, http.RequestAborted) is { } unresolved)
         {
             return unresolved;
         }
@@ -385,6 +385,11 @@ public static class MapCrudExtensions
             || (options.DeletePolicy is { } deletePolicy && await DeniesExtra(scope, entity, deletePolicy)))
         {
             return Forbidden(scope);
+        }
+
+        if (await RunHookAsync(scope, options.BeforeDelete, entity, isNew: false, http.RequestAborted) is { } refused)
+        {
+            return refused;
         }
 
         if (options.Delete is null)
@@ -950,10 +955,9 @@ public static class MapCrudExtensions
         CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto> options,
         TEntity entity,
         bool isNew,
-        CancellationToken cancellationToken,
-        bool isDelete = false)
+        CancellationToken cancellationToken)
         where TEntity : class =>
-        RunHookAsync(scope, options.BeforeAuthorize, entity, isNew, cancellationToken, isDelete);
+        RunHookAsync(scope, options.BeforeAuthorize, entity, isNew, cancellationToken);
 
     /// <summary>What follows a saved write (<c>CrudOptions.AfterSave</c>).</summary>
     private static Task AfterSaveAsync<TEntity>(
@@ -972,8 +976,7 @@ public static class MapCrudExtensions
         Func<TEntity, CrudSaving, Task<IReadOnlyDictionary<string, string[]>?>>? hook,
         TEntity entity,
         bool isNew,
-        CancellationToken cancellationToken,
-        bool isDelete = false)
+        CancellationToken cancellationToken)
         where TEntity : class
     {
         if (hook is null)
@@ -983,7 +986,7 @@ public static class MapCrudExtensions
 
         var errors = await hook(
             entity,
-            new CrudSaving(scope.Database, scope.Services, scope.CurrentUser, isNew, cancellationToken, isDelete));
+            new CrudSaving(scope.Database, scope.Services, scope.CurrentUser, isNew, cancellationToken));
 
         return errors is null || errors.Count == 0
             ? null
