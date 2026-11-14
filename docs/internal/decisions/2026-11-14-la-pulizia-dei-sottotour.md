@@ -42,9 +42,16 @@ per i tour «in attesa». Il costo — i dati pesanti di un sottotour tenuti fin
   che scade nello stesso giro dei suoi sottotour li porta con sé in quel giro, non in quello del mese dopo.
 - Il contenitore aspetta già per conto suo (PIREP aperti dei suoi, una segnalazione d'award in attesa): allora aspettano anche i suoi
   sottotour.
+- **L'altra metà** (rilievo del master sulla #496): il contenitore **aspetta finché aspetta uno dei suoi sottotour** (un suo PIREP
+  da decidere o contestato, un suo completamento con l'award in attesa; `WaitsAsync` guarda il tour e i suoi figli). Senza, un
+  contenitore e un sottotour scaduti nello stesso giro, con un PIREP del sottotour ancora aperto: il contenitore se ne andava con le sue
+  iscrizioni, e il PIREP accettato dopo non trovava più l'iscrizione del contenitore, quindi né il completamento né l'award. Non c'è
+  ciclo: il sottotour aspetta il contenitore per le date, il contenitore aspetta il sottotour solo per i PIREP e gli award.
 - Test: `PirepTests.ASubtourWaitsForItsContainerBeforeTheRetention` (contenitore aperto, un sottotour chiuso da 14 mesi: non si pulisce
   e il suo completamento conta ancora, il pilota completa il contenitore con l'altro; scaduto il contenitore, vanno tutti e tre in un
-  giro). Sul codice di prima fallisce: il sottotour veniva pulito.
+  giro). Sul codice di prima fallisce: il sottotour veniva pulito. `PirepTests.AContainerWaitsWhileOneOfItsSubtoursWaits` (contenitore e
+  sottotour scaduti insieme, un PIREP del sottotour da decidere: nessuno dei tre si pulisce; deciso, il contenitore si completa e il giro
+  dopo vanno tutti e tre). Sul codice di prima fallisce: il contenitore e l'altro sottotour venivano puliti.
 
 ## 4. La risposta di Carmine
 
@@ -53,7 +60,7 @@ finché il contenitore non è scaduto aspetta. Il commento del master sulla PR c
 
 ## Da portare nel piano
 
-- `05-design-m2.md` §10 (il paragrafo «Fatto in T20a»): un sottotour si pulisce solo con il suo contenitore e intanto aspetta; i
-  tour di primo livello si trattano prima dei sottotour.
+- `05-design-m2.md` §10 (il paragrafo «Fatto in T20a»): un sottotour si pulisce solo con il suo contenitore e intanto aspetta; il
+  contenitore aspetta finché aspetta uno dei suoi sottotour; i tour di primo livello si trattano prima dei sottotour.
 - Piano: dove descrive la conservazione dei tour di T20a (la conservazione mensile, `TourRetentionJob`), la stessa frase.
 - `2026-09-25-la-conservazione-dei-tour.md` §3 resta com'è; il piano dice che questa nota lo completa.
