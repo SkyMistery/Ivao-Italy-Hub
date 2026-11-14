@@ -3,8 +3,9 @@
 **Data:** 14 novembre 2026, PR 3.13 della fase 3 (ramo `feat/questions-and-labels`; `12-design-editor-fase-3.md` §5.4 e §5.7, riga
 3.13 del §7).
 **Stato:** scelte della sessione di lavoro, dentro quello che il §5.4 e il §5.7 hanno già deciso (approvati da Carmine il 31 ottobre
-2026, §9, risposta 2 per le domande). **Nessuna si scosta dalla lettera** del design: dicono dove sta e come si legge quello che il
-design vuole. Se il master ne legge una come uno scostamento, è una domanda per Carmine prima del merge.
+2026, §9, risposta 2 per le domande): dicono dove sta e come si legge quello che il design vuole. **La parte dei moduli del §5.7
+(§2, terzo punto) resta una domanda per Carmine**: il master gliela porta (rilievo 3 della revisione), e la risposta si scrive qui
+prima del merge.
 **Classificazione** (`CLAUDE.md` §5): (c), decisa dal design. Il §5.4 e il §5.7 dicono «nota sua: no»; questa nota c'è per i punti che
 non scrivono e che il codice ha dovuto scegliere, come le note della 3.10, della 3.11 e della 3.12.
 
@@ -16,7 +17,10 @@ non scrivono e che il codice ha dovuto scegliere, come le note della 3.10, della
 - **`allowMultiple` resta.** Il §5.4 dice che `all` «vale anche "più aperte insieme"», non che la casella sparisce: un corpo salvato con
   `allowMultiple: true` deve continuare a lasciare aperte più risposte (principio 4 del design, «un corpo salvato non si riscrive»).
   Quindi: con `initially: 'all'` il blocco è a più aperte qualunque cosa dica `allowMultiple`; con `closed` e `first` decide la
-  casella, come prima. Lo schema lo scrive accanto alla proprietà.
+  casella, come prima. Lo schema lo scrive accanto alla proprietà, e lo staffer lo legge sotto la casella
+  (`blocks.accordion.hints.allowMultiple`, rilievo 2 della revisione): «Più di una aperta insieme» con `all` non cambia niente sullo
+  schermo, e senza la frase sembrava rotta. Il form generato non disegnava il suggerimento sotto un interruttore, come sotto ogni altro
+  campo: ora lo disegna (`shared/forms/SchemaForm.tsx`, il caso `boolean`); un interruttore senza suggerimento è disegnato com'era.
 - **Il titolo è un `h2`.** L'accordion di Atmosphere mette ogni domanda in un `h3` (Radix, `AccordionHeader`): il titolo che sta sopra
   le domande è il livello sopra, lo stesso a cui comincia un titolo che lo staffer aggiungerebbe a mano con il blocco `heading`. In
   stampa le domande restano `h3`, come prima. Un titolo vuoto nella lingua sullo schermo è nessun titolo. Il suggerimento sotto il campo
@@ -41,18 +45,19 @@ non scrivono e che il codice ha dovuto scegliere, come le note della 3.10, della
   dentro le voci di un elenco (`shared/forms/schema.ts`, `writtenValues`). ⚠️ **Un'etichetta scritta in una lingua sola ferma la
   pubblicazione**, come ogni testo tradotto facoltativo (il titolo di un callout): la pubblicazione legge la lingua vuota come una
   traduzione che manca (`BlockDocumentWalker.MissingLocales`).
-- **I blocchi di dati dei moduli** (§5.7, secondo punto): nessuno ha una lista di numeri con la loro parola sotto, come `stats`. I
-  numeri che mostrano stanno dentro frasi con il plurale, che un'etichetta dello staffer romperebbe: nei tour `openIssues` («2
-  segnalazioni aperte»), `reviewQueue`, il riepilogo di `myTours`, `errorCatalog`; negli eventi `atcCoverage` e `staffQueue`; nella
-  formazione `approvalQueue`. `tourCards` non mostra numeri. Quindi nei tour non c'è niente da fare in questa PR, e **la issue per `dalberone` non è stata aperta**: non c'è un
-  blocco che la chieda. Se il master o Carmine leggono il §5.7 diversamente, la issue si apre dopo.
+- **I blocchi di dati dei moduli** (§5.7, secondo punto) ⚖️: che cosa c'è, letto nel codice. Nessuno ha una lista di numeri con la
+  loro parola sotto, come `stats`; i numeri che mostrano stanno dentro frasi con il plurale: nei tour `openIssues` («2 segnalazioni
+  aperte»), `reviewQueue`, il riepilogo di `myTours`, `errorCatalog`; negli eventi `atcCoverage` (disponibilità, pezzi scoperti,
+  trasferimenti) e `staffQueue`; nella formazione `approvalQueue`. `tourCards` non mostra numeri. Questa PR non tocca i blocchi dei
+  moduli e non apre la issue per `dalberone`: se il §5.7 li chieda per questi blocchi lo decide Carmine, a cui il master porta la
+  domanda (rilievo 3). _Risposta di Carmine: da scrivere qui._
 - Il server non cambia: legge di ogni voce solo `metric` e `figure` (`BlockProps.Entries`), e il testo dell'etichetta entra nel testo
   della ricerca come ogni stringa delle `props`.
 
 ## 3. Le parole, le istruzioni per Claude, i test
 
 - **Le parole**: `blocks.accordion.fields.{title,numbered,initially}`, `blocks.accordion.options.initially.*`,
-  `blocks.accordion.hints.{title,items.answer}`, `blocks.stats.fields.metrics.label`, `blocks.stats.hints.metrics.label`,
+  `blocks.accordion.hints.{title,items.answer,allowMultiple}`, `blocks.stats.fields.metrics.label`, `blocks.stats.hints.metrics.label`,
   `blocks.networkStats.fields.figures.label`, `blocks.networkStats.hints.figures.label`; cambia `blocks.accordion.about`. In italiano
   «Piu' di una aperta insieme» diventa «Più di una aperta insieme».
 - **La galleria** (`/staff/admin/ui-kit`) mostra le domande con il titolo, i numeri e la prima risposta aperta, e i numeri con
@@ -63,15 +68,17 @@ non scrivono e che il codice ha dovuto scegliere, come le note della 3.10, della
   questa versione è rifiutato con `content.import.rulesChanged`.
 - **I test**: `blocks/questions.test.tsx` (il blocco di prima com'era, titolo e numeri, `first`, `all` che lascia aperte le altre anche
   con `allowMultiple: false`, la scelta cambiata che si vede subito, il valore sconosciuto, la stampa, le etichette scritte e vuote dei
-  due blocchi di numeri), due casi in `features/content/claudeInstructions.test.ts`, e `e2e/questions.spec.ts` (la pagina pubblicata:
+  due blocchi di numeri), due casi in `features/content/claudeInstructions.test.ts`, `shared/forms/SchemaForm.switchHint.test.tsx`
+  (il suggerimento sotto un interruttore), e `e2e/questions.spec.ts` (la pagina pubblicata:
   il titolo, i numeri, la prima aperta, l'elenco nella risposta, una alla volta; l'etichetta e la parola dell'hub).
 
 ## Da portare nel piano
 
 - **Il design dell'editor, `12-design-editor-fase-3.md` §5.4**: `allowMultiple` resta, e `initially: 'all'` lo rende vero; il titolo è
   un `h2` sopra le domande (`h3`); il numero fa parte della domanda.
-- **§5.7**: l'etichetta è della prima voce che chiede il numero; vuota, la parola dell'hub; nessun blocco di dati dei moduli ha una lista
-  di numeri con la loro parola, quindi niente nei tour e nessuna issue per gli eventi.
+- **§5.7**: l'etichetta è della prima voce che chiede il numero; vuota, la parola dell'hub; i blocchi di dati dei moduli secondo la
+  risposta di Carmine (§2).
+- **§16** (meccanismi generici): il form generato disegna il suggerimento anche sotto un interruttore.
 - **§9.3** (il modello dei contenuti): `accordion` ha `title`, `numbered`, `initially` (`closed`, `first`, `all`; di default `closed`);
   le voci di `stats` e `networkStats` hanno `label`.
 - **La nota `2026-10-30-una-pagina-scritta-con-claude`** e il §3 del design: l'impronta `rules` cambia con la 3.13.
