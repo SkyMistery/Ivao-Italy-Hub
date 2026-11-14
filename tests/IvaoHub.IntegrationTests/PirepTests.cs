@@ -47,12 +47,15 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
     private readonly List<long> _tours = [];
     private readonly List<long> _rules = [];
 
+    // What happens between two reads of one request, or a read that does not answer (issue #328, items 2 and 9).
+    private readonly CommandHook _commands = new();
+
     private HubWebApplicationFactory _factory = null!;
     private WebApplicationFactory<Program> _host = null!;
 
     public async ValueTask InitializeAsync()
     {
-        _factory = new HubWebApplicationFactory(mariaDb.ConnectionString, useIvaoFixtures: true);
+        _factory = new HubWebApplicationFactory(mariaDb.ConnectionString, useIvaoFixtures: true, extraInterceptor: _commands);
         _host = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
         {
             services.AddScoped<IIvaoApiClient>(provider =>

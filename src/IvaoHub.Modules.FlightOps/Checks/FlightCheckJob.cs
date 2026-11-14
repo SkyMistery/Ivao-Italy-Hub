@@ -39,7 +39,8 @@ public sealed class FlightCheckJob(
     /// <summary>
     /// Returns how many reports were checked. A report that fails is written in the log and left for the next run; the others
     /// of the batch are checked all the same (issue #328, item 9): one report that always fails does not stop the job for the
-    /// rest of the queue.
+    /// rest of the queue. Only the job's own cancellation stops it: a timeout of a call inside a check (a
+    /// <see cref="TaskCanceledException"/> too) costs that report only.
     /// </summary>
     public async Task<int> RunAsync(CancellationToken cancellationToken = default)
     {
@@ -58,7 +59,7 @@ public sealed class FlightCheckJob(
                 .Take(Batch)
                 .ToListAsync(cancellationToken);
         }
-        catch (Exception exception) when (exception is not OperationCanceledException)
+        catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
         {
             logger.LogError(exception, "The job of the checks failed.");
             await LogAsync(startedAt, "failed", Shortened(exception.Message), cancellationToken);
@@ -85,7 +86,7 @@ public sealed class FlightCheckJob(
                     done++;
                 }
             }
-            catch (Exception exception) when (exception is not OperationCanceledException)
+            catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
             {
                 logger.LogError(exception, "The checks of report {PirepId} failed.", id);
                 failed.Add(string.Create(CultureInfo.InvariantCulture, $"report {id}: {exception.Message}"));
