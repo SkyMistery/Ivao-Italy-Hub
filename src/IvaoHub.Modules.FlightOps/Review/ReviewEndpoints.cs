@@ -270,8 +270,9 @@ public static class ReviewEndpoints
             report.TakeoffAt,
             report.QueuedAt,
             report.Status,
-            PirepReview.Member(report.AssignedToVid, names),
-            report.LeaseUntil,
+            // Their own report, as its pilot sees it (issue #328, item 5): not who holds it.
+            isOwn ? null : PirepReview.Member(report.AssignedToVid, names),
+            isOwn ? null : report.LeaseUntil,
             report.IsDisputed,
             isOwn,
             canTake,
