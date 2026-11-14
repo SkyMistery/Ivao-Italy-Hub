@@ -1,5 +1,6 @@
 using System.Data;
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Modules;
@@ -129,7 +130,7 @@ public sealed class PilotBookings(
             await database.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
-        catch (Exception exception) when (DatabaseErrors.Duplicated(exception))
+        catch (Exception exception) when (WriteConflicts.DuplicateKey(exception) is not null)
         {
             // Another pilot booked it an instant before: the unique index answered.
             database.Entry(booking).State = EntityState.Detached;
@@ -226,7 +227,7 @@ public sealed class PilotBookings(
                     await database.SaveChangesAsync(cancellationToken);
                 }
                 catch (Exception exception) when (!DatabaseErrors.Deadlocked(exception)
-                    && (DatabaseErrors.TookTheKey(exception) || DatabaseErrors.LostTheSlot(exception)))
+                    && (WriteConflicts.AnotherWriteWon(exception) is not null || DatabaseErrors.LostTheSlot(exception)))
                 {
                     // Taken by another pilot in the same instant, or deleted by the staff: this leg alone fails, the rest go on.
                     database.Entry(booking).State = EntityState.Detached;
@@ -413,7 +414,7 @@ public sealed class PilotBookings(
             await database.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
-        catch (Exception exception) when (DatabaseErrors.Duplicated(exception) || DatabaseErrors.LostTheSlot(exception))
+        catch (Exception exception) when (WriteConflicts.DuplicateKey(exception) is not null || DatabaseErrors.LostTheSlot(exception))
         {
             // Another pilot booked one of the two an instant before, or the staff took its slot away: nothing is booked.
             Forget(booking, departure);

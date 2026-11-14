@@ -151,7 +151,7 @@ public sealed class AutoReports(
             await MemberReports.WriteAsync(
                 database, row, vid, kind, ReportSource.Auto, [.. items.Select(item => item.Draft)], findings, verification, now, cancellationToken);
         }
-        catch (Exception exception) when (DatabaseErrors.Duplicated(exception))
+        catch (Exception exception) when (WriteConflicts.DuplicateKey(exception) is not null)
         {
             // The member sent theirs in the same instant: the unique index answered, and theirs stays.
             database.ChangeTracker.Clear();

@@ -1,5 +1,6 @@
 using FluentValidation;
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
@@ -326,7 +327,7 @@ public static class EventSlotEndpoints
             var (result, problems) = await loading.LoadAsync(row, request, http.RequestAborted);
             return result is null ? CrudProblems.Validation(problems, catalog, currentUser.Locale) : Results.Ok(result);
         }
-        catch (Exception exception) when (DatabaseErrors.TookTheKey(exception) || DatabaseErrors.SlotWasBooked(exception))
+        catch (Exception exception) when (WriteConflicts.AnotherWriteWon(exception) is not null || DatabaseErrors.SlotWasBooked(exception))
         {
             // Another write of the same rows in the same moment: a load of the same event took a slot this one wanted, or a pilot
             // booked a free slot this one replaces (E6a). Read the slots again and load again. Any other failure is not answered
