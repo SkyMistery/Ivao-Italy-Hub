@@ -131,6 +131,9 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     /// </summary>
     private const string HrefKey = "href";
 
+    /// <summary>The refusal of an address that is not one to follow (<see cref="SiteDestinations.IsFollowable"/>).</summary>
+    public const string UnfollowableAddressKey = "errors.url.unsafe";
+
     private static readonly string[] TemplateOnlyKeys = ["required", "locked"];
 
     private readonly HashSet<string> _locales = new(locales, StringComparer.OrdinalIgnoreCase);
@@ -351,6 +354,15 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
             CheckSpan(block, errors);
             CheckAlign(block, errors);
             sourceBytes += CheckSource(block, errors);
+        }
+
+        // Every address the blocks lead to, a button's or a link in a piece of Markdown, by one rule (#321, point 5).
+        foreach (var link in Links(root))
+        {
+            if (!SiteDestinations.IsFollowable(link.Address))
+            {
+                errors.Add(new BlockDocumentError(UnfollowableAddressKey, link.Path));
+            }
         }
 
         if (sourceBytes > MaxBodySourceBytes)

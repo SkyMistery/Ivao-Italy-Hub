@@ -21,7 +21,8 @@
       "missingIn": "Manca ancora in: {{locales}}."
     },
     "url": {
-      "absolute": "Inserisci un indirizzo completo che inizi con http:// o https://"
+      "absolute": "Inserisci un indirizzo completo che inizi con http:// o https://",
+      "unsafe": "Questo indirizzo non si può seguire. Scrivi un indirizzo completo (https://…, mailto:…, tel:…), un percorso del sito che inizi con una sola / o un'àncora (#…)."
     },
     "number": {
       "min": "Inserisci un numero non inferiore al minimo.",

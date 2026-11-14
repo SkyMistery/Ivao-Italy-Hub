@@ -465,6 +465,56 @@ public sealed class BlockDocumentWalkerTests
         Assert.Equal(expected, SiteDestinations.OnThisSite(written));
 
     [Theory]
+    [InlineData("", true)]
+    [InlineData("/", true)]
+    [InlineData("/about?x=1#team", true)]
+    [InlineData("#team", true)]
+    [InlineData("https://example.org/about", true)]
+    [InlineData("HTTP://example.org", true)]
+    [InlineData("mailto:staff@example.org", true)]
+    [InlineData("tel:+390000000", true)]
+    [InlineData("javascript:alert(1)", false)]
+    [InlineData("JavaScript:alert(1)", false)]
+    [InlineData(" javascript:alert(1)", false)]
+    [InlineData("java\tscript:alert(1)", false)]
+    [InlineData("data:text/html,<p>x</p>", false)]
+    [InlineData("vbscript:x", false)]
+    [InlineData("//elsewhere.example", false)]
+    [InlineData("/\\elsewhere.example", false)]
+    [InlineData("/\t/elsewhere.example", false)]
+    [InlineData("about/team", false)]
+    [InlineData("www.example.org", false)]
+    public void AnAddressInTheContentIsOneToFollowOrRefused(string written, bool followable) =>
+        Assert.Equal(followable, SiteDestinations.IsFollowable(written));
+
+    [Fact]
+    public void AnAddressThatIsNotOneToFollowIsRefusedWhereItSits()
+    {
+        // #321, point 5: the `href` of a block and a Markdown link were not checked for their scheme.
+        var body = JsonNode.Parse("""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s1", "blocks": [
+            { "id": "b1", "type": "cta", "props": { "href": "javascript:alert(1)" } },
+            { "id": "b2", "type": "hero", "props": { "primary": { "href": "//elsewhere.example" } } },
+            { "id": "b3", "type": "text", "props": { "markdown": { "it": "[ok](/one) e [no](javascript:x)", "en": "[ok](#top)" } } },
+            { "id": "b4", "type": "cta", "props": { "href": "" } }
+          ] } ]
+        }
+        """);
+
+        var result = Walker.ValidateEnvelope(body, ["cta", "hero", "text"]);
+
+        Assert.Equal(
+            [
+                new BlockDocumentError("errors.url.unsafe", "sections[0].blocks[0].props.href"),
+                new BlockDocumentError("errors.url.unsafe", "sections[0].blocks[1].props.primary.href"),
+                new BlockDocumentError("errors.url.unsafe", "sections[0].blocks[2].props.markdown.it"),
+            ],
+            result.Errors);
+    }
+
+    [Theory]
     [InlineData("stacked", 1)]
     [InlineData("1/2+1/2", 2)]
     [InlineData("2/3+1/3", 2)]
