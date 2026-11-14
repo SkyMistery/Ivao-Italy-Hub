@@ -156,9 +156,7 @@ public sealed class Pilots(
                 reports.Count(report => report.DisputeStatus == DisputeStatus.Upheld),
                 reports.Count(report => report.DisputeStatus == DisputeStatus.Dismissed)),
             await ThreadsAsync(vid, cancellationToken),
-            own
-                ? [.. (await BanEndpoints.RowsAsync(bans, database, reviews, now, cancellationToken)).Select(ban => ban with { CreatedBy = null })]
-                : await BanEndpoints.RowsAsync(bans, database, reviews, now, cancellationToken),
+            await BanEndpoints.RowsAsync(bans, database, reviews, now, currentUser.Vid, cancellationToken),
             standings,
             currentUser.HasAny(TourPermissions.Ban) && !own);
     }

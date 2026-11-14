@@ -21,6 +21,11 @@ export function OpenIssuesBlock({ data }: BlockComponentProps) {
   const { t } = useTranslation();
   const counts = data as OpenIssuesData | null | undefined;
 
+  // `null` is a request that failed, `undefined` one on its way: the two never read the same (the core's `NoRows`).
+  if (counts === null) {
+    return <p className="text-muted-foreground text-sm">{t('flightops:blocks.unavailable')}</p>;
+  }
+
   if (counts?.legIssues === undefined) {
     return <p className="text-muted-foreground text-sm">{t('common.loading')}</p>;
   }

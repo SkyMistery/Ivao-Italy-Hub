@@ -1,4 +1,5 @@
 using FluentValidation;
+using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
@@ -85,9 +86,12 @@ public static class BanEndpoints
             options.Filterable.Add(nameof(Ban.TourId));
             options.SearchFields.Add(ban => ban.Reason);
 
-            options.ToList = ban => Row(ban, null, new Dictionary<int, string>(), clock.UtcNow);
+            // Never read without the reader: a ban is shown to its own pilot without its author (issue #328, item 5).
+            options.ToList = ban => Row(ban, null, new Dictionary<int, string>(), clock.UtcNow, reader: null);
             options.ToListPage = PageAsync;
-            options.ToDetail = ban => Row(ban, null, new Dictionary<int, string>(), clock.UtcNow);
+            options.ToDetail = ban => Row(ban, null, new Dictionary<int, string>(), clock.UtcNow, reader: null);
+            options.ToDetailPage = (ban, services, _) => Task.FromResult(
+                Row(ban, null, new Dictionary<int, string>(), clock.UtcNow, services.GetRequiredService<ICurrentUser>().Vid));
             options.Apply = (payload, ban) =>
             {
                 ban.Vid = payload.Vid;
@@ -162,14 +166,20 @@ public static class BanEndpoints
             services.GetRequiredService<FlightOpsDbContext>(),
             services.GetRequiredService<PirepReview>(),
             services.GetRequiredService<IClock>().UtcNow,
+            services.GetRequiredService<ICurrentUser>().Vid,
             cancellationToken);
 
-    /// <summary>Bans as the list shows them; the pilot's page shows theirs the same way.</summary>
+    /// <summary>
+    /// Bans as the list shows them; the pilot's page shows theirs the same way. To <paramref name="reader"/> their own ban comes
+    /// without who wrote it, as their pilot page has always shown it (issue #328, item 5): a validator who is also a pilot holds
+    /// <c>Tours.ViewPilots</c>, and the list and the detail of the bans are read with it.
+    /// </summary>
     public static async Task<IReadOnlyList<BanDto>> RowsAsync(
         IReadOnlyList<Ban> bans,
         FlightOpsDbContext database,
         PirepReview reviews,
         DateTime now,
+        int? reader,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(bans);
@@ -181,10 +191,10 @@ public static class BanEndpoints
             .ToDictionaryAsync(tour => tour.Id, tour => tour.Title, cancellationToken);
         var names = await reviews.NamesAsync(bans.SelectMany(ban => new int?[] { ban.Vid, ban.CreatedBy }), cancellationToken);
 
-        return [.. bans.Select(ban => Row(ban, ban.TourId is { } id ? titles.GetValueOrDefault(id) : null, names, now))];
+        return [.. bans.Select(ban => Row(ban, ban.TourId is { } id ? titles.GetValueOrDefault(id) : null, names, now, reader))];
     }
 
-    private static BanDto Row(Ban ban, Localized<string>? tourTitle, IReadOnlyDictionary<int, string> names, DateTime now) =>
+    private static BanDto Row(Ban ban, Localized<string>? tourTitle, IReadOnlyDictionary<int, string> names, DateTime now, int? reader) =>
         new(
             ban.Id,
             PirepReview.Member(ban.Vid, names)!,
@@ -195,6 +205,6 @@ public static class BanEndpoints
             ban.Reason,
             ban.StartsAt <= now && (ban.EndsAt is null || ban.EndsAt > now),
             ban.CreatedAt,
-            PirepReview.Member(ban.CreatedBy > 0 ? ban.CreatedBy : null, names),
+            ban.Vid == reader ? null : PirepReview.Member(ban.CreatedBy > 0 ? ban.CreatedBy : null, names),
             ban.RowVersion);
 }

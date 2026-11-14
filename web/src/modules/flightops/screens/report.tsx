@@ -52,6 +52,7 @@ import {
   declarationOf,
   exemptionsToSend,
   mergeSessions,
+  sessionEnd,
   sessionsOf,
   splitRefusal,
 } from './reporting';
@@ -553,7 +554,7 @@ function FlightChoice({
               <span className="text-muted-foreground text-sm tabular-nums">
                 {t('flightops:report.sessionTime', {
                   from: moment(session.startedAt),
-                  to: moment(session.endedAt, { date: false }),
+                  to: sessionEnd(session, moment),
                 })}
               </span>
             </Label>
