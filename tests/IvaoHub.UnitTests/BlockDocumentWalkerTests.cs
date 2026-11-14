@@ -303,6 +303,38 @@ public sealed class BlockDocumentWalkerTests
     }
 
     [Fact]
+    public void AMemberOfTheEnvelopeThatIsNotTextIsRefusedAndNeverThrows()
+    {
+        // #321, point 1: `GetValue<string>()` on `"id": 5` threw inside the validation, and the
+        // client got a 500 where a refusal was owed. A key that was a number was even saved, and
+        // then broke the review of the page for good.
+        var body = JsonNode.Parse("""
+        {
+          "schemaVersion": 1,
+          "sections": [
+            { "id": 5, "key": 7, "layout": 2, "background": true, "blocks": [
+              { "id": "b1", "type": 1, "renderMode": [], "column": 1 },
+              { "id": "b2", "type": "text", "column": 0 } ] }
+          ]
+        }
+        """);
+
+        var result = Walker.ValidateEnvelope(body, ["text"]);
+
+        Assert.Equal(
+            [
+                new BlockDocumentError("errors.body.idMissing", "sections[0]"),
+                new BlockDocumentError("errors.body.keyNotText", "sections[0].key"),
+                new BlockDocumentError("errors.body.layoutUnknown", "sections[0].layout"),
+                new BlockDocumentError("errors.body.backgroundUnknown", "sections[0].background"),
+                new BlockDocumentError("errors.body.blockTypeMissing", "sections[0].blocks[0]"),
+                new BlockDocumentError("errors.body.renderModeUnknown", "sections[0].blocks[0].renderMode"),
+                new BlockDocumentError("errors.body.columnOutOfRange", "sections[0].blocks[0].column"),
+            ],
+            result.Errors);
+    }
+
+    [Fact]
     public void RefusesALayoutAndARenderModeItDoesNotKnow()
     {
         var body = JsonNode.Parse("""
@@ -431,6 +463,98 @@ public sealed class BlockDocumentWalkerTests
     [InlineData("", null)]
     public void AnAddressOfThisSiteIsReadAsTheRouterReadsIt(string written, string? expected) =>
         Assert.Equal(expected, SiteDestinations.OnThisSite(written));
+
+    /// <summary>
+    /// The cases of <c>tests/fixtures/content-addresses.json</c>, which the browser's half of the rule
+    /// (<c>web/src/shared/ui/followable.test.ts</c>) reads too: the two halves cannot drift.
+    /// </summary>
+    public static TheoryData<string, bool> ContentAddresses()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "IvaoHub.sln")))
+        {
+            directory = directory.Parent;
+        }
+
+        var cases = JsonNode.Parse(File.ReadAllText(
+            Path.Combine(directory!.FullName, "tests", "fixtures", "content-addresses.json")))!;
+
+        var data = new TheoryData<string, bool>();
+        foreach (var address in cases["followable"]!.AsArray())
+        {
+            data.Add(address!.GetValue<string>(), true);
+        }
+
+        foreach (var address in cases["refused"]!.AsArray())
+        {
+            data.Add(address!.GetValue<string>(), false);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(ContentAddresses))]
+    public void AnAddressInTheContentIsOneToFollowOrRefused(string written, bool followable) =>
+        Assert.Equal(followable, SiteDestinations.IsFollowable(written));
+
+    [Fact]
+    public void AMarkdownLinkWithBracketsInItsTextOrByReferenceIsALinkToo()
+    {
+        // The review of #493: CommonMark allows both, and the pattern read neither.
+        var body = JsonNode.Parse("""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s1", "blocks": [
+            { "id": "b1", "type": "text", "props": { "markdown": {
+              "it": "[vedi [qui]](//elsewhere.example)",
+              "en": "[there][r]\n\n  [r]: //elsewhere.example \"Title\"\n[ok]: </about>\n[Nota]: questo è il testo" } } }
+          ] } ]
+        }
+        """);
+
+        Assert.Equal(
+            [
+                new BlockDocumentLink("sections[0].blocks[0].props.markdown.it", "//elsewhere.example"),
+                new BlockDocumentLink("sections[0].blocks[0].props.markdown.en", "//elsewhere.example"),
+                new BlockDocumentLink("sections[0].blocks[0].props.markdown.en", "/about"),
+            ],
+            Walker.Links(body));
+
+        Assert.Equal(
+            [
+                new BlockDocumentError("errors.url.unsafe", "sections[0].blocks[0].props.markdown.it"),
+                new BlockDocumentError("errors.url.unsafe", "sections[0].blocks[0].props.markdown.en"),
+            ],
+            Walker.ValidateEnvelope(body, ["text"]).Errors);
+    }
+
+    [Fact]
+    public void AnAddressThatIsNotOneToFollowIsRefusedWhereItSits()
+    {
+        // #321, point 5: the `href` of a block and a Markdown link were not checked for their scheme.
+        var body = JsonNode.Parse("""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s1", "blocks": [
+            { "id": "b1", "type": "cta", "props": { "href": "javascript:alert(1)" } },
+            { "id": "b2", "type": "hero", "props": { "primary": { "href": "//elsewhere.example" } } },
+            { "id": "b3", "type": "text", "props": { "markdown": { "it": "[ok](/one) e [no](javascript:x)", "en": "[ok](#top)" } } },
+            { "id": "b4", "type": "cta", "props": { "href": "" } }
+          ] } ]
+        }
+        """);
+
+        var result = Walker.ValidateEnvelope(body, ["cta", "hero", "text"]);
+
+        Assert.Equal(
+            [
+                new BlockDocumentError("errors.url.unsafe", "sections[0].blocks[0].props.href"),
+                new BlockDocumentError("errors.url.unsafe", "sections[0].blocks[1].props.primary.href"),
+                new BlockDocumentError("errors.url.unsafe", "sections[0].blocks[2].props.markdown.it"),
+            ],
+            result.Errors);
+    }
 
     [Theory]
     [InlineData("stacked", 1)]

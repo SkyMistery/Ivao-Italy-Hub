@@ -167,7 +167,7 @@
     "total_other": "{{count}} rows",
     "empty": {
       "title": "Nothing here yet",
-      "description": "Everything this department creates will show up in this list.",
+      "description": "Whatever is added will show up in this list.",
       "noMatch": "No row matches that search."
     },
     "pages": {

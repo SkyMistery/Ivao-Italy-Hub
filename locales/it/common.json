@@ -167,7 +167,7 @@
     "total_other": "{{count}} righe",
     "empty": {
       "title": "Non c'è ancora niente",
-      "description": "Tutto quello che questo dipartimento crea comparirà in questo elenco.",
+      "description": "Quello che verrà aggiunto comparirà in questo elenco.",
       "noMatch": "Nessuna riga corrisponde alla ricerca."
     },
     "pages": {

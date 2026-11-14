@@ -6,6 +6,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Awards;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
@@ -514,6 +515,34 @@ public sealed class EventsAwardRulesTests(MariaDbFixture mariaDb) : IAsyncLifeti
             .Single(candidate => candidate.Key.Name == ReportsDigestJob.TriggerName);
         var cron = Assert.IsAssignableFrom<ICronTrigger>(trigger);
         Assert.Equal((ReportsDigestJob.Cron, Division().ResolveTimeZone().Id), (cron.CronExpressionString, cron.TimeZone.Id));
+    }
+
+    /// <summary>
+    /// The digest writes the day the oldest report waits since in the division's order (<c>dateFormat</c>, the core's <see cref="HubDates"/>),
+    /// like every other date of the events' mails — never ISO (issue #442). The thirteenth, so that a day and a month swapped would show.
+    /// </summary>
+    [Fact]
+    public async Task TheDigestWritesTheOldestDayInTheDivisionsOrder()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var eventId = await EventRowAsync("digest-day", inPerson: false, token);
+        var reportId = await ManualReportAsync(eventId, PilotVid, token);
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var updated = await CrudSource.BackOffice<EventReport>(scope.ServiceProvider.GetRequiredService<EventsDbContext>())
+                .Where(report => report.Id == reportId)
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(report => report.SubmittedAt, new DateTime(2001, 1, 13, 10, 30, 0, DateTimeKind.Utc)),
+                    token);
+            Assert.Equal(1, updated);
+        }
+
+        await RunDigestAsync(new DateTime(2001, 1, 14, 6, 15, 0, DateTimeKind.Utc), token);
+
+        var events = JsonDocument.Parse(Assert.Single(await DigestsAsync(MdVid, token)).DataJson).RootElement.GetProperty("events").GetString()!;
+        var line = events.Split('\n').Single(candidate => candidate.Contains(Slug("digest-day"), StringComparison.Ordinal));
+        Assert.Contains($": 1 ({HubDates.Day(new DateOnly(2001, 1, 13), Division().ResolveDateOrder())}) ", line, StringComparison.Ordinal);
+        Assert.DoesNotContain("2001-01-13", line, StringComparison.Ordinal);
     }
 
     // ---- requests -------------------------------------------------------------------------------------------------------------
