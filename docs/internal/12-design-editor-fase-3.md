@@ -287,10 +287,14 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   lavora su una copia e scrive con «Applica». (4) Incolla, importa e crea sostituiscono la tabella e ognuno è un passo di Annulla:
   `onApplyProps` prende `{ step: true }`, che chiude la corsa della storia (prima la griglia e l'incolla finivano nello stesso passo).
   (5) Limiti di 20 colonne × 200 righe; righe vuote e colonne vuote in fondo scartate; un a capo in una cella diventa uno spazio; il
-  file si legge come il foglio lo mostra, dal primo foglio che ha qualcosa. (6) Il form generato porta `rows` senza disegnarlo e si
-  ridisegna da quello che scrivono gli strumenti e da un Annulla. (7) Fuori dal design, uguale a prima: ⚠️ una cella vuota ferma la
+  file si legge come il foglio lo mostra, dal primo foglio che ha qualcosa; ⚠️ il testo di un CSV lo decodifica il lettore (UTF-8 senza
+  BOM, se no Windows-1252) e la data corta di Excel si scrive nell'ordine della lingua della tabella (rilievi 1 e 2 della revisione).
+  (6) Il form generato porta `rows` senza disegnarlo e si ridisegna quando la tabella del blocco non è quella che ha scritto lui
+  (uno strumento, un Annulla; rilievo 3). (7) Fuori dal design, uguale a prima: ⚠️ una cella vuota ferma la
   pubblicazione. (8) La parte fissa delle istruzioni dice la tabella; ⚠️ l'impronta `rules` cambia. Toccati in più del §5.1:
-  `shared/ui/Dialog.tsx`, `shared/modules.ts`, `shared/forms/index.ts`, `features/content/BodyEditor.tsx`.
+  `shared/ui/Dialog.tsx`, `shared/modules.ts`, `shared/forms/index.ts`, `features/content/BodyEditor.tsx`, e dopo la revisione
+  `shared/i18n/previewLocale.ts` (`useLocaleOnScreen`, la scelta della lingua di `LocaleTabs` presa una volta sola) e
+  `flightops/screens/LegImport.tsx` (`SHEET_FILE_TYPES`).
 
 ### 5.2 Galleria (XII)
 

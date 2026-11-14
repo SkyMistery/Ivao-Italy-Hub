@@ -39,7 +39,9 @@ la riporta come commento sulla PR: https://github.com/SkyMistery/Ivao-Italy-Hub/
 - **Una casella per cella e per intestazione**; sopra ogni colonna il cestino che la toglie, a destra di ogni riga quello che la toglie;
   sotto, «Aggiungi una riga» e «Aggiungi una colonna». L'allineamento delle colonne resta nel form generato.
 - **La griglia lavora su una copia** e scrive una volta sola, con «Applica»: chiusa con la «X», Esc o «Annulla» non cambia niente, e
-  riaperta riparte da quello che il blocco ha adesso (un Annulla dell'editor, un incolla, il form).
+  riaperta riparte da quello che il blocco ha adesso (un Annulla dell'editor, un incolla, il form). **Senza colonne «Applica» è
+  spento**: le righe sarebbero righe di niente, e il controllo prima della pubblicazione le lascerebbe passare (rilievo 6 della
+  revisione).
 - **Una griglia è un rettangolo**: quante colonne ha la più larga fra l'intestazione e le righe. Una riga con una cella oltre l'ultima
   colonna (rimasta da una colonna tolta nel form, che la pagina disegna lo stesso) la griglia la mostra con una colonna sua, invece di
   nasconderla; «Applica» scrive il rettangolo.
@@ -47,7 +49,10 @@ la riporta come commento sulla PR: https://github.com/SkyMistery/Ivao-Italy-Hub/
 ## 4. Incolla, importa, crea: sostituiscono, e Annulla li riprende
 
 - **Sostituiscono la tabella** (colonne e righe; la didascalia e lo stile restano), senza chiedere conferma: Annulla la rimette com'era,
-  e la riga sotto i pulsanti lo dice («Ora la tabella ha 2 colonne e 3 righe.»).
+  e la riga sotto i pulsanti lo dice («Ora la tabella ha 2 colonne e 3 righe.», «… una colonna e una riga.»: i numeri con il plurale
+  della lingua). La riga parla della tabella che gli strumenti hanno scritto, quindi **si spegne quando il blocco non la tiene più**
+  (un Annulla, il form); è una regione `status` montata da subito e vuota, perché un lettore di schermo annuncia il testo che cambia
+  e non quello con cui una regione appare (rilievi 5 e 8).
 - **Ognuno è un passo di Annulla a sé.** `onApplyProps` riunisce in un passo solo le scritture del form che si susseguono (la stessa
   chiave `props:<id>` di `useBodyHistory`): così un incolla dopo aver scritto la didascalia, o la griglia dopo un incolla, finivano nello
   stesso passo, e un Annulla toglieva tutti e due. `onApplyProps` prende ora un'opzione `{ step: true }` che chiude la corsa
@@ -65,22 +70,37 @@ la riporta come commento sulla PR: https://github.com/SkyMistery/Ivao-Italy-Hub/
 - **Il file**: CSV, XLSX, XLS, ODS. Si legge il **primo foglio che ha qualcosa** (una cartella di lavoro si apre spesso su un foglio
   vuoto o di riepilogo); non c'è la scelta del foglio come nell'import delle tratte. Le celle si leggono **come il foglio le mostra**
   (`18:00`, `50%`, la data come è scritta), non come valore (una frazione di giorno, 0,5): una tabella copia quello che si vede.
+  ⚠️ **La data corta di Excel** (il suo formato 14, quello che un Excel italiano dà a una data scritta `01/10/2026`) non ha un ordine
+  suo: SheetJS la scriverebbe all'americana, `10/1/26`. Si scrive nell'ordine della lingua in cui va la tabella, preso da
+  `Intl.DateTimeFormat(…).formatToParts` e mai da un modello scritto nel codice; ogni altro formato di data è del foglio e resta, e la
+  data di un CSV resta il testo che è (rilievo 2).
+- ⚠️ **Il testo di un CSV** lo decodifica `readWorkbook`, non SheetJS, che legge i byte come UTF-8 solo se cominciano con il BOM: un
+  CSV di Google Sheets o di LibreOffice (UTF-8 senza BOM) dava «LunedÃ¬». UTF-8 se i byte lo sono, se no Windows-1252 (un Excel
+  vecchio); un file con la firma di una cartella di lavoro, di UTF-16 o con un byte zero resta byte (rilievo 1; valeva anche per
+  l'import delle tratte).
+- **Un file che non si legge è detto, sempre**: SheetJS che lo rifiuta, la libreria che non si carica (un rilascio dopo che la pagina
+  si è aperta), un foglio che si rompe mentre diventa righe. La riga dice «non si legge», nessuna promessa rifiutata senza niente a
+  schermo; lo stesso per le tratte, come prima che il lettore salisse nel nucleo (rilievo 4).
 - **La lingua**: quella sullo schermo, cioè la lingua in cui l'editor mostra la pagina (`usePreviewLocale`), la stessa su cui si
-  aprono le schede dei campi tradotti; le altre restano da scrivere (§5.1).
+  aprono le schede dei campi tradotti; le altre restano da scrivere (§5.1). La scelta è una sola, `useLocaleOnScreen` in
+  `shared/i18n/previewLocale.ts`, che usano `LocaleTabs` e gli strumenti (rilievo 7).
 
 ## 5. Il form generato sotto: niente righe, e si ridisegna da quello che gli strumenti scrivono
 
 - Il form generato porta `rows` **senza disegnarlo** (`withoutDrawing`, come la larghezza dell'immagine della 3.10): le righe sono della
   griglia. Restano didascalia, colonne (intestazione e allineamento) e `rowStyle`.
 - ⚠️ Il form dal vivo prende i suoi valori **una volta, quando si monta**, e a ogni tasto riscrive tutto quello che ha. Dopo un incolla
-  avrebbe riscritto alla prima lettera della didascalia la tabella di prima. Quindi `BlockProperties` lo ridisegna (una `key`) a ogni
-  scrittura degli strumenti **e** quando le righe del blocco cambiano da fuori (un Annulla): niente di quello che si scrive nel form
-  cambia le righe, quindi non si ridisegna mai sotto le dita. Un test lo prova, e senza la `key` fallisce.
+  avrebbe riscritto alla prima lettera della didascalia la tabella di prima. Quindi `BlockProperties` lo ridisegna (una `key`)
+  **quando la tabella del blocco — colonne e righe — non è quella che il form stesso ha scritto per ultimo**: uno strumento, la
+  griglia, un Annulla. Quello che si scrive nel form è la tabella che il form tiene, quindi non si ridisegna mai sotto le dita, nemmeno
+  scrivendo un'intestazione. Prima la `key` guardava solo le righe, e un Annulla che riportava indietro solo le intestazioni lasciava
+  al form quelle della griglia, che le riscriveva alla prima lettera della didascalia (rilievo 3). I test lo provano.
 
 ## 6. Il lettore dei fogli sale nel nucleo
 
 `web/src/shared/files/sheet.ts`: `readWorkbook` (un file → i nomi dei fogli e le righe di celle di ognuno, `formatted` per il testo che
-il foglio mostra, `null` se SheetJS non lo legge), `cellText`, e `rowsOfPastedText` (il testo degli appunti di un foglio: una riga per
+il foglio mostra, `locale` per la data corta di Excel, `null` se il file non si legge), `SHEET_FILE_TYPES` (i tipi di file per l'`accept`
+di un controllo, gli stessi per la tabella e per le tratte), `cellText`, e `rowsOfPastedText` (il testo degli appunti di un foglio: una riga per
 a capo, una cella per tabulazione, le celle fra virgolette con le virgolette raddoppiate come le scrive Excel, il CRLF di Windows dentro
 una cella letto come a capo). `legFile.ts` dei tour legge da lì; il resto di `legFile` (le colonne delle tratte, le date, i codici) non
 si muove e i suoi test passano come prima. La libreria resta caricata solo quando si legge un file.
