@@ -1,4 +1,5 @@
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -26,6 +27,9 @@ public static class JobServiceCollectionExtensions
         // the check and the scheduled task's address call.
         services.TryAddSingleton<JobLocks>();
         services.TryAddSingleton<ScheduledJobs>();
+
+        // The requests running in the process, which the first check waits to see none of (issue #399); the host feeds it.
+        services.TryAddSingleton<RequestsInFlight>();
         services.AddQuartz(quartz => quartz.AddTriggerListener(
             provider => provider.GetRequiredService<ScheduledJobs>(),
             EverythingMatcher<TriggerKey>.AllTriggers()));

@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Jobs;
 using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -95,6 +96,43 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(0, _probe.Runs(Probe.NotDue));
 
         // And the one due ran once.
+        Assert.Equal(1, _probe.Runs(Probe.Due));
+        Assert.Equal(["ran"], recorder.Of(Probe.Due));
+    }
+
+    // Issue #399: the first check used to come five seconds after the start, in the middle of the page of whoever woke the hub.
+    [Fact]
+    public async Task TheFirstCheckWaitsForThePageOfWhoeverWokeTheHub()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await RowAsync(Probe.Due, DateTime.UtcNow.AddYears(-2), "succeeded", token);
+        await RowAsync(Probe.NotDue, DateTime.UtcNow.AddMinutes(-1), "succeeded", token);
+
+        var recorder = new Recorder();
+        var host = Host(catchUp: true, token: null, recorder);
+        var requests = host.Services.GetRequiredService<RequestsInFlight>();
+
+        // The page of whoever woke the hub, still being answered: a request that runs on, as its slowest call on a cold host.
+        var page = requests.Begin();
+
+        // Every request of the host is counted, a check of /health not.
+        using var client = host.CreateClient();
+        var begun = requests.Begun;
+        (await client.GetAsync(new Uri("/health", UriKind.Relative), token)).Dispose();
+        (await client.GetAsync(new Uri("/api/version", UriKind.Relative), token)).Dispose();
+        Assert.Equal(begun + 1, requests.Begun);
+
+        // Well past the five seconds, and the page is not done: nothing has run.
+        await Task.Delay(TimeSpan.FromSeconds(8), token);
+        Assert.Equal(0, _probe.Runs(Probe.Due));
+        Assert.Empty(recorder.Of(Probe.Due));
+
+        // The page is answered: the check comes once the hub has been quiet for a while, by itself.
+        var answered = System.Diagnostics.Stopwatch.StartNew();
+        requests.End(page);
+        await recorder.CountAsync(Probe.Due, 1).WaitAsync(TimeSpan.FromSeconds(30), token);
+
+        Assert.InRange(answered.Elapsed, JobCatchUp.Quiet - TimeSpan.FromMilliseconds(500), JobCatchUp.Latest);
         Assert.Equal(1, _probe.Runs(Probe.Due));
         Assert.Equal(["ran"], recorder.Of(Probe.Due));
     }

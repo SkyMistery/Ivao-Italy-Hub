@@ -15,8 +15,9 @@ internal static class RequestTimingsMiddleware
         new(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], StringComparer.Ordinal);
 
     /// <summary>
-    /// Right after the counter of <c>starts.txt</c>, before everything else, so that the time of every middleware counts. The
-    /// route is read after the response, when routing has chosen the endpoint; what reached none is written as such.
+    /// Right after the counter of <c>starts.txt</c> and the one of the requests in flight
+    /// (<see cref="HubPipeline.UseRequestsInFlight"/>), before everything else, so that the time of every middleware counts.
+    /// The route is read after the response, when routing has chosen the endpoint; what reached none is written as such.
     /// </summary>
     public static IApplicationBuilder UseRequestTimings(this WebApplication app, StartupTimings timings)
     {
@@ -30,21 +31,21 @@ internal static class RequestTimingsMiddleware
         }
 
         var blocks = app.Services.GetRequiredService<BlockRegistry>();
-        var running = new RequestsInFlight();
+        var running = app.Services.GetRequiredService<RequestsInFlight>();
         var pid = Environment.ProcessId;
 
         return app.Use(async (context, next) =>
         {
             // A check of /health is a monitor's, not a visitor's: no line and no number, so the cold request of a process
             // stays the first one a visitor sent (note 2026-10-26-il-ping-che-tiene-sveglio-l-hub). starts.txt counts them.
-            if (HubPipeline.IsHealthProbe(context))
+            // The counter of the requests in flight, above this one, gives a ticket to every request but those.
+            if (HubPipeline.TicketOf(context) is not { } ticket)
             {
                 await next();
                 return;
             }
 
             // Its number, and the others it overlaps (issue #402): the column says when jit_ms and alloc_kb are its own.
-            var ticket = running.Begin();
             var uptime = timings.Elapsed;
             var started = Stopwatch.GetTimestamp();
             var jit = JitInfo.GetCompilationTime();
@@ -73,7 +74,8 @@ internal static class RequestTimingsMiddleware
             finally
             {
                 RequestTiming.Current = null;
-                var others = running.End(ticket);
+                // Up to now: the request ends in the counter above, after its line is queued.
+                var others = running.Others(ticket);
                 try
                 {
                     var first = Interlocked.Read(ref firstByte);
