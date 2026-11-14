@@ -2,21 +2,21 @@
 
 **Data:** 14 novembre 2026, PR 3.12 della fase 3 (ramo `feat/table`; `12-design-editor-fase-3.md` §5.1, riga 3.12 del §7).
 **Stato:** scelte della sessione di lavoro, dentro quello che il §5.1 ha già deciso (approvato da Carmine il 31 ottobre 2026, §9,
-risposta 1). **Una si scosta dalla lettera del §5.1** — il nome della proprietà delle righe (§1) — e la domanda è andata a Carmine
-attraverso il master il 14 novembre 2026; la risposta va scritta qui prima del merge. Le altre dicono dove sta e come si legge quello
-che il §5.1 vuole.
+risposta 1). **Una si scosta dalla lettera del §5.1** — il nome della proprietà delle righe (§1) — e l'ha decisa Carmine, in chat al
+master il 14 novembre 2026. Le altre sono della sessione: dicono dove sta e come si legge quello che il §5.1 vuole.
 **Classificazione** (`CLAUDE.md` §5): (c), decisa dal design. Il §5.1 dice «nota sua: no»; questa nota c'è per i punti che il §5.1 non
 scrive e che il codice ha dovuto scegliere, come le note della 3.10 e della 3.11.
 
 ## 1. `rowStyle`, non `rows` ⚖️
 
-Il §5.1 scrive `rows: 'lines' | 'striped' | 'plain'`. Ma **`rows` è già il nome delle righe** della tabella (`rows[] { cells[] }`):
-la stessa chiave non può essere l'elenco delle righe e il loro stile. La proprietà si chiama **`rowStyle`**, con gli stessi tre valori
-e lo stesso default (`lines`, quello che si vede oggi). Una tabella scritta prima non ha `rowStyle` e si disegna com'era: nessun corpo
-si sposta.
+Il §5.1 scrive `rows: 'lines' | 'striped' | 'plain'`. Ma **`rows` è già la lista delle righe** della tabella, in `tableSchema`
+(`web/src/blocks/schemas.ts:210` su `main`, `rows: z.array(z.object({ cells: … }))`): la stessa chiave non può essere l'elenco delle
+righe e il loro stile. La proprietà si chiama **`rowStyle: 'lines' | 'striped' | 'plain'`**, con default `lines`, quello che si vede
+oggi. Una tabella scritta prima non ha `rowStyle` e si disegna com'era: nessun corpo si sposta.
 
-Scostamento dalla lettera: **domanda per Carmine**, mandata al master il 14 novembre 2026 con la raccomandazione `rowStyle`.
-Risposta di Carmine: _da scrivere qui, con il link, prima del merge_.
+Scostamento dalla lettera, quindi una domanda per Carmine, mandata al master dalla sessione di lavoro il 14 novembre 2026 con la
+raccomandazione `rowStyle`. **Decisa da Carmine**, in chat al master il 14 novembre 2026, con le sue parole: «Sì, rowStyle». Il master
+la riporta come commento sulla PR: _link al commento da aggiungere qui_.
 
 ## 2. I tre stili
 
@@ -110,7 +110,8 @@ Entrano `blocks.table.fields.rowStyle`, `blocks.table.options.rowStyle.*`, `bloc
 
 ## Da portare nel piano
 
-- **Il design dell'editor, `12-design-editor-fase-3.md` §5.1**: la proprietà è `rowStyle` (§1, con la risposta di Carmine); la griglia
+- **Il design dell'editor, `12-design-editor-fase-3.md` §5.1**: `rows: 'lines' | 'striped' | 'plain'` diventa
+  `rowStyle: 'lines' | 'striped' | 'plain'`, default `lines` (§1, decisa da Carmine il 14 novembre 2026, «Sì, rowStyle»); la griglia
   su una copia con «Applica»; incolla, importa e crea sostituiscono e sono un passo di Annulla ciascuno; i limiti di 20 × 200; le celle
   del file come il foglio le mostra; l'a capo in una cella diventa uno spazio.
 - **§9.3** (il modello dei contenuti): la tabella ha `rowStyle` (`lines`, `striped`, `plain`; di default `lines`).
