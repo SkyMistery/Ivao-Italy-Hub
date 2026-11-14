@@ -11,9 +11,17 @@ namespace IvaoHub.Core.Content;
 /// </summary>
 public sealed record BlockDocumentNode(JsonObject Node, string Path, int Depth)
 {
-    public string? Type => Node["type"]?.GetValue<string>();
+    public string? Type => TextOf(Node["type"]);
 
-    public string? Id => Node["id"]?.GetValue<string>();
+    public string? Id => TextOf(Node["id"]);
+
+    /// <summary>
+    /// A member of the envelope read as text, or <c>null</c> when it is absent or is not text. The body is
+    /// whatever the client sent: <c>GetValue&lt;string&gt;()</c> on <c>"id": 5</c> throws, and a throw inside
+    /// the validation is a 500 where a refusal is owed (#321, point 1).
+    /// </summary>
+    public static string? TextOf(JsonNode? node) =>
+        node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 }
 
 /// <summary>One thing wrong with a body. The message is an i18n key, never prose.</summary>
@@ -317,6 +325,7 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
             }
 
             CheckIdentifier(section, identifiers, errors);
+            CheckKey(section, errors);
             CheckTemplateOnlyKeys(section, isTemplate, errors);
             CheckLayout(section, errors);
             CheckBackground(section, errors);
@@ -564,11 +573,29 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
         _ => 2,
     };
 
+    /// <summary>
+    /// The key a section keeps from its template is text or nothing. A number would be saved and then
+    /// break every comparison with the published version (#321, point 1).
+    /// </summary>
+    private static void CheckKey(BlockDocumentNode section, List<BlockDocumentError> errors)
+    {
+        if (section.Node["key"] is { } key && BlockDocumentNode.TextOf(key) is null)
+        {
+            errors.Add(new BlockDocumentError("errors.body.keyNotText", $"{section.Path}.key"));
+        }
+    }
+
+    /// <summary>
+    /// Whether a member of the envelope that is either absent or one of a closed set of names is
+    /// neither: a value that is not text counts as a name nobody knows.
+    /// </summary>
+    private static bool IsUnknown(JsonNode? node, IReadOnlyList<string> known) =>
+        node is not null
+        && (BlockDocumentNode.TextOf(node) is not { } name || !known.Contains(name, StringComparer.Ordinal));
+
     private static void CheckLayout(BlockDocumentNode section, List<BlockDocumentError> errors)
     {
-        if (section.Node["layout"] is JsonValue value
-            && value.TryGetValue<string>(out var layout)
-            && !Layouts.Contains(layout, StringComparer.Ordinal))
+        if (IsUnknown(section.Node["layout"], Layouts))
         {
             errors.Add(new BlockDocumentError("errors.body.layoutUnknown", $"{section.Path}.layout"));
         }
@@ -581,9 +608,7 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     /// </summary>
     private static void CheckBackground(BlockDocumentNode section, List<BlockDocumentError> errors)
     {
-        if (section.Node["background"] is JsonValue value
-            && value.TryGetValue<string>(out var background)
-            && !Backgrounds.Contains(background, StringComparer.Ordinal))
+        if (IsUnknown(section.Node["background"], Backgrounds))
         {
             errors.Add(new BlockDocumentError("errors.body.backgroundUnknown", $"{section.Path}.background"));
         }
@@ -596,9 +621,7 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     /// </summary>
     private static void CheckRenderMode(BlockDocumentNode block, List<BlockDocumentError> errors)
     {
-        if (block.Node["renderMode"] is JsonValue value
-            && value.TryGetValue<string>(out var mode)
-            && !RenderModes.Contains(mode, StringComparer.Ordinal))
+        if (IsUnknown(block.Node["renderMode"], RenderModes))
         {
             errors.Add(new BlockDocumentError("errors.body.renderModeUnknown", $"{block.Path}.renderMode"));
         }
@@ -707,7 +730,7 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
             return;
         }
 
-        var layout = (section.Node["layout"] as JsonValue)?.GetValue<string>();
+        var layout = BlockDocumentNode.TextOf(section.Node["layout"]);
         if (column < 0 || column >= ColumnsOf(layout))
         {
             errors.Add(new BlockDocumentError("errors.body.columnOutOfRange", $"{block.Path}.column"));

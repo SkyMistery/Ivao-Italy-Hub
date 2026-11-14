@@ -303,6 +303,38 @@ public sealed class BlockDocumentWalkerTests
     }
 
     [Fact]
+    public void AMemberOfTheEnvelopeThatIsNotTextIsRefusedAndNeverThrows()
+    {
+        // #321, point 1: `GetValue<string>()` on `"id": 5` threw inside the validation, and the
+        // client got a 500 where a refusal was owed. A key that was a number was even saved, and
+        // then broke the review of the page for good.
+        var body = JsonNode.Parse("""
+        {
+          "schemaVersion": 1,
+          "sections": [
+            { "id": 5, "key": 7, "layout": 2, "background": true, "blocks": [
+              { "id": "b1", "type": 1, "renderMode": [], "column": 1 },
+              { "id": "b2", "type": "text", "column": 0 } ] }
+          ]
+        }
+        """);
+
+        var result = Walker.ValidateEnvelope(body, ["text"]);
+
+        Assert.Equal(
+            [
+                new BlockDocumentError("errors.body.idMissing", "sections[0]"),
+                new BlockDocumentError("errors.body.keyNotText", "sections[0].key"),
+                new BlockDocumentError("errors.body.layoutUnknown", "sections[0].layout"),
+                new BlockDocumentError("errors.body.backgroundUnknown", "sections[0].background"),
+                new BlockDocumentError("errors.body.blockTypeMissing", "sections[0].blocks[0]"),
+                new BlockDocumentError("errors.body.renderModeUnknown", "sections[0].blocks[0].renderMode"),
+                new BlockDocumentError("errors.body.columnOutOfRange", "sections[0].blocks[0].column"),
+            ],
+            result.Errors);
+    }
+
+    [Fact]
     public void RefusesALayoutAndARenderModeItDoesNotKnow()
     {
         var body = JsonNode.Parse("""

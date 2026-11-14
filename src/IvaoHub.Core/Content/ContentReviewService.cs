@@ -540,7 +540,7 @@ public sealed class ContentReviewService(
         {
             foreach (var section in array.OfType<JsonObject>())
             {
-                var key = section["key"]?.GetValue<string>() ?? section["id"]?.GetValue<string>();
+                var key = BlockDocumentNode.TextOf(section["key"]) ?? BlockDocumentNode.TextOf(section["id"]);
                 if (!string.IsNullOrEmpty(key))
                 {
                     sections.TryAdd(key, section);

@@ -53,6 +53,7 @@
       "tooDeep": "Le sezioni non possono annidarsi piu' in profondita' di cosi'.",
       "idMissing": "Questa sezione o questo blocco ha perso il suo identificativo.",
       "idDuplicated": "Due sezioni o due blocchi hanno lo stesso identificativo.",
+      "keyNotText": "La chiave che questa sezione ha preso dal template non è testo.",
       "blockTypeMissing": "Questo blocco non dice cosa e'.",
       "blockTypeUnknown": "Questo blocco e' di un tipo che l'hub non conosce.",
       "templateOnlyKey": "Solo un template puo' fissare questo. Cambialo sul template.",

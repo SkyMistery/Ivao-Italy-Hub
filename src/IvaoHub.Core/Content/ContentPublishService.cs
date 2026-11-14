@@ -470,7 +470,7 @@ public sealed class ContentPublishService(
             var descriptor = blocks.Find(block.Type);
             var frozen = descriptor is { AlwaysLive: false }
                 && string.Equals(
-                    (block.Node["renderMode"] as JsonValue)?.GetValue<string>(),
+                    BlockDocumentNode.TextOf(block.Node["renderMode"]),
                     "frozen",
                     StringComparison.Ordinal);
 
