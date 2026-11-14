@@ -275,6 +275,17 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   (o da far scrivere a Claude, §3).
 - **File del nucleo**: `blocks/schemas.ts` (proprietà facoltative in più), `blocks/blocks.tsx` (`TableBlock`),
   `features/content/BlockProperties.tsx`, `shared/files/sheet.ts`, e nel modulo dei tour `legFile.ts`. **Nota sua**: no.
+- **Com'è andata** (PR 3.12, ramo `feat/table`, nota `2026-11-14-la-tabella`): una scelta si scosta dalla lettera e l'ha chiesta Carmine
+  attraverso il master, le altre sono della sessione. (1) ⚖️ La proprietà è **`rowStyle`** e non `rows`, che è già il nome delle righe;
+  stessi valori e stesso default. (2) La fascia di `striped` è il colore del testo al 5 %; l'intestazione tiene la sua linea. (3) La
+  griglia è `BlockRegistration.editedAsGrid`, in un `Dialog` del nucleo con una misura nuova, `wide`, con le `LocaleTabs` del form;
+  lavora su una copia e scrive con «Applica». (4) Incolla, importa e crea sostituiscono la tabella e ognuno è un passo di Annulla:
+  `onApplyProps` prende `{ step: true }`, che chiude la corsa della storia (prima la griglia e l'incolla finivano nello stesso passo).
+  (5) Limiti di 20 colonne × 200 righe; righe vuote e colonne vuote in fondo scartate; un a capo in una cella diventa uno spazio; il
+  file si legge come il foglio lo mostra, dal primo foglio che ha qualcosa. (6) Il form generato porta `rows` senza disegnarlo e si
+  ridisegna da quello che scrivono gli strumenti e da un Annulla. (7) Fuori dal design, uguale a prima: ⚠️ una cella vuota ferma la
+  pubblicazione. (8) La parte fissa delle istruzioni dice la tabella; ⚠️ l'impronta `rules` cambia. Toccati in più del §5.1:
+  `shared/ui/Dialog.tsx`, `shared/modules.ts`, `shared/forms/index.ts`, `features/content/BodyEditor.tsx`.
 
 ### 5.2 Galleria (XII)
 
