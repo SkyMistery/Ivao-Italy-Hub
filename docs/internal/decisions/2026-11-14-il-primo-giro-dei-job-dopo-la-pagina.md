@@ -1,8 +1,9 @@
 # Il primo giro dei job dopo la pagina di chi ha svegliato l'hub
 
 **Data:** 14 novembre 2026
-**Stato:** **Proposta** della sessione `fix/jobs-catch-up-start` (issue #399). Il codice della PR è la raccomandazione del §2;
-la domanda del §4 è per Carmine.
+**Stato:** le scelte del §2 sono della sessione `fix/jobs-catch-up-start` (issue #399), dentro il caso (b), e sono il codice della
+#515. Il §4 è **deciso** da Carmine il 14 novembre 2026, «Sì a tutte e cinque, come raccomandi», in chat al master: la risposta è
+registrata sulla PR, <https://github.com/SkyMistery/Ivao-Italy-Hub/pull/515#issuecomment-6883305981>.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estende un meccanismo che c'è, il recupero dei job (`JobCatchUp`, nota
 `2026-10-09-i-job-che-recuperano` §1.4, che dopo il merge non si tocca), perché non fa quello che la sua nota gli chiede («cinque
 secondi dopo che l'hub è partito (**dopo la pagina di chi l'ha svegliato**)»). Il contatore delle richieste in corso c'è già
@@ -35,6 +36,18 @@ successivi restano uno al minuto, come prima. La regola è una funzione pura (`J
 - *Scelta*: **non prima di 5 s**, il valore di oggi: un hub che nessuno ha chiamato (il ping di `/health`, che non conta, o un
   avvio senza visite) fa il suo giro a 5 s come prima, e le prove d'integrazione del recupero, che non mandano richieste, non
   cambiano tempi.
+- *Scelta* (rilievo 2 del master sulla #515): **nessuna richiesta cominciata entro 5 s vuol dire quiete**, e il giro parte a 5 s.
+  L'alternativa pesata era «nessuna richiesta ancora = non quieto» (`Begun == 0`), che aspetterebbe la prima pagina fino ai 30 s.
+  Resta così, per tre ragioni:
+  - su Passenger la richiesta che sveglia l'hub è tenuta da Passenger finché l'hub è pronto, e arriva al codice **1,9 s dopo
+    «pronto» in mediana, 3,1 s al p90** (analisi §2.2: `up_ms` 7,7 / 13,4 s contro `ready in` 5,8 / 10,3 s). A 5 s una
+    richiesta è quasi sempre già cominciata, e allora vale la quiete;
+  - un processo che a 5 s non ha visto nessuna richiesta è quasi sempre uno **che nessun visitatore ha svegliato**: un ping di
+    `/health` (che qui non conta), un avvio del pannello. Il giro a 5 s non pesa su nessuno. Con «non quieto» andrebbe ai 30 s, e
+    lo perderebbero i processi che vivono meno (le vite sono piatte fra 10 e 60 s); con il ping che tiene sveglio l'hub (nota
+    `2026-10-26-il-ping-che-tiene-sveglio-l-hub`) sarebbero quasi tutti;
+  - chi arriva tardi, dopo i 5 s, trova il giro già partito, che con un job solo dura qualche decimo di secondo (5,3 s alla
+    fine, p50 della prova): lo stesso caso di una visita che comincia durante un giro dei controlli del minuto.
 - *Scelta*: **non dopo 30 s**: un hub con richieste continue recupera lo stesso, prima della fine di quasi ogni processo (pochissimi
   passano il minuto).
 - *Scelta*: **un solo contatore per processo**, registrato con i job (`AddHubJobs`) e alimentato da un middleware **sempre
@@ -56,7 +69,13 @@ successivi restano uno al minuto, come prima. La regola è una funzione pura (`J
 - **Ogni controllo, non solo il primo, dopo la quiete**: i controlli del minuto cadono quasi sempre in un processo che non c'è più,
   e uno al minuto su un hub vivo non è la prima pagina. Non serve.
 
-## 4. La domanda per Carmine: `FlightCheckJob` in ogni processo
+## 4. `FlightCheckJob` in ogni processo — deciso: scrive la sua riga a ogni giro
+
+**La risposta di Carmine** ([commento sulla #515][a515]): **sì**. `flightops-flight-checks` scrive la sua riga a ogni giro, anche
+quando non trova niente, così che un processo nuovo non lo rifaccia; in una **PR piccola di Flight Ops, a parte e dopo la #515**,
+che chiude la #399 (la #515 ne è una parte). Sotto, la domanda com'era posta.
+
+[a515]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/515#issuecomment-6883305981
 
 Con il primo giro dopo la pagina, `flightops-flight-checks` **non cade più sulla prima pagina**, ma gira ancora **in ogni processo
 nuovo**: non scrive una riga in `hub_jobs_log` quando non trova niente («six empty lines an hour would hide the others»,
@@ -84,5 +103,7 @@ d'integrazione dei job. Nessuna migrazione, nessuna pagina, nessun modulo, nessu
   dall'avvio, quando nessuna richiesta è in corso da 3 s, e non dopo 30 s; poi ogni minuto» (#399).
 - **§11.3 punto 2** (diagnostica): le richieste in corso sono un solo contatore per processo, che leggono la riga `STOP`, la colonna
   `others_n` e il primo controllo dei job.
-- `docs/internal/test/velocita-del-sito.md` §4: la voce **C5** è fatta per il giro sulla prima pagina; la seconda metà dipende
-  dalla risposta del §4.
+- `docs/internal/test/velocita-del-sito.md` §4: la voce **C5** è fatta per il giro sulla prima pagina con la #515, e
+  per `FlightCheckJob` con la PR di Flight Ops del §4.
+- **§5.2** (Job), dopo la PR di Flight Ops: `FlightCheckJob` scrive la sua riga in `hub_jobs_log` a ogni giro, anche vuoto (gira
+  una volta per occorrenza del suo cron qualunque processo sia vivo, non una volta per processo).
