@@ -139,6 +139,13 @@ public static class ContentEndpoints
                 options.ToDetail = mapper.ToDetail;
                 options.Apply = mapper.Apply;
 
+                // A page with pages under it is not deleted (note 2026-11-14-la-pagina-con-figlie): the one hook a delete
+                // runs, and the only thing it asks there.
+                options.BeforeAuthorize = (content, saving) =>
+                    saving.IsDelete
+                        ? saving.Services.GetRequiredService<ContentAddresses>().DeletionProblemAsync(content, saving.CancellationToken)
+                        : Task.FromResult<IReadOnlyDictionary<string, string[]>?>(null);
+
                 // Where a page sits in the site, which only other rows can say (note
                 // 2026-09-13-contenuti-centralizzati, 3.7): free, not reserved, not too deep, at the
                 // top only for whoever may put it there — and the pages under it moved along.

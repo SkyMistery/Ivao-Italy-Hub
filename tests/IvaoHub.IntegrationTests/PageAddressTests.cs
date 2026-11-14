@@ -180,6 +180,34 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NotFound, never.StatusCode);
     }
 
+    [Fact]
+    public async Task APageWithPagesUnderItIsNotDeletedUntilTheyAreGone()
+    {
+        // #321, point 3, decided by Carmine on 14 November 2026: a deleted parent left its children online but unsaveable.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(SuperadminVid, token);
+
+        using var client = _factory.CreateApiClient();
+        await _factory.SignInAsync(client, SuperadminVid, token);
+
+        var training = await CreateAsync(client, $"{Stem()}-training", parentId: null, token);
+        var guide = await CreateAsync(client, "guide", training.Id, token);
+
+        using (var refused = await SendAsync(client, HttpMethod.Delete, $"{ContentEndpoints.Pattern}/{training.Id}", null, token))
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+            Assert.Equal("errors.content.address.hasChildren", await FirstErrorAsync(refused, "id", token));
+        }
+
+        using (var child = await SendAsync(client, HttpMethod.Delete, $"{ContentEndpoints.Pattern}/{guide.Id}", null, token))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, child.StatusCode);
+        }
+
+        using var parent = await SendAsync(client, HttpMethod.Delete, $"{ContentEndpoints.Pattern}/{training.Id}", null, token);
+        Assert.Equal(HttpStatusCode.NoContent, parent.StatusCode);
+    }
+
     private static string Stem() => $"a{Guid.NewGuid():N}"[..12];
 
     private static Uri PageUri(string path) =>
@@ -244,11 +272,15 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
         HttpClient client,
         HttpMethod method,
         string path,
-        object payload,
+        object? payload,
         CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
-        request.Content = JsonContent.Create(payload, payload.GetType());
+        if (payload is not null)
+        {
+            request.Content = JsonContent.Create(payload, payload.GetType());
+        }
+
         request.Headers.Add("X-Requested-With", "hub");
         return await client.SendAsync(request, cancellationToken);
     }

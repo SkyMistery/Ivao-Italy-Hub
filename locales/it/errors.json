@@ -86,7 +86,8 @@
         "tooDeep": "Una pagina scende al massimo di tre livelli, contando quelle sotto di lei.",
         "invalidParent": "Una pagina non può stare qui sotto: non è una pagina, oppure è questa stessa o una sotto di lei.",
         "notAPage": "Solo una pagina sta sotto un'altra pagina.",
-        "taken": "Un'altra pagina ha già questo indirizzo."
+        "taken": "Un'altra pagina ha già questo indirizzo.",
+        "hasChildren": "Questa pagina ha delle pagine sotto di sé. Spostale altrove o cancellale prima."
       },
       "review": {
         "notReviewed": "Questo tipo di contenuto si pubblica direttamente, senza approvazione.",

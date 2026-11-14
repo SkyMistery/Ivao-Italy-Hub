@@ -297,9 +297,15 @@ public sealed record CrudSearchField<TEntity>(
 /// <param name="CurrentUser">Who is writing.</param>
 /// <param name="IsNew">True on a create, false on an update.</param>
 /// <param name="CancellationToken">The request's.</param>
+/// <param name="IsDelete">
+/// True when <see cref="CrudOptions{TEntity, TListDto, TDetailDto, TWriteDto}.BeforeAuthorize"/> runs ahead of a delete, the one
+/// hook a delete runs: what a resource may refuse to lose is a fact of other rows, as for a page with pages under it (#321,
+/// point 3, note 2026-11-14-la-pagina-con-figlie).
+/// </param>
 public sealed record CrudSaving(
     DbContext Database,
     IServiceProvider Services,
     Auth.ICurrentUser CurrentUser,
     bool IsNew,
-    CancellationToken CancellationToken);
+    CancellationToken CancellationToken,
+    bool IsDelete = false);
