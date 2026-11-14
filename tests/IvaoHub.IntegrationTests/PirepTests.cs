@@ -539,6 +539,92 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
         }
     }
 
+    /// <summary>
+    /// The send checks what the columns hold before it asks the tracker (issue #328, item 4), and a diversion reason or an
+    /// exemption the hub does not know is refused rather than stored (item 11).
+    /// </summary>
+    [Fact]
+    public async Task TheSendRefusesTooLongTextsAndValuesItDoesNotKnow()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        var (tourId, legs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        var payload = Payload(legs[0], _flights.Add(PilotVid, "XAA100", Rome, Milan, DateTime.UtcNow.AddDays(-1)));
+        var procedure = new string('A', PirepValidation.MaxProcedureLength + 1);
+        var text = new string('x', PirepValidation.MaxTextLength + 1);
+
+        await RefusedAsync(pilot, Reports(tourId), payload with { Sid = procedure }, "sid", "errors.text.tooLong", token);
+        await RefusedAsync(pilot, Reports(tourId), payload with { Star = procedure }, "star", "errors.text.tooLong", token);
+        await RefusedAsync(pilot, Reports(tourId), payload with { Approach = procedure }, "approach", "errors.text.tooLong", token);
+        await RefusedAsync(pilot, Reports(tourId), payload with { PilotRemarks = text }, "pilotRemarks", "errors.text.tooLong", token);
+
+        var diverted = payload with { IsDiversion = true, DiversionIcao = London, DiversionReason = DiversionReason.Weather };
+        await RefusedAsync(pilot, Reports(tourId), diverted with { DiversionNote = text }, "diversionNote", "errors.text.tooLong", token);
+        await RefusedAsync(pilot, Reports(tourId), diverted with { DiversionReason = (DiversionReason)99 }, "diversionReason", "errors.required", token);
+
+        var contacted = new AtcContactWriteDto("LIRF_TWR", "118.705");
+        await RefusedAsync(
+            pilot,
+            Reports(tourId),
+            payload with { AtcContacts = [contacted], Exemptions = [new AtcExemptionWriteDto(contacted.Callsign, (ExemptionKind)99, "fo-test")] },
+            "exemptions",
+            "errors.required",
+            token);
+
+        // Within the lengths, the same report goes.
+        var longest = new string('A', PirepValidation.MaxProcedureLength);
+        var sent = await CreatedAsync(pilot, Reports(tourId), payload with { Sid = longest }, token);
+        Assert.Equal(longest, sent.GetProperty("sid").GetString());
+    }
+
+    /// <summary>
+    /// A correction may keep the flight the report already had, however old (Carmine, 21 October 2026, on issue #328 item 7):
+    /// sent back, the window shrinks behind the flight; correcting the SID keeps it, the controllers are still proposed on it,
+    /// and a different flight as old is still outside the window.
+    /// </summary>
+    [Fact]
+    public async Task ACorrectionKeepsItsFlightOlderThanTheWindow()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        var (tourId, legs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token, reportWindowDays: 3);
+        var flown = _flights.Add(PilotVid, "XAA100", Rome, Milan, DateTime.UtcNow.AddDays(-2));
+        var sent = await CreatedAsync(pilot, Reports(tourId), Payload(legs[0], flown), token);
+
+        await using (var scope = _host.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+            await Everything<Pirep>(database).Where(report => report.Id == Id(sent))
+                .ExecuteUpdateAsync(set => set.SetProperty(report => report.Status, PirepStatus.ToModify), token);
+            await Everything<Tour>(database).Where(tour => tour.Id == tourId)
+                .ExecuteUpdateAsync(set => set.SetProperty(tour => tour.ReportWindowDays, 1), token);
+        }
+
+        var uri = $"{PirepEndpoints.Pattern}/{Id(sent)}";
+        var read = await OkAsync(await pilot.GetAsync(uri, token), token);
+        var correction = Payload(legs[0], flown) with { Sid = "ROTUN5A", RowVersion = read.GetProperty("rowVersion").GetDateTime() };
+
+        // A different flight, as old: outside the window.
+        var another = _flights.Add(PilotVid, "XAA100", Rome, Milan, DateTime.UtcNow.AddDays(-2).AddHours(2));
+        using (var refused = await pilot.PutAsJsonAsync(uri, correction with { SessionIds = [another] }, token))
+        {
+            var body = await refused.Content.ReadAsStringAsync(token);
+            Assert.True(refused.StatusCode == HttpStatusCode.BadRequest, $"{refused.StatusCode}: {body}");
+            Assert.Contains("flightops:errors.reportOutsideWindow", body, StringComparison.Ordinal);
+        }
+
+        // The controllers along the flight it keeps, as the form asks for them.
+        await OkAsync(await pilot.GetAsync($"{Reports(tourId)}/atc?sessionIds={flown}", token), token);
+
+        var corrected = await OkAsync(await pilot.PutAsJsonAsync(uri, correction, token), token);
+        Assert.Equal("Queued", corrected.GetProperty("status").GetString());
+        Assert.Equal("ROTUN5A", corrected.GetProperty("sid").GetString());
+    }
+
     private static string Reports(long tourId) => $"/api/flightops/tours/{tourId}/reports";
 
     private static PirepWriteDto Payload(long legId, long sessionId) => new(

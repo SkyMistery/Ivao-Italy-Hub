@@ -198,9 +198,26 @@ public sealed class PirepSubmission(
             problems.Add("diversionIcao", "errors.required");
         }
 
-        if (payload.IsDiversion && payload.DiversionReason is null)
+        // A reason the hub does not know is no reason (issue #328, item 11).
+        if (payload.IsDiversion && (payload.DiversionReason is not { } reason || !Enum.IsDefined(reason)))
         {
             problems.Add("diversionReason", "errors.required");
+        }
+
+        // The lengths the columns hold, before the tracker is asked (issue #328, item 4): never a cut, never a 500.
+        foreach (var (field, value, longest) in new[]
+        {
+            ("sid", payload.Sid, PirepValidation.MaxProcedureLength),
+            ("star", payload.Star, PirepValidation.MaxProcedureLength),
+            ("approach", payload.Approach, PirepValidation.MaxProcedureLength),
+            ("diversionNote", payload.IsDiversion ? payload.DiversionNote : null, PirepValidation.MaxTextLength),
+            ("pilotRemarks", payload.PilotRemarks, PirepValidation.MaxTextLength),
+        })
+        {
+            if (value?.Trim().Length > longest)
+            {
+                problems.Add(field, "errors.text.tooLong");
+            }
         }
 
         var contacts = payload.AtcContacts ?? [];
@@ -215,9 +232,12 @@ public sealed class PirepSubmission(
             return (null, problems.Errors);
         }
 
-        // The flights, read from the tracker: theirs, in the window, not claimed by another report.
+        // The flights, read from the tracker: theirs, in the window, not claimed by another report. A correction may keep the
+        // flights the report already has, however old (Carmine, 21 October 2026, on issue #328 item 7): the window is for a
+        // flight brought now, and correcting the SID must not cost flying the leg again.
         var from = now.AddDays(-tour.ReportWindowDays);
-        var flights = await FlightsAsync(ids, vid, from, now, correctingId, checkClaims: true, problems, cancellationToken);
+        var kept = correcting?.Flights.Select(flight => (flight.TrackerSessionId, flight.TakeoffAt)).ToList() ?? [];
+        var flights = await FlightsAsync(ids, vid, SearchFrom(from, kept), now, correctingId, checkClaims: true, problems, cancellationToken);
         if (flights is null)
         {
             return (null, problems.Errors);
@@ -259,8 +279,9 @@ public sealed class PirepSubmission(
             }
         }
 
-        // The window, the release and the close, always in UTC (Carmine, 15 September 2026).
-        if (takeoff < from)
+        // The window, the release and the close, always in UTC (Carmine, 15 September 2026). The window, on the flights the
+        // report did not have already.
+        if (flights.Any(flight => flight.TakeoffAt < from && !kept.Any(own => own.TrackerSessionId == flight.Session.Id)))
         {
             problems.Add("sessionIds", "flightops:errors.reportOutsideWindow");
         }
@@ -487,10 +508,22 @@ public sealed class PirepSubmission(
         }
 
         var now = clock.UtcNow;
+
+        // The flights of the pilot's report waiting for a correction on this tour are read as the correction reads them: the
+        // form proposes the controllers of a flight it may keep, however old (issue #328, item 7).
+        var vid = currentUser.Vid;
+        var kept = await database.PirepFlights.AsNoTracking()
+            .Where(flight => database.Pireps.Any(report => report.Id == flight.PirepId
+                && report.TourId == pilot.Tour.Id
+                && report.Vid == vid
+                && report.Status == PirepStatus.ToModify))
+            .Select(flight => new { flight.TrackerSessionId, flight.TakeoffAt })
+            .ToListAsync(cancellationToken);
+
         var flights = await FlightsAsync(
             sessionIds,
-            currentUser.Vid,
-            now.AddDays(-pilot.Tour.ReportWindowDays),
+            vid,
+            SearchFrom(now.AddDays(-pilot.Tour.ReportWindowDays), [.. kept.Select(flight => (flight.TrackerSessionId, flight.TakeoffAt))]),
             now,
             correctingId: 0,
             checkClaims: false,
@@ -992,6 +1025,13 @@ public sealed class PirepSubmission(
 
     private static bool IsDuplicate(DbUpdateException exception) =>
         exception.InnerException?.Message.Contains("Duplicate", StringComparison.OrdinalIgnoreCase) == true;
+
+    /// <summary>
+    /// Where the tracker is searched from: the start of the window, or earlier when a flight the report keeps took off before
+    /// it — a day earlier than that take-off, since the tracker searches by the start of the session, which comes before.
+    /// </summary>
+    private static DateTime SearchFrom(DateTime windowFrom, IReadOnlyList<(long TrackerSessionId, DateTime TakeoffAt)> kept) =>
+        kept.Count == 0 ? windowFrom : new[] { windowFrom, kept.Min(flight => flight.TakeoffAt).AddDays(-1) }.Min();
 
     private static string? Upper(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim().ToUpperInvariant();
 
