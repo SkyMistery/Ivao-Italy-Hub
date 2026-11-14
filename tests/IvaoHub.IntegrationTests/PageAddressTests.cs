@@ -108,13 +108,17 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
         using var superadmin = _factory.CreateApiClient();
         await _factory.SignInAsync(superadmin, SuperadminVid, token);
         var shelf = await CreateAsync(superadmin, $"{Stem()}-shelf", parentId: null, token);
+        await PublishAsync(superadmin, shelf.Id, token);
+        var draftOfTheWebTeam = await CreateAsync(superadmin, $"{Stem()}-draft", parentId: null, token);
 
         using var coordinator = _factory.CreateApiClient();
         await _factory.SignInAsync(coordinator, EventsCoordinatorVid, token);
 
-        // The page of the web team is offered to go under, although its row is not theirs to read.
+        // The page of the web team is offered to go under, although its row is not theirs to read: it is online. A draft
+        // of the web team is not offered (#321, point 6, decided by Carmine on 14 November 2026).
         var tree = await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/pages", token);
         Assert.Contains(tree.EnumerateArray(), node => node.GetProperty("id").GetInt64() == shelf.Id);
+        Assert.DoesNotContain(tree.EnumerateArray(), node => node.GetProperty("id").GetInt64() == draftOfTheWebTeam.Id);
 
         // At the top: refused on the field that chose it.
         using var top = await SendAsync(
@@ -134,6 +138,11 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Payload("mine", shelf.Id, department: Department.ED),
             token);
         Assert.Equal(HttpStatusCode.Created, under.StatusCode);
+
+        // A draft of their own department is offered: a section is built under its first page before it comes out.
+        var mine = (await under.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64();
+        var after = await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/pages", token);
+        Assert.Contains(after.EnumerateArray(), node => node.GetProperty("id").GetInt64() == mine);
     }
 
     [Fact]
@@ -178,6 +187,34 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // An address nobody ever had is a not found, not a guess.
         using var never = await anonymous.GetAsync(PageUri($"{stem}-nowhere/guide"), token);
         Assert.Equal(HttpStatusCode.NotFound, never.StatusCode);
+    }
+
+    [Fact]
+    public async Task APageWithPagesUnderItIsNotDeletedUntilTheyAreGone()
+    {
+        // #321, point 3, decided by Carmine on 14 November 2026: a deleted parent left its children online but unsaveable.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(SuperadminVid, token);
+
+        using var client = _factory.CreateApiClient();
+        await _factory.SignInAsync(client, SuperadminVid, token);
+
+        var training = await CreateAsync(client, $"{Stem()}-training", parentId: null, token);
+        var guide = await CreateAsync(client, "guide", training.Id, token);
+
+        using (var refused = await SendAsync(client, HttpMethod.Delete, $"{ContentEndpoints.Pattern}/{training.Id}", null, token))
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+            Assert.Equal("errors.content.address.hasChildren", await FirstErrorAsync(refused, "id", token));
+        }
+
+        using (var child = await SendAsync(client, HttpMethod.Delete, $"{ContentEndpoints.Pattern}/{guide.Id}", null, token))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, child.StatusCode);
+        }
+
+        using var parent = await SendAsync(client, HttpMethod.Delete, $"{ContentEndpoints.Pattern}/{training.Id}", null, token);
+        Assert.Equal(HttpStatusCode.NoContent, parent.StatusCode);
     }
 
     private static string Stem() => $"a{Guid.NewGuid():N}"[..12];
@@ -244,11 +281,15 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
         HttpClient client,
         HttpMethod method,
         string path,
-        object payload,
+        object? payload,
         CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
-        request.Content = JsonContent.Create(payload, payload.GetType());
+        if (payload is not null)
+        {
+            request.Content = JsonContent.Create(payload, payload.GetType());
+        }
+
         request.Headers.Add("X-Requested-With", "hub");
         return await client.SendAsync(request, cancellationToken);
     }

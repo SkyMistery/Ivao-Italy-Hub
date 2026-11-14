@@ -86,7 +86,8 @@
         "tooDeep": "A page goes three levels deep at most, counting the pages under it.",
         "invalidParent": "A page cannot go under this one: it is not a page, or it is this page or one under it.",
         "notAPage": "Only a page sits under another page.",
-        "taken": "Another page already has this address."
+        "taken": "Another page already has this address.",
+        "hasChildren": "This page has pages under it. Move them elsewhere or delete them first."
       },
       "review": {
         "notReviewed": "This kind of content is published directly, without approval.",

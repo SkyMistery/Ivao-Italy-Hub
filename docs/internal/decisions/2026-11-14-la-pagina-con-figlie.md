@@ -1,11 +1,12 @@
 # La pagina con figlie: che cosa succede quando si cancella
 
 - **Data**: 14 novembre 2026
-- **Stato**: Proposta — la domanda è di Carmine
+- **Stato**: Decisa da Carmine in chat al master, 14 novembre 2026: «Si rifiuta» (l'alternativa 1). Il link al commento che la
+  riporta sulla PR è sotto, in «Risposta di Carmine».
 - **Chi**: una sessione di lavoro di Carmine (issue #321, punto 3; lotto 3 della revisione del codice,
   `2026-10-20-la-revisione-del-codice.md`)
-- **Classificazione** (`CLAUDE.md` §5): **(b)**, un uso del CRUD generico del nucleo. Con la raccomandazione serve una piccola
-  estensione del meccanismo (`CrudSaving` che dice «è una cancellazione»), quindi codice del nucleo, scritto solo dopo la risposta.
+- **Classificazione** (`CLAUDE.md` §5): **(b)**, estensione di un meccanismo del nucleo, il CRUD generico (`MapCrud`): `CrudSaving`
+  dice anche «è una cancellazione». Nessun meccanismo nuovo.
 
 ## Che cosa succede oggi
 
@@ -35,14 +36,28 @@ che non ha toccato.
    sito ha un ramo senza radice: la pagina madre manca da `/training` e le figlie restano sotto un indirizzo che non risponde.
    Nasconde il buco invece di chiuderlo.
 
-## Che cosa si tocca, con la raccomandazione
+## Perché nessun meccanismo esistente bastava
 
-- `CrudSaving` riceve `IsDelete` (oggi dice solo `IsNew`): `BeforeAuthorize` gira già sulla riga salvata prima di una cancellazione, ma
-  non sa che lo è. È l'unica estensione del meccanismo; nessun meccanismo nuovo.
-- Il CRUD dei contenuti, in `ContentEndpoints`, chiede in quel punto se esiste una pagina con `ParentId` uguale (fuori dal filtro della
-  query: una figlia di un altro dipartimento conta lo stesso) e rifiuta.
-- Una chiave nuova in `locales/*/errors.json`; un test d'integrazione (madre con figlia: 400; figlia cancellata, poi la madre: 204).
-- Il form della pagina non cambia: il rifiuto arriva come gli altri, sopra il form.
+Il CRUD generico ha quattro ganci per riga: `BeforeAuthorize`, `BeforeSave`, `AfterSave`, `Delete`. Una cancellazione ne fa girare uno
+solo, `BeforeAuthorize`, sulla riga salvata; ma `CrudSaving`, quello che il gancio riceve, diceva solo `IsNew`, e un aggiornamento e una
+cancellazione gli arrivavano uguali. `BeforeSave` su una cancellazione non gira, e farcelo girare avrebbe fatto girare anche quello che
+i contenuti ci fanno (l'indirizzo, lo spostamento delle figlie) su una riga che sparisce. `Delete` sostituisce la rimozione e non può
+rifiutare. `DeletePolicy` chiede un permesso, non un fatto di altre righe. Un controllo nell'endpoint, fuori dal CRUD, sarebbe stato il
+«controllo scritto a mano» che `CLAUDE.md` §2 vieta.
+
+## Che cosa si tocca
+
+- `CrudSaving` riceve `IsDelete` (in fondo, con `false` di default: chi lo costruisce oggi non cambia), passato a `BeforeAuthorize`
+  dalla cancellazione. È l'unica estensione del meccanismo; i ganci che già c'erano (Eventi) non lo leggono e fanno quello che facevano.
+- `ContentAddresses.DeletionProblemAsync`: se la riga è una pagina (non un modello) e una riga ha `ParentId` uguale — letta fuori dal
+  filtro della query, perché una figlia di un altro dipartimento o in bozza conta lo stesso — rifiuta con
+  `errors.content.address.hasChildren` sul campo `id`. Sta con gli indirizzi, che sono la cosa di cui parla.
+- Il CRUD dei contenuti, in `ContentEndpoints`, la chiede da `BeforeAuthorize` quando `IsDelete`.
+- La chiave nuova in `locales/*/errors.json`; il test d'integrazione `PageAddressTests.APageWithPagesUnderItIsNotDeletedUntilTheyAreGone`
+  (madre con figlia: 400; figlia cancellata, poi la madre: 204).
+- Il form della pagina non cambia: il rifiuto arriva nel riquadro dei rifiuti del pulsante «Elimina» (`useRefusalNotice`, #332).
+- ⚠️ `BeforeAuthorize` gira **prima** del permesso: chi non può cancellare la pagina e prova lo stesso si sente dire che ha delle figlie
+  invece di un 403. Non rivela niente che l'albero delle pagine non dica già a chi scrive.
 
 **Le pagine già orfane**, se ce ne sono sulla prova o in produzione, restano come sono: le sposta chi ha `Content.Approve`, da
 «Posizione» nel form, oppure si cerca il genitore che manca con una query
@@ -56,7 +71,8 @@ La raccomandazione impedisce che ne nascano altre; non le ripara.
 
 ## Risposta di Carmine
 
-_(da scrivere con il link al suo commento)_
+«Si rifiuta» — l'alternativa 1, data in chat al master il 14 novembre 2026 e riportata dal master sulla PR: _(link al commento da
+aggiungere quando il master lo pubblica)_.
 
 ## Da portare nel piano
 
