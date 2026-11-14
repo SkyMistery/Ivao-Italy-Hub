@@ -340,6 +340,24 @@ test('an undo of headings written in the grid draws the form again, and the form
   expect(last()?.rows).toEqual(props.rows);
 });
 
+// The columns half of the form's mark: the headings the grid applies draw the form again, or its next keystroke would
+// write the old ones back over them (the reviewer's recheck of the fixes).
+test('headings applied from the grid survive a keystroke in the form', async () => {
+  const user = userEvent.setup();
+  const { last } = draw();
+
+  await user.click(screen.getByRole('button', { name: words.grid.open }));
+  const dialog = screen.getByRole('dialog', { name: words.grid.title });
+  const heading = within(dialog).getByLabelText(say(words.grid.heading, { column: 1 }));
+  await user.clear(heading);
+  await user.type(heading, 'Weekday');
+  await user.click(within(dialog).getByRole('button', { name: words.grid.apply }));
+  await user.type(screen.getByDisplayValue('Hours'), '!');
+
+  await waitFor(() => expect(last()?.caption).toEqual(both('Orari', 'Hours!')));
+  expect(last()?.columns).toEqual([{ label: both('Giorno', 'Weekday'), align: 'left' }, props.columns[1]]);
+});
+
 test('after a tool writes, the form writes what the tool wrote and not the table it held before', async () => {
   const user = userEvent.setup();
   const { last } = draw();
