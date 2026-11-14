@@ -432,9 +432,12 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   risponde i numeri, non le parole). **Nota sua**: no.
 - **Com'è andata** (PR 3.13, nella stessa nota del §5.4): l'etichetta di un numero è quella della prima voce che lo chiede (il server
   risponde ogni numero una volta); vuota o di soli spazi, la parola dell'hub; vuota in tutte le lingue non si salva nemmeno
-  (`writtenValues`), ⚠️ scritta in una lingua sola ferma la pubblicazione come ogni testo tradotto facoltativo. I blocchi di dati dei
-  moduli non sono toccati e la issue per gli eventi non è aperta: ⚖️ se il secondo punto li chiede per i blocchi che mostrano numeri
-  dentro frasi (come `events.atcCoverage`) lo decide Carmine, a cui il master porta la domanda (nota, §2). Il server non è cambiato.
+  (`writtenValues`), ⚠️ scritta in una lingua sola ferma la pubblicazione come ogni testo tradotto facoltativo. **L'etichetta non va nella richiesta**
+  (rilievo 1 della revisione, caso (b) nella nota, §3): `DataBlockView` chiede con `questionOf`, le `props` senza i campi `localized`,
+  così un tasto nell'etichetta non fa una richiesta e un blocco senza parole ha la chiave di prima. Toccati in più del §5.7:
+  `blocks/data.ts`, `blocks/ContentRenderer.tsx`. ⚖️ I blocchi di dati
+  dei moduli che mostrano numeri hanno le stesse etichette, come dice il secondo punto, e `events.atcCoverage` è uno di questi: non in
+  questa PR, ma con la issue #518 per gli eventi (Carmine, 14 novembre 2026, nota §2 con il link alla risposta). Il server non è cambiato.
 
 ### 5.8 La tabella delle frequenze dalle postazioni dell'hub (XX)
 
