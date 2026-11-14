@@ -19,7 +19,7 @@ import { MediaFingerprints, useMediaFileUrl } from '../shared/api/mediaUrl';
 import { useLocalized } from '../shared/i18n/useLocalized';
 import type { BlockRegistration, Resizable } from '../shared/modules';
 
-import { blockDataQuery } from './data';
+import { blockDataQuery, questionOf } from './data';
 import {
   SPANS,
   alignOf,
@@ -1210,7 +1210,11 @@ function DataBlockView({
   const captured = block.frozen ?? null;
   const live = captured === null;
 
-  const query = useQuery({ ...blockDataQuery(block.type, block.props), enabled: live });
+  // The question without the block's words (`questionOf`): a label typed under a figure is not a new question.
+  const query = useQuery({
+    ...blockDataQuery(block.type, questionOf(registration.schema, block.props)),
+    enabled: live,
+  });
   const Component = registration.component;
 
   const data = live ? (query.isPending ? undefined : (query.data ?? null)) : captured;
