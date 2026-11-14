@@ -13,8 +13,11 @@ namespace IvaoHub.Modules.FlightOps.Checks;
 /// <summary>
 /// The engine's job (design M2 §6.1): the checks run right after a send, and this runs them on every report waiting whose
 /// checks are older than its place in the queue — a send whose run did not save, a report sent before the engine existed.
-/// Every ten minutes, a batch at a time; a report changed meanwhile is tried again the next time. It writes a line in the
-/// log of the jobs only when it found something to do, or failed: six empty lines an hour would hide the others.
+/// Every ten minutes, a batch at a time; a report changed meanwhile is tried again the next time. It writes its line in the
+/// log of the jobs on every run, also when it found nothing to do (issue #399, note
+/// <c>2026-11-14-il-primo-giro-dei-job-dopo-la-pagina</c> §4, decided by Carmine on #515): the guard of the jobs reads its last
+/// run there, and without the line every new process of the host found it due and ran it once more. At most six lines an
+/// hour, against the sixty of the queue of the mail.
 /// <para>It runs as the application, outside any request, so the interceptor's guard leaves it alone as it leaves every job.</para>
 /// </summary>
 [DisallowConcurrentExecution]
@@ -31,6 +34,9 @@ public sealed class FlightCheckJob(
 
     /// <summary>At most this many reports a run: a backlog is worked off in turns.</summary>
     public const int Batch = 50;
+
+    /// <summary>The message of a run that found no report waiting for its checks.</summary>
+    public const string NothingWaiting = "No report waiting for its checks.";
 
     private const int MaxMessageLength = 2000;
 
@@ -68,6 +74,7 @@ public sealed class FlightCheckJob(
 
         if (ids.Count == 0)
         {
+            await LogAsync(startedAt, "succeeded", NothingWaiting, cancellationToken);
             return 0;
         }
 
