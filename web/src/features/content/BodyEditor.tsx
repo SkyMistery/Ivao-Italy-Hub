@@ -427,7 +427,14 @@ export function BodyEditor({
 
     // A section dropped onto another of its siblings. Crossing into another parent is refused by
     // the body helper, as it is in the outline: a drop that moved nothing is a drop that moved nothing.
-    if (dragged?.kind === 'section' && target?.kind === 'section' && over !== null && active.id !== over.id) {
+    // Not a section a template locks, nor a row of one: the page offers it no grip, and a drop is not a way round that.
+    if (
+      dragged?.kind === 'section' &&
+      target?.kind === 'section' &&
+      over !== null &&
+      active.id !== over.id &&
+      !ruleOfSection(rules, body, String(active.id)).locked
+    ) {
       change(reorderSections(body, String(active.id), String(over.id)));
     }
   };
