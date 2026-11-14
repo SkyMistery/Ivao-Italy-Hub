@@ -427,6 +427,34 @@ test('a section a template locks takes neighbours from its bar, and a row in it 
   expect(last().sections).toHaveLength(2);
 });
 
+test('a row inside a section a template locks is locked with it, key or no key (issue #460)', async () => {
+  const user = userEvent.setup();
+  drawBody(
+    {
+      schemaVersion: 1,
+      sections: [
+        framed('fixed', [framed('r1', [framed('r1a')]), framed('r2', [], { key: 'inner' })], { key: 'fixed' }),
+      ],
+    },
+    // The template locks the section and says nothing about `inner`: what it holds is fixed all the same.
+    {
+      schemaVersion: 1,
+      sections: [framed('t1', [framed('t2', [], { key: 'inner' })], { key: 'fixed', locked: true })],
+    },
+  );
+
+  for (const row of ['Row 1.1 · r1', 'Row 1.1.1 · r1a', 'Row 1.2 · r2']) {
+    await user.click(screen.getByText(row));
+    for (const name of [editor.addRow, editor.moveUp, editor.moveDown, editor.duplicate, editor.remove]) {
+      expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
+    }
+  }
+
+  // The outline reads the same rule: no "Add row" anywhere in the locked section.
+  await user.click(screen.getByRole('button', { name: editor.outline }));
+  expect(screen.queryByRole('button', { name: editor.addRow })).not.toBeInTheDocument();
+});
+
 test('a section a template locks takes no row, and its neighbours take a section', () => {
   const page: Body = {
     schemaVersion: 1,

@@ -29,7 +29,7 @@ import {
   instructionsHeader,
   type HeaderInput,
 } from './claudeInstructions';
-import { ruleFor, type SectionRule } from './templateRules';
+import { ruleFor, ruleInside, type SectionRule } from './templateRules';
 
 /**
  * «Import from Claude» (PR 3.0b; `decisions/2026-10-30-una-pagina-scritta-con-claude.md` §3 and §4, with the answers of
@@ -600,7 +600,7 @@ function settleBody(
     return settled;
   };
 
-  const settleSection = (section: SectionEnvelope, path: string): SectionEnvelope => {
+  const settleSection = (section: SectionEnvelope, path: string, around: SectionRule): SectionEnvelope => {
     const before = draftSections.get(section.id);
 
     let key: string | null | undefined = before?.key;
@@ -614,7 +614,8 @@ function settleBody(
       key = section.key;
     }
 
-    const rule = ruleFor(template, key);
+    // A row of a locked section is locked with it, key or no key (issue #460), as in the editor.
+    const rule = ruleInside(around, ruleFor(template, key));
     const settled: SectionEnvelope = {
       ...section,
       key: key ?? null,
@@ -623,7 +624,9 @@ function settleBody(
       blocks: section.blocks.map((block, index) =>
         settleBlock(block, `${path}.blocks[${index}]`, section.id, rule),
       ),
-      sections: section.sections.map((nested, index) => settleSection(nested, `${path}.sections[${index}]`)),
+      sections: section.sections.map((nested, index) =>
+        settleSection(nested, `${path}.sections[${index}]`, rule),
+      ),
     };
 
     // A template's own members, refused on a page by the server: a page may not lift its own restrictions.
@@ -653,7 +656,9 @@ function settleBody(
 
   const body: Body = {
     ...parsed,
-    sections: parsed.sections.map((section, index) => settleSection(section, `sections[${index}]`)),
+    sections: parsed.sections.map((section, index) =>
+      settleSection(section, `sections[${index}]`, ruleFor(template, null)),
+    ),
   };
 
   // What the editor would not have let go: a required section, and a locked one, which has no «remove» either.
