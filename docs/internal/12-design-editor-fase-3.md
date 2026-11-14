@@ -299,7 +299,8 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   `onApplyProps` prende `{ step: true }`, che chiude la corsa della storia (prima la griglia e l'incolla finivano nello stesso passo).
   (5) Limiti di 20 colonne × 200 righe; righe vuote e colonne vuote in fondo scartate; un a capo in una cella diventa uno spazio; il
   file si legge come il foglio lo mostra, dal primo foglio che ha qualcosa; ⚠️ il testo di un CSV lo decodifica il lettore (UTF-8 senza
-  BOM, se no Windows-1252) e la data corta di Excel si scrive nell'ordine della lingua della tabella (rilievi 1 e 2 della revisione).
+  BOM, se no Windows-1252), **e le sue celle sono il testo scritto: niente numeri né date dedotti; un errore di Excel scritto nel CSV
+  (`#N/A`) è il suo testo, non una cella vuota** (#507, piano 1.54, nota `2026-11-14-il-csv-e-il-testo-scritto`, decisa dal master), e la data corta di Excel si scrive nell'ordine della lingua della tabella (rilievi 1 e 2 della revisione).
   (6) Il form generato porta `rows` senza disegnarlo e si ridisegna quando la tabella del blocco non è quella che ha scritto lui
   (uno strumento, un Annulla; rilievo 3). (7) Fuori dal design, uguale a prima: ⚠️ una cella vuota ferma la
   pubblicazione. (8) La parte fissa delle istruzioni dice la tabella; ⚠️ l'impronta `rules` cambia. Toccati in più del §5.1:
