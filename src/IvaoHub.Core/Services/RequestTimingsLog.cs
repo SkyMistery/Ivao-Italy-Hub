@@ -272,7 +272,9 @@ public sealed partial class RequestTimingsLog : IHostedService, IDisposable
         "# total_ms   from there to the end of the response; ttfb_ms to its first byte (- when it had none).\n" +
         "# db_n/ms    database commands and their time, rows read included; open_n/ms connections opened and their time.\n" +
         "# http_n/ms  outbound calls (IVAO, weather...) and their time, retries included.\n" +
+        "# route      for /api/blocks/data/{type}, the block's type when it is a registered one.\n" +
         "# jit_ms/n   code compiled by the runtime while the request ran, in the whole process; alloc_kb the same for memory.\n" +
+        "# others_n   the other requests that ran at some moment of this one: with 0, jit_ms and alloc_kb are its own.\n" +
         "#\n" +
         "# " + string.Join('\t', RequestTimingsLine.Columns) + "\n";
 

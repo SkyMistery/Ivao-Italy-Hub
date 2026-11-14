@@ -89,6 +89,18 @@ public sealed class StartsLogTests : IDisposable
         Assert.DoesNotContain("probes", StartsLog.StopLine(Now, 4242, TimeSpan.FromSeconds(48), 2, null, Memory), StringComparison.Ordinal);
     }
 
+    // Issue #402: whether a stop found requests still running, and only when it did.
+    [Fact]
+    public void TheStopSaysTheRequestsStillRunningOnlyWhenThereWereSome()
+    {
+        Assert.Contains(
+            "requests 9  probes 2  in flight 3  first answer at 4.00 s",
+            StartsLog.StopLine(Now, 4242, TimeSpan.FromSeconds(48), 9, TimeSpan.FromSeconds(4), Memory, probes: 2, inFlight: 3),
+            StringComparison.Ordinal);
+
+        Assert.DoesNotContain("in flight", StartsLog.StopLine(Now, 4242, TimeSpan.FromSeconds(48), 2, null, Memory), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void AnOrderlyStopIsReadForThePidOfTheLastStart()
     {

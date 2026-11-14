@@ -395,7 +395,7 @@ export function TourEditor() {
     label: `${rating.shortName} — ${t(`ratings.Pilot.${rating.shortName}`)}`,
   }));
   const save = useSaveTour(isNew ? null : Number(id));
-  const { suggestions, onSuggestSearch } = useTypeSuggestions();
+  const { suggestions, onSuggestSearch, suggestSearching } = useTypeSuggestions();
 
   const department =
     tour?.ownerDepartment ??
@@ -446,6 +446,7 @@ export function TourEditor() {
         timezone: bootstrap.division.timezone,
       }}
       onSuggestSearch={onSuggestSearch}
+      suggestSearching={suggestSearching}
       onSubmit={async (values) => {
         setSaved(false);
         const result = await save.mutateAsync({ values });

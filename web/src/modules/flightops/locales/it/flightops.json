@@ -336,6 +336,7 @@
     "reportSessionCount": "Scegli un volo, o due se è finito altrove.",
     "reportSessionUnknown": "Questo volo non è fra i tuoi nella finestra per i report.",
     "reportSessionClaimed": "Questo volo è già in un altro report.",
+    "reportBusy": "Un altro tuo report è in invio proprio ora: riprova tra un momento.",
     "trackerUnavailable": "Il tracker non risponde. Riprova fra qualche minuto.",
     "reportNeverTookOff": "Il tracker non mostra un decollo per questo volo.",
     "reportFlightDeparture": "Il volo non è partito dall'aeroporto di partenza della leg.",

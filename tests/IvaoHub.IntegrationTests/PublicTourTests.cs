@@ -229,6 +229,14 @@ public sealed class PublicTourTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var nonsense = await BlockAsync(visitor, """{"states":["Closed"]}""", token);
         Assert.DoesNotContain(nonsense, row => Id(row) == Id(open));
 
+        // Props the editor never writes but any save may hold (issue #498): a state that is not a string is no state,
+        // and a number is not a state's name — "3" is the number of Open, and must not show the open tour. Each still
+        // names something, so each narrows to nothing, and none answers a 500.
+        foreach (var odd in new[] { """{"states":[5]}""", """{"states":["5"]}""", """{"states":["3"]}""" })
+        {
+            Assert.Empty(await BlockAsync(visitor, odd, token));
+        }
+
         // At most one card, and the block answers the tour with the earliest release: the one this test made is the
         // only one it can assert about, so what is asserted is the count.
         var one = await BlockAsync(visitor, """{"limit":1}""", token);

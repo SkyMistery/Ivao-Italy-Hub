@@ -10,6 +10,7 @@ import { registry } from './app/registry';
 import { createHubRouter } from './app/router';
 import { sessionChanged } from './features/me/queries';
 import { setUnauthorizedHandler } from './shared/api/client';
+import { speakTheServersWords } from './shared/forms/zodWords';
 import { retryQuery } from './shared/api/retry';
 
 // ⚠️ The two typefaces of IVAO, finally loaded. Atmosphere has always *asked* for them —
@@ -68,9 +69,14 @@ if (!container) {
   throw new Error('Root container #root is missing from index.html');
 }
 
+const i18n = createI18n(registry.i18nNamespaces);
+
+// The checks the browser makes with a schema speak the server's keys, in the language on screen (#386).
+speakTheServersWords(i18n);
+
 createRoot(container).render(
   <StrictMode>
-    <HubProviders i18n={createI18n(registry.i18nNamespaces)} queryClient={queryClient}>
+    <HubProviders i18n={i18n} queryClient={queryClient}>
       <RouterProvider router={router} />
     </HubProviders>
   </StrictMode>,

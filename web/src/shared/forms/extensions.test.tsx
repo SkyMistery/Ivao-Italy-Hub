@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -998,6 +998,92 @@ test('a closed field whose answer changes nothing stops waiting, and puts back w
     },
     { timeout: 3000 },
   );
+});
+
+// ---- 11. a closed field that is still searching (#384) -----------------------------------------
+
+/**
+ * The tours' types again, with the screen saying when its answer is on its way, as `useTypeSuggestions` does with the
+ * query's `isFetching`. The answer comes when the test says so: on the test installation it took over three seconds.
+ */
+function SlowForm({ onAsked }: { onAsked: (typed: string, release: () => void) => void }) {
+  const first = [{ value: 'A002', label: 'A002 — Glider' }];
+  const [page, setPage] = useState<typeof types>(first);
+  const [searching, setSearching] = useState(false);
+
+  return (
+    <SchemaForm
+      schema={z.object({ path: z.string().meta({ suggestions: page, suggestionsOnly: true }) })}
+      defaults={{ path: '' }}
+      locales={LOCALES}
+      labels="test"
+      submitLabel="Save"
+      onSubmit={() => Promise.resolve()}
+      onSuggestSearch={(_field, typed) => {
+        setSearching(true);
+        onAsked(typed, () => {
+          setPage(typed === 'a320' ? types : []);
+          setSearching(false);
+        });
+      }}
+      suggestSearching={searching}
+    />
+  );
+}
+
+test('a closed field says it is searching while the answer is on its way, and not that nothing matches', async () => {
+  const user = userEvent.setup();
+  const answer = { asked: null as string | null, release: () => {} };
+  const onAsked = (typed: string, release: () => void) => Object.assign(answer, { asked: typed, release });
+
+  const { i18n } = renderWithProviders(<SlowForm onAsked={onAsked} />, {
+    i18n: createTestI18n({ test: suggestLabels }),
+  });
+
+  const box = screen.getByRole('combobox', { name: 'Address' });
+  await user.click(box);
+  await user.type(box, 'a320');
+
+  // The page on the screen is the one before, where A320 is not: before the question goes…
+  expect(screen.getByText(i18n.t('form.suggest.searching'))).toBeInTheDocument();
+  expect(screen.queryByText(i18n.t('form.suggest.emptyClosed'))).not.toBeInTheDocument();
+
+  // …and once it has gone, until the answer comes.
+  await waitFor(() => {
+    expect(answer.asked).toBe('a320');
+  });
+  expect(screen.getByText(i18n.t('form.suggest.searching'))).toBeInTheDocument();
+  expect(screen.queryByText(i18n.t('form.suggest.emptyClosed'))).not.toBeInTheDocument();
+
+  // The answer offers it.
+  act(() => answer.release());
+  expect(await screen.findByText('A320 — Airbus A320')).toBeInTheDocument();
+  expect(screen.queryByText(i18n.t('form.suggest.searching'))).not.toBeInTheDocument();
+});
+
+test('a closed field says nothing matches once the answer has come and offers nothing, in words about any field', async () => {
+  const user = userEvent.setup();
+  const answer = { asked: null as string | null, release: () => {} };
+  const onAsked = (typed: string, release: () => void) => Object.assign(answer, { asked: typed, release });
+
+  const { i18n } = renderWithProviders(<SlowForm onAsked={onAsked} />, {
+    i18n: createTestI18n({ test: suggestLabels }),
+  });
+
+  const box = screen.getByRole('combobox', { name: 'Address' });
+  await user.click(box);
+  await user.type(box, 'zzzz');
+
+  // Asked once the typing stopped, and answered with nothing.
+  await waitFor(() => {
+    expect(answer.asked).toBe('zzzz');
+  });
+  act(() => answer.release());
+
+  const empty = await screen.findByText(i18n.t('form.suggest.emptyClosed'));
+  // ⚠️ The one sentence of every closed field was written for the menu editor, and the tours' aircraft types read it.
+  expect(empty.textContent).not.toMatch(/menu/i);
+  expect(i18n.t('form.suggest.emptyClosed', { lng: 'it' })).not.toMatch(/menu/i);
 });
 
 test('the generator still refuses a type it cannot draw', () => {

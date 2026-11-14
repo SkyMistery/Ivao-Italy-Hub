@@ -55,14 +55,18 @@ also where it serves `wwwroot/` from. `diagnostics/startup.txt` says where the r
 the newest thousand lines past two thousand. A `START` line says how long the start took (from the creation of the
 process to the moment it accepts requests), where the time went step by step, the memory, and what happened to the
 process before; a `STOP` line how long the process lived, how many requests it answered, when its first answer left
-and the memory; a `SIGNAL` line that the system asked it to stop. A start that says `!!` follows a process that died
+and the memory, and `in flight N` when requests were still running as the stop began; a `SIGNAL` line that the system
+asked it to stop. A start that says `!!` follows a process that died
 without closing. It holds no secret. The `START` line also says how much code the runtime compiled before the hub was
 ready (`jit`, and `(jit N)` inside each step) and how many connections and commands it sent to the database (`db`).
 
 `diagnostics/requests-YYYYMMDD.txt` has one tab separated line for every request that reached the hub that UTC day:
 the route pattern the hub declares (never the path that was asked, nor its query), the status, the total time and the
 time to the first byte, whether it was the first request of its process and how long after the process was created it
-arrived, and how long it waited on database commands, on opening connections and on outbound calls. Every day that is
+arrived, and how long it waited on database commands, on opening connections and on outbound calls. A data block's
+request names its type when the type is a registered one (`/api/blocks/data/networkStats`), and the last column,
+`others_n`, counts the other requests that ran at some moment of this one: with 0, the code compiled and the memory
+allocated, which are counted for the whole process, are the request's own. Every day that is
 over gets a `requests-YYYYMMDD-summary.txt` next to it (percentiles by route, cold apart from warm, the slowest ten),
 written by the first process of the next day that lives twenty seconds. Nothing in either names a person: no VID, no
 address, no user agent. Files are kept 14 days and a day stops growing at 20 MB; `Diagnostics:Requests:Enabled`,

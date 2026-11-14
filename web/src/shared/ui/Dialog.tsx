@@ -28,9 +28,11 @@ import { useTranslation } from 'react-i18next';
  * It is not `ConfirmDialog`, which asks a question and has no «X»: that one is an alert dialog, closed
  * by its two buttons.
  *
- * Two sizes. The ordinary one, as wide as a form. And `screen`, for one thing to look at — a picture at full screen
- * (design of the editor's phase 3, §5.3; the gallery's pictures in 3.11): as large as what it shows, up to the window less
- * a margin, with its title said to a screen reader and not drawn above the picture, which is what the dialog is about.
+ * Three sizes. The ordinary one, as wide as a form. `wide`, for a piece of work that needs the room the panel it opens
+ * from has not got — the grid of a table (design of the editor's phase 3, §5.1): up to 64 rem, never wider than the
+ * window less a margin. And `screen`, for one thing to look at — a picture at full screen (design of the editor's phase
+ * 3, §5.3; the gallery's pictures in 3.11): as large as what it shows, up to the window less a margin, with its title
+ * said to a screen reader and not drawn above the picture, which is what the dialog is about.
  */
 export function Dialog({
   trigger,
@@ -50,7 +52,7 @@ export function Dialog({
   footer?: ReactNode;
   /** The «X» at the top right, on unless a dialog closes some other way only. */
   closeButton?: boolean;
-  size?: 'default' | 'screen';
+  size?: 'default' | 'wide' | 'screen';
 }) {
   const { t } = useTranslation();
   const screen = size === 'screen';
@@ -70,7 +72,9 @@ export function Dialog({
               // on the corner of the picture. ⚠️ `p-[0.75rem]` and not `p-3`: Atmosphere's stylesheet has its own `.p-3`
               // in the same layer, read after ours, and it took the top back from `pt-12`.
               'w-max max-w-[calc(100vw-2rem)] gap-3 p-[0.75rem] pt-12 sm:max-w-[calc(100vw-2rem)]'
-            : 'sm:max-w-md'
+            : size === 'wide'
+              ? 'max-w-[calc(100vw-2rem)] sm:max-w-[min(64rem,calc(100vw-2rem))]'
+              : 'sm:max-w-md'
         }
       >
         <DialogHeader {...(screen ? { className: 'sr-only' } : {})}>

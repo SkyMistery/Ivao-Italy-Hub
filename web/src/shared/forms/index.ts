@@ -1,5 +1,6 @@
 export { SchemaForm } from './SchemaForm';
 export { LocaleFields } from './LocaleFields';
+export { LocaleTabs } from './LocaleTabs';
 export { ProblemAlert } from './ProblemAlert';
 export { useProblemDetails, describeProblem, languageNames, type ProblemState } from './useProblemDetails';
 export {

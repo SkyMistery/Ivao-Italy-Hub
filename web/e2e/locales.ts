@@ -289,6 +289,10 @@ interface CommonStrings {
       readonly next: string;
       readonly position: string;
     };
+    readonly table: {
+      readonly tools: { readonly paste: string };
+      readonly grid: { readonly open: string; readonly title: string; readonly apply: string };
+    };
     readonly callout: {
       readonly label: string;
       readonly fields: { readonly tone: string; readonly title: string; readonly text: string };

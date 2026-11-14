@@ -51,6 +51,8 @@ export function Suggest({
   suggestions,
   only,
   empty,
+  searchingText,
+  searching = false,
   onChange,
   onSearch,
 }: {
@@ -60,6 +62,13 @@ export function Suggest({
   /** True when the list is the whole of what the field accepts, and not only what it offers. */
   only: boolean;
   empty: string;
+  /**
+   * What the list says instead of `empty` while the answer to what was typed is still on its way: only a
+   * field that asks again (`onSearch`) has anything on its way.
+   */
+  searchingText?: string | undefined;
+  /** True while the caller's answer to the last search is on its way. */
+  searching?: boolean | undefined;
   onChange: (next: string) => void;
   /** Told what is being typed, after a pause, so the screen can go and ask for more. */
   onSearch?: ((typed: string) => void) | undefined;
@@ -102,13 +111,24 @@ export function Suggest({
   useEffect(() => {
     optionsNow.current = options;
   }, [options]);
+  // The same question, held as state as well: the list is drawn from it, and a caller asked a question
+  // whose answer changes nothing draws nothing again, so a ref alone would leave the list stale.
+  const [askedText, setAskedText] = useState<string | null>(null);
   const ask = useCallback(
     (text: string) => {
       asked.current = { text, options: optionsNow.current };
+      setAskedText(text);
       onSearch?.(text);
     },
     [onSearch],
   );
+
+  // ⚠️ Still searching is not "nothing matches" (#384). From a keystroke to the question there are three
+  // hundred milliseconds, and from the question to the answer as long as the server takes — more than
+  // three seconds on the test installation — and all the while the options on the screen are those of
+  // the question before. An empty list said "nothing matches" then, about a type the answer was about to
+  // offer, and whoever read it went away. Only a field that asks again has anything on its way.
+  const pending = onSearch !== undefined && searchingText !== undefined && (askedText !== typed || searching);
 
   useEffect(() => {
     if (onSearch === undefined || !open) {
@@ -390,7 +410,7 @@ export function Suggest({
           onValueChange={(next) => setLit(next === '' ? NOTHING_LIT : next)}
         >
           <CommandList ref={holdListbox}>
-            {matching.length === 0 ? <CommandEmpty>{empty}</CommandEmpty> : null}
+            {matching.length === 0 ? <CommandEmpty>{pending ? searchingText : empty}</CommandEmpty> : null}
 
             {[...groups].map(([heading, items]) => (
               <CommandGroup key={heading} {...(heading === '' ? {} : { heading })}>

@@ -17,6 +17,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
 import { boundsOf, greatCirclePath, trackPath, type GeoPoint } from './greatCircle';
+import { ROUTE_MAP_BOX } from './LazyRouteMap';
 import { holdProtocol, releaseProtocol } from './mapProtocol';
 
 /**
@@ -254,7 +255,7 @@ export function RouteMap({ legs, tracks, className, label }: RouteMapProps) {
       role="img"
       aria-label={label ?? t('map.label')}
       data-testid="route-map"
-      className={className ?? 'h-96 w-full overflow-hidden rounded-lg'}
+      className={className ?? ROUTE_MAP_BOX}
     />
   );
 }

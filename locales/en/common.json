@@ -156,7 +156,8 @@
     "choose": "Choose an option",
     "suggest": {
       "empty": "Nothing on the site matches. What you write is used as it is.",
-      "emptyClosed": "Nothing here matches. A menu entry leads to a page of this site, to one of its screens, or to a link of the library."
+      "emptyClosed": "Nothing in the list matches what you typed, and this field takes only one of its options.",
+      "searching": "Searching…"
     }
   },
   "list": {
@@ -166,7 +167,7 @@
     "total_other": "{{count}} rows",
     "empty": {
       "title": "Nothing here yet",
-      "description": "Everything this department creates will show up in this list.",
+      "description": "Whatever is added will show up in this list.",
       "noMatch": "No row matches that search."
     },
     "pages": {
@@ -1192,7 +1193,7 @@
     },
     "table": {
       "label": "Table",
-      "about": "A table of rows and columns of text, with a caption.",
+      "about": "A table of rows and columns of text, with a caption; pasted from a spreadsheet, imported from a file or written in a grid.",
       "fields": {
         "caption": "Caption",
         "columns": "Columns",
@@ -1200,14 +1201,53 @@
         "columns.align": "Alignment",
         "rows": "Rows",
         "rows.cells": "Cells",
-        "rows.cells.text": "Text"
+        "rows.cells.text": "Text",
+        "rowStyle": "How the rows look"
       },
       "options": {
         "columns.align": {
           "left": "Left",
           "center": "Centred",
           "right": "Right"
+        },
+        "rowStyle": {
+          "lines": "A line under each",
+          "striped": "Bands",
+          "plain": "Plain"
         }
+      },
+      "tools": {
+        "header": "The first row is the heading",
+        "paste": "Paste from Excel",
+        "fromFile": "Import a file",
+        "hint": "Copy the cells in Excel, Google Sheets or LibreOffice and paste, or import a CSV, XLSX or ODS file: the table is replaced, and undo puts it back. The text goes in the language on screen ({{language}}); the others stay to write.",
+        "create": "An empty table",
+        "rows": "Rows",
+        "columns": "Columns",
+        "make": "Create",
+        "replaced": "The table now has {{columns}} and {{rows}}.",
+        "columnCount_one": "one column",
+        "columnCount_other": "{{count}} columns",
+        "rowCount_one": "one row",
+        "rowCount_other": "{{count}} rows",
+        "clipboard": "The browser did not let the page read what was copied. Allow it, or import the sheet as a file.",
+        "empty": "There is nothing to make a table of.",
+        "tooLarge": "{{rows}} rows and {{columns}} columns: a table holds at most {{maxRows}} rows and {{maxColumns}} columns.",
+        "unreadable": "This file cannot be read as a sheet."
+      },
+      "grid": {
+        "open": "Edit in the grid",
+        "title": "The table",
+        "description": "A box per cell, a tab per language. Nothing changes on the page until you apply.",
+        "cells": "Headings and cells",
+        "heading": "Heading of column {{column}}",
+        "cell": "Row {{row}}, column {{column}}",
+        "addRow": "Add a row",
+        "addColumn": "Add a column",
+        "removeRow": "Remove row {{row}}",
+        "removeColumn": "Remove column {{column}}",
+        "none": "The table has no columns yet: add one.",
+        "apply": "Apply"
       }
     },
     "cardGrid": {

@@ -113,6 +113,15 @@ test('a CSV with semicolons and a real XLSX read the same', async () => {
   expect(xlsx.rows[0]?.releaseAt).toBe('2026-10-01T18:00:00.000Z');
 });
 
+test('a CSV in UTF-8 without its mark, as Google Sheets and LibreOffice write it, is read as UTF-8', async () => {
+  const csv = await readLegFile(
+    new Blob([new TextEncoder().encode('departure;arrival;aircraft\r\nEDDF;EDDM;Ä320\r\n')]),
+  );
+
+  expect(csv.problems).toEqual([]);
+  expect(csv.rows.map((row) => row.aircraftTypes)).toEqual([['Ä320']]);
+});
+
 test('a workbook of tours opens on the first sheet with legs, and another sheet can be asked for', async () => {
   const book = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet([['Summary'], ['EDDF', 12]]), 'Summary');

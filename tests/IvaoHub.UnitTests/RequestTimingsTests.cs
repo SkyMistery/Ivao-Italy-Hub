@@ -1,3 +1,4 @@
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Services;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -33,7 +34,7 @@ public sealed class RequestTimingsTests : IDisposable
         var text = line.Format();
 
         Assert.Equal(
-            "2026-10-18 09:28:00.473Z\t2491177\t1\t6420\tGET\t200\t/api/content/public/{kind}/{slug}\t408\t400\t3\t45\t1\t30\t0\t0\t120\t800\t2048",
+            "2026-10-18 09:28:00.473Z\t2491177\t1\t6420\tGET\t200\t/api/content/public/{kind}/{slug}\t408\t400\t3\t45\t1\t30\t0\t0\t120\t800\t2048\t-",
             text);
         Assert.Equal(RequestTimingsLine.Columns.Count, text.Split('\t').Length);
         Assert.Equal(line with { Total = TimeSpan.FromMilliseconds(408), FirstByte = TimeSpan.FromMilliseconds(400) }, RequestTimingsLine.Parse(text));
@@ -46,6 +47,61 @@ public sealed class RequestTimingsTests : IDisposable
 
         Assert.Equal("-", text.Split('\t')[8]);
         Assert.Null(RequestTimingsLine.Parse(text)!.FirstByte);
+    }
+
+    // Issue #402: others_n is the last column, so the eighteen before it did not move.
+    [Fact]
+    public void TheOtherRequestsItOverlappedAreTheLastColumnAndReadBack()
+    {
+        var alone = Line(Now) with { Others = 0 };
+        var crowded = Line(Now) with { Others = 7 };
+
+        Assert.Equal("others_n", RequestTimingsLine.Columns[^1]);
+        Assert.EndsWith("\t2048\t0", alone.Format(), StringComparison.Ordinal);
+        Assert.EndsWith("\t2048\t7", crowded.Format(), StringComparison.Ordinal);
+        Assert.Equal(7, RequestTimingsLine.Parse(crowded.Format())!.Others);
+        Assert.Equal(0, RequestTimingsLine.Parse(alone.Format())!.Others);
+    }
+
+    // Issue #402: the day of the upgrade holds lines of both versions, and its summary reads them all.
+    [Fact]
+    public void ALineWrittenBeforeTheColumnOfTheOthersStillReads()
+    {
+        const string before =
+            "2026-10-18 09:28:00.473Z\t2491177\t1\t6420\tGET\t200\t/api/me\t408\t400\t3\t45\t1\t30\t0\t0\t120\t800\t2048";
+
+        var line = RequestTimingsLine.Parse(before);
+
+        Assert.NotNull(line);
+        Assert.Equal("/api/me", line.Route);
+        Assert.Equal(2048, line.AllocatedKb);
+        Assert.Null(line.Others);
+        Assert.EndsWith("\t2048\t-", line.Format(), StringComparison.Ordinal);
+    }
+
+    // Issue #402: the most asked route says which block it was, with the name the registry holds.
+    [Fact]
+    public void ADataBlockRouteNamesTheRegisteredType() =>
+        Assert.Equal("/api/blocks/data/networkStats", RequestTimingsLine.DataBlockRoute(CoreBlocks.NetworkStats));
+
+    // Issue #402: two requests together, then a third while the first still runs: each counts the ones it met.
+    [Fact]
+    public void ARequestCountsTheOthersRunningWhenItBeganAndTheOnesThatBeganWhileItRan()
+    {
+        var running = new RequestsInFlight();
+
+        var first = running.Begin();
+        var second = running.Begin();
+        Assert.Equal(2, running.Running);
+        Assert.Equal(1, running.End(second));
+        var third = running.Begin();
+        Assert.Equal(2, running.End(first));
+        Assert.Equal(1, running.End(third));
+        Assert.Equal(0, running.Running);
+
+        var alone = running.Begin();
+        Assert.Equal(4, alone.Number);
+        Assert.Equal(0, running.End(alone));
     }
 
     [Theory]

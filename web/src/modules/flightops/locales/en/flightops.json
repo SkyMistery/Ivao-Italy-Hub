@@ -336,6 +336,7 @@
     "reportSessionCount": "Choose one flight, or two when it ended somewhere else.",
     "reportSessionUnknown": "This flight is not among yours in the report window.",
     "reportSessionClaimed": "This flight is already in another report.",
+    "reportBusy": "Another report of yours is being sent right now: try again in a moment.",
     "trackerUnavailable": "The tracker could not be reached. Try again in a few minutes.",
     "reportNeverTookOff": "The tracker shows no take-off for this flight.",
     "reportFlightDeparture": "The flight did not depart from the leg's departure airport.",

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -19,6 +20,7 @@ using IvaoHub.Modules.FlightOps.Threads;
 using IvaoHub.Modules.FlightOps.Tours;
 using IvaoHub.Modules.FlightOps.Weather;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace IvaoHub.Modules.FlightOps.Pireps;
 
@@ -53,7 +55,8 @@ public sealed class PirepSubmission(
     FlightChecks checks,
     RatingVocabulary ratings,
     ICurrentUser currentUser,
-    IClock clock)
+    IClock clock,
+    ILogger<PirepSubmission> logger)
 {
     /// <summary>The snapshots as the columns hold them: the web's names, enums by name, and a translated text as the map of its languages.</summary>
     private static readonly JsonSerializerOptions ColumnJson = new(JsonSerializerDefaults.Web)
@@ -131,9 +134,25 @@ public sealed class PirepSubmission(
         ];
     }
 
+    /// <summary>The prefix of the lock a pilot's send holds (issue #328, item 6); the database and the VID follow.</summary>
+    public const string SendLockPrefix = "fo-send:";
+
+    /// <summary>How long a send waits for the pilot's other send before it is refused.</summary>
+    private static readonly TimeSpan SendLockWait = TimeSpan.FromSeconds(30);
+
+    /// <summary>The name of the lock of a pilot's sends, in the database <paramref name="databaseName"/>.</summary>
+    public static string SendLockName(string databaseName, int vid) =>
+        DatabaseLock.NameFor(SendLockPrefix, string.Create(CultureInfo.InvariantCulture, $"{databaseName}:{vid}"));
+
     /// <summary>
     /// Sends a report, or sends again one the validator returned (<paramref name="correcting"/>, tracked, with its flights).
     /// Returns the report written, or the refusals field by field.
+    /// <para>One send of a pilot at a time (issue #328, item 6): the checks of the leg and of the day read the pilot's reports
+    /// and the save writes one, so two sends at once each found the other missing — two reports pending on one leg, the daily
+    /// limit passed. A lock of the database on the pilot (the core's <see cref="DatabaseLock"/>, as <c>ModuleGrants</c> takes
+    /// it) is held from the first read to the save, on a connection of its own outside the pool, one per send under way. Still
+    /// held by the other send after the wait, a refusal to send again (<c>flightops:errors.reportBusy</c>); one the database
+    /// cannot be asked for goes ahead without it, written in the log, and the unique claim of the session still holds.</para>
     /// </summary>
     public async Task<(Pirep? Pirep, IReadOnlyDictionary<string, string[]>? Problems)> SendAsync(
         PilotTour pilot,
@@ -144,6 +163,31 @@ public sealed class PirepSubmission(
         ArgumentNullException.ThrowIfNull(pilot);
         ArgumentNullException.ThrowIfNull(payload);
 
+        var vid = currentUser.Vid;
+        await using var held = await DatabaseLock.TakeAsync(
+            database.Database.GetConnectionString(),
+            name => SendLockName(name, vid),
+            SendLockWait,
+            cancellationToken);
+        if (held.Busy)
+        {
+            return (null, new Refusals().Add("tour", "flightops:errors.reportBusy").Errors);
+        }
+
+        if (!held.Held)
+        {
+            logger.LogWarning(held.Failure, "The send of pilot {Vid} goes ahead without its lock: {Refusal}.", vid, held.Refusal);
+        }
+
+        return await SendHeldAsync(pilot, payload, correcting, cancellationToken);
+    }
+
+    private async Task<(Pirep? Pirep, IReadOnlyDictionary<string, string[]>? Problems)> SendHeldAsync(
+        PilotTour pilot,
+        PirepWriteDto payload,
+        Pirep? correcting,
+        CancellationToken cancellationToken)
+    {
         var problems = new Refusals();
         var now = clock.UtcNow;
         var vid = currentUser.Vid;
@@ -198,9 +242,26 @@ public sealed class PirepSubmission(
             problems.Add("diversionIcao", "errors.required");
         }
 
-        if (payload.IsDiversion && payload.DiversionReason is null)
+        // A reason the hub does not know is no reason (issue #328, item 11).
+        if (payload.IsDiversion && (payload.DiversionReason is not { } reason || !Enum.IsDefined(reason)))
         {
             problems.Add("diversionReason", "errors.required");
+        }
+
+        // The lengths the columns hold, before the tracker is asked (issue #328, item 4): never a cut, never a 500.
+        foreach (var (field, value, longest) in new[]
+        {
+            ("sid", payload.Sid, PirepValidation.MaxProcedureLength),
+            ("star", payload.Star, PirepValidation.MaxProcedureLength),
+            ("approach", payload.Approach, PirepValidation.MaxProcedureLength),
+            ("diversionNote", payload.IsDiversion ? payload.DiversionNote : null, PirepValidation.MaxTextLength),
+            ("pilotRemarks", payload.PilotRemarks, PirepValidation.MaxTextLength),
+        })
+        {
+            if (value?.Trim().Length > longest)
+            {
+                problems.Add(field, "errors.text.tooLong");
+            }
         }
 
         var contacts = payload.AtcContacts ?? [];
@@ -215,9 +276,12 @@ public sealed class PirepSubmission(
             return (null, problems.Errors);
         }
 
-        // The flights, read from the tracker: theirs, in the window, not claimed by another report.
+        // The flights, read from the tracker: theirs, in the window, not claimed by another report. A correction may keep the
+        // flights the report already has, however old (Carmine, 21 October 2026, on issue #328 item 7): the window is for a
+        // flight brought now, and correcting the SID must not cost flying the leg again.
         var from = now.AddDays(-tour.ReportWindowDays);
-        var flights = await FlightsAsync(ids, vid, from, now, correctingId, checkClaims: true, problems, cancellationToken);
+        var kept = correcting?.Flights.Select(flight => (flight.TrackerSessionId, flight.TakeoffAt)).ToList() ?? [];
+        var flights = await FlightsAsync(ids, vid, SearchFrom(from, kept), now, correctingId, checkClaims: true, problems, cancellationToken);
         if (flights is null)
         {
             return (null, problems.Errors);
@@ -259,8 +323,9 @@ public sealed class PirepSubmission(
             }
         }
 
-        // The window, the release and the close, always in UTC (Carmine, 15 September 2026).
-        if (takeoff < from)
+        // The window, the release and the close, always in UTC (Carmine, 15 September 2026). The window, on the flights the
+        // report did not have already.
+        if (flights.Any(flight => flight.TakeoffAt < from && !kept.Any(own => own.TrackerSessionId == flight.Session.Id)))
         {
             problems.Add("sessionIds", "flightops:errors.reportOutsideWindow");
         }
@@ -487,10 +552,22 @@ public sealed class PirepSubmission(
         }
 
         var now = clock.UtcNow;
+
+        // The flights of the pilot's report waiting for a correction on this tour are read as the correction reads them: the
+        // form proposes the controllers of a flight it may keep, however old (issue #328, item 7).
+        var vid = currentUser.Vid;
+        var kept = await database.PirepFlights.AsNoTracking()
+            .Where(flight => database.Pireps.Any(report => report.Id == flight.PirepId
+                && report.TourId == pilot.Tour.Id
+                && report.Vid == vid
+                && report.Status == PirepStatus.ToModify))
+            .Select(flight => new { flight.TrackerSessionId, flight.TakeoffAt })
+            .ToListAsync(cancellationToken);
+
         var flights = await FlightsAsync(
             sessionIds,
-            currentUser.Vid,
-            now.AddDays(-pilot.Tour.ReportWindowDays),
+            vid,
+            SearchFrom(now.AddDays(-pilot.Tour.ReportWindowDays), [.. kept.Select(flight => (flight.TrackerSessionId, flight.TakeoffAt))]),
             now,
             correctingId: 0,
             checkClaims: false,
@@ -992,6 +1069,13 @@ public sealed class PirepSubmission(
 
     private static bool IsDuplicate(DbUpdateException exception) =>
         exception.InnerException?.Message.Contains("Duplicate", StringComparison.OrdinalIgnoreCase) == true;
+
+    /// <summary>
+    /// Where the tracker is searched from: the start of the window, or earlier when a flight the report keeps took off before
+    /// it — a day earlier than that take-off, since the tracker searches by the start of the session, which comes before.
+    /// </summary>
+    private static DateTime SearchFrom(DateTime windowFrom, IReadOnlyList<(long TrackerSessionId, DateTime TakeoffAt)> kept) =>
+        kept.Count == 0 ? windowFrom : new[] { windowFrom, kept.Min(flight => flight.TakeoffAt).AddDays(-1) }.Min();
 
     private static string? Upper(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim().ToUpperInvariant();
 

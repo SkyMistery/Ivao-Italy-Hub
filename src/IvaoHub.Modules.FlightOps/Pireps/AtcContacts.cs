@@ -245,6 +245,12 @@ public static partial class AtcProposal
             problems.Add(("exemptions", "flightops:errors.exemptionNotContacted"));
         }
 
+        // A kind the hub does not know is not stored (issue #328, item 11).
+        if (exemptions.Any(exemption => !Enum.IsDefined(exemption.Kind)))
+        {
+            problems.Add(("exemptions", "errors.required"));
+        }
+
         if (exemptions.Any(exemption => exemption.Kind == ExemptionKind.Other && string.IsNullOrWhiteSpace(exemption.Note)))
         {
             problems.Add(("exemptions", "flightops:errors.exemptionNoteRequired"));

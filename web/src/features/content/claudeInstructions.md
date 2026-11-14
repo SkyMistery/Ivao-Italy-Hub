@@ -85,6 +85,11 @@ A page is a list of **sections**; a section holds **blocks** and may hold **rows
   gallery is printed as a grid. Each picture has its own `alt` and `caption`, like a picture block: write the
   alternative text of every picture that says something. A click opens the pictures at full screen, one after another,
   unless `lightbox` is `false`. A gallery of the draft without `layout` is a grid: leave it so unless asked.
+- A **table** (`table`) has `columns`, each with its heading (`label`) and its `align`, and `rows`, each with one cell
+  per column, in the same order: a row never has more cells than the table has columns. Every heading and every cell
+  is written in every language, an empty cell too — a cell with nothing to say takes a dash. `rowStyle` tells the rows
+  apart: `lines` (the default) a line under each, `striped` a band on every other one, `plain` nothing. A table of the
+  draft without `rowStyle` has lines: leave it so unless asked.
 - Every block has `type` and `version`, both exactly as the block's entry below gives them, and `props`, which must
   satisfy that block's JSON Schema.
 - A block **already in the draft** keeps `renderMode`, `span` and `frozen` exactly as they are: they are choices made in

@@ -16,6 +16,7 @@
       "title": "Troppe richieste in poco tempo: aspetta un minuto e riprova"
     },
     "required": "Questo campo è obbligatorio.",
+    "invalid": "Questo valore non è valido.",
     "localized": {
       "missing": "Compila questo campo in tutte le lingue della divisione.",
       "missingIn": "Manca ancora in: {{locales}}."

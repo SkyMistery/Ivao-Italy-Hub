@@ -29,6 +29,11 @@ public sealed class TourCompletion(
     /// <summary>
     /// Called with the report as it is about to be saved accepted, before the save: what it completes is written in the same
     /// save. Does nothing for any other outcome, or when the tour was already completed.
+    /// <para>The caller holds a transaction under READ COMMITTED until that save is committed (issue #328, item 3): the pilot's
+    /// enrolment on the tour of the first level — the container of a subtour, which the first send enrols too — is locked
+    /// first, so two acceptances of the same pilot on the same tour, or on two subtours of one container, are decided one after
+    /// the other, and the second reads the first one accepted. Before, each read the other still in review, and neither
+    /// completed the tour nor signalled its award.</para>
     /// </summary>
     public async Task RecordAsync(Pirep pirep, CancellationToken cancellationToken)
     {
@@ -38,6 +43,15 @@ public sealed class TourCompletion(
         {
             return;
         }
+
+        if (database.Database.CurrentTransaction is null)
+        {
+            throw new InvalidOperationException("The completion of a tour is recorded inside the transaction of the acceptance.");
+        }
+
+        await database.Database.ExecuteSqlAsync(
+            $"SELECT id FROM fo_enrolments WHERE tour_id = {pirep.ScopeTourId} AND vid = {pirep.Vid} FOR UPDATE",
+            cancellationToken);
 
         var tour = await CrudSource.BackOffice<Tour>(database).AsNoTracking().FirstAsync(row => row.Id == pirep.TourId, cancellationToken);
         var enrolment = await database.Enrolments.FirstOrDefaultAsync(row => row.TourId == tour.Id && row.Vid == pirep.Vid, cancellationToken);

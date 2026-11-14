@@ -16,6 +16,7 @@
       "title": "Too many requests in a short time: wait a minute and try again"
     },
     "required": "This field is required.",
+    "invalid": "This value is not valid.",
     "localized": {
       "missing": "Fill this field in for every language of the division.",
       "missingIn": "Still missing in: {{locales}}."

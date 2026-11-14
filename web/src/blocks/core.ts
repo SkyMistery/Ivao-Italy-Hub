@@ -417,11 +417,14 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
         { cells: [{ text: { en: 'Monday', it: 'Lunedì' } }, { text: { en: '18:00z', it: '18:00z' } }] },
         { cells: [{ text: { en: 'Friday', it: 'Venerdì' } }, { text: { en: '20:00z', it: '20:00z' } }] },
       ],
+      rowStyle: 'lines',
     },
     editorLabelKey: 'blocks.table.label',
     group: 'content',
     subgroup: 'tables',
     icon: Table,
+    // The rows are written in a grid of their own, pasted, imported or created — not field by field (PR 3.12).
+    editedAsGrid: true,
   },
 
   // --- Layout and containers -------------------------------------------------------------------

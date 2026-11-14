@@ -101,7 +101,7 @@ export function AircraftProfileForm() {
   const profile = useQuery({ ...profileQuery(Number(id)), enabled: !isNew }).data ?? null;
   const save = useSaveProfile(isNew ? null : Number(id));
   const remove = useDeleteProfile();
-  const { suggestions, onSuggestSearch } = useTypeSuggestions();
+  const { suggestions, onSuggestSearch, suggestSearching } = useTypeSuggestions();
   const department = writableDepartments(bootstrap, TOURS_MANAGE_AIRCRAFT)[0];
 
   const back = () => void navigate({ href: PROFILES });
@@ -141,6 +141,7 @@ export function AircraftProfileForm() {
         locales={bootstrap.division.locales}
         labels="flightops:aircraftProfiles"
         onSuggestSearch={onSuggestSearch}
+        suggestSearching={suggestSearching}
         onSubmit={async (values) => {
           await save.mutateAsync(values);
           back();
@@ -206,7 +207,7 @@ export function AircraftGroupForm() {
   const group = useQuery({ ...groupQuery(Number(id)), enabled: !isNew }).data ?? null;
   const save = useSaveGroup(isNew ? null : Number(id));
   const remove = useDeleteGroup();
-  const { suggestions, onSuggestSearch } = useTypeSuggestions();
+  const { suggestions, onSuggestSearch, suggestSearching } = useTypeSuggestions();
   const department = writableDepartments(bootstrap, TOURS_MANAGE_AIRCRAFT)[0];
 
   const back = () => void navigate({ href: GROUPS });
@@ -247,6 +248,7 @@ export function AircraftGroupForm() {
         locales={locales}
         labels="flightops:aircraftGroups"
         onSuggestSearch={onSuggestSearch}
+        suggestSearching={suggestSearching}
         onSubmit={async (values) => {
           await save.mutateAsync(values);
           back();
