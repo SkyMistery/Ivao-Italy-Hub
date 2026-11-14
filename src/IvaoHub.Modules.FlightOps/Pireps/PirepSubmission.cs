@@ -20,6 +20,7 @@ using IvaoHub.Modules.FlightOps.Threads;
 using IvaoHub.Modules.FlightOps.Tours;
 using IvaoHub.Modules.FlightOps.Weather;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace IvaoHub.Modules.FlightOps.Pireps;
 
@@ -54,7 +55,8 @@ public sealed class PirepSubmission(
     FlightChecks checks,
     RatingVocabulary ratings,
     ICurrentUser currentUser,
-    IClock clock)
+    IClock clock,
+    ILogger<PirepSubmission> logger)
 {
     /// <summary>The snapshots as the columns hold them: the web's names, enums by name, and a translated text as the map of its languages.</summary>
     private static readonly JsonSerializerOptions ColumnJson = new(JsonSerializerDefaults.Web)
@@ -148,8 +150,9 @@ public sealed class PirepSubmission(
     /// <para>One send of a pilot at a time (issue #328, item 6): the checks of the leg and of the day read the pilot's reports
     /// and the save writes one, so two sends at once each found the other missing — two reports pending on one leg, the daily
     /// limit passed. A lock of the database on the pilot (the core's <see cref="DatabaseLock"/>, as <c>ModuleGrants</c> takes
-    /// it) is held from the first read to the save. Still held by the other send after the wait, a refusal to send again; one
-    /// the database cannot be asked for goes ahead without it, and the unique claim of the session still holds.</para>
+    /// it) is held from the first read to the save, on a connection of its own outside the pool, one per send under way. Still
+    /// held by the other send after the wait, a refusal to send again (<c>flightops:errors.reportBusy</c>); one the database
+    /// cannot be asked for goes ahead without it, written in the log, and the unique claim of the session still holds.</para>
     /// </summary>
     public async Task<(Pirep? Pirep, IReadOnlyDictionary<string, string[]>? Problems)> SendAsync(
         PilotTour pilot,
@@ -169,6 +172,11 @@ public sealed class PirepSubmission(
         if (held.Busy)
         {
             return (null, new Refusals().Add("tour", "flightops:errors.reportBusy").Errors);
+        }
+
+        if (!held.Held)
+        {
+            logger.LogWarning(held.Failure, "The send of pilot {Vid} goes ahead without its lock: {Refusal}.", vid, held.Refusal);
         }
 
         return await SendHeldAsync(pilot, payload, correcting, cancellationToken);
