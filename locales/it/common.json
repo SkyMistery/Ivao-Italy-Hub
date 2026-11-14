@@ -1388,7 +1388,8 @@
       },
       "hints": {
         "title": "Sopra le domande. Lascialo vuoto quando sopra il blocco c'è già un titolo.",
-        "items.answer": "Testo con la formattazione: anche più paragrafi e un elenco. Una risposta contiene testo, mai altri blocchi."
+        "items.answer": "Testo con la formattazione: anche più paragrafi e un elenco. Una risposta contiene testo, mai altri blocchi.",
+        "allowMultiple": "Solo quando le risposte partono chiuse o con la prima aperta: con tutte aperte, ne restano aperte più di una comunque."
       }
     },
     "testimonial": {

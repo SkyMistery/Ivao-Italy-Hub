@@ -1388,7 +1388,8 @@
       },
       "hints": {
         "title": "Above the questions. Leave it empty when a heading already stands above the block.",
-        "items.answer": "Text with formatting: several paragraphs and a list too. An answer holds text, never other blocks."
+        "items.answer": "Text with formatting: several paragraphs and a list too. An answer holds text, never other blocks.",
+        "allowMultiple": "Only when the answers start closed or with the first one open: with every answer open, several stay open anyway."
       }
     },
     "testimonial": {
