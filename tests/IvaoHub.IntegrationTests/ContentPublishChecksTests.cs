@@ -272,6 +272,56 @@ public sealed class ContentPublishChecksTests(MariaDbFixture mariaDb) : IAsyncLi
         Assert.Equal(ContentPublishService.LinkNowhereKey, errors.GetProperty(Link)[0].GetString());
     }
 
+    [Fact]
+    public async Task PublicationsOfOnePageAtOnceAreEachAPublicationOrAConflictAndNeverAFault()
+    {
+        // #321, point 4: the next version is MAX + 1, read before the transaction, against a unique index. Two at once took
+        // the same number and the second was a 500 from the index; it is a 409, as a stale row version is.
+        var token = TestContext.Current.CancellationToken;
+        var page = await WriteAsync(Visibility.Public, Text("Insieme."), token);
+
+        var answers = await Task.WhenAll(Enumerable.Range(0, 6).Select(_ => PublishAsync(page.Id, token)));
+        var statuses = answers.Select(answer => answer.StatusCode).ToList();
+        foreach (var answer in answers)
+        {
+            answer.Dispose();
+        }
+
+        Assert.All(statuses, status => Assert.Contains(status, new[] { HttpStatusCode.OK, HttpStatusCode.Conflict }));
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        var versions = await database.ContentVersions.AsNoTracking()
+            .Where(version => version.ContentId == page.Id)
+            .Select(version => version.Version)
+            .ToListAsync(token);
+
+        Assert.Equal(statuses.Count(status => status == HttpStatusCode.OK), versions.Count);
+        Assert.Equal(Enumerable.Range(1, versions.Count), versions.Order());
+    }
+
+    [Fact]
+    public async Task NewPagesOnOneFreeAddressAtOnceAreOnePageAndTheRestRefusedNeverAFault()
+    {
+        // #321, point 4: the address is checked free, then inserted. Two at once both found it free, and the second was a
+        // 500 from the unique index; it is the "taken" refusal when the check sees the first, and a 409 when it does not.
+        var token = TestContext.Current.CancellationToken;
+        var slug = $"race-{Guid.NewGuid():N}"[..20];
+
+        var answers = await Task.WhenAll(Enumerable.Range(0, 6).Select(_ =>
+            SendAsync(HttpMethod.Post, ContentEndpoints.Pattern, Payload(Text("Uno solo."), slug), token)));
+        var statuses = answers.Select(answer => answer.StatusCode).ToList();
+        foreach (var answer in answers)
+        {
+            answer.Dispose();
+        }
+
+        Assert.All(
+            statuses,
+            status => Assert.Contains(status, new[] { HttpStatusCode.Created, HttpStatusCode.BadRequest, HttpStatusCode.Conflict }));
+        Assert.Single(statuses, HttpStatusCode.Created);
+    }
+
     /// <summary>The home leads to <c>/start</c>, a file the seed reads after it: seeding has to get the two out all the same.</summary>
     [Fact]
     public async Task TheSeededHomeComesOutThoughThePageItLeadsToIsSeededAfterIt()
