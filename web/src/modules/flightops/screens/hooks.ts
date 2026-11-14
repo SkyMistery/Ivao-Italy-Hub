@@ -32,7 +32,7 @@ export function useListSearch() {
   };
 }
 
-/** The types a field offers, asked again as the text changes. */
+/** The types a field offers, asked again as the text changes, and whether the answer is still on its way (#384). */
 export function useTypeSuggestions() {
   const [typed, setTyped] = useState('');
   const types = useQuery({ ...aircraftTypesQuery(typed), placeholderData: keepPreviousData });
@@ -42,7 +42,11 @@ export function useTypeSuggestions() {
     label: `${type.icaoCode} — ${[type.manufacturer, type.model].filter(Boolean).join(' ')}`,
   }));
 
-  return { suggestions, onSuggestSearch: (_field: string, text: string) => setTyped(text) };
+  return {
+    suggestions,
+    onSuggestSearch: (_field: string, text: string) => setTyped(text),
+    suggestSearching: types.isFetching,
+  };
 }
 
 /**

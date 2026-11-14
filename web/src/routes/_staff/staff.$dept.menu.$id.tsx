@@ -72,7 +72,8 @@ function MenuItemForm() {
   // the address", then "lock it", so that every address leaving the site lives in `cms_links` and
   // moving the forum is one row rather than a hunt through the site. The list itself is the site's,
   // read in one place since PR 3.0a (`features/content/siteAddresses.ts`): pages, screens, links.
-  const addresses = asSuggestions(useSiteAddresses(typed));
+  const site = useSiteAddresses(typed);
+  const addresses = asSuggestions(site.addresses);
 
   const create = useCreateMenuItem();
   const update = useUpdateMenuItem(Number(id));
@@ -123,6 +124,7 @@ function MenuItemForm() {
             setTyped(text);
           }
         }}
+        suggestSearching={site.searching}
         submitLabel={t('common.save')}
         secondaryAction={
           <Button asChild variant="ghost">

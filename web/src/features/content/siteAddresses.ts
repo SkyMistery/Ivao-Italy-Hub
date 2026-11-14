@@ -208,14 +208,18 @@ export function useAddressesToLinkTo(wanted: boolean): readonly SiteAddress[] {
  * engine — so a site with more pages than that has pages no list in hand can offer: what is typed is a
  * question to the server rather than a filter over rows already read (decided 9 September 2026).
  * `keepPreviousData` so the list does not blink empty between a keystroke and the answer: an empty
- * popover reads as "nothing matches", which is the one thing it must not say while asking.
+ * popover reads as "nothing matches", which is the one thing it must not say while asking. And
+ * `searching` while either answer is on its way, so that a list the old page leaves empty says so (#384).
  */
-export function useSiteAddresses(typed = ''): SiteAddress[] {
+export function useSiteAddresses(typed = ''): { addresses: SiteAddress[]; searching: boolean } {
   const { t } = useTranslation();
   const read = useLocalized();
 
   const pages = useQuery({ ...menuDestinationPagesQuery(typed), placeholderData: keepPreviousData });
   const links = useQuery({ ...activeLinksQuery(typed), placeholderData: keepPreviousData });
 
-  return siteAddresses(pagesOfTheMenu(pages.data), links.data, t, read);
+  return {
+    addresses: siteAddresses(pagesOfTheMenu(pages.data), links.data, t, read),
+    searching: pages.isFetching || links.isFetching,
+  };
 }
