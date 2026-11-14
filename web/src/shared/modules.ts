@@ -149,6 +149,21 @@ export interface BlockRegistration {
    */
   readonly carriesSource?: boolean;
   /**
+   * Whether the block's rows are written in a grid rather than in the generated form: the table, and only the table
+   * (design of the editor's phase 3, §5.1; Carmine's answer 1 of 31 October 2026).
+   *
+   * ⚠️ The second declared exception to the form generator, beside `carriesSource`, and not a second editor. In a panel
+   * 19 rem wide, a table of five columns cannot be written field by field; so the panel opens a wide dialog with a box
+   * per cell — and pastes from a spreadsheet, imports a file or makes an empty table of N × M — and writes the **same**
+   * `props` through the same `onApplyProps`. The generated form stays under it for the columns, the caption and the
+   * style of the rows, and carries `rows` without drawing it.
+   *
+   * It names a shape and not a wish: the block's props are `columns[] { label, align }` and `rows[] { cells[] { text } }`,
+   * every text translated — the core's `table`. A block of another shape that declared it would be drawn a grid of
+   * nothing.
+   */
+  readonly editedAsGrid?: boolean;
+  /**
    * Whether the block may stand on the left, in the middle or on the right of its column — the `align` of its envelope
    * (design of the editor's phase 3, §5.6). Only where it means something: a block that takes the whole column already,
    * a table or a grid of cards, has nothing to move, and its panel offers no choice.

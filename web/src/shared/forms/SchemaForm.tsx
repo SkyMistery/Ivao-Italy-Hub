@@ -66,6 +66,8 @@ interface FormEnvironment {
    * of filtering in memory a page of rows it already downloaded.
    */
   onSuggestSearch?: ((field: string, typed: string) => void) | undefined;
+  /** True while the answer to the last `onSuggestSearch` is on its way (#384). */
+  suggestSearching?: boolean | undefined;
   /** What a `creatable` field draws under its boxes to make a new value, and tick it (`choose`). */
   createChoice?: ((field: string, choose: (value: string) => void) => React.ReactNode) | undefined;
   /** How many times the form has taken the row again (`useNewerRow`). */
@@ -100,6 +102,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   uploadMedia,
   division,
   onSuggestSearch,
+  suggestSearching,
   createChoice,
 }: {
   schema: z.ZodType<TValues, TValues>;
@@ -163,6 +166,11 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
    */
   onSuggestSearch?: (field: string, typed: string) => void;
   /**
+   * True while the answer to the last `onSuggestSearch` is on its way: an empty list then says it is
+   * searching, not that nothing matches (#384). The screen knows, because it is the one asking.
+   */
+  suggestSearching?: boolean;
+  /**
    * The eighth extension of the generator (#364): under a `multi` field annotated `creatable`, what
    * the screen draws to make a new value — a button and its dialog — handed `choose`, which ticks the
    * new value in the field. Called with the field's path, so one screen can serve several fields. A
@@ -188,6 +196,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
     uploadMedia,
     division,
     onSuggestSearch,
+    suggestSearching,
     createChoice,
     rowsTaken,
   };
@@ -736,6 +745,8 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
                 suggestions={node.suggestions}
                 only={node.only}
                 empty={t(node.only ? 'form.suggest.emptyClosed' : 'form.suggest.empty')}
+                searchingText={t('form.suggest.searching')}
+                searching={env.suggestSearching}
                 onChange={field.onChange}
                 {...(env.onSuggestSearch === undefined
                   ? {}

@@ -330,10 +330,11 @@ there is no language, so the pseudonym would stay a number. Like every column, i
 when the server declares it in `CrudOptions.Sortable`, and then it sorts by the name, which is what
 the cell shows.
 
-An empty list says the core's sentence under its title, which speaks of what a department creates.
-A list whose rows are not a department's — a module's, since modules do not belong to departments —
-says its own with `emptyDescription`, a sentence of its language file; `emptyAction` still offers
-what to do next.
+An empty list says the core's sentence under its title, that whatever is added will show up there:
+it names nobody who adds, so it is true of every list, a department's or a module's, and to whoever
+only reads it. A list that has something more precise to say — when its rows come, where they come
+from — says its own with `emptyDescription`, a sentence of its language file; `emptyAction` still
+offers what to do next.
 
 A column can be written in place: `col.number('sort', { editable: true })` draws a field in the cell
 and `col.badge('visibility', 'content', { editable: ['Public', 'Members', 'Staff'] })` a select — a badge cannot
@@ -734,8 +735,13 @@ would check it.
 Publication reads every `href` and every link of a piece of Markdown, without a schema. An address
 that starts with `/` has to arrive: a screen, a first segment the application or a module answers for,
 or a content online. And it has to arrive for the readers of the page: a page for everybody does not
-lead to a page for the staff. An address of somewhere else is not checked, and a draft is free to point
-at a page that comes out later.
+lead to a page for the staff. Where an address of somewhere else leads is not checked, and a draft is free
+to point at a page that comes out later.
+
+What an address may look like is checked earlier, on every save: nothing yet, a path that starts with a
+single `/`, an anchor (`#…`), or a whole address `http://`, `https://`, `mailto:` or `tel:`. Anything else
+— `javascript:`, `//elsewhere`, a relative `about/team` — is refused next to the field
+(`errors.url.unsafe`), and publication refuses it too on a page saved before the rule.
 
 ### How a block sits on a dashboard
 

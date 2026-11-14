@@ -1,3 +1,5 @@
+using System.Net;
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Services;
 using Xunit;
 
@@ -70,6 +72,41 @@ public sealed class RequestTimingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.DoesNotContain("member", text, StringComparison.Ordinal);
         Assert.DoesNotContain("SecretAgent", text, StringComparison.Ordinal);
         Assert.DoesNotContain("203.0.113.77", text, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Issue #402: the most asked route says which block it was, and only a name the code registered ever reaches the file:
+    /// a type nobody registered, shaped like a VID, stays the pattern.
+    /// </summary>
+    [Fact]
+    public async Task ADataBlockLineNamesItsRegisteredTypeAndNeverWhatWasAsked()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var host = _factory.WithWebHostBuilder(builder => builder
+            .UseSetting("Diagnostics:Requests:Enabled", "true")
+            .UseSetting("Diagnostics:Requests:Directory", _folder));
+
+        using (var client = host.CreateClient())
+        {
+            using var registered = await client.GetAsync($"/api/blocks/data/{CoreBlocks.NewsList}?props=%7B%7D&vid={Vid}", token);
+            using var unknown = await client.GetAsync($"/api/blocks/data/member{Vid}?props=%7B%7D", token);
+            Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
+        }
+
+        await host.DisposeAsync();
+
+        var file = Path.Combine(_folder, RequestTimingsLog.FileName(DateOnly.FromDateTime(DateTime.UtcNow)));
+        var text = await File.ReadAllTextAsync(file, token);
+        var lines = text.Split('\n').Select(RequestTimingsLine.Parse).OfType<RequestTimingsLine>().ToList();
+        var routes = lines.Select(line => line.Route).ToList();
+
+        // Every line says how many others it overlapped, so a reader knows when jit_ms is the request's own.
+        Assert.All(lines, line => Assert.NotNull(line.Others));
+        Assert.Contains($"/api/blocks/data/{CoreBlocks.NewsList}", routes);
+        Assert.Contains(ContentEndpoints.BlockDataPattern, routes);
+        Assert.DoesNotContain(Vid, text, StringComparison.Ordinal);
+        Assert.DoesNotContain("member", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("props", text, StringComparison.Ordinal);
     }
 
     [Fact]
