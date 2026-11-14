@@ -20,7 +20,8 @@ export interface Workbook {
    * shows — with `null` for a cell that holds nothing; none for a sheet that is not there.
    *
    * `formatted` gives every cell as the text the sheet shows (`18:00`, `1,5`, `01/10/2026`) instead of its value (a
-   * fraction of a day, a number, a date): what a table copies, where an import of data wants the value.
+   * fraction of a day, a number, a date): what a table copies, where an import of data wants the value. A CSV has no
+   * values but its text: either way its cells are the strings written.
    */
   cells(name: string, options?: { formatted?: boolean }): SheetCell[][];
 }
@@ -54,6 +55,9 @@ export async function readWorkbook(file: Blob, options?: { locale?: string }): P
       type: isText ? 'string' : 'array',
       dense: true,
       cellNF: shortDate !== null,
+      // A CSV holds text, and its cells are the text written: SheetJS would guess a number or a date from it, in its own
+      // American order (`01/10/2026` read as 10 January, `1,5` as fifteen, `18:00` as a day of 1899).
+      raw: isText,
     });
 
     if (shortDate !== null) {
