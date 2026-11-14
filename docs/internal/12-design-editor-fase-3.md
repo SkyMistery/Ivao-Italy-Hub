@@ -112,7 +112,8 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   istruzioni non promettono a Claude una sintassi che il renderer non conosce.
 - **Il modo vecchio di dire una cosa non si perde all'import** (piano 1.52 e 1.53): come l'`align` vecchio di un gruppo di pulsanti
   (3.9), il `width` vecchio di una foto (3.10) passa nel modo nuovo quando il file non scrive quello nuovo, dal blocco del file o
-  altrimenti da quello della bozza. ⚠️ **L'impronta `rules` cambia con ogni PR che cambia uno schema** (3.9, 3.10, 3.11): un file per
+  altrimenti da quello della bozza. ⚠️ **L'impronta `rules` cambia con ogni PR che cambia uno schema** (3.9, 3.10, 3.11, 3.12 —
+  la tabella con `rowStyle`, piano 1.54): un file per
   Claude scaricato prima è rifiutato (`content.import.rulesChanged`), e le note di rilascio lo dicono. La nota del 30 ottobre non si
   modifica dopo il merge: questi legami stanno qui.
 
@@ -267,15 +268,25 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 ### 5.1 Tabella (X)
 
 - **Incolla**: «Incolla da Excel» legge dagli appunti un testo con le tabulazioni (Excel, Fogli, Word) e lo trasforma in colonne e righe;
-  la prima riga è l'intestazione se lo si spunta. **Importa un file**: CSV, xlsx, ods, con SheetJS, che l'hub ha già. ⚠️ Il lettore che
+  la prima riga è l'intestazione se lo si spunta. **Importa un file**: CSV, xlsx, ~~ods~~ xls, ods, con SheetJS, che l'hub ha già, dal
+  primo foglio che ha qualcosa e con le celle **come il foglio le mostra** (`18:00`, `50%`, la data com'è scritta), non come valore
+  (#506, piano 1.54). ⚠️ Il lettore che
   c'è (`readLegFile`) sta nel modulo dei tour, e il nucleo non importa dai moduli: la parte generica («un foglio → righe di celle») sale
   in `web/src/shared/files/sheet.ts` e il modulo la usa da lì. Il codice dei tour è di Carmine: stesso lavoro, commit suo.
-  **Crea N × M**: due numeri e un tasto.
-- **Scrivere nella cella** (§9, risposta 1): «Modifica nella griglia» apre una **griglia** in un `Dialog` largo, una casella per cella
-  nella lingua sullo schermo (con le schede delle lingue), che scrive le stesse `props` con lo stesso `onApplyProps`. È un'eccezione
+  **Crea N × M**: due numeri e un tasto. **Incolla, importa e crea sostituiscono** colonne e righe (la didascalia e lo stile restano),
+  senza chiedere conferma, e **ognuno è un passo di Annulla** (`onApplyProps` con `{ step: true }`); la riga sotto i pulsanti dice che
+  cosa la tabella ha ora. **I limiti** sono 20 colonne e 200 righe, della griglia e non del blocco: un foglio più grande è rifiutato con
+  le sue misure, non tagliato. **Un a capo in una cella diventa uno spazio**; le righe vuote e le colonne vuote in fondo si scartano
+  (#506, piano 1.54).
+- **Scrivere nella cella** (§9, risposta 1): «Modifica nella griglia» apre una **griglia** in un `Dialog` largo (la misura `wide` del
+  `Dialog` del nucleo), una casella per cella
+  nella lingua sullo schermo (con le schede delle lingue, `LocaleTabs` del form), che scrive le stesse `props` con lo stesso `onApplyProps`. È un'eccezione
   **dichiarata** del form generato, solo per la tabella, come il campo del codice dell'interattivo (`carriesSource`): la registrazione
-  lo dice, e il form generato resta sotto per le colonne e la didascalia.
-- **Le righe**: `rows: 'lines' | 'striped' | 'plain'`, di default quello che si vede oggi.
+  lo dice (`BlockRegistration.editedAsGrid`), e il form generato resta sotto per le colonne e la didascalia. **La griglia lavora su una
+  copia** e scrive una volta sola, con «Applica»: chiusa senza applicare non cambia niente (#506, piano 1.54).
+- **Le righe**: ~~`rows: 'lines' | 'striped' | 'plain'`~~ **`rowStyle: 'lines' | 'striped' | 'plain'`**, di default ~~quello che si vede
+  oggi~~ `lines`, quello che si vede oggi: `rows` è già la lista delle righe (Carmine, in chat al master il 14 novembre 2026, «[Sì,
+  rowStyle](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/506#issuecomment-6876652306)»; nota `2026-11-14-la-tabella`, piano 1.54).
 - Il testo delle celle resta tradotto (`localized`), quindi un incolla scrive la lingua sullo schermo e le altre restano da scrivere
   (o da far scrivere a Claude, §3).
 - **File del nucleo**: `blocks/schemas.ts` (proprietà facoltative in più), `blocks/blocks.tsx` (`TableBlock`),

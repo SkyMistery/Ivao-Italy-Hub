@@ -558,6 +558,9 @@ colour chosen by hand can promise nothing about the text on it. They are Atmosph
 same reason in reverse: on `aurora-mid` secondary text measures 2.3 : 1 and no grey light enough to
 fix it would still read as secondary.
 
+The band of a table's `striped` rows is not a free colour either: it is the colour the text already has, at
+5 % (`bg-current/5`), so it reads on all eight grounds and in both themes without being measured against each.
+
 **A word of prose may take one of four colours, and no other.** "No free colour" stays: the text of a
 field drawn by `MarkdownContent` takes a colour only from the closed set of the formatting bar — `brand`
 (blue), `ocean` (light blue), `aurora` (teal) and `danger` (red, for a warning) — written

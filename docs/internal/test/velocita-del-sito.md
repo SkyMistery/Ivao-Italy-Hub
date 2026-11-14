@@ -304,8 +304,11 @@ vive ore è già in cache, quindi diventa piccola), C3 e H2, che valgono per ogn
   SPA nel browser. Una sessione con gli strumenti del browser (scheda Rete, «Disable cache» spento e acceso) su tre pagine — la home,
   `/staff`, una pagina di un tour — a hub freddo e caldo, con i tempi di `index.html`, degli `assets/` e delle prime chiamate.
 - **Le impostazioni di Passenger e i limiti dell'account** (§3.1): li sa solo chi amministra il server.
-- **Nei file dell'hub** (#402): il tipo del blocco nella colonna della rotta (oggi `{type}`: i tipi sono un elenco chiuso, nessuno è una
-  persona), le richieste in corso accanto a `jit_ms` (che oggi è di tutto il processo), le richieste tagliate da un arresto.
+- ~~**Nei file dell'hub** (#402): il tipo del blocco nella colonna della rotta (oggi `{type}`: i tipi sono un elenco chiuso, nessuno è una
+  persona), le richieste in corso accanto a `jit_ms` (che oggi è di tutto il processo), le richieste tagliate da un arresto.~~
+  **Fatto il 14 nov 2026** (#505, nota `2026-11-14-le-richieste-in-corso-nella-diagnostica`, piano 1.54): la rotta
+  `/api/blocks/data/<tipo>` per un tipo registrato, la colonna `others_n` in fondo e `in flight N` nella riga `STOP` di `starts.txt`. Vale
+  dalla prima versione consegnata che lo porta: i file della `0.16.0` sulla prova non lo hanno.
 - **Sul banco, prima di #398 e #401**: il pacchetto pubblicato, una CPU, avvio e prime dieci richieste di una pagina, prima e dopo ogni
   cambio, come nella nota dell'avvio a freddo.
 
