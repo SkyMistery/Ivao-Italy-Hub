@@ -121,18 +121,23 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         (await client.GetAsync(new Uri("/health", UriKind.Relative), token)).Dispose();
         (await client.GetAsync(new Uri("/api/version", UriKind.Relative), token)).Dispose();
         Assert.Equal(begun + 1, requests.Begun);
+        Assert.Equal(1, requests.Running);
 
         // Well past the five seconds, and the page is not done: nothing has run.
         await Task.Delay(TimeSpan.FromSeconds(8), token);
         Assert.Equal(0, _probe.Runs(Probe.Due));
         Assert.Empty(recorder.Of(Probe.Due));
 
-        // The page is answered: the check comes once the hub has been quiet for a while, by itself.
+        // The page is answered: the check comes once the hub has been quiet for a while, by itself — the quiet and the time a
+        // run takes, not the latest of thirty seconds, which is still twenty seconds away.
         var answered = System.Diagnostics.Stopwatch.StartNew();
         requests.End(page);
         await recorder.CountAsync(Probe.Due, 1).WaitAsync(TimeSpan.FromSeconds(30), token);
 
-        Assert.InRange(answered.Elapsed, JobCatchUp.Quiet - TimeSpan.FromMilliseconds(500), JobCatchUp.Latest);
+        Assert.InRange(
+            answered.Elapsed,
+            JobCatchUp.Quiet - TimeSpan.FromMilliseconds(500),
+            JobCatchUp.Quiet + TimeSpan.FromSeconds(3));
         Assert.Equal(1, _probe.Runs(Probe.Due));
         Assert.Equal(["ran"], recorder.Of(Probe.Due));
     }
