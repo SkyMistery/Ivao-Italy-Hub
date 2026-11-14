@@ -17,7 +17,8 @@ namespace IvaoHub.Modules.Events.Reports;
 /// <summary>
 /// <c>events-digest</c> (design M4 §5.3, §8.3, §8.4, E14b; note 2026-10-17-le-regole-di-award): once a day, to everybody who may validate a
 /// report of support, the reports waiting on the events <b>they</b> may validate — how many per event, and since when the oldest waits —, their
-/// own left out (<c>EventReports.Edit</c> is denied to the report's member). Nobody with nothing to do is written to, and a member switches it
+/// own left out (<c>EventReports.Edit</c> is denied to the report's member); the oldest's day in the division's order, the core's
+/// <see cref="HubDates"/> like every other date of the events' mails (issue #442). Nobody with nothing to do is written to, and a member switches it
 /// off from their profile (<see cref="EventsNotifications.ReportsToValidate"/>). The digest of the tours' validators (M2) is its pattern.
 /// <para>Who may validate is the core's answer (<see cref="IPermissionHolders"/>); which events is asked of each of them as the handler asks it,
 /// department and scope of the report.</para>
@@ -140,6 +141,7 @@ public sealed class ReportsDigestJob(
             .Where(user => vids.Contains(user.Vid))
             .ToDictionaryAsync(user => user.Vid, user => user.Locale, cancellationToken);
 
+        var dates = division.Value.ResolveDateOrder();
         var sent = 0;
         foreach (var holder in validators.Where(holder => holder.Vid > 0))
         {
@@ -163,7 +165,7 @@ public sealed class ReportsDigestJob(
                 ["events"] = string.Join('\n', theirs.Select(group =>
                     string.Create(
                         CultureInfo.InvariantCulture,
-                        $"- {Text(titles.GetValueOrDefault(group.EventId), locale)}: {group.Count} ({group.Oldest:yyyy-MM-dd}) https://{division.Value.Domain}/staff/events/{group.EventId}?tab=reports"))),
+                        $"- {Text(titles.GetValueOrDefault(group.EventId), locale)}: {group.Count} ({HubDates.Day(group.Oldest, dates)}) https://{division.Value.Domain}/staff/events/{group.EventId}?tab=reports"))),
             };
 
             sent += await notifications.QueueAsync(
