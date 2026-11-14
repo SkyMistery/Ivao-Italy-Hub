@@ -31,10 +31,12 @@ public sealed class TourCardsProvider(PublicTours tours) : IDataBlockProvider
         // ⚠️ But a property that *does* name states, of which none is a state a card can be in, narrows to nothing: a
         // property that narrows must never widen (the rule `BlockProps.TryDepartment` already follows). Written the
         // other way round first, and the test of the block caught it.
-        var states = props?[StatesProperty] is JsonArray chosen && chosen.Count > 0
-            ? chosen
-                .Select(entry => entry?.GetValue<string>())
-                .Select(name => Enum.TryParse<TourStateKind>(name, ignoreCase: true, out var state) ? state : (TourStateKind?)null)
+        //
+        // The props are opaque JSON that any save may hold (issue #498): an entry that is not a string is no state
+        // rather than a 500, and only a state's name is read — `Enum.TryParse` alone would take "3" for Open.
+        var states = props?[StatesProperty] is JsonArray { Count: > 0 }
+            ? (BlockProps.ReadTexts(props, StatesProperty) ?? [])
+                .Select(StateNamed)
                 .OfType<TourStateKind>()
                 .Where(PublicTours.CardStates.Contains)
                 .ToList()
@@ -69,4 +71,11 @@ public sealed class TourCardsProvider(PublicTours tours) : IDataBlockProvider
 
         return new JsonObject { ["items"] = items };
     }
+
+    /// <summary>The state with this name, whatever its case; a number, or a name that is none, is null.</summary>
+    private static TourStateKind? StateNamed(string name) =>
+        Enum.GetNames<TourStateKind>().FirstOrDefault(state => string.Equals(state, name.Trim(), StringComparison.OrdinalIgnoreCase))
+            is { } match
+            ? Enum.Parse<TourStateKind>(match)
+            : null;
 }

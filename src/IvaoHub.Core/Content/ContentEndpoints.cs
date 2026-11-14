@@ -139,6 +139,11 @@ public static class ContentEndpoints
                 options.ToDetail = mapper.ToDetail;
                 options.Apply = mapper.Apply;
 
+                // A page with pages under it is not deleted (note 2026-11-14-la-pagina-con-figlie), asked once whoever deletes
+                // is known to be allowed to.
+                options.BeforeDelete = (content, saving) =>
+                    saving.Services.GetRequiredService<ContentAddresses>().DeletionProblemAsync(content, saving.CancellationToken);
+
                 // Where a page sits in the site, which only other rows can say (note
                 // 2026-09-13-contenuti-centralizzati, 3.7): free, not reserved, not too deep, at the
                 // top only for whoever may put it there — and the pages under it moved along.
@@ -252,7 +257,9 @@ public static class ContentEndpoints
         // the content list, which holds the reader's own departments — a coordinator of Training
         // puts a page under `/training`, which the web team owns — and not a share of the rows,
         // which would hand every department the drafts of every other. What crosses is the address
-        // and the title, which the site already shows to anybody.
+        // and the title of the pages the site shows whoever asks, and of the pages, drafts included,
+        // they may edit (#321, point 6, decided by Carmine on 14 November 2026: until then it crossed
+        // the drafts of every department).
         // ⚠️ One more hand written read, counted: the addresses of the site whoever writes may read, of every department
         // (decisions/2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere.md, decided by Carmine on 4 November 2026).
         // Not the content list, which holds the reader's own departments, and not the tree above, which holds drafts:
@@ -917,13 +924,51 @@ public static class ContentEndpoints
         ];
     }
 
-    private static async Task<IReadOnlyList<ContentPageNodeDto>> PageTreeAsync(HubDbContext database, HttpContext http)
+    private static async Task<IReadOnlyList<ContentPageNodeDto>> PageTreeAsync(
+        HubDbContext database,
+        IAuthorizationService authorization,
+        HttpContext http)
     {
-        var rows = await CrudSource.BackOffice<ContentEntry>(database)
+        // `database.Contents`: what the site shows whoever asks, through the query filter (`VisibilityQueryFilter`), under
+        // the title the site shows — the published version's, not a new one waiting for approval (the review of #493).
+        var online = await (
+                from row in database.Contents.AsNoTracking()
+                where row.Kind == ContentKind.Page && !row.IsTemplate
+                join version in database.ContentVersions.AsNoTracking() on row.PublishedVersionId equals (long?)version.Id
+                select new { row.Id, version.Title })
+            .ToDictionaryAsync(row => row.Id, row => row.Title, http.RequestAborted);
+
+        // And every other page the one handler lets them edit, a draft of their department above all: a section is built
+        // under its own first page before that page comes out. Only what the handler needs, and the four columns read.
+        var pages = await CrudSource.BackOffice<ContentEntry>(database)
             .AsNoTracking()
             .Where(row => row.Kind == ContentKind.Page && !row.IsTemplate)
-            .Select(row => new { row.Id, row.Slug, row.ParentPath, row.Title })
+            .Select(row => new ContentEntry
+            {
+                Id = row.Id,
+                Kind = row.Kind,
+                Slug = row.Slug,
+                ParentPath = row.ParentPath,
+                Title = row.Title,
+                OwnerDepartment = row.OwnerDepartment,
+                Visibility = row.Visibility,
+                PublishedVersionId = row.PublishedVersionId,
+            })
             .ToListAsync(http.RequestAborted);
+
+        var rows = new List<ContentEntry>();
+        foreach (var page in pages)
+        {
+            if (online.TryGetValue(page.Id, out var published))
+            {
+                page.Title = published;
+                rows.Add(page);
+            }
+            else if ((await authorization.AuthorizeAsync(http.User, page, CorePermissions.ContentEdit)).Succeeded)
+            {
+                rows.Add(page);
+            }
+        }
 
         return
         [

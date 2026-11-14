@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using IvaoHub.Core.Content;
 
 namespace IvaoHub.Core.Services;
 
@@ -13,6 +14,9 @@ namespace IvaoHub.Core.Services;
 /// no user agent, no VID, no cookie.</para>
 /// <para>Tab separated, one request per line, so that a spreadsheet or three lines of a script read it; a line starting with
 /// <c>#</c> is a comment.</para>
+/// <para>Issue #402 (note 2026-11-14-le-richieste-in-corso-nella-diagnostica): a data block's route names its type when the
+/// type is registered, and <see cref="Others"/> is the last column, so the eighteen before it did not move. A line written
+/// before it has eighteen columns and still reads, with <see cref="Others"/> null.</para>
 /// </remarks>
 public sealed record RequestTimingsLine(
     DateTime AtUtc,
@@ -32,16 +36,35 @@ public sealed record RequestTimingsLine(
     TimeSpan CallTime,
     TimeSpan Jit,
     long JitMethods,
-    long AllocatedKb)
+    long AllocatedKb,
+    long? Others = null)
 {
     public const string StampFormat = "yyyy-MM-dd HH:mm:ss.fff'Z'";
 
     /// <summary>The names of the columns, in order; the line of the header says them once more for whoever opens the file.</summary>
+    /// <remarks>
+    /// <c>others_n</c>: the other requests that ran at some moment of this one's life, the ones already running when it
+    /// began and the ones that began while it ran. With 0, <c>jit_ms</c> and <c>alloc_kb</c>, which are the whole
+    /// process's, are this request's alone.
+    /// </remarks>
     public static readonly IReadOnlyList<string> Columns =
     [
         "time", "pid", "n", "up_ms", "method", "status", "route", "total_ms", "ttfb_ms",
-        "db_n", "db_ms", "open_n", "open_ms", "http_n", "http_ms", "jit_ms", "jit_n", "alloc_kb",
+        "db_n", "db_ms", "open_n", "open_ms", "http_n", "http_ms", "jit_ms", "jit_n", "alloc_kb", "others_n",
     ];
+
+    /// <summary>The columns of a line written before <c>others_n</c> (issue #402).</summary>
+    private static readonly int ColumnsBeforeOthers = Columns.Count - 1;
+
+    /// <summary>
+    /// The route of a data block whose type the registry knows: <c>/api/blocks/data/networkStats</c>. The caller passes the
+    /// name the registry holds, never the text of the request: a type nobody registered keeps the pattern.
+    /// </summary>
+    public static string DataBlockRoute(string registeredType)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(registeredType);
+        return ContentEndpoints.BlockDataPattern.Replace("{type}", registeredType, StringComparison.Ordinal);
+    }
 
     public string Format()
     {
@@ -63,7 +86,8 @@ public sealed record RequestTimingsLine(
             .Append(Ms(CallTime)).Append('\t')
             .Append(Ms(Jit)).Append('\t')
             .Append(Invariant(JitMethods)).Append('\t')
-            .Append(Invariant(AllocatedKb));
+            .Append(Invariant(AllocatedKb)).Append('\t')
+            .Append(Others is { } others ? Invariant(others) : "-");
         return text.ToString();
     }
 
@@ -76,7 +100,7 @@ public sealed record RequestTimingsLine(
         }
 
         var parts = text.Split('\t');
-        if (parts.Length != Columns.Count
+        if ((parts.Length != Columns.Count && parts.Length != ColumnsBeforeOthers)
             || !DateTime.TryParseExact(
                 parts[0],
                 StampFormat,
@@ -107,7 +131,8 @@ public sealed record RequestTimingsLine(
                 ReadMs(parts[14]),
                 ReadMs(parts[15]),
                 long.Parse(parts[16], CultureInfo.InvariantCulture),
-                long.Parse(parts[17], CultureInfo.InvariantCulture));
+                long.Parse(parts[17], CultureInfo.InvariantCulture),
+                parts.Length == ColumnsBeforeOthers || parts[18] == "-" ? null : long.Parse(parts[18], CultureInfo.InvariantCulture));
         }
         catch (FormatException)
         {

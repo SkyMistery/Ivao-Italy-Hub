@@ -1,9 +1,24 @@
-import Markdown, { type Components, type Options } from 'react-markdown';
+import Markdown, {
+  defaultUrlTransform,
+  type Components,
+  type Options,
+  type UrlTransform,
+} from 'react-markdown';
 
+import { isFollowable } from './followable';
 import { hubMarkdown } from './markdownSyntax';
 
 /** Beside `ELEMENTS`, and for the same reason: nothing here is made again at every render. */
 const PLUGINS = [hubMarkdown] as NonNullable<Options['remarkPlugins']>;
+
+/**
+ * A link leads only where the content's rule lets it (#321, point 5), whatever form of Markdown named it: the server refuses
+ * the forms its pattern reads when a page is saved, and a link with brackets inside its text, or one by reference, is a form a
+ * pattern may miss. The library's own transform let `//elsewhere.example` through. Any other address (a picture's) is the
+ * library's to judge, as before.
+ */
+const URL_TRANSFORM: UrlTransform = (url, key) =>
+  key === 'href' ? (isFollowable(url) ? url : '') : defaultUrlTransform(url);
 
 /**
  * Prose an editor wrote, rendered as prose. The library builds a React tree and never touches
@@ -17,7 +32,7 @@ const PLUGINS = [hubMarkdown] as NonNullable<Options['remarkPlugins']>;
 export function MarkdownContent({ source }: { source: string }) {
   return (
     <div className="flex flex-col gap-3 leading-relaxed">
-      <Markdown components={ELEMENTS} remarkPlugins={PLUGINS}>
+      <Markdown components={ELEMENTS} remarkPlugins={PLUGINS} urlTransform={URL_TRANSFORM}>
         {source}
       </Markdown>
     </div>

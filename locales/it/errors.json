@@ -21,7 +21,8 @@
       "missingIn": "Manca ancora in: {{locales}}."
     },
     "url": {
-      "absolute": "Inserisci un indirizzo completo che inizi con http:// o https://"
+      "absolute": "Inserisci un indirizzo completo che inizi con http:// o https://",
+      "unsafe": "Questo indirizzo non si può seguire. Scrivi un indirizzo completo (https://…, mailto:…, tel:…), un percorso del sito che inizi con una sola / o un'àncora (#…)."
     },
     "number": {
       "min": "Inserisci un numero non inferiore al minimo.",
@@ -53,6 +54,7 @@
       "tooDeep": "Le sezioni non possono annidarsi piu' in profondita' di cosi'.",
       "idMissing": "Questa sezione o questo blocco ha perso il suo identificativo.",
       "idDuplicated": "Due sezioni o due blocchi hanno lo stesso identificativo.",
+      "keyNotText": "La chiave che questa sezione ha preso dal template non è testo.",
       "blockTypeMissing": "Questo blocco non dice cosa e'.",
       "blockTypeUnknown": "Questo blocco e' di un tipo che l'hub non conosce.",
       "templateOnlyKey": "Solo un template puo' fissare questo. Cambialo sul template.",
@@ -84,7 +86,8 @@
         "tooDeep": "Una pagina scende al massimo di tre livelli, contando quelle sotto di lei.",
         "invalidParent": "Una pagina non può stare qui sotto: non è una pagina, oppure è questa stessa o una sotto di lei.",
         "notAPage": "Solo una pagina sta sotto un'altra pagina.",
-        "taken": "Un'altra pagina ha già questo indirizzo."
+        "taken": "Un'altra pagina ha già questo indirizzo.",
+        "hasChildren": "Questa pagina ha delle pagine sotto di sé. Spostale altrove o cancellale prima."
       },
       "review": {
         "notReviewed": "Questo tipo di contenuto si pubblica direttamente, senza approvazione.",
