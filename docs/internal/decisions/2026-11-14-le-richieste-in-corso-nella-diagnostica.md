@@ -1,8 +1,10 @@
 # Il tipo del blocco, le richieste in corso e quelle tagliate da un arresto, nella diagnostica
 
 **Data:** 14 novembre 2026
-**Stato:** **Proposta** (le scelte del §2); che cosa serve l'ha già chiesto Carmine nella issue #402, da lui aperta dopo
-l'analisi della velocità del sito di prova (`docs/internal/test/velocita-del-sito.md` §5).
+**Stato:** **Decisa** da Carmine il 14 novembre 2026, «Sì 402», sulle tre scelte del §2 così come sono: la risposta è
+registrata sulla issue, <https://github.com/SkyMistery/Ivao-Italy-Hub/issues/402#issuecomment-6875865214>. Che cosa serve
+l'aveva già chiesto lui nella issue #402, aperta dopo l'analisi della velocità del sito di prova
+(`docs/internal/test/velocita-del-sito.md` §5).
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estende la diagnostica che c'è (nota
 `2026-10-18-i-tempi-delle-richieste`, che dopo il merge non si tocca). Nessun meccanismo nuovo, nessun modulo vede niente.
 Cambia però il **contratto del file** che Carmine scarica e legge (una colonna in più, il contenuto di `route` per una
