@@ -360,6 +360,69 @@ public sealed partial class PirepTests
     }
 
     /// <summary>
+    /// A validator who is also a pilot does not read who banned them (issue #328, item 5, the reviewer on #495): they hold
+    /// <c>Tours.ViewPilots</c>, which reads the list and the detail of the bans, and those gave the author their pilot page
+    /// hides. Whoever else reads the ban reads its author.
+    /// </summary>
+    [Fact]
+    public async Task AValidatorDoesNotReadWhoBannedThem()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+
+        var (tourId, _) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        await GrantValidateAsync(ValidatorVid, tourId, token);
+
+        // As «add a validator» leaves them (Validators.cs): the pilots' pages of the department too.
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            hub.UserGrants.Add(new UserGrant
+            {
+                Vid = ValidatorVid,
+                Kind = GrantKind.Permission,
+                Value = TourPermissions.ViewPilots,
+                Department = Department.FOD,
+                Effect = GrantEffect.Grant,
+                Reason = "fo-test own ban",
+            });
+            await hub.SaveChangesAsync(token);
+        }
+
+        try
+        {
+            var ban = new BanWriteDto(ValidatorVid, tourId, DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow.AddDays(30), "fo-test-pirep a validator's ban", default);
+            var written = await CreatedAsync(coordinator, BanEndpoints.Pattern, ban, token);
+            using var validator = await SignedInAsync(ValidatorVid, token);
+
+            var list = await OkAsync(await validator.GetAsync($"{BanEndpoints.Pattern}?vid={ValidatorVid}", token), token);
+            var row = Assert.Single(list.GetProperty("items").EnumerateArray(), entry => Id(entry) == Id(written));
+            Assert.Equal(JsonValueKind.Null, row.GetProperty("createdBy").ValueKind);
+
+            var detail = await OkAsync(await validator.GetAsync($"{BanEndpoints.Pattern}/{Id(written)}", token), token);
+            Assert.Equal(JsonValueKind.Null, detail.GetProperty("createdBy").ValueKind);
+
+            var page = await OkAsync(await validator.GetAsync($"{PilotEndpoints.Pattern}/{ValidatorVid}", token), token);
+            var shown = page.GetProperty("bans").EnumerateArray().Single(entry => Id(entry) == Id(written));
+            Assert.Equal(JsonValueKind.Null, shown.GetProperty("createdBy").ValueKind);
+
+            var staff = await OkAsync(await coordinator.GetAsync($"{BanEndpoints.Pattern}?vid={ValidatorVid}", token), token);
+            row = Assert.Single(staff.GetProperty("items").EnumerateArray(), entry => Id(entry) == Id(written));
+            Assert.Equal(CoordinatorVid, row.GetProperty("createdBy").GetProperty("vid").GetInt32());
+            detail = await OkAsync(await coordinator.GetAsync($"{BanEndpoints.Pattern}/{Id(written)}", token), token);
+            Assert.Equal(CoordinatorVid, detail.GetProperty("createdBy").GetProperty("vid").GetInt32());
+        }
+        finally
+        {
+            await using var scope = _host.Services.CreateAsyncScope();
+            var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+            await database.Bans.Where(row => row.Vid == ValidatorVid).ExecuteDeleteAsync(token);
+            var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            await hub.UserGrants.Where(grant => grant.Vid == ValidatorVid && grant.Reason == "fo-test own ban").ExecuteDeleteAsync(token);
+        }
+    }
+
+    /// <summary>
     /// The pilot's own tours (T15b, note 2026-09-24-le-pagine-delle-persone §3.1), from the endpoint the cards read and from the
     /// block `flightops.myTours`, which answer the same: the tour started with how far and the next leg, the report sent back
     /// «to modify» with the tour's address, the summary with the minutes the tracker recorded. Hidden, the tour leaves the list
