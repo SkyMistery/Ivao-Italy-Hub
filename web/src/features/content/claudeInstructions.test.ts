@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 
 import { registry } from '../../app/registry';
 import type { Body } from '../../blocks';
-import { GALLERY_LAYOUTS } from '../../blocks/schemas';
+import { GALLERY_LAYOUTS, TABLE_ROW_STYLES } from '../../blocks/schemas';
 import { TEXT_COLOURS } from '../../shared/ui/textColours';
 
 import {
@@ -279,6 +279,16 @@ describe('what the instructions offer', () => {
     for (const layout of GALLERY_LAYOUTS) {
       expect(markdown).toContain(`\`${layout}\``);
       expect(markdown).toContain(`"${layout}"`);
+    }
+  });
+
+  test('the fixed part says the table: a cell per column, and every style of its rows (PR 3.12, §5.1)', async () => {
+    const { markdown } = await composeInstructions(input({ blocks: [block('table')] }));
+
+    expect(markdown).toContain('A **table** (`table`) has `columns`');
+    for (const style of TABLE_ROW_STYLES) {
+      expect(markdown).toContain(`\`${style}\``);
+      expect(markdown).toContain(`"${style}"`);
     }
   });
 
