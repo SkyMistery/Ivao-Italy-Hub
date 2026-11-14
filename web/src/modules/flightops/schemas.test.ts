@@ -15,8 +15,12 @@ import {
   OPEN_GOALS,
   TOUR_CONSTRAINT_KINDS,
   TOUR_RULE_FIELDS,
+  atcDeclarationSchema,
   callsignRuleSchema,
+  disputeSchema,
+  diversionSchema,
   hubSchema,
+  legIssueReportSchema,
   openGoalSchema,
   rotationSchema,
   tourConstraintSchema,
@@ -237,4 +241,28 @@ test.each([
     .filter((key) => !i18n.exists(key) || typeof i18n.t(key) !== 'string');
 
   expect(missing).toEqual([]);
+});
+
+/**
+ * A live form applies only what its schema accepts (#334, item 2): a bound or a `min` there would leave the screen holding the last
+ * text that passed, and Confirm on with it. The four live forms of the tours accept what is on the screen — emptied, or past the
+ * server's bound, which the server refuses itself.
+ */
+test('the live forms of the tours accept the text as it is on the screen', () => {
+  const long = 'x'.repeat(5000);
+
+  expect(disputeSchema.parse({ text: '  ' })).toEqual({ text: '' });
+  expect(disputeSchema.parse({ text: long }).text).toBe(long);
+  expect(legIssueReportSchema.parse({ body: '' })).toEqual({ body: '' });
+  expect(legIssueReportSchema.parse({ body: long }).body).toBe(long);
+  expect(diversionSchema.parse({ diversionIcao: 'lirfx', diversionNote: long })).toEqual({
+    diversionIcao: 'LIRFX',
+    diversionNote: long,
+  });
+  expect(
+    atcDeclarationSchema(['LIRR_CTR']).safeParse({
+      added: [{ callsign: 'a'.repeat(30), frequency: '123.4567' }],
+      exemptions: [{ callsign: 'LIRR_CTR', kind: 'Other', note: long }],
+    }).success,
+  ).toBe(true);
 });

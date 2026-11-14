@@ -1137,6 +1137,10 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 > **Sostituita dal 31 ott 2026** da `11-design-pagine-dei-tour.md` (#417, fase 6, approvato da Carmine, piano 1.46): l'elenco
 > `/tours` e la pagina di un tour sono descritti lì; il testo qui sotto resta come storia di M2 e di com'è il codice finché la fase 6
 > non è unita.
+>
+> **Nel codice dal 14 nov 2026** (#482, #484, piano 1.53; note `2026-11-10-la-pagina-di-un-tour` e `2026-11-10-l-elenco-dei-tour`): la
+> pagina pubblica dice **l'award del tour per nome** (`PublicTourDto.Award`), e la tabella delle tratte non ha più la riga dei totali,
+> che stanno nella testata; la card dell'elenco dice il periodo e una riga di numeri (rating minimo, award, sottotour).
 
 - **`/tours`**: tour aperti, in chiusura, e in arrivo con anteprima, come **riquadri** (foto, titolo, riassunto; per un
   pilota barra di avanzamento e prossima leg). Anonimo: niente avanzamento. **Precisato in T15b** (nota
@@ -1152,7 +1156,7 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 
 | Blocco | Dove | Che cosa |
 |---|---|---|
-| `flightops.tourCards` | pagine pubbliche, `/me` | i riquadri, per chi guarda |
+| `flightops.tourCards` | pagine pubbliche, `/me` | i riquadri, per chi guarda; **dal 14 nov 2026** (#484, piano 1.53) la stessa card dell'elenco `/tours`, con gli stessi campi, e le sue tre scelte di stato non cambiano |
 | `flightops.myTours` | `/me` | tour iniziati, avanzamento, prossima leg, PIREP da correggere, chiarimenti con risposta; **il riepilogo del pilota** (leg volate, ore stimate, tour completati), senza contatori degli errori. **Nessun elenco pubblico** di chi ha completato un tour: ognuno vede i suoi |
 | `flightops.reviewQueue` | dashboard FOD, `/staff` | PIREP in coda sui tour che chi guarda può validare: **una riga per tour**, quanti e da quando il più vecchio, con il link alla coda del tour (Carmine, 23 settembre, T13b) |
 | `flightops.openIssues` | dashboard FOD | segnalazioni aperte, contestazioni e chiarimenti senza risposta |
@@ -1222,6 +1226,9 @@ il blocco risponde `signedIn: false`.
 - **Corretto il 22 settembre 2026 in T10** (nota `2026-09-22-il-pubblico-dei-tour`): la base **non porta i nomi dei luoghi** —
   terra, acqua e confini fra stati, e basta — quindi sotto `/tiles` non ci sono né caratteri né sprite: **un file solo**,
   `basemap.pmtiles`. Le uniche parole sulla mappa sono i codici degli aeroporti, che sono marcatori HTML del componente.
+- **Corretto l'11 novembre 2026** (#486, nota `2026-11-11-la-mappa-che-aspettava-la-mappa-di-base`, Carmine, «(a) nel nucleo»; piano
+  1.53): leg e marcatori si disegnano quando lo stile è pronto (`style.load`), non al `load`, che aspetta anche la mappa di base;
+  senza l'archivio la mappa delle leg c'è comunque, anche aperta dopo il caricamento della pagina.
 
 ### 8.7 Le altre pagine dello staff
 

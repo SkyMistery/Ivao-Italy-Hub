@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ApiError } from '../../../shared/api/problem';
+import { formatMoment } from '../../../shared/i18n/useMoment';
 import type { MyTourDto, PirepDto, PublicLegDto } from '../api';
 
 import {
@@ -10,6 +11,7 @@ import {
   exemptionsToSend,
   initialReferences,
   isDecided,
+  sessionEnd,
   mapLeg,
   mergeSessions,
   reportActions,
@@ -244,5 +246,25 @@ describe('what a clarification may cite', () => {
     expect(initialReferences({ rule: 40 }, 7, choices)).toEqual(['rule:7:40']);
     expect(initialReferences({ pirep: 4 }, 7, choices)).toEqual([]);
     expect(initialReferences({}, 7, choices)).toEqual([]);
+  });
+});
+
+/** The end of a flight after its start (#334, item 4): a time on the same day, the date with it past midnight. */
+describe('sessionEnd', () => {
+  const moment = (value: unknown, options?: Parameters<typeof formatMoment>[2]) =>
+    formatMoment('en', value, options);
+
+  it('writes the time alone when the flight lands on the day it took off', () => {
+    expect(sessionEnd({ startedAt: '2099-11-21T17:00:00Z', endedAt: '2099-11-21T18:30:00Z' }, moment)).toBe(
+      '18:30',
+    );
+  });
+
+  it('writes the date with the time when the flight lands past midnight', () => {
+    const end = sessionEnd({ startedAt: '2099-11-21T23:00:00Z', endedAt: '2099-11-22T02:45:00Z' }, moment);
+
+    expect(end).toBe(moment('2099-11-22T02:45:00Z'));
+    expect(end).toContain('22');
+    expect(end).toContain('02:45');
   });
 });
