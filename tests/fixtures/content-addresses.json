@@ -1,0 +1,26 @@
+{
+  "$comment": "What an address written into the content may be (#321, point 5). Read by both halves of the rule, so that they cannot drift: SiteDestinations.IsFollowable on the server (BlockDocumentWalkerTests) and isFollowable in the browser (web/src/shared/ui/followable.test.ts).",
+  "followable": [
+    "",
+    "/",
+    "/about?x=1#team",
+    "#team",
+    "https://example.org/about",
+    "HTTP://example.org",
+    "mailto:staff@example.org",
+    "tel:+390000000"
+  ],
+  "refused": [
+    "javascript:alert(1)",
+    "JavaScript:alert(1)",
+    " javascript:alert(1)",
+    "java\tscript:alert(1)",
+    "data:text/html,<p>x</p>",
+    "vbscript:x",
+    "//elsewhere.example",
+    "/\\elsewhere.example",
+    "/\t/elsewhere.example",
+    "about/team",
+    "www.example.org"
+  ]
+}
