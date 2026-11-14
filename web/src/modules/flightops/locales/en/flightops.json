@@ -1094,7 +1094,23 @@
     "ruleGroups": {
       "division": "Rules of every tour",
       "tour": "Rules of this tour"
-    }
+    },
+    "myTours": "Your tours",
+    "listTabs": {
+      "open": "Open",
+      "upcoming": "Upcoming",
+      "archive": "Archive"
+    },
+    "listEmpty": {
+      "open": "No tour is open right now.",
+      "upcoming": "No tour is coming up yet.",
+      "archive": "No tour has closed yet."
+    },
+    "searchByName": "Search by name",
+    "anyKind": "Every kind",
+    "noneHere": "No tour matches the search.",
+    "subtourCount_one": "{{count}} subtour",
+    "subtourCount_other": "{{count}} subtours"
   },
   "report": {
     "title": "Send the report",

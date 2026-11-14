@@ -49,9 +49,16 @@ public sealed class PublicTours(
         [TourStateKind.Open, TourStateKind.Closing, TourStateKind.Upcoming];
 
     /// <summary>
-    /// The cards of the tours the public sees now, newest release first among those still running and soonest first
-    /// among those still to come — which is the same order: by release, descending for what is open and ascending for
-    /// what is not yet. Kept simple: by release date, the running ones first.
+    /// The states the list of the site may ask for (design <c>11-design-pagine-dei-tour</c> §3): the cards' three, and the
+    /// archive, <see cref="TourStateKind.Closed"/>, which a pilot looks through for an award or their reports. A template and
+    /// a draft are never public, whatever is asked.
+    /// </summary>
+    public static readonly IReadOnlyList<TourStateKind> ListStates =
+        [TourStateKind.Open, TourStateKind.Closing, TourStateKind.Upcoming, TourStateKind.Closed];
+
+    /// <summary>
+    /// The cards of the tours the public sees now: the running ones first, by release; then those still to come, soonest
+    /// first; then the archive, the latest closed first — the order a pilot looks through each tab of <c>/tours</c> in.
     /// </summary>
     public async Task<IReadOnlyList<PublicTourCardDto>> CardsAsync(
         IReadOnlyCollection<TourStateKind>? states,
@@ -69,28 +76,39 @@ public sealed class PublicTours(
 
         var shown = tours
             .Where(tour => wanted.Contains(TourState.Of(tour, now)))
+            .OrderBy(tour => TourState.Of(tour, now) switch
+            {
+                TourStateKind.Upcoming => 1,
+                TourStateKind.Closed => 2,
+                _ => 0,
+            })
+            .ThenByDescending(tour => TourState.Of(tour, now) == TourStateKind.Closed ? tour.CloseAt : null)
+            .ThenBy(tour => tour.ReleaseAt)
+            .Take(limit is { } most && most > 0 ? most : int.MaxValue)
             .ToList();
 
-        var counted = await CountLegsAsync([.. shown.Select(tour => tour.Id)], cancellationToken);
+        var ids = shown.Select(tour => tour.Id).ToList();
+        var counted = await CountLegsAsync(ids, cancellationToken);
+        var subtours = await CountSubtoursAsync([.. shown.Where(tour => tour.Kind == TourKind.Container).Select(tour => tour.Id)], cancellationToken);
+        var awards = await AwardsAsync([.. shown.Select(tour => tour.AwardId).OfType<long>()], cancellationToken);
 
         return
         [
-            .. shown
-                .OrderBy(tour => TourState.Of(tour, now) == TourStateKind.Upcoming ? 1 : 0)
-                .ThenBy(tour => tour.ReleaseAt)
-                .Take(limit is { } most && most > 0 ? most : int.MaxValue)
-                .Select(tour => new PublicTourCardDto(
-                    tour.Id,
-                    tour.Slug!,
-                    tour.Kind,
-                    tour.Title,
-                    tour.Summary,
-                    tour.CoverMediaId,
-                    TourState.Of(tour, now),
-                    tour.ReleaseAt!.Value,
-                    tour.CloseAt!.Value,
-                    counted.GetValueOrDefault(tour.Id).Legs,
-                    counted.GetValueOrDefault(tour.Id).TotalNm)),
+            .. shown.Select(tour => new PublicTourCardDto(
+                tour.Id,
+                tour.Slug!,
+                tour.Kind,
+                tour.Title,
+                tour.Summary,
+                tour.CoverMediaId,
+                TourState.Of(tour, now),
+                tour.ReleaseAt!.Value,
+                tour.CloseAt!.Value,
+                counted.GetValueOrDefault(tour.Id).Legs,
+                counted.GetValueOrDefault(tour.Id).TotalNm,
+                ratings.Find(RatingKind.Pilot, tour.MinPilotRating)?.ShortName,
+                tour.AwardId is { } awardId ? awards.GetValueOrDefault(awardId) : null,
+                subtours.GetValueOrDefault(tour.Id))),
         ];
     }
 
@@ -227,17 +245,44 @@ public sealed class PublicTours(
     /// The award a tour gives, by name, from the core's catalogue — shared for reading, so the anonymous reader of the page
     /// reads it as the back office does. An award deleted since leaves the tour without one on its page.
     /// </summary>
-    private async Task<PublicAwardDto?> AwardAsync(long? awardId, CancellationToken cancellationToken)
+    private async Task<PublicAwardDto?> AwardAsync(long? awardId, CancellationToken cancellationToken) =>
+        awardId is { } id ? (await AwardsAsync([id], cancellationToken)).GetValueOrDefault(id) : null;
+
+    /// <summary>The awards of the tours of a list, by name: one query, not one each.</summary>
+    private async Task<IReadOnlyDictionary<long, PublicAwardDto>> AwardsAsync(
+        IReadOnlyList<long> awardIds,
+        CancellationToken cancellationToken)
     {
-        if (awardId is not { } id)
+        var wanted = awardIds.Distinct().ToArray();
+        if (wanted.Length == 0)
         {
-            return null;
+            return new Dictionary<long, PublicAwardDto>();
         }
 
-        return await hub.Awards.AsNoTracking()
-            .Where(award => award.Id == id)
-            .Select(award => new PublicAwardDto(award.Id, award.Name))
-            .FirstOrDefaultAsync(cancellationToken);
+        var awards = await hub.Awards.AsNoTracking()
+            .Where(award => wanted.Contains(award.Id))
+            .ToListAsync(cancellationToken);
+
+        return awards.ToDictionary(award => award.Id, award => new PublicAwardDto(award.Id, award.Name));
+    }
+
+    /// <summary>How many subtours the public sees in each container of a list (design 11 §3): one query, not one each.</summary>
+    private async Task<IReadOnlyDictionary<long, int>> CountSubtoursAsync(
+        IReadOnlyList<long> containerIds,
+        CancellationToken cancellationToken)
+    {
+        if (containerIds.Count == 0)
+        {
+            return new Dictionary<long, int>();
+        }
+
+        var counted = await Public(database.Tours.AsNoTracking())
+            .Where(tour => tour.ParentTourId != null && containerIds.Contains(tour.ParentTourId.Value))
+            .GroupBy(tour => tour.ParentTourId!.Value)
+            .Select(group => new { ParentId = group.Key, Count = group.Count() })
+            .ToListAsync(cancellationToken);
+
+        return counted.ToDictionary(row => row.ParentId, row => row.Count);
     }
 
     /// <summary>Ready, not hidden, not archived, not a template, with an address and both its dates, and released or shown as a preview.</summary>
@@ -277,7 +322,8 @@ public sealed class PublicTours(
                 tour.ReleaseAt!.Value,
                 tour.CloseAt!.Value,
                 counted.GetValueOrDefault(tour.Id).Legs,
-                counted.GetValueOrDefault(tour.Id).TotalNm)),
+                counted.GetValueOrDefault(tour.Id).TotalNm,
+                tour.Kind)),
         ];
     }
 

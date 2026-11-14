@@ -128,6 +128,7 @@ describe('the tabs of the page of a tour', () => {
       closeAt: '2026-12-31T23:59:00Z',
       legs: 3,
       totalNm: 900,
+      kind: 'Sequential' as const,
     };
     expect(pageTabs(tour({ kind: 'Container', legs: [], subtours: [subtour] }), false, null)).toContain(
       'route',

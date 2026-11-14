@@ -43,6 +43,18 @@ Letto nel codice di `main` (0.14.0), `web/src/modules/flightops/screens/`.
 - **La card**: copertina, stato, tipo, titolo, riassunto su due righe, periodo; sotto, una riga di numeri — leg, miglia, rating minimo
   (`RatingBadge`), l'award se c'è. Un tour con sottotour dice quanti ne ha.
 
+**Com'è andata** (seconda PR della fase 6, ramo `feat/tour-list`, in fila dopo la pagina; nota `2026-11-10-l-elenco-dei-tour`): l'elenco
+è `PublicToursPage` (`screens/public.tsx`), la card `TourCards.tsx` sui pezzi della testata (`TourBadges`), i conti puri in
+`screens/tourListing.ts` con i loro test. Lato server l'endpoint `/public` prende `?states=` e l'archivio è `?states=Closed`, dal più
+recente chiuso; la card ha tre campi in più (`minPilotRatingName`, `award`, `subtours`), e il blocco `flightops.tourCards` li porta. Le
+scelte che il §3 non scrive:
+
+- **«I miei tour»** sono i tour di primo livello iniziati e non finiti fra quelli che si volano, e non si ripetono nella scheda sotto;
+- **la ricerca e il tipo stanno nel browser**, sulle card della scheda, e il tipo offre i tipi che la scheda ha (sette parole, non le sei
+  del §3: «In sequenza con partenza a scelta» è un tipo suo);
+- **il periodo** sulla card al posto di «Apre il» / «Aperto fino al»;
+- **le card dei sottotour** dicono il loro tipo, non quello del contenitore (`PublicSubtourDto.Kind`).
+
 ## 4. La pagina di un tour (`/tours/{slug}`)
 
 - **La testata** (`Hero` con il banner): titolo, stato, tipo, periodo; sotto, una striscia di `StatTile` — leg, miglia, tempo stimato,

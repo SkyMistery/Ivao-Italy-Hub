@@ -732,6 +732,28 @@ export function copyRulesSchema(tours: readonly ChoiceOption[] = []) {
 
 export type CopyRulesFormValues = z.output<ReturnType<typeof copyRulesSchema>>;
 
+// ---- the list of the tours (design 11 §3, phase 6) --------------------------------------------------
+
+/**
+ * The three tabs of `/tours`: the tours a pilot can fly now (open, and closing — still taking reports), those to come, and
+ * the archive of the closed ones. The names are part of the address.
+ */
+export const TOUR_LIST_TABS = ['open', 'upcoming', 'archive'] as const;
+
+export type TourListTab = (typeof TOUR_LIST_TABS)[number];
+
+/**
+ * `/tours`: the open tab, a search by name and the kind, in the address like the generated list, so that a link lands on
+ * a view. `catch` as `/events` does: an address edited by hand shows the tours, not an error.
+ */
+export const tourListSearchSchema = z.object({
+  tab: z.enum(TOUR_LIST_TABS).optional().catch(undefined),
+  q: z.string().optional().catch(undefined),
+  kind: z.string().optional().catch(undefined),
+});
+
+export type TourListSearch = z.output<typeof tourListSearchSchema>;
+
 // ---- the page of a tour (design 11 §4, phase 6) -----------------------------------------------------
 
 /**

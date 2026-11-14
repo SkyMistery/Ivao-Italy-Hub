@@ -1,27 +1,31 @@
-import { Badge, CardRoot, H4 } from '@ivao/atmosphere-react';
+import { CardRoot, H4 } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
+import { Award } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { bootstrapQuery } from '../../../features/me/queries';
 import { mediaFileUrl } from '../../../shared/api/mediaUrl';
 import { useMoment } from '../../../shared/i18n/useMoment';
+import { RatingBadge } from '../../../shared/ui';
 import { myToursQuery } from '../api';
 
 import { ProgressLine } from './ProgressLine';
+import { TourBadges } from './TourFace';
 
 /**
- * The cards of the tours (design M2 §8.1): the picture, the title, the summary, what the tour is, how many legs and how
- * far. Written once and drawn twice — by `/tours` and by the block `flightops.tourCards` — because they are the same
- * cards, and a second copy is a second thing to keep in step.
+ * The cards of the tours (design 11 §3, phase 6): the cover, the state, the kind, the title, the summary on two lines, the
+ * period; under them a line of numbers — legs and miles, the minimum rating, the award, the subtours of a container. Written
+ * once and drawn by `/tours`, by the subtours of a container's page and by the block `flightops.tourCards`, because they are
+ * the same cards; their state and kind are the head's own pieces (`TourBadges`, principle 3), and their numbers the
+ * server's (principle 5).
  *
  * A card is the same for a visitor and for a pilot, and so is what the server sends (T10). The progress bar and the next
  * leg of a tour the pilot started (design M2 §8.1) are drawn on top from the pilot's own answer, `/api/flightops/my-tours`,
- * asked only when somebody is signed in (T15b, note 2026-09-24-le-pagine-delle-persone §3.1) — on `/tours` and in the block
- * alike, because both draw these cards.
+ * asked only when somebody is signed in (T15b, note 2026-09-24-le-pagine-delle-persone §3.1) — wherever the cards are drawn.
  */
 
-/** One card, with its translated strings already read: the two callers read them from different shapes. */
+/** One card, with its translated strings already read: the callers read them from different shapes. */
 export interface TourCard {
   readonly id: number;
   readonly slug: string;
@@ -34,6 +38,11 @@ export interface TourCard {
   readonly closeAt: string;
   readonly legs: number;
   readonly totalNm: number;
+  readonly minPilotRatingName: string | null;
+  /** The award the tour gives, by name; none when it gives none. */
+  readonly award: string | null;
+  /** How many subtours a container has; nought on any other tour. */
+  readonly subtours: number;
 }
 
 export function TourCards({ tours }: { tours: readonly TourCard[] }) {
@@ -61,35 +70,48 @@ export function TourCards({ tours }: { tours: readonly TourCard[] }) {
                     loading="lazy"
                   />
                 )}
-                <div className="flex flex-col gap-2 p-5">
+                <div className="flex flex-1 flex-col gap-2 p-5">
                   <span className="flex flex-wrap items-center gap-2">
-                    <Badge
-                      variant="flat"
-                      color={tour.state === 'Upcoming' ? 'gray' : 'blue'}
-                      text={t(`flightops:tours.options.state.${tour.state}`)}
-                    />
-                    <span className="text-muted-foreground text-sm">
-                      {t(`flightops:tours.options.kind.${tour.kind}`)}
-                    </span>
+                    <TourBadges state={tour.state} kind={tour.kind} />
                   </span>
                   <H4>{tour.title}</H4>
-                  {tour.summary === '' ? null : <p className="text-muted-foreground">{tour.summary}</p>}
-                  <p className="text-muted-foreground text-sm tabular-nums">
-                    {tour.state === 'Upcoming'
-                      ? t('flightops:public.opensOn', { date: moment(tour.releaseAt, { time: false }) })
-                      : t('flightops:public.closesOn', { date: moment(tour.closeAt, { time: false }) })}
-                  </p>
-                  {tour.legs === 0 ? null : (
-                    <p className="text-muted-foreground text-sm tabular-nums">
-                      {/* ⚠️ Not the editor's `legs.totals`: on a card these are the legs the tour is made of,
-                        said to a visitor, and nobody has flown them. Seen on the bench at 1500 px. The
-                        editor's said "flown" in English too, until the gallery showed it (T20c). */}
-                      {t('flightops:public.legsAndDistance', {
-                        count: tour.legs,
-                        distance: Math.round(tour.totalNm),
-                      })}
-                    </p>
+                  {tour.summary === '' ? null : (
+                    <p className="text-muted-foreground line-clamp-2">{tour.summary}</p>
                   )}
+                  <p className="text-muted-foreground text-sm tabular-nums">
+                    {t('flightops:public.period', {
+                      from: moment(tour.releaseAt, { time: false }),
+                      to: moment(tour.closeAt, { time: false }),
+                    })}
+                  </p>
+                  <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-sm">
+                    {tour.legs === 0 ? null : (
+                      <span className="tabular-nums">
+                        {/* ⚠️ Not the editor's `legs.totals`: on a card these are the legs the tour is made of,
+                          said to a visitor, and nobody has flown them. Seen on the bench at 1500 px. The
+                          editor's said "flown" in English too, until the gallery showed it (T20c). */}
+                        {t('flightops:public.legsAndDistance', {
+                          count: tour.legs,
+                          distance: Math.round(tour.totalNm),
+                        })}
+                      </span>
+                    )}
+                    {tour.subtours === 0 ? null : (
+                      <span className="tabular-nums">
+                        {t('flightops:public.subtourCount', { count: tour.subtours })}
+                      </span>
+                    )}
+                    {tour.minPilotRatingName === null ? null : (
+                      <RatingBadge kind="Pilot" shortName={tour.minPilotRatingName} />
+                    )}
+                    {tour.award === null ? null : (
+                      <span className="text-muted-foreground inline-flex items-center gap-1">
+                        <Award aria-hidden className="size-4" />
+                        <span className="sr-only">{t('flightops:public.figures.award')}</span>
+                        {tour.award}
+                      </span>
+                    )}
+                  </div>
                   {progress === undefined ? null : <ProgressLine tour={progress} />}
                 </div>
               </CardRoot>

@@ -1333,14 +1333,27 @@ export function useDeleteError() {
 export type PublicTourCardDto = components['schemas']['PublicTourCardDto'];
 export type PublicTourDto = components['schemas']['PublicTourDto'];
 export type PublicLegDto = components['schemas']['PublicLegDto'];
+export type TourStateKind = components['schemas']['TourStateKind'];
 
 const publicKey = ['flightops', 'public'] as const;
 
-/** The cards of `/tours`: what the public sees now, in the server's order. Anonymous, like the page. */
-export const publicToursQuery = queryOptions({
-  queryKey: [...publicKey, 'tours'] as const,
-  queryFn: async (): Promise<PublicTourCardDto[]> => unwrap(await api.GET('/api/flightops/tours/public')),
-});
+/**
+ * The cards of `/tours`: what the public sees now, in the server's order. Anonymous, like the page. Nothing asked is the
+ * three states of a card — open, closing, upcoming —; the archive of the list is the same read asked for `Closed`
+ * (design 11 §3).
+ */
+export function publicToursQuery(states: readonly TourStateKind[] = []) {
+  return queryOptions({
+    queryKey: [...publicKey, 'tours', ...states] as const,
+    queryFn: async (): Promise<PublicTourCardDto[]> =>
+      unwrap(
+        await api.GET(
+          '/api/flightops/tours/public',
+          states.length === 0 ? {} : { params: { query: { states: [...states] } } },
+        ),
+      ),
+  });
+}
 
 /**
  * One tour by its address. A tour nobody outside the staff may see answers 404, and the query answers `null` for it:
