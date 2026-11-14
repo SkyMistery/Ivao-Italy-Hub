@@ -27,6 +27,12 @@ namespace IvaoHub.Modules.FlightOps.Tours;
 /// <para>A tour waits, and is counted as waiting, while one of its reports is still to be decided or disputed, or one of its
 /// completions still waits for its award: the job never takes from a validator what they are reading, nor makes a forgotten
 /// award final. One save per tour, through the interceptor like every write (no bulk statement).</para>
+/// <para>A subtour is archived only with its container (Carmine, 14 November 2026, issue #328 item 10; note
+/// 2026-11-14-la-pulizia-dei-sottotour): the container counts its subtours from their completed enrolments, which the archive
+/// deletes, so a subtour waits while its container is not archived. The tours of the first level go first, and a subtour whose
+/// container was archived in the same run goes after it. The other half: a container waits while one of its subtours waits, or
+/// a report decided later on the subtour would find the container's enrolment gone, and its completion and award would never
+/// come.</para>
 /// </summary>
 [DisallowConcurrentExecution]
 public sealed class TourRetentionJob(
@@ -67,7 +73,9 @@ public sealed class TourRetentionJob(
                     && tour.PurgedAt == null
                     && tour.CloseAt != null
                     && tour.CloseAt < shortBefore)
-                .Select(tour => new { tour.Id, tour.ReleaseAt, tour.CloseAt })
+                .OrderBy(tour => tour.ParentTourId != null)
+                .ThenBy(tour => tour.Id)
+                .Select(tour => new { tour.Id, tour.ParentTourId, tour.ReleaseAt, tour.CloseAt })
                 .ToListAsync(cancellationToken);
 
             var archived = 0;
@@ -81,7 +89,8 @@ public sealed class TourRetentionJob(
                     continue;
                 }
 
-                if (await WaitsAsync(tour.Id, cancellationToken))
+                if ((tour.ParentTourId is { } containerId && !await ArchivedAsync(containerId, cancellationToken))
+                    || await WaitsAsync(tour.Id, cancellationToken))
                 {
                     waiting++;
                     continue;
@@ -127,11 +136,23 @@ public sealed class TourRetentionJob(
         return releaseAt is { } release && closeAt > release.AddMonths(12) ? settings.RetentionMonthsLong : settings.RetentionMonths;
     }
 
-    /// <summary>A report still to be decided, or disputed, or a completion whose award nobody has handled yet.</summary>
+    /// <summary>Whether a tour has been archived already — in an earlier run, or earlier in this one.</summary>
+    private Task<bool> ArchivedAsync(long tourId, CancellationToken cancellationToken) =>
+        CrudSource.BackOffice<Tour>(database).AnyAsync(row => row.Id == tourId && row.PurgedAt != null, cancellationToken);
+
+    /// <summary>
+    /// A report still to be decided, or disputed, or a completion whose award nobody has handled yet — of the tour, or of one of
+    /// its subtours (the reviewer on #496): a container waits for them.
+    /// </summary>
     private async Task<bool> WaitsAsync(long tourId, CancellationToken cancellationToken)
     {
+        var tourIds = await CrudSource.BackOffice<Tour>(database).AsNoTracking()
+            .Where(tour => tour.Id == tourId || tour.ParentTourId == tourId)
+            .Select(tour => tour.Id)
+            .ToListAsync(cancellationToken);
+
         var open = await CrudSource.BackOffice<Pirep>(database).AnyAsync(
-            report => report.TourId == tourId
+            report => tourIds.Contains(report.TourId)
                 && (report.Status == PirepStatus.Queued
                     || report.Status == PirepStatus.InReview
                     || report.Status == PirepStatus.ToModify
@@ -143,7 +164,7 @@ public sealed class TourRetentionJob(
         }
 
         var enrolments = await database.Enrolments.AsNoTracking()
-            .Where(enrolment => enrolment.TourId == tourId && enrolment.CompletedAt != null)
+            .Where(enrolment => tourIds.Contains(enrolment.TourId) && enrolment.CompletedAt != null)
             .Select(enrolment => enrolment.Id)
             .ToListAsync(cancellationToken);
         var sources = enrolments.Select(Enrolment.ReferenceOf).ToList();
