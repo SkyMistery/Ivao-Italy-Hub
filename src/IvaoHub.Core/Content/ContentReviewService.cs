@@ -361,10 +361,16 @@ public sealed class ContentReviewService(
             return Refuse("status", "errors.content.review.notReady");
         }
 
-        // The address as the approver corrected it, through the one check a page written by hand
-        // goes through: a small mistake is fixed here rather than sent back for a week.
+        // The address as the approver corrected it, through the checks a page written by hand
+        // goes through, the slug's own and the address's: a small mistake is fixed here rather than
+        // sent back for a week.
         if (request.Slug is { } slug && (slug != content.Slug || request.ParentId != content.ParentId))
         {
+            if (ContentWriteDtoValidator.SlugProblem(slug.Trim()) is { } problem)
+            {
+                return Refuse("slug", problem);
+            }
+
             content.Slug = slug.Trim();
             content.ParentId = request.ParentId;
 
