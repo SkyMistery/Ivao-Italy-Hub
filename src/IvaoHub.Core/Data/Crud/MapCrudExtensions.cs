@@ -387,6 +387,11 @@ public static class MapCrudExtensions
             return Forbidden(scope);
         }
 
+        if (await RunHookAsync(scope, options.BeforeDelete, entity, isNew: false, http.RequestAborted) is { } refused)
+        {
+            return refused;
+        }
+
         if (options.Delete is null)
         {
             scope.Database.Remove(entity);

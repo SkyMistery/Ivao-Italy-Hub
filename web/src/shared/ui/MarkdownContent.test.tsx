@@ -30,6 +30,21 @@ test('drawing the same prose again keeps the elements it drew', () => {
 
 const drawn = (source: string) => render(<MarkdownContent source={source} />).container;
 
+/** #321, point 5: the two forms of a link the server's pattern does not read, and the library's transform let through. */
+test('a link leads nowhere outside the content rule, whatever form of Markdown named it', () => {
+  const nested = drawn('[see [here]](//elsewhere.example)').querySelector('a');
+  expect(nested?.getAttribute('href') ?? '').toBe('');
+
+  const byReference = drawn('[there][r]\n\n[r]: //elsewhere.example').querySelector('a');
+  expect(byReference?.getAttribute('href') ?? '').toBe('');
+
+  // What the rule allows is drawn as it was.
+  expect(drawn('[ok](/about)').querySelector('a')?.getAttribute('href')).toBe('/about');
+  expect(drawn('[ok][r]\n\n[r]: https://example.org').querySelector('a')?.getAttribute('href')).toBe(
+    'https://example.org',
+  );
+});
+
 /** The design of the editor, phase 3, §4.6: two pieces of syntax more, and a body already saved draws as it did (§6). */
 test('two tildes strike, and one is a tilde', () => {
   expect(drawn('~~via~~').querySelector('del')?.textContent).toBe('via');

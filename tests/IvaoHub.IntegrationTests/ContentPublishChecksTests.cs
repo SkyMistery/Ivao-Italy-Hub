@@ -117,15 +117,38 @@ public sealed class ContentPublishChecksTests(MariaDbFixture mariaDb) : IAsyncLi
     [InlineData("/tours/whatever-the-module-says")]
     [InlineData("/me")]
     [InlineData("https://example.org/nobody-knows")]
-    [InlineData("//example.org/nobody-knows")]
     [InlineData("#a-part-of-this-page")]
     [InlineData("mailto:somebody@example.org")]
+    [InlineData("tel:+390000000")]
     public async Task WhatTheApplicationAnswersForAndWhatLeavesTheSiteAreNotAsked(string address)
     {
         var token = TestContext.Current.CancellationToken;
         var page = await WriteAsync(Visibility.Public, ButtonTo(address), token);
 
         Assert.Empty(await ProblemsAsync(page.Id, Link, token));
+    }
+
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("//example.org/nobody-knows")]
+    public async Task AnAddressThatIsNotOneToFollowIsRefusedOnTheSaveAndOnThePublication(string address)
+    {
+        // #321, point 5. `//example.org` was "not asked" here until then: it leaves the site while looking like a path.
+        var token = TestContext.Current.CancellationToken;
+
+        using var saved = await SendAsync(HttpMethod.Post, ContentEndpoints.Pattern, Payload(ButtonTo(address)), token);
+        Assert.Equal(HttpStatusCode.BadRequest, saved.StatusCode);
+        var refused = (await saved.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("errors");
+        Assert.Equal("errors.url.unsafe", refused.GetProperty(Link)[0].GetString());
+
+        // A page saved before the save asked is refused when it goes out, not passed over.
+        var page = await WriteAsync(Visibility.Public, ButtonTo("/"), token);
+        await SetBodyAsync(page.Id, ButtonTo(address), token);
+
+        Assert.Equal(["errors.url.unsafe"], await ProblemsAsync(page.Id, Link, token));
+        using var published = await PublishAsync(page.Id, token);
+        Assert.Equal(HttpStatusCode.BadRequest, published.StatusCode);
+        Assert.False(await IsOnlineAsync(page.Id, token));
     }
 
     [Fact]
@@ -249,6 +272,56 @@ public sealed class ContentPublishChecksTests(MariaDbFixture mariaDb) : IAsyncLi
         Assert.Equal(ContentPublishService.LinkNowhereKey, errors.GetProperty(Link)[0].GetString());
     }
 
+    [Fact]
+    public async Task PublicationsOfOnePageAtOnceAreEachAPublicationOrAConflictAndNeverAFault()
+    {
+        // #321, point 4: the next version is MAX + 1, read before the transaction, against a unique index. Two at once took
+        // the same number and the second was a 500 from the index; it is a 409, as a stale row version is.
+        var token = TestContext.Current.CancellationToken;
+        var page = await WriteAsync(Visibility.Public, Text("Insieme."), token);
+
+        var answers = await Task.WhenAll(Enumerable.Range(0, 6).Select(_ => PublishAsync(page.Id, token)));
+        var statuses = answers.Select(answer => answer.StatusCode).ToList();
+        foreach (var answer in answers)
+        {
+            answer.Dispose();
+        }
+
+        Assert.All(statuses, status => Assert.Contains(status, new[] { HttpStatusCode.OK, HttpStatusCode.Conflict }));
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        var versions = await database.ContentVersions.AsNoTracking()
+            .Where(version => version.ContentId == page.Id)
+            .Select(version => version.Version)
+            .ToListAsync(token);
+
+        Assert.Equal(statuses.Count(status => status == HttpStatusCode.OK), versions.Count);
+        Assert.Equal(Enumerable.Range(1, versions.Count), versions.Order());
+    }
+
+    [Fact]
+    public async Task NewPagesOnOneFreeAddressAtOnceAreOnePageAndTheRestRefusedNeverAFault()
+    {
+        // #321, point 4: the address is checked free, then inserted. Two at once both found it free, and the second was a
+        // 500 from the unique index; it is the "taken" refusal when the check sees the first, and a 409 when it does not.
+        var token = TestContext.Current.CancellationToken;
+        var slug = $"race-{Guid.NewGuid():N}"[..20];
+
+        var answers = await Task.WhenAll(Enumerable.Range(0, 6).Select(_ =>
+            SendAsync(HttpMethod.Post, ContentEndpoints.Pattern, Payload(Text("Uno solo."), slug), token)));
+        var statuses = answers.Select(answer => answer.StatusCode).ToList();
+        foreach (var answer in answers)
+        {
+            answer.Dispose();
+        }
+
+        Assert.All(
+            statuses,
+            status => Assert.Contains(status, new[] { HttpStatusCode.Created, HttpStatusCode.BadRequest, HttpStatusCode.Conflict }));
+        Assert.Single(statuses, HttpStatusCode.Created);
+    }
+
     /// <summary>The home leads to <c>/start</c>, a file the seed reads after it: seeding has to get the two out all the same.</summary>
     [Fact]
     public async Task TheSeededHomeComesOutThoughThePageItLeadsToIsSeededAfterIt()
@@ -301,21 +374,7 @@ public sealed class ContentPublishChecksTests(MariaDbFixture mariaDb) : IAsyncLi
         using var created = await SendAsync(
             HttpMethod.Post,
             ContentEndpoints.Pattern,
-            new
-            {
-                kind = kind.ToString(),
-                slug,
-                ownerDepartment = nameof(Department.WD),
-                visibility = visibility.ToString(),
-                isTemplate = false,
-                title = new Dictionary<string, string> { ["it"] = "Controllo", ["en"] = "Check" },
-                summary = (Dictionary<string, string>?)null,
-                seo = (Dictionary<string, object>?)null,
-                body = JsonNode.Parse(body),
-                schemaVersion = 1,
-                rowVersion = "0001-01-01T00:00:00",
-                parentId = kind == ContentKind.Page ? _shelf : (long?)null,
-            },
+            Payload(body, slug, visibility, kind),
             cancellationToken);
         Assert.True(created.StatusCode == HttpStatusCode.Created, await created.Content.ReadAsStringAsync(cancellationToken));
 
@@ -323,6 +382,26 @@ public sealed class ContentPublishChecksTests(MariaDbFixture mariaDb) : IAsyncLi
         var url = kind == ContentKind.Page ? $"/{row.GetProperty("path").GetString()}" : $"/news/{slug}";
         return new Written(row.GetProperty("id").GetInt64(), slug, url);
     }
+
+    private object Payload(
+        string body,
+        string? slug = null,
+        Visibility visibility = Visibility.Public,
+        ContentKind kind = ContentKind.Page) => new
+    {
+        kind = kind.ToString(),
+        slug = slug ?? $"chk-{Guid.NewGuid():N}"[..20],
+        ownerDepartment = nameof(Department.WD),
+        visibility = visibility.ToString(),
+        isTemplate = false,
+        title = new Dictionary<string, string> { ["it"] = "Controllo", ["en"] = "Check" },
+        summary = (Dictionary<string, string>?)null,
+        seo = (Dictionary<string, object>?)null,
+        body = JsonNode.Parse(body),
+        schemaVersion = 1,
+        rowVersion = "0001-01-01T00:00:00",
+        parentId = kind == ContentKind.Page ? _shelf : (long?)null,
+    };
 
     /// <summary>The keys of what stands in the way at one path, empty when it has nothing to say about that path.</summary>
     private async Task<string[]> ProblemsAsync(long id, string path, CancellationToken cancellationToken)

@@ -115,6 +115,36 @@ public sealed class PageReviewTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task TheSlugTheApproverCorrectsIsHeldToTheRulesOfASlug()
+    {
+        // #321, point 2: the corrected slug skipped the slug's own rules, so `news/x` was saved and
+        // 200 characters were a 500 from the unique index. The page stays ready, as it was.
+        var token = TestContext.Current.CancellationToken;
+        var (coordinator, director) = await PeopleAsync(token);
+
+        var page = await CreateAsync(coordinator, ContentKind.Page, Stem(), Body("Indirizzo"), token);
+        using (var ready = await ReviewAsync(coordinator, page.Id, new { action = "Ready" }, token))
+        {
+            Assert.Equal(HttpStatusCode.OK, ready.StatusCode);
+        }
+
+        foreach (var (slug, key) in new[]
+        {
+            ("news/x", "errors.slug.invalid"),
+            ("Con Spazi", "errors.slug.invalid"),
+            (new string('a', ContentWriteDtoValidator.MaxSlugLength + 1), "errors.text.tooLong"),
+        })
+        {
+            using var approved = await ReviewAsync(director, page.Id, new { action = "Approve", slug, parentId = _shelf }, token);
+            Assert.Equal(HttpStatusCode.BadRequest, approved.StatusCode);
+            Assert.Equal(key, await FirstErrorAsync(approved, "slug", token));
+        }
+
+        var row = await director.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/{page.Id}", token);
+        Assert.Equal("Ready", row.GetProperty("status").GetString());
+    }
+
+    [Fact]
     public async Task APageSentBackIsADraftAgainWithTheNoteAndAWithdrawnOneToo()
     {
         var token = TestContext.Current.CancellationToken;

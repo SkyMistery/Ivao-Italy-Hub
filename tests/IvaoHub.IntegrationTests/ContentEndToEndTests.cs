@@ -370,6 +370,39 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task AnEnvelopeWithANumberWhereTextBelongsIsARefusalNotAFault()
+    {
+        // #321, point 1: `"id": 5` on a section, or `"type": 1` on a block, threw inside the
+        // validation and answered 500; `"key": 5` was saved and broke the review of the page.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(EventsCoordinatorVid, position: "IT-EC", cancellationToken: token);
+
+        using var client = _factory.CreateApiClient();
+        await _factory.SignInAsync(client, EventsCoordinatorVid, token);
+
+        var body = JsonNode.Parse("""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": 5, "key": 5, "layout": "1/2+1/2", "blocks": [ { "id": "b1", "type": 1, "column": 1 } ] } ]
+        }
+        """);
+
+        using var response = await SendAsync(
+            client,
+            HttpMethod.Post,
+            ContentEndpoints.Pattern,
+            Payload(Department.ED, $"bad-{Guid.NewGuid():N}"[..20], body: body),
+            token);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var errors = (await response.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("errors");
+        Assert.Equal("errors.body.idMissing", errors.GetProperty("body.sections[0]")[0].GetString());
+        Assert.Equal("errors.body.keyNotText", errors.GetProperty("body.sections[0].key")[0].GetString());
+        Assert.Equal("errors.body.blockTypeMissing", errors.GetProperty("body.sections[0].blocks[0]")[0].GetString());
+    }
+
+    [Fact]
     public async Task ABlockForFewerReadersThanThePageIsRefusedWhereItSits()
     {
         // Issue #362, note 2026-10-28-il-pubblico-di-un-blocco: what waits for the staff draws nothing for anybody else. It
