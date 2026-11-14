@@ -1,7 +1,9 @@
 # Le parole dei controlli che il browser fa con lo schema
 
 **Data:** 14 novembre 2026, issue #386 (giro dei tester). Ramo `fix/forms-words-2`, in coda alla #501 (#384).
-**Stato:** Proposta. Domanda a Carmine posta dal master il 14 novembre 2026; risposta: _da scrivere, con il link al commento_.
+**Stato:** Decisa da Carmine il 14 novembre 2026: la (A), «Sì, la A», data in chat alla sessione master e scritta sulla issue
+(https://github.com/SkyMistery/Ivao-Italy-Hub/issues/386#issuecomment-6875853798). Che cosa è stato deciso, esattamente: «La
+decisione», in fondo.
 **Classificazione** (`CLAUDE.md` §5): (c). Un meccanismo nuovo del nucleo: le parole di un controllo che oggi nessuno traduce.
 
 ## Che cosa serve
@@ -54,9 +56,30 @@ il browser può fare (un campo richiesto di un modulo che non va al server, un f
 **Raccomandazione: (A).** Una regola, un posto, le parole del server; (B) resta giusta dove la #491 l'ha usata, per i moduli
 live.
 
+## La decisione
+
+Carmine ha scelto la (A) **nella forma in cui il master gliel'ha posta** (il commento linkato sopra), che differisce in due punti da
+quella scritta qui sopra; vale la decisione, e il codice la segue:
+
+- **La mappa è di tutto zod, data una volta all'avvio della SPA** (`z.config({ customError })`), non solo al generatore. Sta in
+  `web/src/shared/forms/zodWords.ts` (`speakTheServersWords`), chiamata da `web/src/main.tsx` con l'istanza i18next
+  dell'applicazione; la frase si risolve quando il controllo gira, nella lingua sullo schermo. Le letture di zod che non mostrano
+  i loro messaggi (`validateSearch`, i payload) non cambiano. ⚠️ **Una li mostra**: l'import di una pagina scritta con Claude
+  (`features/content/claudeFile.ts`) mette il messaggio di zod come dettaglio, in caratteri tecnici, sotto ogni problema del file
+  (`content.import.propInvalid`, `envelopeInvalid`). Lì l'inglese di zod («Invalid input: expected string, received number»)
+  diventa la frase della mappa («Questo valore non è valido.»): nella lingua sullo schermo, ma meno precisa per chi corregge il
+  file. Il percorso del campo e la frase della chiave restano. Se quel dettaglio deve restare tecnico, è una scelta a parte.
+- **Tre chiavi, non cinque**: un testo troppo lungo → `errors.text.tooLong`; un valore assente, o un testo o un elenco vuoto sotto un
+  minimo di uno → `errors.required`; tutto il resto, numeri compresi → la chiave nuova `errors.invalid`. Le chiavi dei numeri del
+  server (`errors.number.min`, `errors.number.range`) non entrano: la decisione non le nomina.
+
+Resta com'era scritto: nessuno schema toccato, nessuna regola copiata, un messaggio scritto da uno schema vince (zod 4: l'errore dello
+schema viene prima di quello della configurazione). La (B) non è presa.
+
 ## Da portare nel piano
 
-- §16 (meccanismi generici), la riga «Validazione»: il browser dice le parole del server con la mappa d'errori del generatore
-  (`shared/forms/`), mai messaggi scritti negli schemi, mai una seconda copia delle regole.
+- §16 (meccanismi generici), la riga «Validazione»: il browser dice le parole del server con una mappa d'errori di zod del nucleo
+  (`shared/forms/zodWords.ts`, data all'avvio), mai messaggi scritti negli schemi, mai una seconda copia delle regole.
 - Design M0 §7.5 (il generatore dei moduli): i messaggi del controllo nel browser passano dalla stessa mappa.
-- `CLAUDE.md` §2, tabella, riga «Validation»: aggiungere la mappa d'errori del generatore accanto a `ProblemDetails`.
+- `CLAUDE.md` §2, tabella, riga «Validation»: aggiungere la mappa d'errori di zod (`shared/forms/zodWords.ts`) accanto a
+  `ProblemDetails`.
