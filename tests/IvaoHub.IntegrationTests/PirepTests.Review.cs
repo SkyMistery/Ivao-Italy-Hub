@@ -8,6 +8,7 @@ using IvaoHub.Core.Division;
 using IvaoHub.Core.Notifications;
 using IvaoHub.Modules.FlightOps;
 using IvaoHub.Modules.FlightOps.Data;
+using IvaoHub.Modules.FlightOps.People;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Review;
 using IvaoHub.Modules.FlightOps.Rules;
@@ -418,6 +419,88 @@ public sealed partial class PirepTests
             var queued = await inner.QueueAsync(intent, cancellationToken);
             _queued = queued > 0;
             return queued;
+        }
+    }
+
+    /// <summary>
+    /// On their own report a validator who is also a pilot reads the pilot's view (Carmine, 21 October 2026, issue #328 item 5):
+    /// not who holds it, not who decided it, not the staff note, not who wrote the other steps — on the validation page, in the
+    /// queue and on their own pilot page. Whoever decides it reads them all.
+    /// </summary>
+    [Fact]
+    public async Task OnTheirOwnReportAValidatorReadsWhatThePilotIsTold()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+
+        var (tourId, legs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        await GrantValidateAsync(ValidatorVid, tourId, token);
+
+        // As «add a validator» leaves them (Validators.cs): the pilots' pages of the department too.
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            hub.UserGrants.Add(new UserGrant
+            {
+                Vid = ValidatorVid,
+                Kind = GrantKind.Permission,
+                Value = TourPermissions.ViewPilots,
+                Department = Department.FOD,
+                Effect = GrantEffect.Grant,
+                Reason = "fo-test own report",
+            });
+            await hub.SaveChangesAsync(token);
+        }
+
+        using var validator = await SignedInAsync(ValidatorVid, token);
+
+        try
+        {
+            var own = Id(await CreatedAsync(validator, Reports(tourId), Payload(legs[0], _flights.Add(ValidatorVid, "XAA196", Rome, Milan, DateTime.UtcNow.AddDays(-1))), token));
+
+            var page = await TakeAsync(coordinator, own, token);
+            var row = await QueueRowAsync(validator, tourId, own, token);
+            Assert.True(row.GetProperty("isOwn").GetBoolean());
+            Assert.Equal(JsonValueKind.Null, row.GetProperty("assignedTo").ValueKind);
+            Assert.Equal(JsonValueKind.Null, row.GetProperty("leaseUntil").ValueKind);
+
+            await StepAsync(
+                coordinator,
+                own,
+                "decide",
+                Decision(PirepStatus.Accepted, [], RowVersion(page)) with { StaffNote = "fo-test between staff" },
+                token);
+
+            var theirs = await OkAsync(await validator.GetAsync($"{ReviewEndpoints.Pattern}/{own}", token), token);
+            Assert.Equal("Accepted", theirs.GetProperty("status").GetString());
+            Assert.Equal(JsonValueKind.Null, theirs.GetProperty("decidedBy").ValueKind);
+            Assert.Equal(JsonValueKind.Null, theirs.GetProperty("staffNote").ValueKind);
+            Assert.Equal(JsonValueKind.Null, theirs.GetProperty("assignedTo").ValueKind);
+            var steps = theirs.GetProperty("history").EnumerateArray().ToList();
+            Assert.Contains(steps, step => step.GetProperty("toStatus").GetString() == "Accepted" && step.GetProperty("by").ValueKind == JsonValueKind.Null);
+            Assert.DoesNotContain(steps, step => step.GetProperty("by").ValueKind != JsonValueKind.Null && step.GetProperty("by").GetProperty("vid").GetInt32() != ValidatorVid);
+
+            var staff = await OkAsync(await coordinator.GetAsync($"{ReviewEndpoints.Pattern}/{own}", token), token);
+            Assert.Equal(CoordinatorVid, staff.GetProperty("decidedBy").GetProperty("vid").GetInt32());
+            Assert.Equal("fo-test between staff", staff.GetProperty("staffNote").GetString());
+
+            var year = DateTime.UtcNow.AddDays(-1).Year;
+            var ownPage = await OkAsync(await validator.GetAsync($"{PilotEndpoints.Pattern}/{ValidatorVid}?year={year}", token), token);
+            var flight = ownPage.GetProperty("flights").EnumerateArray().Single(entry => entry.GetProperty("pirepId").GetInt64() == own);
+            Assert.Equal(JsonValueKind.Null, flight.GetProperty("decidedBy").ValueKind);
+
+            var staffPage = await OkAsync(await coordinator.GetAsync($"{PilotEndpoints.Pattern}/{ValidatorVid}?year={year}", token), token);
+            flight = staffPage.GetProperty("flights").EnumerateArray().Single(entry => entry.GetProperty("pirepId").GetInt64() == own);
+            Assert.Equal(CoordinatorVid, flight.GetProperty("decidedBy").GetProperty("vid").GetInt32());
+        }
+        finally
+        {
+            await using var scope = _host.Services.CreateAsyncScope();
+            var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+            await Everything<Pirep>(database).Where(report => report.Vid == ValidatorVid).ExecuteDeleteAsync(token);
+            await database.Enrolments.Where(row => row.Vid == ValidatorVid).ExecuteDeleteAsync(token);
+            var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            await hub.UserGrants.Where(grant => grant.Vid == ValidatorVid && grant.Reason == "fo-test own report").ExecuteDeleteAsync(token);
         }
     }
 

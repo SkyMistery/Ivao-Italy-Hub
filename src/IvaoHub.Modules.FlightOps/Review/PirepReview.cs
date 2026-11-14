@@ -320,7 +320,13 @@ public sealed class PirepReview(
         return (ReviewResult.Done, null);
     }
 
-    /// <summary>The validation page of a report (§4.3).</summary>
+    /// <summary>
+    /// The validation page of a report (§4.3).
+    /// <para>On the reader's own report the pilot's view wins (Carmine, 21 October 2026, issue #328 item 5): a validator who is
+    /// also a pilot reads it with the outcome and the errors marked (§4.1), and nothing the pilot is not told — who holds it,
+    /// who decided it or its dispute, the staff note and the override's reason, who wrote the other steps of the history and
+    /// what they wrote, which validator's agent ran a check (§3.5, note 2026-09-23-la-validazione §2).</para>
+    /// </summary>
     public async Task<ReviewDto> PageAsync(Pirep pirep, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(pirep);
@@ -372,6 +378,10 @@ public sealed class PirepReview(
             .ToList();
         var located = await airports.FindAsync(codes, cancellationToken);
         var mayValidate = await MayValidateAsync(pirep);
+        var own = pirep.Vid == currentUser.Vid;
+        MemberDto? Staff(int? vid) => own ? null : Member(vid, names);
+        bool ByOthers(PirepEvent step) => own && step.ByVid != 0 && step.ByVid != pirep.Vid;
+        var checksFound = await ChecksAsync(pirep, rules, cancellationToken);
 
         // The thread of the dispute, when the reader may read it: the department, the validator who takes part.
         long? thread = null;
@@ -424,27 +434,27 @@ public sealed class PirepReview(
             errors,
             suggestion,
             await ProfileAsync(pirep, names, cancellationToken),
-            Member(pirep.AssignedToVid, names),
-            pirep.LeaseUntil,
-            Member(pirep.DecidedByVid, names),
+            Staff(pirep.AssignedToVid),
+            own ? null : pirep.LeaseUntil,
+            Staff(pirep.DecidedByVid),
             pirep.DecidedAt,
             pirep.NoteToPilot,
-            pirep.StaffNote,
+            own ? null : pirep.StaffNote,
             pirep.ThresholdOverridden,
-            pirep.OverrideReason,
+            own ? null : pirep.OverrideReason,
             await weather.ForReviewAsync(pirep, cancellationToken),
-            await ChecksAsync(pirep, rules, cancellationToken),
+            own ? [.. checksFound.Select(check => check with { By = null })] : checksFound,
             pirep.ChecksRanAt,
             [
                 .. pirep.Events.OrderBy(step => step.At).ThenBy(step => step.Id).Select(step => new ReviewEventDto(
                     step.FromStatus,
                     step.ToStatus,
-                    step.ByVid == 0 ? null : Member(step.ByVid, names),
+                    step.ByVid == 0 || ByOthers(step) ? null : Member(step.ByVid, names),
                     step.At,
-                    step.Note)),
+                    ByOthers(step) ? null : step.Note)),
             ],
             pirep.DisputeStatus is { } dispute
-                ? new ReviewDisputeDto(dispute, pirep.DisputeText, pirep.DisputedAt, Member(pirep.DisputeDecidedByVid, names), pirep.DisputeDecidedAt, thread, pirep.OwnerDepartment)
+                ? new ReviewDisputeDto(dispute, pirep.DisputeText, pirep.DisputedAt, Staff(pirep.DisputeDecidedByVid), pirep.DisputeDecidedAt, thread, pirep.OwnerDepartment)
                 : null,
             new ReviewActionsDto(
                 CanTake: mayValidate && IsTakable(pirep, now) && !(pirep.Status == PirepStatus.InReview && pirep.AssignedToVid == currentUser.Vid && pirep.LeaseUntil > now),

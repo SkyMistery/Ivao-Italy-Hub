@@ -88,6 +88,8 @@ public sealed class Pilots(
 {
     public async Task<PilotPageDto?> ReadAsync(int vid, int year, CancellationToken cancellationToken)
     {
+        // Their own page, as a pilot sees their reports (issue #328, item 5): not who decided them, not who banned them.
+        var own = vid == currentUser.Vid;
         var reports = await CrudSource.BackOffice<Pirep>(database).AsNoTracking()
             .Include(report => report.Errors)
             .Where(report => report.Vid == vid && report.Status != PirepStatus.Withdrawn)
@@ -145,7 +147,7 @@ public sealed class Pilots(
                     report.ArrivalIcao,
                     report.TakeoffAt,
                     report.Status,
-                    PirepReview.Member(report.DecidedByVid, names),
+                    own ? null : PirepReview.Member(report.DecidedByVid, names),
                     report.DecidedAt,
                     report.DisputeStatus)),
             ],
@@ -154,9 +156,11 @@ public sealed class Pilots(
                 reports.Count(report => report.DisputeStatus == DisputeStatus.Upheld),
                 reports.Count(report => report.DisputeStatus == DisputeStatus.Dismissed)),
             await ThreadsAsync(vid, cancellationToken),
-            await BanEndpoints.RowsAsync(bans, database, reviews, now, cancellationToken),
+            own
+                ? [.. (await BanEndpoints.RowsAsync(bans, database, reviews, now, cancellationToken)).Select(ban => ban with { CreatedBy = null })]
+                : await BanEndpoints.RowsAsync(bans, database, reviews, now, cancellationToken),
             standings,
-            currentUser.HasAny(TourPermissions.Ban) && vid != currentUser.Vid);
+            currentUser.HasAny(TourPermissions.Ban) && !own);
     }
 
     /// <summary>
