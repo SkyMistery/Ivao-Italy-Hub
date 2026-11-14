@@ -1,5 +1,4 @@
 import {
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -10,7 +9,8 @@ import {
   AlertDialogTrigger,
   Button,
 } from '@ivao/atmosphere-react';
-import { useState, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -31,6 +31,14 @@ import { useTranslation } from 'react-i18next';
  * and only the server knows which, so the editor asks it when the dialog opens (`onOpenChange`) and
  * keeps the confirmation off until the answer — and the reason a retirement needs — is there
  * (`confirmDisabled`). Extended again rather than written twice.
+ *
+ * ⚠️ The answer is often a live form (`SchemaForm` with `onChange`), which the screen keeps and confirms with. The form
+ * applies 150 ms after the last keystroke; a press inside that pause applies at once, on the click in capture
+ * (`decisions/2026-11-08-l-ultima-battuta.md`). But a click whose listeners run in one go — a click dispatched by a
+ * script, every click of a test — reached `onConfirm` before React had drawn what was applied, and the confirmation
+ * sent the text before the last keystrokes, or went through with the box just emptied (#428). So the press draws what
+ * is pending first and then reads the screen's **latest** `onConfirm` and `confirmDisabled`: an answer that is no
+ * longer complete confirms nothing, and the dialog stays open with it.
  */
 export function ConfirmDialog({
   triggerText,
@@ -62,17 +70,35 @@ export function ConfirmDialog({
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  // What the screen says now, read by the press after it has drawn what was pending (above).
+  const latest = useRef({ onConfirm, confirmDisabled });
+
+  useLayoutEffect(() => {
+    latest.current = { onConfirm, confirmDisabled };
+  });
+
+  const changeOpen = (next: boolean) => {
+    setOpen(next);
+    onOpenChange?.(next);
+  };
+
+  const confirm = () => {
+    // Draws what the click applied (a keystroke inside the live form's pause), so that `latest` is the screen with it.
+    flushSync(() => undefined);
+    if (latest.current.confirmDisabled) {
+      return;
+    }
+
+    changeOpen(false);
+    latest.current.onConfirm();
+  };
 
   return (
-    <AlertDialogRoot
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        onOpenChange?.(next);
-      }}
-    >
-      {/* No `asChild` on the three wrappers: Atmosphere's own `AlertDialog` hands them a `Button`
-          exactly like this, and its Button is not a single element a slot could take over. */}
+    <AlertDialogRoot open={open} onOpenChange={changeOpen}>
+      {/* No `asChild` on the two wrappers: Atmosphere's own `AlertDialog` hands them a `Button`
+          exactly like this, and its Button is not a single element a slot could take over. The
+          confirmation has no `AlertDialogAction` around it: that one closes on any click, and the
+          dialog closes here only once the answer is confirmed (`confirm` above). */}
       <AlertDialogTrigger>
         <Button type="button" variant={triggerVariant} disabled={disabled}>
           {triggerText}
@@ -90,16 +116,9 @@ export function ConfirmDialog({
               {t('common.cancel')}
             </Button>
           </AlertDialogCancel>
-          <AlertDialogAction>
-            <Button
-              type="button"
-              variant={confirmVariant}
-              disabled={confirmDisabled}
-              onClick={() => onConfirm()}
-            >
-              {confirmText}
-            </Button>
-          </AlertDialogAction>
+          <Button type="button" variant={confirmVariant} disabled={confirmDisabled} onClick={confirm}>
+            {confirmText}
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialogRoot>
