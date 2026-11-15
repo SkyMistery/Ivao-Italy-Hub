@@ -512,7 +512,8 @@ public sealed class PirepSubmission(
         {
             await database.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException exception) when (exception is not DbUpdateConcurrencyException && IsDuplicate(exception))
+        catch (DbUpdateException exception) when (exception is not DbUpdateConcurrencyException
+            && WriteConflicts.DuplicateKey(exception) is not null)
         {
             // Two sends of the same session at once: the unique claim decides, and the second is told so.
             database.ChangeTracker.Clear();
@@ -1066,9 +1067,6 @@ public sealed class PirepSubmission(
 
         return Any(pilot.Tour.AllowedAircraft) ? pilot.Tour.AllowedAircraft : pilot.Parent?.AllowedAircraft ?? AllowedAircraft.All;
     }
-
-    private static bool IsDuplicate(DbUpdateException exception) =>
-        exception.InnerException?.Message.Contains("Duplicate", StringComparison.OrdinalIgnoreCase) == true;
 
     /// <summary>
     /// Where the tracker is searched from: the start of the window, or earlier when a flight the report keeps took off before
