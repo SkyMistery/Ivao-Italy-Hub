@@ -310,7 +310,11 @@ if (startupWatch is not null)
 // pipeline, so that it counts them all (notes 2026-09-28-i-job-quando-passenger-spegne-l-hub, 2026-09-28-un-avvio-piu-veloce).
 StartsWatch.Arm(app, paths, timings);
 
-// Right after it, so that the time of every middleware below counts in the line of the request.
+// The requests running in the process, always: the STOP line above, the line of each request below, and the first check of
+// the jobs that are due, which waits for none to be running (issue #399), read the one counter.
+app.UseRequestsInFlight();
+
+// Right after them, so that the time of every middleware below counts in the line of the request.
 app.UseRequestTimings(timings);
 
 // Before the forwarded headers, which rewrite what they read: the diagnostics of the request show it as it arrived

@@ -258,7 +258,9 @@ the table `hub_jobs_log`. But Passenger stops an idle hub after 10–30 seconds,
 - **A job runs once for each occurrence of its schedule, whichever process is alive.** A few seconds after a start, and
   every minute after, the hub runs every job whose hour came since its last run ended, **one after the other**: the night's
   jobs run a few seconds after the first visit of the morning, once each, never all together. A run that failed waits for
-  its next hour. This is on by default in production (`Jobs:CatchUp`).
+  its next hour. This is on by default in production (`Jobs:CatchUp`). The first of these checks waits for the page of
+  whoever woke the hub: no sooner than 5 s after the start, once no request has run for 3 s, and no later than 30 s
+  (a check of `/health` is not a request here).
 - **Two processes never run the same job together.** Before a run the hub takes the job's named lock in the database,
   `hub-job:<database>:<job>`, on one connection of its own outside the pool, held while any of its jobs runs. A process
   that finds the lock taken leaves the run to the one that has it. A process that dies releases its locks with its

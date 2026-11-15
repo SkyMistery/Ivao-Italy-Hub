@@ -17,18 +17,19 @@ internal sealed class StartsWatch
     private readonly BuildInfo _build;
     // Kept for the life of the process: a registration that is collected stops listening.
     private readonly List<PosixSignalRegistration> _signals = [];
-    private readonly RequestsInFlight _running = new();
+    private readonly RequestsInFlight _running;
     private volatile bool _started;
     private long _requests;
     private long _probes;
     private long _firstAnswerTicks = -1;
     private int _stopped;
 
-    private StartsWatch(HubPaths paths, StartupTimings timings, BuildInfo build)
+    private StartsWatch(HubPaths paths, StartupTimings timings, BuildInfo build, RequestsInFlight running)
     {
         _paths = paths;
         _timings = timings;
         _build = build;
+        _running = running;
     }
 
     /// <summary>
@@ -45,7 +46,12 @@ internal sealed class StartsWatch
             return null;
         }
 
-        var watch = new StartsWatch(paths, timings, app.Services.GetRequiredService<BuildInfo>());
+        // The requests in flight are the host's one counter (HubPipeline.UseRequestsInFlight, right below this middleware).
+        var watch = new StartsWatch(
+            paths,
+            timings,
+            app.Services.GetRequiredService<BuildInfo>(),
+            app.Services.GetRequiredService<RequestsInFlight>());
         app.Lifetime.ApplicationStarted.Register(watch.Started);
         app.Lifetime.ApplicationStopping.Register(watch.Stopping);
         watch.ListenForSignals();
@@ -68,15 +74,12 @@ internal sealed class StartsWatch
                 return;
             }
 
-            // The ones running when the stop begins are written on the STOP line (issue #402).
-            var ticket = watch._running.Begin();
             try
             {
                 await next();
             }
             finally
             {
-                watch._running.End(ticket);
                 if (Interlocked.Increment(ref watch._requests) == 1)
                 {
                     // After the response: the route table is built inside the first request, before any middleware.

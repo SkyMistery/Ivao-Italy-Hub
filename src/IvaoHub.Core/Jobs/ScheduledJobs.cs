@@ -47,7 +47,7 @@ public sealed record JobRunOutcome(string Job, JobRunState Outcome);
 /// pass</b> finds every job that is due and starts them <b>one after the other</b> through
 /// <see cref="IScheduler.TriggerJob(JobKey, JobDataMap, CancellationToken)"/>, each when the one before has ended (Carmine,
 /// on #239): after a night asleep a dozen jobs are due, and they never start together against the pool of a visitor's
-/// page. One pass at a time in a process: <see cref="JobCatchUp"/>, a few seconds after a start and every minute, and the
+/// page. One pass at a time in a process: <see cref="JobCatchUp"/>, after the first page of a start and every minute, and the
 /// scheduled task's address (<see cref="JobRunEndpoints"/>) join the pass under way rather than start another.</para>
 /// <para>The last run of a job is the latest start of a row of its own in <c>hub_jobs_log</c> that has ended, whatever its
 /// outcome (Carmine, on #239), or the latest start this process knows of — a run it let through, or what it last read in
