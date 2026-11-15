@@ -2,6 +2,7 @@ using System.Data;
 using FluentValidation;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
+using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
@@ -136,7 +137,7 @@ public static class BookingEndpoints
                 _ => Results.NotFound(),
             };
         }
-        catch (Exception exception) when (DatabaseErrors.Deadlocked(exception))
+        catch (Exception exception) when (WriteConflicts.Deadlock(exception) is not null)
         {
             return TryAgain(catalog, currentUser);
         }
@@ -167,7 +168,7 @@ public static class BookingEndpoints
                 _ => Results.NotFound(),
             };
         }
-        catch (Exception exception) when (DatabaseErrors.Deadlocked(exception))
+        catch (Exception exception) when (WriteConflicts.Deadlock(exception) is not null)
         {
             // The legs booked before it included.
             return TryAgain(catalog, currentUser);
@@ -203,7 +204,7 @@ public static class BookingEndpoints
                 _ => Results.NotFound(),
             };
         }
-        catch (Exception exception) when (DatabaseErrors.Deadlocked(exception))
+        catch (Exception exception) when (WriteConflicts.Deadlock(exception) is not null)
         {
             // The linked departure included: neither is booked.
             return TryAgain(catalog, currentUser);

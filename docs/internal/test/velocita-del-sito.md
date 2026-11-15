@@ -287,7 +287,7 @@ reset. Vale qualche millisecondo per richiesta: non è da toccare prima del rest
 | C2 | **#397** `networkStats`: la fotografia oltre il processo, una lettura alla volta, Cloudflare per la domanda anonima | sessione, nucleo (+ nota per `no-store`) | ~0,5 s sulla prima pagina pubblica di un processo; meno risvegli dalle schede aperte | piccola–media |
 | C3 | **#400** `maplibre-gl` fuori dal file principale | sessione, sito | ~0,5 MB in meno da scaricare e compilare a ogni prima visita | piccola |
 | C4 | **#401** misurare e tagliare la compilazione delle prime richieste (RDG, JSON generato, impostazioni del JIT) | sessione, nucleo | incerto; conta solo se H1 non riesce | media |
-| C5 | **#399** il primo giro dei job dopo la prima pagina; `FlightCheckJob` non in ogni processo | sessione, nucleo + tour | piccolo | piccola |
+| C5 | ~~**#399** il primo giro dei job dopo la prima pagina; `FlightCheckJob` non in ogni processo~~ **Fatta il 15 nov 2026** (nota `2026-11-14-il-primo-giro-dei-job-dopo-la-pagina`, piano 1.55): il primo giro dopo 3 s senza richieste, fra 5 e 30 s dall'avvio (#515), e `FlightCheckJob` che scrive la sua riga a ogni giro (#520). Il guadagno sulla prova lo diranno i suoi file dopo una consegna | sessione, nucleo + tour | piccolo | piccola |
 | C6 | **#402** la diagnostica: il tipo di blocco, le richieste in corso, le richieste tagliate da un arresto | sessione, nucleo | nessuno da solo: rende esatta la prossima misura | piccola |
 | H3 | **L'operazione pianificata** `POST /api/jobs/run` sul sito di prova (`docs/DEPLOYING.md`, «The scheduled jobs and the host's scheduled task»): una sola chiamata in otto giorni | Carmine (Plesk) | nessuno sulla velocità; i job notturni girano | piccola |
 

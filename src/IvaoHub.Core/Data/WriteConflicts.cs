@@ -10,10 +10,13 @@ namespace IvaoHub.Core.Data;
 /// <para>Two publications of one page computing the same next version, two new pages taking one free address: a check before the
 /// insert cannot close that gap, the unique index does, and this is how its refusal reaches the client as a conflict and not as a
 /// fault.</para>
-/// <para>Two questions, the wide one and the narrow one, and every caller in the core and in the modules asks one of these and never a
-/// copy (#499). <see cref="AnotherWriteWon"/> takes the deadlock too: a write that only has to be tried again, or answered 409.
+/// <para>Three questions, the wide one and two narrow ones, and every caller in the core and in the modules asks one of these and never
+/// a copy (#499, #519). <see cref="AnotherWriteWon"/> takes the deadlock too: a write that only has to be tried again, or answered 409.
 /// <see cref="DuplicateKey"/> takes the key alone: a write that tells the person «somebody else holds this» — a seat, an account, a
-/// claim — where a deadlock is not that news, since it may meet any other write of the same rows (the review of #233, point 3).</para>
+/// claim — where a deadlock is not that news, since it may meet any other write of the same rows (the review of #233, point 3).
+/// <see cref="Deadlock"/> takes the deadlock alone: a place where no duplicate key is expected — no unique index can refuse the write,
+/// or the key was already answered further in — so two writers locking the same rows is the one way another write wins there: a report
+/// taken twice at once, a booking, the slots generated twice. A duplicate key reaching it is a fault, not news.</para>
 /// <para>The chain is walked whatever the outer exception: EF reports a deadlock as an <see cref="InvalidOperationException"/>, not a
 /// <c>DbUpdateException</c>, with the <see cref="MySqlException"/> two levels down (CONTRIBUTING.md). The database's error code is
 /// read, never the words of its message.</para>
@@ -32,6 +35,12 @@ public static partial class WriteConflicts
     /// included, which the caller lets through or answers as «try again».
     /// </summary>
     public static MySqlException? DuplicateKey(Exception? exception) => Find(exception, MySqlErrorCode.DuplicateKeyEntry);
+
+    /// <summary>
+    /// The database's answer when it rolled the transaction back on a deadlock, and nothing else: a deadlock, or <c>null</c> — a
+    /// duplicate key included, which the caller lets through as the fault it is there.
+    /// </summary>
+    public static MySqlException? Deadlock(Exception? exception) => Find(exception, MySqlErrorCode.LockDeadlock);
 
     /// <summary>
     /// The name of the unique index a duplicate key met, read off the database's message (<c>… for key 'name'</c>), or <c>null</c>.

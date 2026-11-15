@@ -113,7 +113,7 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 - **Il modo vecchio di dire una cosa non si perde all'import** (piano 1.52 e 1.53): come l'`align` vecchio di un gruppo di pulsanti
   (3.9), il `width` vecchio di una foto (3.10) passa nel modo nuovo quando il file non scrive quello nuovo, dal blocco del file o
   altrimenti da quello della bozza. ⚠️ **L'impronta `rules` cambia con ogni PR che cambia uno schema** (3.9, 3.10, 3.11, 3.12 —
-  la tabella con `rowStyle`, piano 1.54): un file per
+  la tabella con `rowStyle`, piano 1.54 —, 3.13 — `accordion`, `stats` e `networkStats`, piano 1.55): un file per
   Claude scaricato prima è rifiutato (`content.import.rulesChanged`), e le note di rilascio lo dicono. La nota del 30 ottobre non si
   modifica dopo il merge: questi legami stanno qui.
 
@@ -374,8 +374,10 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 
 È il blocco `accordion` che cresce, non un blocco nuovo; nella tavolozza si chiama «Domande e risposte».
 
-- `title` (facoltativo, sopra le domande), `numbered` (le domande numerate), `initially: 'closed' | 'first' | 'all'` (come si apre la
-  pagina; `all` vale anche «più aperte insieme»).
+- `title` (facoltativo, sopra le domande: un `h2`, perché ogni domanda è un `h3`), `numbered` (le domande numerate: il numero fa parte
+  delle parole della domanda, «1. Quando?»), `initially: 'closed' | 'first' | 'all'` (come si apre la pagina, di default `closed`; `all`
+  vale anche «più aperte insieme»). **`allowMultiple` resta**: un corpo salvato con `true` resta a più aperte, e `initially: 'all'` lo
+  rende vero qualunque cosa dica (#511, piano 1.55).
 - **«Più risposte per domanda»** (§9, risposta 2): la risposta resta **un testo** Markdown, che può avere più paragrafi e un elenco,
   scritto con la barra del §4.6. Nessun elenco di risposte.
 - In stampa resta tutto aperto, come oggi.
@@ -438,8 +440,13 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 ### 5.7 Le etichette dei blocchi di dati (XVI)
 
 - Ogni voce di `stats` (`metrics[]`) e di `networkStats` (`figures[]`) ha `label`, tradotta e facoltativa: vuota, l'etichetta di oggi.
-- Un blocco di dati di un modulo che mostra numeri fa lo stesso nel suo schema: i tour sono di Carmine e seguono nella stessa PR se ne
-  hanno; gli eventi sono di `dalberone`, a cui va una issue.
+  L'etichetta di un numero è quella della **prima voce** che lo chiede (#511, piano 1.55). **La richiesta del blocco non porta le
+  etichette** (`questionOf`, piano §16 punto 5).
+- Un blocco di dati di un modulo che mostra numeri fa lo stesso nel suo schema: ~~i tour sono di Carmine e seguono nella stessa PR se ne
+  hanno~~ i tour con la issue #521, una PR a parte (Carmine, 14 novembre 2026, «[Issue a parte per i
+  tour](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/511#issuecomment-6883857820)»); gli eventi sono di `dalberone`, a cui va una
+  issue: la #518, per `events.atcCoverage` («[Sì a tutte e cinque, come
+  raccomandi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/511#issuecomment-6883307038)»).
 - **File del nucleo**: `blocks/schemas.ts`, `blocks/blocks.tsx`. Il server non cambia (non legge le `props`, e il fornitore dei dati
   risponde i numeri, non le parole). **Nota sua**: no.
 - **Com'è andata** (PR 3.13, nella stessa nota del §5.4): l'etichetta di un numero è quella della prima voce che lo chiede (il server
