@@ -38,7 +38,15 @@ import { narrowLibrary, picturesOnly } from '../ui/narrowLibrary';
 import { LocaleFields } from './LocaleFields';
 import { LocaleTabs } from './LocaleTabs';
 import { ProblemAlert } from './ProblemAlert';
-import { NO_CHOICE, blankEntry, entryTitleField, readFields, whereDrawn, type FieldNode } from './schema';
+import {
+  NO_CHOICE,
+  blankEntry,
+  entryTitleField,
+  filesToChoose,
+  readFields,
+  whereDrawn,
+  type FieldNode,
+} from './schema';
 import { slugify } from './slug';
 import { Suggest } from './Suggest';
 import { useProblemDetails } from './useProblemDetails';
@@ -207,7 +215,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
 
   useProposedSlugs(form, fields, division?.defaultLocale);
   const formElement = useRef<HTMLFormElement>(null);
-  useLiveValues(form, schema, onChange, formElement);
+  useLiveValues(form, schema, fields, onChange, formElement);
 
   const submit = form.handleSubmit(async (values) => {
     if (onSubmit === undefined) {
@@ -376,13 +384,14 @@ const LIVE_DELAY = 150;
 function useLiveValues<TValues extends Record<string, unknown>>(
   form: UseFormReturn<TValues, unknown, TValues>,
   schema: z.ZodType<TValues, TValues>,
+  fields: readonly FieldNode[],
   onChange: ((values: TValues) => void) | undefined,
   element: RefObject<HTMLFormElement | null>,
 ): void {
-  const latest = useRef({ schema, onChange });
+  const latest = useRef({ schema, fields, onChange });
 
   useEffect(() => {
-    latest.current = { schema, onChange };
+    latest.current = { schema, fields, onChange };
   });
 
   useEffect(() => {
@@ -394,9 +403,9 @@ function useLiveValues<TValues extends Record<string, unknown>>(
       document.removeEventListener('click', apply, true);
       document.removeEventListener('keydown', applyOnKeyOutside, true);
 
-      const parsed = latest.current.schema.safeParse(form.getValues());
-      if (parsed.success) {
-        latest.current.onChange?.(parsed.data);
+      const applied = applicable(latest.current.schema, latest.current.fields, form.getValues());
+      if (applied !== null) {
+        latest.current.onChange?.(applied);
       }
     };
 
@@ -435,6 +444,64 @@ function useLiveValues<TValues extends Record<string, unknown>>(
       subscription.unsubscribe();
     };
   }, [form, element]);
+}
+
+/**
+ * What a live form applies: what the schema accepts, or — when all it refuses is a file nobody has chosen yet (#377,
+ * `filesToChoose`) — the same, with those files left out. The schema is asked again with a stand-in in each hole, so
+ * every other rule (a refinement, a default, a transform) still has its say, and the stand-in is taken back out. Never
+ * applied: anything else the schema refuses, which the field says on screen.
+ */
+function applicable<TValues extends Record<string, unknown>>(
+  schema: z.ZodType<TValues, TValues>,
+  fields: readonly FieldNode[],
+  values: TValues,
+): TValues | null {
+  const parsed = schema.safeParse(values);
+  if (parsed.success) {
+    return parsed.data;
+  }
+
+  const holes = filesToChoose(fields, parsed.error.issues, values);
+  if (holes === null) {
+    return null;
+  }
+
+  // A media identifier is a number; 0 is none a library hands out, and it never leaves this function.
+  const filled = structuredClone(values);
+  for (const hole of holes) {
+    placeAt(filled, hole, 0);
+  }
+
+  const again = schema.safeParse(filled);
+  if (!again.success) {
+    return null;
+  }
+
+  for (const hole of holes) {
+    placeAt(again.data, hole, undefined);
+  }
+
+  return again.data;
+}
+
+/** Writes at a path of zod, or takes the key away for `undefined`: the form never holds a file it has not got. */
+function placeAt(target: unknown, path: readonly PropertyKey[], value: unknown): void {
+  let holder = target as Record<PropertyKey, unknown>;
+  for (const segment of path.slice(0, -1)) {
+    holder = holder[segment] as Record<PropertyKey, unknown>;
+  }
+
+  const last = path.at(-1);
+  if (last === undefined) {
+    return;
+  }
+
+  if (value === undefined) {
+    delete holder[last];
+  } else {
+    holder[last] = value;
+  }
 }
 
 /**
