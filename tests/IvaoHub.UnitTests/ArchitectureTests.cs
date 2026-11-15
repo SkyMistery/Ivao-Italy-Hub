@@ -199,6 +199,35 @@ public sealed class ArchitectureTests
     }
 
     /// <summary>
+    /// «Did another write take this key, or deadlock with mine?» is asked once, by the core's <c>WriteConflicts</c> (#499, #519):
+    /// no other file names the database's two codes, and none looks for the word «Duplicate» in an exception's message — the copies
+    /// that did missed the answer one level further down, or took a duplicate column for a duplicate key. A module asks
+    /// <c>AnotherWriteWon</c>, <c>DuplicateKey</c> or <c>Deadlock</c>.
+    /// </summary>
+    [Fact]
+    public void NobodyButWriteConflictsAsksWhetherAnotherWriteWon()
+    {
+        var codes = new Regex(@"\b(?:DuplicateKeyEntry|LockDeadlock)\b", RegexOptions.CultureInvariant);
+        var wordInMessage = new Regex(@"Message\b[^;\r\n]*""Duplicate", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        var home = $"IvaoHub.Core{Path.DirectorySeparatorChar}Data{Path.DirectorySeparatorChar}WriteConflicts.cs";
+        var copies = new List<string>();
+
+        foreach (var file in SourceFiles().Where(file => !file.EndsWith(home, StringComparison.Ordinal)))
+        {
+            var lines = File.ReadAllLines(file);
+            for (var index = 0; index < lines.Length; index++)
+            {
+                if (codes.IsMatch(lines[index]) || wordInMessage.IsMatch(lines[index]))
+                {
+                    copies.Add($"{Path.GetRelativePath(RepositoryRoot(string.Empty), file)}:{index + 1}");
+                }
+            }
+        }
+
+        Assert.Empty(copies);
+    }
+
+    /// <summary>
     /// The same question as "does this name IVAO?" (plan section 4.2), asked of the two weather
     /// providers: a module asks the core for the weather and must never learn that NOAA exists. The
     /// names live in the two clients and in the file that wires them, and nowhere else.
