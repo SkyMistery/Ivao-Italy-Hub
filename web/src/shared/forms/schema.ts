@@ -455,9 +455,13 @@ function pruneEntry(children: FieldNode[], path: string, entry: unknown): unknow
  * optional text left empty in every language, inside the entries of a list as well, so this was every list whose entries
  * have one — the note of a station of a frequency table, found while checking PR 3.14 on screen.
  *
- * Only a blank the save would leave out again (`unwritten`): an empty text, a translated field empty in every language, an
- * empty list, an object of those. A number, a switch or a choice is not invented — `0` is a value, and a declared default
- * is the schema's to apply — so opening a value and saving it untouched stores what was there.
+ * **Only what the save leaves out**: an **optional** field (finding 1 of the review of #530 — a required one missing is
+ * missing for another reason, a body written before the schema grew it or by hand, and the form says so as it always did),
+ * and only at a blank the save would leave out again (`unwritten`): an empty text, a translated field empty in every
+ * language, an empty list. A number, a switch or a choice is not invented — `0` is a value, and a declared default is the
+ * schema's to apply. A missing optional **object** is made only when every field of it is optional too (finding 2): one with a
+ * required field nobody could blank would turn from absent, which is valid, into an object without it, which is not. So
+ * opening a value and saving it untouched stores what was there.
  */
 export function withUnwrittenBlanks<TValues extends Record<string, unknown>>(
   schema: z.ZodType<TValues>,
@@ -480,8 +484,15 @@ function putBack(
     const held = filled[key];
 
     if (held === undefined) {
+      if (!child.optional) {
+        continue;
+      }
+
       if (child.kind === 'object') {
-        filled[key] = putBack(child.children, child.path, {}, locales);
+        if (child.children.every((grandchild) => grandchild.optional)) {
+          filled[key] = putBack(child.children, child.path, {}, locales);
+        }
+
         continue;
       }
 

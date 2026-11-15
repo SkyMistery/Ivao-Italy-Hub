@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { createTestI18n, renderWithProviders } from '../../test/harness';
 
 import { SchemaForm } from './SchemaForm';
-import { localized, writtenValues } from './schema';
+import { localized, withUnwrittenBlanks, writtenValues } from './schema';
 
 /**
  * A value saved by the form, opened again in it. The save leaves out an optional field nobody wrote — a translated note
@@ -89,4 +89,37 @@ test('a form sent with a button sends a saved entry without its optional fields'
   await user.click(screen.getByRole('button', { name: 'Save' }));
 
   await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+});
+
+test('only what the save leaves out is put back: an optional field, at a blank the save would leave out again', () => {
+  const shapes = z.object({
+    title: z.string(),
+    label: localized(),
+    items: z.array(z.object({ name: z.string() })),
+    note: localized().optional(),
+    hours: z.number().optional(),
+    // An object whose fields are all optional is made; one with a field nobody could blank stays absent.
+    extra: z.object({ remark: localized().optional(), more: z.string().optional() }).optional(),
+    link: z.object({ kind: z.enum(['page', 'file']), remark: localized().optional() }).optional(),
+  });
+
+  expect(withUnwrittenBlanks(shapes, {} as never, ['en', 'it'])).toEqual({
+    note: { en: '', it: '' },
+    extra: { remark: { en: '', it: '' }, more: '' },
+  });
+
+  // And what was there stays as it was.
+  const held = {
+    title: 'T',
+    label: { en: 'L', it: 'L' },
+    items: [{ name: 'a' }],
+    hours: 0,
+    link: { kind: 'file' as const },
+  };
+  expect(withUnwrittenBlanks(shapes, held, ['en', 'it'])).toEqual({
+    ...held,
+    note: { en: '', it: '' },
+    extra: { remark: { en: '', it: '' }, more: '' },
+    link: { kind: 'file', remark: { en: '', it: '' } },
+  });
 });

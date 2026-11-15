@@ -26,7 +26,7 @@ import {
   type FieldErrors,
   type UseFormReturn,
 } from 'react-hook-form';
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import type { z } from 'zod';
 
 import { formatMoment } from '../i18n/useMoment';
@@ -190,7 +190,8 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   const { t } = useTranslation();
   // A saved value comes back without the fields its save left out: they are put back empty, or a translated one would
   // make the whole form invalid (`withUnwrittenBlanks`).
-  const opened = withUnwrittenBlanks(schema, defaults, locales);
+  // Once per value handed, not at every keystroke (finding 3 of the review of #530): the form draws again as it is written.
+  const opened = useMemo(() => withUnwrittenBlanks(schema, defaults, locales), [schema, defaults, locales]);
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: opened as never,

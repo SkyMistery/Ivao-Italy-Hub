@@ -26,9 +26,15 @@ form»), corretto dentro il meccanismo. È una modifica del nucleo: una PR sua e
 - **`withUnwrittenBlanks(schema, values, locales)`** (`shared/forms/schema.ts`), che `SchemaForm` usa sui `defaults` prima di
   `useForm` (e per `useNewerRow`, che riprende la riga con gli stessi valori): ogni campo che manca è rimesso al suo valore vuoto,
   **a ogni profondità** — le voci di un elenco, i campi di un oggetto, un oggetto facoltativo che manca tutto.
-- **Solo un vuoto che il salvataggio toglierebbe di nuovo** (`unwritten`): un testo vuoto, un campo tradotto vuoto in ogni lingua, un
-  elenco vuoto, un oggetto fatto di questi. Un numero, un interruttore, una scelta non si inventano: `0` è un valore, e un default
-  dichiarato lo applica lo schema. Così **aprire un valore e salvarlo senza toccarlo scrive quello che c'era**: il test lo controlla
+- **Solo quello che il salvataggio toglie**: un campo **facoltativo** (rilievo 1 della revisione,
+  https://github.com/SkyMistery/Ivao-Italy-Hub/pull/530#issuecomment-6901470264), e solo a un vuoto che il salvataggio toglierebbe di
+  nuovo (`unwritten`): un testo vuoto, un campo tradotto vuoto in ogni lingua, un elenco vuoto. Un campo obbligatorio che manca manca
+  per un'altra ragione (un corpo scritto prima che lo schema lo avesse, o a mano), e il form lo dice come ha sempre fatto. Un numero,
+  un interruttore, una scelta non si inventano: `0` è un valore, e un default dichiarato lo applica lo schema.
+- **Un oggetto facoltativo che manca si crea solo se tutti i suoi campi sono facoltativi** (rilievo 2): uno con un campo obbligatorio
+  che nessuno può rimettere vuoto (una scelta, un numero) passerebbe da assente, che è valido, a un oggetto senza quel campo, che non lo
+  è — il difetto spostato.
+- Calcolato una volta per valore ricevuto (`useMemo`, rilievo 3), non a ogni battuta. Così **aprire un valore e salvarlo senza toccarlo scrive quello che c'era**: il test lo controlla
   con `writtenValues` sul valore applicato.
 - **Nel form, non nel pannello dei blocchi**: il difetto è del form generato, e ogni schermata che riapre un valore salvato con un
   campo tradotto facoltativo dentro un elenco o un oggetto lo aveva. `withDefaults` del pannello resta: dà a un blocco i default
