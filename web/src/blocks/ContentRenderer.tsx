@@ -486,6 +486,12 @@ function SectionView({
       ? { backgroundImage: `url(${mediaFileUrl(section.mediaId)})` }
       : {};
 
+  // What the bar of the picked section offers; asked only of the one picked.
+  const sectionActions =
+    picking !== null && picking.selected === section.id
+      ? (picking.actions?.({ kind: 'section', id: section.id }) ?? [])
+      : [];
+
   // The section, given what makes it draggable while composing — nothing, for a visitor.
   const draw = (sortable: SortableBinding | null) => (
     <section
@@ -518,8 +524,10 @@ function SectionView({
       {picking !== null && picking.selected === section.id ? (
         <PickedBar
           name={read(section.title) || section.key || t('content.editor.untitledSection')}
-          actions={picking.actions?.({ kind: 'section', id: section.id }) ?? []}
-          handle={sortable?.handle}
+          actions={sectionActions}
+          // The grip is the arrows by a pointer: a section the editor offers no arrows for — one a template locks, or a
+          // row of one — is not dragged either, as in the outline (review of #513).
+          handle={sectionActions.some((action) => action.key === 'moveUp') ? sortable?.handle : undefined}
           // Inside the section's own air, not astride its edge: the first section of a page sits
           // against the preview's frame, which clips, and a bar astride that edge was cut in half
           // (Carmine, 11 September 2026, with a screenshot).

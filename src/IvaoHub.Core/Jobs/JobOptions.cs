@@ -26,8 +26,8 @@ public sealed class JobOptions
     public const int LongestWaitSeconds = 600;
 
     /// <summary>
-    /// Whether the hub makes up, a few seconds after it starts and every minute after, the runs it lost while no process
-    /// was alive (<see cref="JobCatchUp"/>). Left out, only in <c>Production</c>: a developer's hub, the integration tests
+    /// Whether the hub makes up, once the page of whoever woke it has been answered and every minute after, the runs it lost
+    /// while no process was alive (<see cref="JobCatchUp"/>). Left out, only in <c>Production</c>: a developer's hub, the integration tests
     /// and the end to end bench run their jobs at their hours alone, as before, and say <c>true</c> when they want it.
     /// </summary>
     public bool? CatchUp { get; init; }

@@ -151,6 +151,64 @@ public sealed class ScheduledJobsTests
     public void TheLostRunsAreMadeUpInProductionUnlessTheInstallationSaysOtherwise(string environment, bool? catchUp, bool on) =>
         Assert.Equal(on, JobCatchUp.IsOn(new JobOptions { CatchUp = catchUp }, new Environment(environment)));
 
+    // ---- when the first check comes (issue #399) ---------------------------------------------------------------------------
+
+    // Seconds since the start, seconds since a request last ran (0 while one runs), and the wait before looking again.
+    [Theory]
+    [InlineData(0, 0, 5)] // never before five seconds, whatever the requests do
+    [InlineData(2, 2, 3)]
+    [InlineData(5, 5, 0)] // nobody has asked anything since the start: it may come at five, as before
+    [InlineData(5, 0, 3)] // the page of whoever woke the hub is being answered: a whole quiet later
+    [InlineData(6, 1, 2)] // its last request ended a second ago
+    [InlineData(9, 3, 0)] // quiet for three seconds: now
+    [InlineData(28, 0, 2)] // never quiet: no later than thirty seconds
+    [InlineData(30, 0, 0)]
+    [InlineData(45, 0, 0)]
+    public void TheFirstCheckComesWhenTheHubIsQuietAfterFiveSecondsAndNoLaterThanThirty(int sinceStart, int quiet, int wait) =>
+        Assert.Equal(
+            TimeSpan.FromSeconds(wait),
+            JobCatchUp.UntilFirstCheck(TimeSpan.FromSeconds(sinceStart), TimeSpan.FromSeconds(quiet)));
+
+    [Fact]
+    public void TheHubIsQuietSinceTheLastRequestEndedAndNeverWhileOneRuns()
+    {
+        var clock = new Ticks();
+        var requests = new RequestsInFlight(clock);
+
+        // Nothing asked yet: quiet since the counter was made.
+        clock.Advance(TimeSpan.FromSeconds(4));
+        Assert.Equal(TimeSpan.FromSeconds(4), requests.Quiet());
+
+        var page = requests.Begin();
+        var call = requests.Begin();
+        clock.Advance(TimeSpan.FromSeconds(2));
+        Assert.Equal(TimeSpan.Zero, requests.Quiet());
+
+        requests.End(page);
+        clock.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal(TimeSpan.Zero, requests.Quiet());
+
+        requests.End(call);
+        clock.Advance(TimeSpan.FromSeconds(3));
+        Assert.Equal(TimeSpan.FromSeconds(3), requests.Quiet());
+        Assert.Equal(2, requests.Begun);
+    }
+
+    // The line of a request reads its others before the request ends in the counter above it, and finds what the end says.
+    [Fact]
+    public void TheOthersOfARequestAreReadAsItsEndCountsThem()
+    {
+        var requests = new RequestsInFlight();
+
+        var first = requests.Begin();
+        var second = requests.Begin();
+        var others = requests.Others(first);
+
+        Assert.Equal(others, requests.End(first));
+        Assert.Equal(1, others);
+        Assert.Equal(1, requests.End(second));
+    }
+
     [Fact]
     public void ATokenSoShortThatItCouldBeGuessedStopsTheStart()
     {
@@ -372,5 +430,17 @@ public sealed class ScheduledJobsTests
         public string ContentRootPath { get; set; } = string.Empty;
 
         public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
+    }
+
+    /// <summary>A clock of timestamps that moves only when the test says so.</summary>
+    private sealed class Ticks : TimeProvider
+    {
+        private long _now = 1_000_000;
+
+        public override long TimestampFrequency => TimeSpan.TicksPerSecond;
+
+        public override long GetTimestamp() => _now;
+
+        public void Advance(TimeSpan by) => _now += by.Ticks;
     }
 }

@@ -36,6 +36,48 @@ internal static class HubPipeline
         return context.Request.Path.Equals(HealthPath, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>Where the counter of the requests in flight leaves a request's ticket, for the line of its timings.</summary>
+    private static readonly object TicketKey = new();
+
+    /// <summary>
+    /// Counts the requests running in the process (<see cref="RequestsInFlight"/>, the one instance of the host), every one
+    /// but a check of <see cref="HealthPath"/>: the <c>STOP</c> line of <c>starts.txt</c>, the line of every request in the
+    /// requests' file and the first check of the jobs that are due (issue #399) read it. Always on, near the top of the
+    /// pipeline: the first check waits for the hub to be quiet whether the diagnostics are on or not.
+    /// </summary>
+    public static IApplicationBuilder UseRequestsInFlight(this WebApplication app)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+
+        var running = app.Services.GetRequiredService<RequestsInFlight>();
+        return app.Use(async (context, next) =>
+        {
+            if (IsHealthProbe(context))
+            {
+                await next();
+                return;
+            }
+
+            var ticket = running.Begin();
+            context.Items[TicketKey] = ticket;
+            try
+            {
+                await next();
+            }
+            finally
+            {
+                running.End(ticket);
+            }
+        });
+    }
+
+    /// <summary>The ticket <see cref="UseRequestsInFlight"/> gave the request; none for a check of <see cref="HealthPath"/>.</summary>
+    public static RequestsInFlight.Ticket? TicketOf(HttpContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return context.Items.TryGetValue(TicketKey, out var ticket) ? ticket as RequestsInFlight.Ticket? : null;
+    }
+
     /// <summary>
     /// The level of the log line of a request: as Serilog's default (an error for a failure or a 5xx, information for the
     /// rest), except a healthy check of <see cref="HealthPath"/>, which a monitor sends every few seconds and nobody reads.

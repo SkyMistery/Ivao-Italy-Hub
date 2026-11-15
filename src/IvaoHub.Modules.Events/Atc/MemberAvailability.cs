@@ -1,4 +1,5 @@
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
@@ -147,7 +148,7 @@ public sealed class MemberAvailability(
             await database.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
-        catch (Exception exception) when (DatabaseErrors.Duplicated(exception))
+        catch (Exception exception) when (WriteConflicts.DuplicateKey(exception) is not null)
         {
             // The same member gave it from another window an instant before: theirs is there, and this is a change of it.
             database.ChangeTracker.Clear();

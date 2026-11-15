@@ -1,5 +1,6 @@
 using System.Data;
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Events.Bookings;
@@ -81,7 +82,7 @@ public sealed class MemberRegistrations(
         {
             await database.SaveChangesAsync(cancellationToken);
         }
-        catch (Exception exception) when (DatabaseErrors.Duplicated(exception))
+        catch (Exception exception) when (WriteConflicts.DuplicateKey(exception) is not null)
         {
             // The same member registered from another window in the same instant, and the unique index answered: their registration is
             // there now, and this request is a change of it — the last answers sent are the ones kept.

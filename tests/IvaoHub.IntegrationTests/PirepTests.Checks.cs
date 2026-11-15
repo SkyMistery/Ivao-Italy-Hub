@@ -203,6 +203,36 @@ public sealed partial class PirepTests
     }
 
     /// <summary>
+    /// A run that finds nothing to check writes its row all the same (issue #399, note
+    /// <c>2026-11-14-il-primo-giro-dei-job-dopo-la-pagina</c> §4, decided by Carmine on #515): without it every new process of the
+    /// host found the job due, having no row to read its last run from, and ran it once more.
+    /// </summary>
+    [Fact]
+    public async Task ARunThatFindsNothingToCheckWritesItsRow()
+    {
+        var token = TestContext.Current.CancellationToken;
+
+        await using var scope = _host.Services.CreateAsyncScope();
+        var job = scope.ServiceProvider.GetRequiredService<FlightCheckJob>();
+
+        // Whatever another test left waiting is checked by a first run; the second finds nothing.
+        await job.RunAsync(token);
+        var startedAt = DateTime.UtcNow.AddSeconds(-1);
+        Assert.Equal(0, await job.RunAsync(token));
+
+        var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        var row = await hub.JobsLog.AsNoTracking()
+            .Where(entry => entry.Job == FlightCheckJob.JobName && entry.StartedAt >= startedAt)
+            .OrderByDescending(entry => entry.StartedAt)
+            .FirstOrDefaultAsync(token);
+
+        Assert.NotNull(row);
+        Assert.Equal("succeeded", row.Status);
+        Assert.NotNull(row.FinishedAt);
+        Assert.Equal(FlightCheckJob.NothingWaiting, row.Message);
+    }
+
+    /// <summary>
     /// A call inside a check that does not answer in time — a <see cref="TaskCanceledException"/>, though nobody cancelled the
     /// job — costs that report only (the reviewer on #492): before, it escaped the report's catch as if it were the job's own
     /// cancellation, and the rest of the batch waited with no line in the log.

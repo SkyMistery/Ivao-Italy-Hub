@@ -302,7 +302,7 @@ test('the invitation to add a section stands after the container the sections me
   expect(container).not.toContainElement(invitation);
 });
 
-test('a picked section is drawn through what makes it draggable, with a grip on its bar', () => {
+test('a picked section is drawn through what makes it draggable, with a grip on its bar where it has arrows', () => {
   // What the editor hands over, faked: a group that marks its list, and an item that hands back a
   // node ref, a style and a handle — the renderer attaches all three and asks nothing about drag.
   const Group = ({ ids, children }: { ids: readonly string[]; children: React.ReactNode }) => (
@@ -318,8 +318,15 @@ test('a picked section is drawn through what makes it draggable, with a grip on 
     </>
   );
 
-  renderWithProviders(
-    <PickingContext.Provider value={editing({ selected: 's1', SortableGroup: Group, Sortable: Item })}>
+  const { unmount } = renderWithProviders(
+    <PickingContext.Provider
+      value={editing({
+        selected: 's1',
+        SortableGroup: Group,
+        Sortable: Item,
+        actions: () => [{ key: 'moveUp', run: () => {} }],
+      })}
+    >
       <ContentRenderer body={body} />
     </PickingContext.Provider>,
   );
@@ -327,6 +334,24 @@ test('a picked section is drawn through what makes it draggable, with a grip on 
   expect(document.querySelector('[data-group]')).toHaveAttribute('data-group', 's1');
   expect(document.querySelector('[data-pickable="section"]')).toHaveStyle({ opacity: '0.5' });
   expect(screen.getByRole('button', { name: 'Drag to reorder' })).toHaveAttribute('data-handle', 's1');
+  unmount();
+
+  // No arrows — a section a template locks, or a row of one (review of #513) — and no grip: the grip is the arrows
+  // by a pointer. The section is still drawn through the sortable, so its siblings may move around it.
+  renderWithProviders(
+    <PickingContext.Provider
+      value={editing({
+        selected: 's1',
+        SortableGroup: Group,
+        Sortable: Item,
+        actions: () => [{ key: 'sectionAbove', run: () => {} }],
+      })}
+    >
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  expect(screen.queryByRole('button', { name: 'Drag to reorder' })).not.toBeInTheDocument();
 });
 
 test('a picked block is drawn through what makes it draggable, and a block nothing may be done to gets no grip', () => {

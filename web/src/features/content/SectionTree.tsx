@@ -16,7 +16,7 @@ import { registry } from '../../app/registry';
 import { columnsOf, type BlockEnvelope, type Body, type SectionEnvelope } from '../../blocks';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 
-import { ruleFor, type SectionRule } from './templateRules';
+import { ruleFor, ruleInside, type SectionRule } from './templateRules';
 
 /**
  * The left panel of the editor: what the page is made of, and what may be done to it (design M0
@@ -291,7 +291,8 @@ function SectionNode({
           <SectionNode
             key={nested.id}
             section={nested}
-            rule={ruleFor(rules, nested.key)}
+            // A row of a locked section is locked with it (issue #460): the same rule the bar on the page reads.
+            rule={ruleInside(rule, ruleFor(rules, nested.key))}
             rules={rules}
             selection={selection}
             depth={depth + 1}

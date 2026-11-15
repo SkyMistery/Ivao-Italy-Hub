@@ -69,7 +69,7 @@ import { MAX_ROW_DEPTH, SectionTree, type Selection } from './SectionTree';
 import { useBodyHistory, useHistoryShortcuts, useSelectionShortcuts } from './useBodyHistory';
 import { applyDifference, templateDiff } from './templateDiff';
 import { LockedByTemplate, TemplateDifferences } from './TemplatePanel';
-import { NO_RULES, ruleFor, templateRules } from './templateRules';
+import { NO_RULES, ruleOfSection, templateRules } from './templateRules';
 
 /**
  * The editor of one `BlockDocument` (design M0 §7.7), and nothing else: a body goes in, every change to it comes out
@@ -427,7 +427,14 @@ export function BodyEditor({
 
     // A section dropped onto another of its siblings. Crossing into another parent is refused by
     // the body helper, as it is in the outline: a drop that moved nothing is a drop that moved nothing.
-    if (dragged?.kind === 'section' && target?.kind === 'section' && over !== null && active.id !== over.id) {
+    // Not a section a template locks, nor a row of one: the page offers it no grip, and a drop is not a way round that.
+    if (
+      dragged?.kind === 'section' &&
+      target?.kind === 'section' &&
+      over !== null &&
+      active.id !== over.id &&
+      !ruleOfSection(rules, body, String(active.id)).locked
+    ) {
       change(reorderSections(body, String(active.id), String(over.id)));
     }
   };
@@ -451,7 +458,7 @@ export function BodyEditor({
         ? chosenColumn.column
         : 0;
 
-  const targetRule = ruleFor(rules, targetSection?.key);
+  const targetRule = ruleOfSection(rules, body, targetSection?.id);
 
   const paletteRule =
     // A locked section is one whose blocks a page may edit and whose shape it may not, so nothing
@@ -513,7 +520,7 @@ export function BodyEditor({
 
       {section !== undefined ? (
         <>
-          {ruleFor(rules, section.key).locked ? (
+          {ruleOfSection(rules, body, section.id).locked ? (
             <LockedByTemplate
               template={template === null ? null : { title: template.title, department: template.department }}
               canManage={template?.canManage ?? false}
@@ -523,7 +530,7 @@ export function BodyEditor({
           <SectionProperties
             key={section.id}
             section={section}
-            rule={ruleFor(rules, section.key)}
+            rule={ruleOfSection(rules, body, section.id)}
             isTemplate={isTemplate}
             locales={locales}
             division={division}
@@ -584,10 +591,10 @@ export function BodyEditor({
           // blocks stay where the template put them (a select that listed everywhere but here
           // drew itself empty).
           sections={
-            ruleFor(rules, block.section.key).locked
+            ruleOfSection(rules, body, block.section.id).locked
               ? []
               : allSections(body)
-                  .filter((candidate) => !ruleFor(rules, candidate.key).locked)
+                  .filter((candidate) => !ruleOfSection(rules, body, candidate.id).locked)
                   .map((candidate) => ({
                     value: candidate.id,
                     label: read(candidate.title) || candidate.key || t('content.editor.untitledSection'),
@@ -661,7 +668,7 @@ export function BodyEditor({
 
     if (kind === 'block') {
       const found = findBlock(body, id);
-      if (found === undefined || ruleFor(rules, found.section.key).locked) {
+      if (found === undefined || ruleOfSection(rules, body, found.section.id).locked) {
         return [];
       }
 
@@ -676,9 +683,9 @@ export function BodyEditor({
     // A section moves among its siblings — the page's sections, or the rows of one section
     // (Carmine, 11 September 2026: "the sections already placed, I want to move them by hand on
     // the page"). The same arrows the outline has, on the thing itself.
-    const rule = ruleFor(rules, findSection(body, id)?.key);
+    const rule = ruleOfSection(rules, body, id);
     const takesRow = (sectionId: string) =>
-      !ruleFor(rules, findSection(body, sectionId)?.key).locked &&
+      !ruleOfSection(rules, body, sectionId).locked &&
       (depthOf(body, sectionId) ?? MAX_ROW_DEPTH) < MAX_ROW_DEPTH;
 
     // One above and one below, on every section and every row (Carmine, 5 November 2026, "dalla barra
@@ -781,7 +788,7 @@ export function BodyEditor({
       setChosenColumn({ section: sectionId, column });
     },
     // A section a template locks takes no new block, so its empty columns must not offer one.
-    accepts: (sectionId: string) => !ruleFor(rules, findSection(body, sectionId)?.key).locked,
+    accepts: (sectionId: string) => !ruleOfSection(rules, body, sectionId).locked,
     // Where a dragged component may land, drawn by the renderer, known to dnd-kit only here.
     DropZone,
     // The width of a tile of a dashboard, from its handle; one step of the history per gesture.
