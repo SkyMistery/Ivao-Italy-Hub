@@ -1,7 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { expect, test, vi } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { z } from 'zod';
 
 import { createTestI18n, renderWithProviders } from '../../test/harness';
@@ -82,9 +82,16 @@ test('a file still to choose in an entry of a list holds back nothing either', a
   expect(onChange.mock.lastCall?.[0]).toEqual({ caption: 'Hangars', items: [{}] });
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 test('anything else the schema refuses still applies nothing, file or no file', async () => {
+  // The pause of a live form is counted on fake timers: past it, and well past it, nothing is applied; made valid, the
+  // same pause applies — so the silence before is the rule, not a timer that had not fired yet.
+  vi.useFakeTimers({ shouldAdvanceTime: true });
   const onChange = vi.fn();
-  const user = userEvent.setup();
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
   renderLive(
     z.object({ mediaId: z.number().int().meta({ media: true }), alt: z.string().max(3) }),
     { alt: '' } as { mediaId: number; alt: string },
@@ -93,6 +100,11 @@ test('anything else the schema refuses still applies nothing, file or no file', 
 
   // Too long: a refusal of its own, which the field says on screen.
   await user.type(screen.getByLabelText('Alternative text'), 'Too long');
-  await new Promise((resolve) => setTimeout(resolve, 250));
+  await vi.advanceTimersByTimeAsync(5_000);
   expect(onChange).not.toHaveBeenCalled();
+
+  await user.clear(screen.getByLabelText('Alternative text'));
+  await user.type(screen.getByLabelText('Alternative text'), 'Hi');
+  await vi.advanceTimersByTimeAsync(5_000);
+  expect(onChange).toHaveBeenLastCalledWith({ alt: 'Hi' });
 });

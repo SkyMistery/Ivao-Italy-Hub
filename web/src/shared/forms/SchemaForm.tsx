@@ -469,8 +469,8 @@ function applicable<TValues extends Record<string, unknown>>(
 
   // A media identifier is a number; 0 is none a library hands out, and it never leaves this function.
   const filled = structuredClone(values);
-  for (const hole of holes) {
-    placeAt(filled, hole, 0);
+  if (!holes.every((hole) => placeAt(filled, hole, 0))) {
+    return null;
   }
 
   const again = schema.safeParse(filled);
@@ -478,30 +478,48 @@ function applicable<TValues extends Record<string, unknown>>(
     return null;
   }
 
-  for (const hole of holes) {
-    placeAt(again.data, hole, undefined);
+  // What the schema gave back is not the shape it was handed along a hole: the stand-in could not be taken out, and is
+  // never applied. Nothing is, as before #377.
+  if (!holes.every((hole) => placeAt(again.data, hole, undefined))) {
+    return null;
   }
 
   return again.data;
 }
 
-/** Writes at a path of zod, or takes the key away for `undefined`: the form never holds a file it has not got. */
-function placeAt(target: unknown, path: readonly PropertyKey[], value: unknown): void {
-  let holder = target as Record<PropertyKey, unknown>;
+/**
+ * Writes at a path of zod, or takes the key away for `undefined`: the form never holds a file it has not got. False when
+ * the path does not lead through objects to its last key.
+ */
+function placeAt(target: unknown, path: readonly PropertyKey[], value: unknown): boolean {
+  // False when the path does not lead through objects: a schema that transforms an object or a list on the way gives back
+  // a shape the form did not hand it, and the stand-in cannot be found again. Never a throw: this runs inside the
+  // listeners of a click and of a key on the whole page.
+  let holder: unknown = target;
   for (const segment of path.slice(0, -1)) {
-    holder = holder[segment] as Record<PropertyKey, unknown>;
+    if (holder === null || typeof holder !== 'object') {
+      return false;
+    }
+    holder = (holder as Record<PropertyKey, unknown>)[segment];
   }
 
   const last = path.at(-1);
-  if (last === undefined) {
-    return;
+  if (last === undefined || holder === null || typeof holder !== 'object') {
+    return false;
   }
 
+  const fields = holder as Record<PropertyKey, unknown>;
   if (value === undefined) {
-    delete holder[last];
+    // The stand-in has to be where it was put: a key that is not there means it went somewhere else.
+    if (!(last in fields)) {
+      return false;
+    }
+    delete fields[last];
   } else {
-    holder[last] = value;
+    fields[last] = value;
   }
+
+  return true;
 }
 
 /**
