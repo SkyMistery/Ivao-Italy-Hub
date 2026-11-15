@@ -2086,6 +2086,11 @@ namespace IvaoHub.Core.Data.Migrations
                         .HasColumnType("varchar(8)")
                         .HasColumnName("center_id");
 
+                    b.Property<string>("Frequency")
+                        .HasMaxLength(8)
+                        .HasColumnType("varchar(8)")
+                        .HasColumnName("frequency");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)

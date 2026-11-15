@@ -61,10 +61,14 @@ public sealed class AtcPositionTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Null(tower.CenterId);
         Assert.Equal("Fiume Tower", tower.Name);
 
+        // The frequency, written out as a controller reads it (design of the editor's phase 3, §5.8): IVAO's 118.7.
+        Assert.Equal("118.700", tower.Frequency);
+
         var sector = Assert.Single(positions, position => position.Callsign == "LIRR_NE_CTR");
         Assert.Equal("CTR", sector.PositionType);
         Assert.Null(sector.AirportIcao);
         Assert.Equal("LIRR", sector.CenterId);
+        Assert.Equal("124.200", sector.Frequency);
 
         // The world, as the airports are: a French tower and a French sector are copied too, and what is the division's is
         // the directory's to say. A station IVAO lists twice is one row.
@@ -95,6 +99,9 @@ public sealed class AtcPositionTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
                 var tower = await database.IvaoAtcPositions.SingleAsync(position => position.Callsign == "LIRF_TWR", token);
                 tower.Name = "A name IVAO has since changed";
+                // A row the synchronisation has not passed over since the column was added (design of the editor's phase 3,
+                // §5.8): the next run brings its frequency.
+                tower.Frequency = null;
                 await database.SaveChangesAsync(token);
             }
 
@@ -111,6 +118,7 @@ public sealed class AtcPositionTests(MariaDbFixture mariaDb) : IAsyncLifetime
                     .Where(position => position.Callsign == "LIRF_TWR")
                     .ToListAsync(token));
                 Assert.Equal("Fiume Tower", tower.Name);
+                Assert.Equal("118.700", tower.Frequency);
             }
         }
         finally
@@ -173,13 +181,13 @@ public sealed class AtcPositionTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // division's; ground and delivery are not what the vocabulary trains an ADC on.
         var towers = await directory.ForRatingAsync(Atc(ratings, "ADC"), token);
         Assert.Equal(["LIBD_TWR", "LIMC_E_TWR", "LIMC_TWR", "LIRF_E_TWR", "LIRF_TWR"], towers.Select(tower => tower.Callsign));
-        Assert.Equal(new AtcPositionDto("LIRF_TWR", "TWR", "Fiume Tower", "LIRF", "LIRR"), towers[^1]);
+        Assert.Equal(new AtcPositionDto("LIRF_TWR", "TWR", "Fiume Tower", "LIRF", "LIRR", "118.700"), towers[^1]);
         Assert.Equal("LIMM", Assert.Single(towers, tower => tower.Callsign == "LIMC_TWR").Fir);
 
         // An APC on the approaches. Grottaglie is Italian, but the bench does not know its airport, and a position whose
         // airport the hub does not know belongs to nobody.
         var approaches = await directory.ForRatingAsync(Atc(ratings, "APC"), token);
-        Assert.Contains(new AtcPositionDto("LIRF_AWL_APP", "APP", "Roma Radar", "LIRF", "LIRR"), approaches);
+        Assert.Contains(new AtcPositionDto("LIRF_AWL_APP", "APP", "Roma Radar", "LIRF", "LIRR", "119.200"), approaches);
         Assert.All(approaches, approach => Assert.EndsWith("_APP", approach.Callsign, StringComparison.Ordinal));
         Assert.DoesNotContain(approaches, approach => approach.AirportIcao == "LFPG");
         Assert.DoesNotContain(approaches, approach => approach.Callsign == "LIBG_APP");
@@ -187,7 +195,7 @@ public sealed class AtcPositionTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // An ACC on the sectors of the division's FIRs, with no airport, and the military ones among them: the training
         // department uses some, and leaves out the rest with a setting of its module.
         var sectors = await directory.ForRatingAsync(Atc(ratings, "ACC"), token);
-        Assert.Contains(new AtcPositionDto("LIRR_NE_CTR", "CTR", "Roma Radar", null, "LIRR"), sectors);
+        Assert.Contains(new AtcPositionDto("LIRR_NE_CTR", "CTR", "Roma Radar", null, "LIRR", "124.200"), sectors);
         Assert.Contains(sectors, sector => sector.Callsign == "LIRR_MIL_CTR");
         Assert.All(sectors, sector => Assert.Null(sector.AirportIcao));
         Assert.DoesNotContain(sectors, sector => sector.Fir == "LFFF");
@@ -268,11 +276,11 @@ public sealed class AtcPositionTests(MariaDbFixture mariaDb) : IAsyncLifetime
             positions.Select(position => position.Callsign).Order(StringComparer.Ordinal));
 
         // Each with its kind, which a module hands to the vocabulary, and its FIR, which an event's row copies (IHasFir).
-        Assert.Contains(new AtcPositionDto("LIRF_DEL", "DEL", "Fiume Delivery", "LIRF", "LIRR"), positions);
-        Assert.Contains(new AtcPositionDto("LIMC_N_GND", "GND", "Malpensa Ground North", "LIMC", "LIMM"), positions);
-        Assert.Contains(new AtcPositionDto("LIBD_ATIS", "ATIS", "Bari ATIS", "LIBD", "LIBB"), positions);
-        Assert.Contains(new AtcPositionDto("LIRR_FSS", "FSS", "Roma Information", null, "LIRR"), positions);
-        Assert.Contains(new AtcPositionDto("LIMM_MIL_CTR", "CTR", "Milano Military", null, "LIMM"), positions);
+        Assert.Contains(new AtcPositionDto("LIRF_DEL", "DEL", "Fiume Delivery", "LIRF", "LIRR", "121.800"), positions);
+        Assert.Contains(new AtcPositionDto("LIMC_N_GND", "GND", "Malpensa Ground North", "LIMC", "LIMM", "121.825"), positions);
+        Assert.Contains(new AtcPositionDto("LIBD_ATIS", "ATIS", "Bari ATIS", "LIBD", "LIBB", "124.050"), positions);
+        Assert.Contains(new AtcPositionDto("LIRR_FSS", "FSS", "Roma Information", null, "LIRR", "125.750"), positions);
+        Assert.Contains(new AtcPositionDto("LIMM_MIL_CTR", "CTR", "Milano Military", null, "LIMM", "129.825"), positions);
 
         // What the directory answered for a rating before is a part of this answer, row for row and in the same order.
         foreach (var rating in scope.ServiceProvider.GetRequiredService<RatingVocabulary>().Ladder(RatingKind.Atc))
@@ -296,8 +304,8 @@ public sealed class AtcPositionTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // its callsign in any case.
         var found = await directory.FindAsync([" lirf_twr ", "LIRR_NE_CTR", "LIRR_NE_CTR"], token);
         Assert.Equal(["LIRF_TWR", "LIRR_NE_CTR"], found.Keys.Order(StringComparer.Ordinal));
-        Assert.Equal(new AtcPositionDto("LIRF_TWR", "TWR", "Fiume Tower", "LIRF", "LIRR"), found["LIRF_TWR"]);
-        Assert.Equal(new AtcPositionDto("LIRR_NE_CTR", "CTR", "Roma Radar", null, "LIRR"), found["lirr_ne_ctr"]);
+        Assert.Equal(new AtcPositionDto("LIRF_TWR", "TWR", "Fiume Tower", "LIRF", "LIRR", "118.700"), found["LIRF_TWR"]);
+        Assert.Equal(new AtcPositionDto("LIRR_NE_CTR", "CTR", "Roma Radar", null, "LIRR", "124.200"), found["lirr_ne_ctr"]);
 
         // Another division's tower and sector, a position whose airport the hub does not know, a callsign IVAO does not
         // list, and nothing at all: absent, never an error.
@@ -327,7 +335,7 @@ public sealed class AtcPositionTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Assert.Equal("LFPG", position.AirportIcao);
             Assert.Equal("LFFF", position.Fir);
         });
-        Assert.Contains(new AtcPositionDto("LFPG_DEP", "DEP", "De Gaulle Departure", "LFPG", "LFFF"), positions);
+        Assert.Contains(new AtcPositionDto("LFPG_DEP", "DEP", "De Gaulle Departure", "LFPG", "LFFF", "131.200"), positions);
 
         var found = await directory.FindAsync(["lfpg_dep", "LIRF_TWR"], token);
         Assert.Equal("LFPG_DEP", Assert.Single(found).Key);
