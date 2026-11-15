@@ -33,11 +33,13 @@ import {
 } from '../../blocks';
 import {
   SchemaForm,
+  atcPositionListOf,
   chooseCalendarKinds,
   collectionKindOf,
   namesAddresses,
   namesCalendarKinds,
   suggestAddresses,
+  suggestAtcPositions,
   suggestCollections,
   withoutDrawing,
   writtenValues,
@@ -57,6 +59,9 @@ import { defaultProps } from './body';
  */
 const MAX_SOURCE_BYTES = 64 * 1024;
 
+import { AtcPositionNotices } from './AtcPositionNotices';
+import { driftOf, frequenciesPending, positionSuggestions, realigned } from './atcPositions';
+import { divisionAtcPositionsQuery } from './queries';
 import { SectionFrame } from './SectionFrame';
 import { TableTools } from './TableTools';
 import { sectionSettingsSchema, type SectionFormValues } from './schema';
@@ -524,6 +529,10 @@ export function BlockProperties({
   // first drawing, the screens at least, so the field never changes kind under somebody typing.
   const leadsSomewhere = registration !== undefined && namesAddresses(registration.schema);
   const addresses = useAddressesToLinkTo(leadsSomewhere);
+  // The ATC positions of the division, for a block that names them (design §5.8): offered by the callsign, which copies
+  // them into the row, and compared with the rows already written. Whoever may not read them writes the rows by hand.
+  const positionList = useMemo(() => atcPositionListOf(registration?.schema), [registration?.schema]);
+  const positions = useQuery({ ...divisionAtcPositionsQuery(), enabled: positionList !== null });
   // The kinds of the calendar a block chooses from (issue #360): the ones in use, from `/api/me`, and
   // any this block already holds that is no longer among them, said as retired rather than drawn
   // as an empty select — the block keeps it, and the calendar answers it with nothing.
@@ -551,6 +560,10 @@ export function BlockProperties({
       shaped = suggestAddresses(shaped, asSuggestions(addresses));
     }
 
+    if (positionList !== null && positions.data !== undefined) {
+      shaped = suggestAtcPositions(shaped, positionSuggestions(positions.data, positionList.entry));
+    }
+
     if (bootstrap !== undefined && namesCalendarKinds(shaped)) {
       const inUse = bootstrap.calendarKinds.map((kind) => ({
         value: kind.key,
@@ -574,7 +587,18 @@ export function BlockProperties({
     }
 
     return shaped;
-  }, [registration, collections.data, leadsSomewhere, addresses, bootstrap, heldKinds, read, t]);
+  }, [
+    registration,
+    collections.data,
+    leadsSomewhere,
+    addresses,
+    positionList,
+    positions.data,
+    bootstrap,
+    heldKinds,
+    read,
+    t,
+  ]);
 
   if (registration === undefined || schema === undefined) {
     return <p className="text-muted-foreground text-sm">{t('blocks.unknown', { type: block.type })}</p>;
@@ -701,6 +725,20 @@ export function BlockProperties({
             }))}
           />
         </div>
+      ) : null}
+
+      {positionList !== null && positions.data !== undefined ? (
+        <AtcPositionNotices
+          drifts={driftOf(block.props, positionList, positions.data)}
+          pending={frequenciesPending(positions.data)}
+          labels={labels}
+          list={positionList.list}
+          onRealign={(index) => {
+            applyProps(realigned(block.props, positionList, positions.data, index), { step: true });
+            // The form holds the row it was drawn with, and writes all it holds: drawn again, with the row copied.
+            setFormTable((drawn) => ({ ...drawn, drawing: drawn.drawing + 1 }));
+          }}
+        />
       ) : null}
 
       <SchemaForm

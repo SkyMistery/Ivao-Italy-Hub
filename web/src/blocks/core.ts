@@ -805,6 +805,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       stations: [
         {
           callsign: 'XXXX_TWR',
+          name: 'Example Tower',
           frequency: '118.700',
           kind: 'TWR',
           cpdlc: false,
