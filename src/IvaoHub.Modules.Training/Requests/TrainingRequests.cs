@@ -238,7 +238,8 @@ public sealed class TrainingRequests(
         {
             await database.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException exception) when (exception is not DbUpdateConcurrencyException && IsDuplicate(exception))
+        catch (DbUpdateException exception) when (exception is not DbUpdateConcurrencyException
+            && WriteConflicts.DuplicateKey(exception) is not null)
         {
             // Two requests on one ladder at once: the unique key decides, and the second is told what a moment later it would have been.
             database.ChangeTracker.Clear();
@@ -447,9 +448,6 @@ public sealed class TrainingRequests(
             TrainingMail.MinePath,
             (data, locale) => data["mockExam"] = training.IsMockExam ? mail.Word(locale, "training:mail.training.mockExam") : string.Empty,
             cancellationToken);
-
-    private static bool IsDuplicate(DbUpdateException exception) =>
-        exception.InnerException?.Message.Contains("Duplicate", StringComparison.OrdinalIgnoreCase) == true;
 
     private static string? Trimmed(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
