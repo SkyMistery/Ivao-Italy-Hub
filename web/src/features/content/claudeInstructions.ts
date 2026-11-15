@@ -270,7 +270,7 @@ function templateSection(input: InstructionsInput): string {
     '## The template',
     '',
     'The page was made from a template. Its sections are matched by `key`; a section of the page with one of these keys',
-    'keeps the rules written here.',
+    'keeps the rules written here. A row inside a locked section is locked with it, whatever its key.',
     '',
     '| key | required (may not be removed) | locked (only the texts of its blocks change) | blocks it takes |',
     '|---|---|---|---|',

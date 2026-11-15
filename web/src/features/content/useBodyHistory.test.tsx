@@ -1,4 +1,6 @@
 import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
+import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { expect, test, vi } from 'vitest';
 
 import { emptyBody, type Body } from '../../blocks';
@@ -248,4 +250,38 @@ test('⌘Z is the editor’s outside a field and the browser’s inside one', ()
   // And without a modifier it is a letter.
   fireEvent.keyDown(button, { key: 'z' });
   expect(undo).toHaveBeenCalledTimes(2);
+});
+
+test('a key still reaches its command when the editor is drawn again while the key travels (what #461 relies on)', () => {
+  // Not the fix of #461, and green on main too: the assumption the fix stands on, kept here so that it fails if a
+  // change to these hooks breaks it. In a browser, the form of the panel applies its last keystroke on a key pressed
+  // outside it, and React draws the editor before the next listener of that key runs: the commands must still be
+  // listening, with the new screen.
+  function Redrawn({ release, undo }: { release: () => boolean; undo: () => boolean }) {
+    const [drawn, setDrawn] = useState(0);
+    useSelectionShortcuts({ remove: () => false, duplicate: () => false, release: () => release() });
+    useHistoryShortcuts(
+      () => undo(),
+      () => false,
+    );
+
+    useEffect(() => {
+      const redraw = () => flushSync(() => setDrawn((count) => count + 1));
+      document.addEventListener('keydown', redraw, true);
+      return () => document.removeEventListener('keydown', redraw, true);
+    }, []);
+
+    return <button type="button">Drawn {drawn}</button>;
+  }
+
+  const release = vi.fn(() => true);
+  const undo = vi.fn(() => true);
+  render(<Redrawn release={release} undo={undo} />);
+
+  fireEvent.keyDown(screen.getByRole('button'), { key: 'Escape' });
+  expect(screen.getByRole('button')).toHaveTextContent('Drawn 1');
+  expect(release).toHaveBeenCalledTimes(1);
+
+  fireEvent.keyDown(screen.getByRole('button'), { key: 'z', ctrlKey: true });
+  expect(undo).toHaveBeenCalledTimes(1);
 });

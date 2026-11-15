@@ -1,5 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useEffect, useState } from 'react';
 import { expect, test, vi } from 'vitest';
 import { z } from 'zod';
 
@@ -103,6 +104,57 @@ test('a click inside the pause applies at once, and the mouse going down does no
   expect(pressed).toHaveBeenCalledWith(1);
 
   // And once: the pause that was running applies nothing more.
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  expect(onChange).toHaveBeenCalledTimes(1);
+});
+
+test('a key pressed outside the form inside the pause applies at once, before the screen answers it (issue #461)', async () => {
+  // The editor lets go of what is picked on Escape, and its panel goes with it: the form is gone before its pause ends.
+  function Screen({ onChange }: { onChange: (values: { title: string; note: string }) => void }) {
+    const [shown, setShown] = useState(true);
+
+    useEffect(() => {
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          setShown(false);
+        }
+      };
+      document.addEventListener('keydown', onKeyDown);
+      return () => document.removeEventListener('keydown', onKeyDown);
+    }, []);
+
+    return (
+      <>
+        {shown ? (
+          <SchemaForm
+            schema={schema}
+            defaults={{ title: 'Written', note: '' }}
+            locales={['en']}
+            labels="test"
+            onChange={onChange}
+          />
+        ) : null}
+        <button type="button">Elsewhere</button>
+      </>
+    );
+  }
+
+  const onChange = vi.fn();
+  const user = userEvent.setup();
+  renderWithProviders(<Screen onChange={onChange} />, { i18n: createTestI18n(labels) });
+
+  await user.type(screen.getByLabelText('Note'), 'x');
+  // A key inside the form is more writing: the pause goes on. Tab leaves it, from the field.
+  await user.tab();
+  expect(screen.getByRole('button', { name: 'Elsewhere' })).toHaveFocus();
+  expect(onChange).not.toHaveBeenCalled();
+
+  // A key outside it applies what was typed, and the form may then go.
+  await user.keyboard('{Escape}');
+  expect(screen.queryByLabelText('Note')).toBeNull();
+  expect(onChange).toHaveBeenCalledTimes(1);
+  expect(onChange).toHaveBeenLastCalledWith({ title: 'Written', note: 'x' });
+
   await new Promise((resolve) => setTimeout(resolve, 250));
   expect(onChange).toHaveBeenCalledTimes(1);
 });

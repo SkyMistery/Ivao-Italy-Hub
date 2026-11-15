@@ -54,7 +54,10 @@ export function templateRules(template: Body | null | undefined): ReadonlyMap<st
   return rules;
 }
 
-/** The rule for one section of the page, or the free one when the template says nothing. */
+/**
+ * The rule the template gives a section's `key`, or the free one when it says nothing. Of the section
+ * on its own: a row inside another reads `ruleInside`, or `ruleOfSection` by its id.
+ */
 export function ruleFor(
   rules: ReadonlyMap<string, SectionRule>,
   key: string | null | undefined,
@@ -66,4 +69,41 @@ export function ruleFor(
       allowedBlocks: null,
     }
   );
+}
+
+/**
+ * The rule of a row, from its own and from the one of the section it is a row of (issue #460). A locked
+ * section is fixed structure, "si compila, non si ristruttura" (plan §9.3), and in the editor it "mostra i
+ * campi, non la struttura" (design M1 §1.4): its rows are part of that structure, so they are locked
+ * with it whatever key they carry — or lack, since a row with no key has no rule of its own to read.
+ * Only the lock reaches down; `required` and `allowedBlocks` stay the row's own, and a locked row offers
+ * neither a removal nor a block to add anyway.
+ *
+ * A row the template keys and leaves unlocked inside a locked section is locked too: a free row goes outside the
+ * locked section (decided by the maintainer, `decisions/2026-11-14-il-blocco-del-template-sulle-righe.md`).
+ */
+export function ruleInside(around: SectionRule, own: SectionRule): SectionRule {
+  return around.locked && !own.locked ? { ...own, locked: true } : own;
+}
+
+/** The rule of the section with this id, with the lock of every section around it; the free one if it is absent. */
+export function ruleOfSection(
+  rules: ReadonlyMap<string, SectionRule>,
+  body: Body,
+  id: string | null | undefined,
+): SectionRule {
+  const walk = (sections: Body['sections'], around: SectionRule): SectionRule | undefined => {
+    for (const section of sections) {
+      const rule = ruleInside(around, ruleFor(rules, section.key));
+      const found = section.id === id ? rule : walk(section.sections, rule);
+      if (found !== undefined) {
+        return found;
+      }
+    }
+
+    return undefined;
+  };
+
+  const free = ruleFor(rules, null);
+  return id === null || id === undefined ? free : (walk(body.sections, free) ?? free);
 }
