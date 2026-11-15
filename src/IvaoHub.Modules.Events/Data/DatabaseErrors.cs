@@ -7,7 +7,8 @@ namespace IvaoHub.Modules.Events.Data;
 /// the module answers by itself; every other one surfaces as itself. Whether another write took the key — with or without the
 /// deadlock two inserts of one key meet in — is the core's question, <see cref="IvaoHub.Core.Data.WriteConflicts"/>, and never
 /// asked here (#499): <c>AnotherWriteWon</c> where a deadlock is the same news, <c>DuplicateKey</c> where a pilot is told «taken» and
-/// a deadlock is «try again» (the review of #233, point 3). What stays here are the module's own questions, on its foreign keys.
+/// a deadlock is «try again» (the review of #233, point 3), <c>Deadlock</c> where a deadlock alone is «try again» (#519). What stays
+/// here are the module's own questions, on its foreign keys.
 /// The chain of the exception is walked whatever the outer exception: EF reports a deadlock as an
 /// <see cref="InvalidOperationException"/>, not a <c>DbUpdateException</c>, with the <see cref="MySqlException"/> two levels down
 /// (CONTRIBUTING.md).
@@ -25,9 +26,6 @@ internal static class DatabaseErrors
     /// same moment holds (E17).
     /// </summary>
     public static bool StillReferenced(Exception? exception) => Met(exception, MySqlErrorCode.RowIsReferenced2);
-
-    /// <summary>A deadlock: the database rolled the whole transaction back.</summary>
-    public static bool Deadlocked(Exception? exception) => Met(exception, MySqlErrorCode.LockDeadlock);
 
     private static bool Met(Exception? exception, params MySqlErrorCode[] codes)
     {
