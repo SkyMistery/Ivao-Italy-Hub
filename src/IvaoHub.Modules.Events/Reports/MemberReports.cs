@@ -1,5 +1,6 @@
 using System.Data;
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
@@ -185,7 +186,7 @@ public sealed class MemberReports(
                 var items = await ItemsAsync([report!.Id], cancellationToken);
                 return (ReportResult.Done, Mine(report, row, settings.ReportDays, items[report.Id], now), created, problems);
             }
-            catch (Exception exception) when (attempt == 0 && DatabaseErrors.Duplicated(exception))
+            catch (Exception exception) when (attempt == 0 && WriteConflicts.DuplicateKey(exception) is not null)
             {
                 // The same member sent the same kind from another window in the same instant, and the unique index answered: their report is
                 // there now, and this request is a correction of it.

@@ -409,7 +409,7 @@ public sealed class EventDuplication(EventsDbContext database, HubDbContext hub,
         {
             await database.SaveChangesAsync(cancellationToken);
         }
-        catch (Exception exception) when (DatabaseErrors.Duplicated(exception))
+        catch (Exception exception) when (WriteConflicts.DuplicateKey(exception) is not null)
         {
             // Another event took the address an instant before: the unique index answered.
             database.Entry(copy).State = EntityState.Detached;
