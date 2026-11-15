@@ -41,6 +41,18 @@ public sealed class WriteConflictsTests
 
         Assert.Equal(MySqlErrorCode.LockDeadlock, WriteConflicts.AnotherWriteWon(failure)?.ErrorCode);
         Assert.Null(WriteConflicts.DuplicateKey(failure));
+        Assert.Equal(MySqlErrorCode.LockDeadlock, WriteConflicts.Deadlock(failure)?.ErrorCode);
+    }
+
+    [Fact]
+    public void ADuplicateKeyIsNotADeadlock()
+    {
+        // The bookings, the slots' generation and the review answer a deadlock alone (#519): a duplicate key there is a fault.
+        var failure = Transient(Database(MySqlErrorCode.DuplicateKeyEntry, DuplicateMessage));
+
+        Assert.Null(WriteConflicts.Deadlock(failure));
+        Assert.Null(WriteConflicts.Deadlock(new DbUpdateException("save", Database(MySqlErrorCode.NoReferencedRow2, "Cannot add or update a child row"))));
+        Assert.Null(WriteConflicts.Deadlock(null));
     }
 
     [Fact]

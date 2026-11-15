@@ -289,7 +289,7 @@ public static class EventSlotEndpoints
         }
         catch (Exception exception) when (exception is DbUpdateConcurrencyException
             || DatabaseErrors.SlotWasBooked(exception)
-            || DatabaseErrors.Deadlocked(exception))
+            || WriteConflicts.Deadlock(exception) is not null)
         {
             return Problem(StatusCodes.Status409Conflict, CrudProblems.ConflictTitleKey, catalog, currentUser);
         }
