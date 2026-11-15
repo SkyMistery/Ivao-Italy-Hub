@@ -10,24 +10,28 @@ namespace IvaoHub.Core.Data;
 /// <para>Two publications of one page computing the same next version, two new pages taking one free address: a check before the
 /// insert cannot close that gap, the unique index does, and this is how its refusal reaches the client as a conflict and not as a
 /// fault.</para>
+/// <para>Two questions, the wide one and the narrow one, and every caller in the core and in the modules asks one of these and never a
+/// copy (#499). <see cref="AnotherWriteWon"/> takes the deadlock too: a write that only has to be tried again, or answered 409.
+/// <see cref="DuplicateKey"/> takes the key alone: a write that tells the person «somebody else holds this» — a seat, an account, a
+/// claim — where a deadlock is not that news, since it may meet any other write of the same rows (the review of #233, point 3).</para>
 /// <para>The chain is walked whatever the outer exception: EF reports a deadlock as an <see cref="InvalidOperationException"/>, not a
-/// <c>DbUpdateException</c>, with the <see cref="MySqlException"/> two levels down (CONTRIBUTING.md).</para>
+/// <c>DbUpdateException</c>, with the <see cref="MySqlException"/> two levels down (CONTRIBUTING.md). The database's error code is
+/// read, never the words of its message.</para>
 /// </summary>
 public static partial class WriteConflicts
 {
-    /// <summary>The database's own answer when another write won, or <c>null</c> when the failure is anything else.</summary>
-    public static MySqlException? AnotherWriteWon(Exception? exception)
-    {
-        for (; exception is not null; exception = exception.InnerException)
-        {
-            if (exception is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry or MySqlErrorCode.LockDeadlock } conflict)
-            {
-                return conflict;
-            }
-        }
+    /// <summary>
+    /// The database's own answer when another write won — a duplicate key or a deadlock —, or <c>null</c> when the failure is
+    /// anything else.
+    /// </summary>
+    public static MySqlException? AnotherWriteWon(Exception? exception) =>
+        Find(exception, MySqlErrorCode.DuplicateKeyEntry, MySqlErrorCode.LockDeadlock);
 
-        return null;
-    }
+    /// <summary>
+    /// The database's answer when another write took the key, and nothing else: a duplicate key, or <c>null</c> — a deadlock
+    /// included, which the caller lets through or answers as «try again».
+    /// </summary>
+    public static MySqlException? DuplicateKey(Exception? exception) => Find(exception, MySqlErrorCode.DuplicateKeyEntry);
 
     /// <summary>
     /// The name of the unique index a duplicate key met, read off the database's message (<c>… for key 'name'</c>), or <c>null</c>.
@@ -39,6 +43,19 @@ public static partial class WriteConflicts
 
         var match = KeyPattern().Match(conflict.Message);
         return match.Success ? match.Groups["key"].Value : null;
+    }
+
+    private static MySqlException? Find(Exception? exception, MySqlErrorCode first, MySqlErrorCode? second = null)
+    {
+        for (; exception is not null; exception = exception.InnerException)
+        {
+            if (exception is MySqlException found && (found.ErrorCode == first || found.ErrorCode == second))
+            {
+                return found;
+            }
+        }
+
+        return null;
     }
 
     [GeneratedRegex(@"for key '(?<key>[^']+)'", RegexOptions.None, matchTimeoutMilliseconds: 1000)]

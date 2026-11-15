@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using MySqlConnector;
 
 namespace IvaoHub.Core.Auth;
 
@@ -57,9 +56,9 @@ public sealed class DiscordLinks(HubDbContext database, IClock clock)
         }
         catch (DbUpdateException exception)
         {
-            // Two members racing for one account: the unique index is what answers. Anything else (the row changed under a
-            // sign in) is a round trip to do again.
-            return exception.InnerException is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry }
+            // Two members racing for one account: the unique index is what answers, wherever in the chain its refusal sits (#499).
+            // Anything else (the row changed under a sign in, a deadlock) is a round trip to do again.
+            return WriteConflicts.DuplicateKey(exception) is not null
                 ? DiscordLinkOutcome.Taken
                 : DiscordLinkOutcome.Failed;
         }
