@@ -1199,7 +1199,11 @@ il blocco risponde `signedIn: false`.
   «sostituisci» toglie ciò che il file non nomina e non ha report, e ritira intera una rotazione che ne ha. Si applica solo ciò che
   l'anteprima ha mostrato (un'impronta delle leg). Modello di file con le colonne (`departure`, `arrival`, `callsign`,
   `flightNumber`, `aircraft`, `release`; il file porta solo tipi ICAO, i gruppi di una leg restano). Carmine, 22 settembre 2026, nota
-  `2026-09-22-l-import-delle-leg`.
+  `2026-09-22-l-import-delle-leg`. **Dal 14 nov 2026** (#507 del nucleo e #508 dei tour, la #334 punto 3, piano 1.54, nota
+  `2026-11-14-il-csv-e-il-testo-scritto`, decisa dal master): **un CSV si legge come testo**, senza numeri né date dedotti da SheetJS
+  (il lettore dei fogli del nucleo, `shared/files/sheet.ts`, passa `raw` quando il file è testo), quindi **una data di `release` che non
+  è ISO si rifiuta sulla sua riga anche in un CSV**: prima `01/10/2026` diventava il 10 gennaio in silenzio. Un file di un foglio (XLSX,
+  XLS, ODS) si legge come prima, con i suoi valori.
 - Salvataggio a righe con `row_version`, errori sulla cella.
 
 ### 8.5 La validazione
@@ -1281,6 +1285,13 @@ il blocco risponde `signedIn: false`.
   e quegli errori. Gli errori suggeriti e non confermati vanno via con gli esiti dei controlli. **Le note** sono `pilot_remarks`,
   `diversion_note`, `note_to_pilot`, `staff_note`, `override_reason`, `dispute_text`; la storia (`fo_pirep_events`) resta con le sue.
   Le foto le toglie il nucleo (§1.14). Le segnalazioni sulle leg non sono nell'elenco e restano.
+  **Dal 14 nov 2026** (#496, la #328 punto 10, piano 1.54, nota `2026-11-14-la-pulizia-dei-sottotour`, che completa il §3 della nota del
+  25 settembre; **decisa da Carmine** in chat al master, A, «[Col contenitore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/496#issuecomment-6874810397)»):
+  **un sottotour si pulisce solo con il suo contenitore**, e finché il contenitore non ha `purged_at` aspetta, contato fra «in attesa»;
+  **il contenitore aspetta finché aspetta uno dei suoi sottotour** (un suo PIREP da decidere o contestato, un suo completamento con
+  l'award in attesa); **i tour di primo livello si trattano prima dei sottotour**, così un contenitore che scade nello stesso giro li porta
+  con sé. Prima un sottotour scaduto da solo perdeva le sue iscrizioni, e il contenitore, che conta i sottotour completati proprio da
+  quelle (`SubtoursDoneAsync`), poteva non completarsi mai.
 - **Dal 16 ott 2026** (#274, piano 1.35): ogni trigger dei tour dice il suo fuso. `TourRetentionJob` gira il primo del mese alle
   04:20 **nel fuso della divisione**, dopo il job dei file del nucleo, che gira in quel fuso; `TrackRetentionJob` alle 03:40 **in
   UTC**.
