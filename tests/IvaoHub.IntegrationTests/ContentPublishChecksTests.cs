@@ -223,6 +223,53 @@ public sealed class ContentPublishChecksTests(MariaDbFixture mariaDb) : IAsyncLi
     }
 
     /// <summary>
+    /// #488: a document chosen where a picture is drawn — a block, a section's background, a news item's cover — stops
+    /// the page, and the picture beside it does not. The file of a document is a download, and stays any file.
+    /// </summary>
+    [Fact]
+    public async Task ADocumentChosenForAPictureStopsThePageAndTheFileOfADocumentDoesNot()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var pdf = await SeedMediaAsync("application/pdf", token);
+        var png = await SeedMediaAsync("image/png", token);
+
+        var page = await WriteAsync(
+            Visibility.Public,
+            $$"""
+            { "schemaVersion": 1, "sections": [ { "id": "s_main", "layout": "stacked", "background": "image", "mediaId": {{pdf}},
+              "blocks": [
+                { "id": "b_one", "type": "image", "version": 1, "props": { "mediaId": {{pdf}} } },
+                { "id": "b_two", "type": "gallery", "version": 1,
+                  "props": { "images": [ { "mediaId": {{png}} }, { "mediaId": {{pdf}} } ] } } ] } ] }
+            """,
+            token);
+
+        Assert.Equal([ContentPublishService.MediaNotPictureKey], await ProblemsAsync(page.Id, "body.sections[0].mediaId", token));
+        Assert.Equal(
+            [ContentPublishService.MediaNotPictureKey],
+            await ProblemsAsync(page.Id, "body.sections[0].blocks[0].props.mediaId", token));
+        Assert.Equal(
+            [ContentPublishService.MediaNotPictureKey],
+            await ProblemsAsync(page.Id, "body.sections[0].blocks[1].props.images[1].mediaId", token));
+        Assert.Empty(await ProblemsAsync(page.Id, "body.sections[0].blocks[1].props.images[0].mediaId", token));
+
+        using var refused = await PublishAsync(page.Id, token);
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+
+        var news = await WriteAsync(Visibility.Public, Text("News."), token, ContentKind.News);
+        await SetMediaColumnsAsync(news.Id, cover: pdf, file: null, token);
+        Assert.Equal([ContentPublishService.MediaNotPictureKey], await ProblemsAsync(news.Id, "coverMediaId", token));
+
+        await SetMediaColumnsAsync(news.Id, cover: png, file: null, token);
+        Assert.Empty(await ProblemsAsync(news.Id, "coverMediaId", token));
+
+        var document = await WriteAsync(Visibility.Public, Text("Document."), token, ContentKind.Document);
+        await SetMediaColumnsAsync(document.Id, cover: null, file: pdf, token);
+        Assert.Empty(await ProblemsAsync(document.Id, "fileMediaId", token));
+        await PublishedAsync(document.Id, token);
+    }
+
+    /// <summary>
     /// What Carmine's decision does to a page that went out before it, with a picture missing: the public keeps reading
     /// the version, and only what would become the next one stops.
     /// </summary>
@@ -436,6 +483,36 @@ public sealed class ContentPublishChecksTests(MariaDbFixture mariaDb) : IAsyncLi
         var row = await database.Contents.IgnoreQueryFilters().FirstAsync(content => content.Id == id, cancellationToken);
         row.BodyJson = JsonNode.Parse(body)!.ToJsonString();
         await database.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SetMediaColumnsAsync(long id, long? cover, long? file, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        var row = await database.Contents.IgnoreQueryFilters().FirstAsync(content => content.Id == id, cancellationToken);
+        row.CoverMediaId = cover;
+        row.FileMediaId = file;
+        await database.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>A public file of the web team, of the given type; only its row is read here, never its bytes.</summary>
+    private async Task<long> SeedMediaAsync(string contentType, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        var media = new MediaAsset
+        {
+            OwnerDepartment = Department.WD,
+            Visibility = Visibility.Public,
+            FileName = $"publish-checks-{Guid.NewGuid():N}",
+            StoredName = $"publish-checks-{Guid.NewGuid():N}",
+            ContentType = contentType,
+            ByteSize = 1,
+        };
+
+        database.Media.Add(media);
+        await database.SaveChangesAsync(cancellationToken);
+        return media.Id;
     }
 
     private async Task LeaveBehindAsync(long id, string oldAddress, CancellationToken cancellationToken)
