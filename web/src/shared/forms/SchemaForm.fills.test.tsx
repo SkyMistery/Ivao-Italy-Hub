@@ -29,7 +29,7 @@ const schema = z.object({
       callsign: z.string().meta({ suggestions: positions }),
       name: z.string().optional(),
       frequency: z.string(),
-      kind: z.enum(['TWR', 'APP', 'CTR']).default('CTR'),
+      kind: z.enum(['TWR', 'APP', 'CTR']),
     }),
   ),
 });

@@ -298,7 +298,18 @@ interface CommonStrings {
       readonly fields: { readonly tone: string; readonly title: string; readonly text: string };
       readonly options: { readonly tone: Readonly<Record<string, string>> };
     };
+    readonly frequencyTable: {
+      readonly label: string;
+      readonly fields: {
+        readonly 'stations.callsign': string;
+        readonly 'stations.name': string;
+        readonly 'stations.frequency': string;
+      };
+      readonly columns: { readonly name: string };
+    };
   };
+  /** The words of the ATC positions, which name IVAO and so live in its own group (design of the editor, §5.8). */
+  readonly atcPositions: { readonly pending: string; readonly realign: string };
   readonly connections: {
     readonly title: string;
     readonly run: string;
