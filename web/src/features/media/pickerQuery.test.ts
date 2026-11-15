@@ -7,8 +7,8 @@ import { mediaPickerQuery } from './queries';
 
 /**
  * What the library of a picture field asks the server (#488, note 2026-11-15-il-selettore-delle-foto): the files whose
- * type is a picture, kept when the field also asks for one category, with no category "Document" to choose and only
- * pictures to upload.
+ * type is a picture, kept when the field also asks for one category and when the person browses, and only pictures to
+ * upload.
  */
 
 const api = vi.hoisted(() => ({ get: vi.fn() }));
@@ -40,11 +40,12 @@ test('the whole library asks for every file, and offers every category', async (
   expect(library.meta?.accept).toBeUndefined();
 });
 
-test('the pictures ask for pictures, offer no document category, and upload only pictures', async () => {
+test('the pictures ask for pictures, offer every category, and upload only pictures', async () => {
   const pictures = picturesOnly(mediaPickerQuery('WD'));
 
   expect((await asked(pictures)).get('filter[picture]')).toBe('true');
-  expect(pictures.meta?.categories).not.toContain('Document');
+  // A category is filed by hand: a scan filed as a document is still a picture, and the type keeps the PDFs out.
+  expect(pictures.meta?.categories).toContain('Document');
   expect(pictures.meta?.categories).toContain('Logo');
   expect(pictures.meta?.accept).toBe('image/*');
 });
