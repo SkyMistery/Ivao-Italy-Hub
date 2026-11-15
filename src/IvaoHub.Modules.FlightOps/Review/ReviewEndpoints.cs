@@ -1,4 +1,5 @@
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
@@ -169,29 +170,16 @@ public static class ReviewEndpoints
                 _ => Results.Ok(await reviews.PageAsync(pirep, http.RequestAborted)),
             };
         }
-        catch (Exception exception) when (exception is DbUpdateConcurrencyException || IsDeadlock(exception))
+        catch (Exception exception) when (exception is DbUpdateConcurrencyException || WriteConflicts.Deadlock(exception) is not null)
         {
             // Two takes at once: the first wins (§4.2), and the second reads the report again. On MariaDB the second can also
             // lose as a deadlock — both writes lock the report through the key of the history row they add, then both want
             // to change it — and the database has already rolled it back: it is the same answer. EF reports that one wrapped,
-            // as a transient failure, so the whole chain is looked at.
+            // as a transient failure, and the core's question walks the whole chain (#519).
             return Results.Problem(
                 statusCode: StatusCodes.Status409Conflict,
                 title: catalog.Resolve(currentUser.Locale, CrudProblems.ConflictTitleKey));
         }
-    }
-
-    private static bool IsDeadlock(Exception? exception)
-    {
-        for (; exception is not null; exception = exception.InnerException)
-        {
-            if (exception is MySqlConnector.MySqlException { ErrorCode: MySqlConnector.MySqlErrorCode.LockDeadlock })
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /// <summary>The rows of one page: the tours' titles, the legs' numbers, the names, and whether the reader may take each.</summary>
