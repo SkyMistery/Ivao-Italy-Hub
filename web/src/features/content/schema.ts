@@ -115,7 +115,7 @@ export function contentMetadataSchema(
       ...category,
       // A document with a file is a card with a download; one without is read in the browser like
       // any other page (design M1 §3.3).
-      fileMediaId: z.number().int().optional().meta({ media: true }),
+      fileMediaId: z.number().int().optional().meta({ media: true, mediaAnyFile: true }),
       sort: z.number().int(),
       // ---- the life of a document (G14) ----
       // When it comes into force and when it is due for a look. All optional: a guide filed among

@@ -73,6 +73,12 @@ export interface FieldMeta {
    */
   mediaCategory?: string;
   /**
+   * A media field that takes **any** file of the library, documents included: the file of a document, which is
+   * downloaded and not drawn. Every other media field draws a picture, and is offered only pictures (#488,
+   * `picturesOnly`): a PDF there is a broken image on the page.
+   */
+  mediaAnyFile?: boolean;
+  /**
    * An icon, held as a `lucide` name out of the allow list in `shared/icons`. A choice among thirty
    * pictures is a choice; a box for any of the thousands `lucide` ships is a text field with extra
    * steps.
@@ -220,7 +226,7 @@ export type FieldNode =
   | ({ kind: 'enum'; options: string[] } & FieldCommon)
   | ({ kind: 'multi'; options: ChoiceOption[]; creatable: boolean } & FieldCommon)
   | ({ kind: 'localized' } & FieldCommon)
-  | ({ kind: 'media'; category: string | null } & FieldCommon)
+  | ({ kind: 'media'; category: string | null; pictures: boolean } & FieldCommon)
   | ({ kind: 'icon' } & FieldCommon)
   | ({ kind: 'instant'; withTime: boolean } & FieldCommon)
   | ({ kind: 'localizedObject'; children: FieldNode[] } & FieldCommon)
@@ -792,7 +798,12 @@ function readField(schema: unknown, path: string): FieldNode {
   // promise about the value — an identifier of the media library, a name from the icon allow list,
   // an ISO instant — that the plain type could not carry on its own.
   if (meta.media === true) {
-    return { kind: 'media', ...common, category: meta.mediaCategory ?? null };
+    return {
+      kind: 'media',
+      ...common,
+      category: meta.mediaCategory ?? null,
+      pictures: meta.mediaAnyFile !== true,
+    };
   }
 
   if (meta.icon === true) {

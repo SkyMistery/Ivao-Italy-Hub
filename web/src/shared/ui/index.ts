@@ -28,7 +28,7 @@ export {
   type CalendarViewMode,
 } from './calendar';
 export { MediaPicker, type PickableMedia, type MediaPage, type MediaLibraryQuery } from './MediaPicker';
-export { narrowLibrary, NOTHING_ASKED, type MediaBrowse } from './narrowLibrary';
+export { narrowLibrary, picturesOnly, NOTHING_ASKED, type MediaBrowse } from './narrowLibrary';
 export { NotFound, Forbidden, Failed, RouteError } from './status-pages';
 // ⚠️ The map through its lazy half, and its types with `export type` (issue #400, `LazyRouteMap.tsx`): a value exported
 // from './RouteMap' here puts MapLibre back into the entry chunk of every page, and an inline `{ type … }` its stylesheet.

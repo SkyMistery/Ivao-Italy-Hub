@@ -23,3 +23,14 @@ export function narrowLibrary(query: MediaLibraryQuery, category: string): Media
   const narrow = query.meta?.narrow;
   return typeof narrow === 'function' ? (narrow as (category: string) => MediaLibraryQuery)(category) : query;
 }
+
+/**
+ * The same library, offering only pictures (#488): a field that draws a picture is offered no document, which would be
+ * drawn as a broken image (note 2026-11-15-il-selettore-delle-foto). Carried on the query like `narrow`, and kept by it:
+ * the logos of a `logoGrid` are pictures of one category. A library that cannot narrow itself is offered whole, for the
+ * reason above; publication still refuses a document where a picture is drawn (`errors.content.mediaNotPicture`).
+ */
+export function picturesOnly(query: MediaLibraryQuery): MediaLibraryQuery {
+  const pictures = query.meta?.pictures;
+  return typeof pictures === 'function' ? (pictures as () => MediaLibraryQuery)() : query;
+}

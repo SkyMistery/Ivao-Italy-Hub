@@ -33,7 +33,7 @@ import { formatMoment } from '../i18n/useMoment';
 import { ICON_NAMES } from '../icons';
 import { iconGlyph } from '../icons/glyphs';
 import { MediaPicker, type MediaLibraryQuery } from '../ui/MediaPicker';
-import { narrowLibrary } from '../ui/narrowLibrary';
+import { narrowLibrary, picturesOnly } from '../ui/narrowLibrary';
 
 import { LocaleFields } from './LocaleFields';
 import { LocaleTabs } from './LocaleTabs';
@@ -668,8 +668,10 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
 
       // A field that offers one category of the library (#359) is offered it, and a file uploaded
       // there joins it: otherwise the logo just uploaded would be chosen and missing from the grid.
+      // A field that draws a picture — all of them but a document's file — is offered pictures (#488).
       const category = node.category;
-      const library = category === null ? env.mediaLibrary : narrowLibrary(env.mediaLibrary, category);
+      const pictures = node.pictures ? picturesOnly(env.mediaLibrary) : env.mediaLibrary;
+      const library = category === null ? pictures : narrowLibrary(pictures, category);
       const upload = env.uploadMedia;
       const defaultLocale = env.division.defaultLocale;
 
