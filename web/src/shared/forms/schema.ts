@@ -446,6 +446,65 @@ function pruneEntry(children: FieldNode[], path: string, entry: unknown): unknow
 }
 
 /**
+ * A value the form saved, opened in it again: every field `writtenValues` left out because nobody wrote it is put back at
+ * its blank value, at every depth — the entries of a list and the fields of an object too — so the form holds what it held
+ * when it wrote the value.
+ *
+ * ⚠️ Without it a translated field left out came back `undefined`, a translated field refuses that, and the whole form was
+ * invalid: a live one applied nothing more, without a word, and a form with a button sent nothing. The save leaves out an
+ * optional text left empty in every language, inside the entries of a list as well, so this was every list whose entries
+ * have one — the note of a station of a frequency table, found while checking PR 3.14 on screen.
+ *
+ * Only a blank the save would leave out again (`unwritten`): an empty text, a translated field empty in every language, an
+ * empty list, an object of those. A number, a switch or a choice is not invented — `0` is a value, and a declared default
+ * is the schema's to apply — so opening a value and saving it untouched stores what was there.
+ */
+export function withUnwrittenBlanks<TValues extends Record<string, unknown>>(
+  schema: z.ZodType<TValues>,
+  values: TValues,
+  locales: readonly string[],
+): TValues {
+  return putBack(readFields(schema), '', values, locales) as TValues;
+}
+
+function putBack(
+  children: readonly FieldNode[],
+  path: string,
+  value: Record<string, unknown>,
+  locales: readonly string[],
+): Record<string, unknown> {
+  const filled: Record<string, unknown> = { ...value };
+
+  for (const child of children) {
+    const key = path === '' ? child.path : child.path.slice(path.length + 1);
+    const held = filled[key];
+
+    if (held === undefined) {
+      if (child.kind === 'object') {
+        filled[key] = putBack(child.children, child.path, {}, locales);
+        continue;
+      }
+
+      const blank = blankValue(child, locales);
+      if (blank !== undefined && unwritten(child, blank)) {
+        filled[key] = blank;
+      }
+    } else if (child.kind === 'list' && Array.isArray(held)) {
+      filled[key] = held.map((entry: unknown) =>
+        isRecord(entry) ? putBack(child.children, child.path, entry, locales) : entry,
+      );
+    } else if (child.kind === 'object' && isRecord(held)) {
+      filled[key] = putBack(child.children, child.path, held, locales);
+    }
+  }
+
+  return filled;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/**
  * The field whose value is the title of an entry of a repeatable list, on the row it is closed to: the
  * one annotated `entryTitle`, or the first that somebody writes text into, or — a list of choices, like
  * the metrics of a block — the first closed choice, or — a list of dates, like the proposal of a training

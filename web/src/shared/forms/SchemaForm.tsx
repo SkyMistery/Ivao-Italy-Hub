@@ -45,6 +45,7 @@ import {
   filesToChoose,
   readFields,
   whereDrawn,
+  withUnwrittenBlanks,
   type FieldNode,
 } from './schema';
 import { slugify } from './slug';
@@ -187,14 +188,17 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   createChoice?: (field: string, choose: (value: string) => void) => React.ReactNode;
 }) {
   const { t } = useTranslation();
+  // A saved value comes back without the fields its save left out: they are put back empty, or a translated one would
+  // make the whole form invalid (`withUnwrittenBlanks`).
+  const opened = withUnwrittenBlanks(schema, defaults, locales);
   const form = useForm({
     resolver: zodResolver(schema),
-    defaultValues: defaults as never,
+    defaultValues: opened as never,
     // A form that applies as it is written says what is wrong as it is written: an error that only
     // showed on a submit would never show at all.
     mode: onChange === undefined ? 'onSubmit' : 'onChange',
   });
-  const rowsTaken = useNewerRow(form, defaults, onChange !== undefined);
+  const rowsTaken = useNewerRow(form, opened, onChange !== undefined);
   const fields = readFields(schema);
   const problem = useProblemDetails(form, (field) => whereDrawn(fields, field, form.getValues()));
   const env: FormEnvironment = {
