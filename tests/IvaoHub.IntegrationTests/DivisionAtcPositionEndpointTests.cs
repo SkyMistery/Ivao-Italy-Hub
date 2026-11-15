@@ -61,8 +61,13 @@ public sealed class DivisionAtcPositionEndpointTests(MariaDbFixture mariaDb) : I
         Assert.Equal("124.200", byCallsign["LIRR_NE_CTR"].GetProperty("frequency").GetString());
         Assert.DoesNotContain("LFPG_TWR", byCallsign.Keys);
 
-        // In the order of their callsigns.
-        Assert.Equal(byCallsign.Keys.Order(StringComparer.Ordinal), byCallsign.Keys);
+        // The directory's answer, row for row and in its order — the callsigns' order of the database's collation, where
+        // `LIRR_NE_CTR` comes before `LIRR_NE1_CTR`.
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var division = await scope.ServiceProvider.GetRequiredService<IAtcPositionDirectory>().OfDivisionAsync(token);
+        Assert.Equal(
+            division.Select(position => position.Callsign),
+            positions.EnumerateArray().Select(position => position.GetProperty("callsign").GetString()));
     }
 
     [Fact]
