@@ -85,7 +85,7 @@ const PICKER_PAGE_SIZE = 24;
  * `browse` is what the person has asked in the picker: the search the server already has, on the
  * name and on the alternative text (`CrudOptions.SearchFields`), the category, and the page.
  * `pictures` is a field that draws a picture (#488): only the files whose type is `image/*`, the
- * server's `filter[picture]`, no category "Document" to offer, and only pictures to upload.
+ * server's `filter[picture]`, and only pictures to upload.
  */
 export function mediaPickerQuery(
   department: Department,
@@ -142,12 +142,9 @@ export function mediaPickerQuery(
       narrow: (category: string) => mediaPickerQuery(department, category, NOTHING_ASKED, pictures),
       pictures: () => mediaPickerQuery(department, only, NOTHING_ASKED, true),
       browse: (asked: MediaBrowse) => mediaPickerQuery(department, only, asked, pictures),
-      categories:
-        only !== undefined
-          ? []
-          : pictures
-            ? MEDIA_CATEGORIES.filter((one) => one !== 'Document')
-            : MEDIA_CATEGORIES,
+      // Every category, pictures or not: a category is filed by hand, and a scan filed as a document is still a
+      // picture. The type is what keeps the PDFs out.
+      categories: only === undefined ? MEDIA_CATEGORIES : [],
       accept: pictures ? 'image/*' : undefined,
     },
   });

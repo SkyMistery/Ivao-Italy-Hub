@@ -28,7 +28,9 @@ immagine di un award, banner di un evento, copertina e banner di un tour) **tran
    offre intera. La pubblicazione ferma comunque il documento. `mediaPickerQuery` di una libreria di sole immagini:
    - tiene il filtro anche quando il campo chiede una categoria (i loghi sono immagini della categoria `Logo`) e quando la
      persona cerca o sceglie una categoria;
-   - non offre la categoria «Document» nel suo menu;
+   - offre ancora tutte le categorie nel suo menu, «Document» compresa. La categoria si assegna a mano, e un'immagine archiviata
+     come documento (la scansione di un modulo) resta un'immagine. I PDF li tiene fuori il tipo. Una prima versione toglieva
+     «Document», ma faceva cadere `e2e/full/media-picker.spec.ts`, che la sceglie, senza un buon motivo;
    - offre solo immagini al caricamento (`accept="image/*"`, `meta.accept`).
 
 ## Che cosa non fa
