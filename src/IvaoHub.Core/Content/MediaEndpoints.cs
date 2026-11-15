@@ -80,6 +80,14 @@ public static class MediaEndpoints
                 };
                 options.DefaultFilters[ArchivedFilter] = "false";
 
+                // A field that draws a picture offers pictures (#488): what the bytes are, not the
+                // category, which is changed by hand. `filter[picture]=true`; nothing else is asked.
+                options.CustomFilters[PictureFilter] = (query, raw) => raw switch
+                {
+                    "true" => query.Where(media => EF.Functions.Like(media.ContentType, "image/%")),
+                    _ => null,
+                };
+
                 // No JSON create: a media is born from an upload, with its file already on disk.
                 options.MapCreate = false;
 
@@ -142,6 +150,9 @@ public static class MediaEndpoints
 
     /// <summary>The custom filter of the archive: <c>false</c> by default, <c>true</c>, or <c>any</c>.</summary>
     public const string ArchivedFilter = "archived";
+
+    /// <summary>The custom filter of the pictures (#488): <c>true</c> keeps the files whose type is <c>image/*</c>.</summary>
+    public const string PictureFilter = "picture";
 
     /// <summary>
     /// The file itself, straight from Kestrel. Anonymous, because most of a public site is, and the

@@ -109,6 +109,31 @@ public sealed class CollectionsAndMediaTests(MariaDbFixture mariaDb) : IAsyncLif
         Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
     }
 
+    /// <summary>
+    /// #488: a picker of a field that draws a picture asks for pictures, by what the bytes are and not by the category,
+    /// which is changed by hand.
+    /// </summary>
+    [Fact]
+    public async Task ThePicturesOfTheLibraryAreItsImagesAndNotItsDocuments()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var web = await WebAsync(token);
+
+        var picture = await UploadAsync(web, Department.WD, [.. Convert.FromBase64String(Png), 4], token);
+        var document = await UploadAsync(web, Department.WD, [.. "%PDF-1.4\n%%EOF\n"u8.ToArray(), (byte)Random.Shared.Next(256)], token);
+
+        var every = await IdsAsync(web, $"{MediaEndpoints.Pattern}?filter[ownerDepartment]=WD&pageSize=100", token);
+        Assert.Contains(picture, every);
+        Assert.Contains(document, every);
+
+        var pictures = await IdsAsync(web, $"{MediaEndpoints.Pattern}?filter[ownerDepartment]=WD&filter[picture]=true&pageSize=100", token);
+        Assert.Contains(picture, pictures);
+        Assert.DoesNotContain(document, pictures);
+
+        using var unknown = await web.GetAsync(new Uri($"{MediaEndpoints.Pattern}?filter[picture]=yes", UriKind.Relative), token);
+        Assert.Equal(HttpStatusCode.BadRequest, unknown.StatusCode);
+    }
+
     [Fact]
     public async Task AReplacedFileIsWhatThePublishedPageShowsAtANewAddress()
     {
