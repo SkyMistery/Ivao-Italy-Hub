@@ -46,7 +46,7 @@ const labels = {
 const saved = writtenValues(schema, {
   caption: { en: '', it: '' },
   stations: [{ callsign: 'XXXX_TWR', note: { en: '', it: '' }, settings: { remark: { en: '', it: '' } } }],
-} as Values);
+});
 
 test('what the save stores leaves the unwritten fields out, which is what is opened again', () => {
   expect(saved).toEqual({ stations: [{ callsign: 'XXXX_TWR' }] });
