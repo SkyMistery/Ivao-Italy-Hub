@@ -37,7 +37,7 @@ export interface AtcPositionDrift {
  * What choosing `position` copies into the fields beside the callsign: the name, when the entry has a field for it; the
  * kind, when the entry's kinds include IVAO's; the frequency, once the synchronisation has brought the frequencies.
  *
- * ⚠️ **What IVAO leaves empty empties the row** (rilievo 2 della revisione): a row chosen as one station and then as another
+ * ⚠️ **What IVAO leaves empty empties the row** (finding 2 of the review of #523): a row chosen as one station and then as another
  * kept the first one's name, and its frequency, under the second one's callsign. A name IVAO did not give is an empty name;
  * a frequency it did not give is an empty one — but only once the synchronisation has run (`synchronised`): until then no
  * position has one, the frequency is written by hand, and nothing writes an empty one over it.
