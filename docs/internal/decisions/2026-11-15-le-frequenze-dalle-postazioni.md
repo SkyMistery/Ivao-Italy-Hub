@@ -2,8 +2,9 @@
 
 **Data:** 15 novembre 2026, PR 3.14 della fase 3 (ramo `feat/atc-frequencies`; `12-design-editor-fase-3.md` §5.8, riga 3.14 del §7).
 **Stato:** scelte della sessione di lavoro, dentro quello che il §5.8 ha già deciso (approvato da Carmine il 31 ottobre 2026, §9,
-risposta 6: i valori si **copiano**, con la segnalazione e «Riallinea»). Dicono dove sta e come si legge quello che il design vuole. Il
-punto 4 è un'interpretazione del testo del design che la revisione deve guardare.
+risposta 6: i valori si **copiano**, con la segnalazione e «Riallinea»). Dicono dove sta e come si legge quello che il design vuole.
+**Il punto 4 (il campo `name`) l'ha approvato Carmine**, in chat al master il 15 novembre 2026, «Sì, il campo name», riportato dal
+master sulla PR: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/523#issuecomment-6901335039.
 **Classificazione** (`CLAUDE.md` §5): (c), decisa dal design. Il §5.8 dice «nota sua: no»; questa nota c'è per i punti che non scrive e
 che il codice ha dovuto scegliere, come le note della 3.10–3.13. Il punto 3 è un'estensione del form generato, caso (b), dentro la PR
 perché la fase è tutta nucleo (come `Dialog wide` nella 3.12).
@@ -44,19 +45,21 @@ perché la fase è tutta nucleo (come `Dialog wide` nella 3.12).
 - L'annotazione **`atcPosition`** sul nominativo e i suoi aiutanti (`suggestAtcPositions`, `namesAtcPositions`, `atcPositionListOf`),
   come `address` e le collezioni: lo schema dice che cosa è il campo, chi disegna il form (`BlockProperties`) lo trasforma in
   suggerimenti. Raggruppati per FIR (duecento righe senza titoli sono un muro), con nome e frequenza nell'etichetta.
-- Che cosa si copia, solo se la riga ha il campo: il **nominativo** come lo scrive IVAO, il **nome** se IVAO ne dà uno, il **tipo** se è
-  fra quelli della tabella (gli otto di IVAO lo sono tutti), la **frequenza** quando c'è — una postazione non ancora sincronizzata non
-  scrive una frequenza vuota sopra quella scritta a mano.
+- Che cosa si copia, solo se la riga ha il campo: il **nominativo** come lo scrive IVAO, il **nome**, il **tipo** se è fra quelli della
+  tabella (gli otto di IVAO lo sono tutti), la **frequenza** dopo il sincronismo.
+- **Quello che IVAO lascia vuoto svuota la riga** (rilievo 2 della revisione): scegliere un'altra postazione non lascia il nome né la
+  frequenza della prima sotto il nominativo nuovo. Un nome che IVAO non dà è un nome vuoto; una frequenza che non dà è una frequenza
+  vuota, ma **solo dopo il sincronismo**: prima nessuna postazione ne ha una, la frequenza si scrive a mano, e niente la svuota.
 
-## 4. Il nome della postazione ⚖️
+## 4. Il nome della postazione — deciso da Carmine
 
 - Il §5.8 dice che «il nome della postazione, il tipo e la frequenza si copiano nella riga», ma la riga di `frequencyTable` non aveva un
   nome (§1 del design: nominativo, frequenza, tipo, CPDLC, rating). **La riga ha un campo `name` facoltativo**, testo non tradotto come
-  il nominativo («Malpensa Tower» è quello che si dice in frequenza), dopo il nominativo.
+  il nominativo (quello che si dice in frequenza, «Example Tower» nell'esempio della galleria), dopo il nominativo.
 - **La tabella disegna la colonna «Nome» solo se almeno una riga ne ha uno**: una tabella scritta prima, o una che non lo vuole, si
   disegna con le colonne di sempre. Nessun corpo si riscrive (principio 4).
-- L'altra lettura possibile era «il nome» = il nominativo come lo scrive IVAO, senza un campo nuovo. Scelta la prima perché è la lettera
-  del design approvato; se Carmine preferisce l'altra, si toglie un campo e una colonna e la copia resta.
+- L'altra lettura possibile era «il nome» = il nominativo come lo scrive IVAO, senza un campo nuovo. Carmine ha scelto il campo:
+  «Sì, il campo name» (https://github.com/SkyMistery/Ivao-Italy-Hub/pull/523#issuecomment-6901335039).
 
 ## 5. La segnalazione e «Riallinea»
 
@@ -65,7 +68,13 @@ perché la fase è tutta nucleo (come `Dialog wide` nella 3.12).
   per l'annulla, e il form si ridisegna con la riga copiata.
 - **Che cosa è diverso**: il nominativo scritto in un'altra maiuscola, il tipo, la frequenza **come numero** (`118.7` scritto a mano è
   `118.700`), il nome **solo se la riga ne ha uno** — una tabella scritta prima della 3.14 non ha nomi, e ogni sua riga sarebbe
-  segnalata. Una postazione che IVAO non elenca non è segnalata: è dello staffer.
+  segnalata —; un nome o una frequenza che IVAO ora non dà più è una differenza («niente su IVAO»). Una postazione che IVAO non elenca
+  non è segnalata: è dello staffer.
+- **Chi legge le postazioni**: il pannello le chiede solo a chi ha `Content.Edit` (rilievo 3), come gli indirizzi del sito; e il
+  nominativo è un campo che suggerisce **dal primo disegno** (rilievo 4), con la lista vuota finché la risposta non arriva, così non
+  cambia sotto chi scrive.
+- ⚠️ Un blocco già salvato con una postazione senza nota non riceve modifiche dal form finché non è unita la #530 (un difetto del form
+  generato, nota `2026-11-15-il-form-riapre-quello-che-ha-salvato`); «Riallinea» sì, perché scrive le `props` da sé.
 - **Nessuna modifica da sola**: aprire il blocco non cambia la pagina; la riga cambia solo con il pulsante, e la pagina pubblicata solo
   con una nuova pubblicazione.
 - Finché il sincronismo non ha portato le frequenze (postazioni elencate, nessuna con la frequenza), un avviso lo dice: le postazioni
