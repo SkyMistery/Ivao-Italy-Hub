@@ -61,16 +61,28 @@ test('a position chosen by its callsign copies its name, kind and frequency into
 
   const callsign = page.getByRole('combobox', { name: table.fields['stations.callsign'] });
   await callsign.click();
+  // Part of it typed, as somebody searching does: the choice is the whole callsign, not what was typed with it after.
+  await callsign.pressSequentially('XXXX_T');
 
   // Grouped by FIR, each with its name and frequency.
   await expect(page.getByText('XXXF', { exact: true })).toBeVisible();
   await page.getByRole('option', { name: /Example Tower · 118\.700/ }).click();
 
   await expect(callsign).toHaveValue('XXXX_TWR');
+  // And the list is closed: copying the row beside it does not open it again.
+  await expect(page.getByRole('option')).toHaveCount(0);
   await expect(page.getByLabel(table.fields['stations.name'], { exact: true })).toHaveValue('Example Tower');
   await expect(page.getByLabel(table.fields['stations.frequency'], { exact: true })).toHaveValue('118.700');
 
   // Nothing to realign: the row is what IVAO says.
+  await expect(page.getByRole('button', { name: words.realign })).toHaveCount(0);
+
+  // A frequency written over it by hand is a row IVAO now says otherwise, and «Realign» puts IVAO's back.
+  const frequency = page.getByLabel(table.fields['stations.frequency'], { exact: true });
+  await frequency.fill('118.705');
+  await expect(page.getByRole('button', { name: words.realign })).toHaveCount(1);
+  await page.getByRole('button', { name: words.realign }).click();
+  await expect(frequency).toHaveValue('118.700');
   await expect(page.getByRole('button', { name: words.realign })).toHaveCount(0);
 
   // On the page, with the name's column, because a row has one.
