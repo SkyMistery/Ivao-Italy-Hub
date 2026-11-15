@@ -309,7 +309,12 @@ interface CommonStrings {
     };
   };
   /** The words of the ATC positions, which name IVAO and so live in its own group (design of the editor, §5.8). */
-  readonly atcPositions: { readonly pending: string; readonly realign: string };
+  readonly atcPositions: {
+    readonly pending: string;
+    readonly realign: string;
+    readonly drift: string;
+    readonly change: string;
+  };
   readonly connections: {
     readonly title: string;
     readonly run: string;

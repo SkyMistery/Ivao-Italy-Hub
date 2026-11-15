@@ -33,6 +33,11 @@ const positions = [
   },
 ];
 
+/** A sentence of the language file with its `{{…}}` filled in, as the screen says it. */
+function said(sentence: string, values: Readonly<Record<string, string>>): string {
+  return sentence.replace(/\{\{(\w+)\}\}/g, (_, name: string) => values[name] ?? '');
+}
+
 async function stubThePositions(page: Page, answer: unknown = positions) {
   await page.route('**/api/atc/positions**', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(answer) }),
@@ -147,8 +152,12 @@ test('a row IVAO now describes otherwise is flagged, and «Realign» copies it a
   // Only the second row, with what differs.
   const realign = page.getByRole('button', { name: words.realign });
   await expect(realign).toHaveCount(1);
-  await expect(page.getByText('Row 2, XXXF_CTR: IVAO now says otherwise')).toBeVisible();
-  await expect(page.getByText('Frequency: 125.000 here, 124.750 on IVAO')).toBeVisible();
+  await expect(page.getByText(said(words.drift, { row: '2', callsign: 'XXXF_CTR' }))).toBeVisible();
+  await expect(
+    page.getByText(
+      said(words.change, { field: table.fields['stations.frequency'], written: '125.000', ivao: '124.750' }),
+    ),
+  ).toBeVisible();
 
   await realign.click();
 

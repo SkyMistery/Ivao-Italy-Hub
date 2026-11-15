@@ -948,7 +948,7 @@
       },
       "hints": {
         "stations.callsign": "Scegli una postazione della divisione per copiarne nome, tipo e frequenza nella riga. Una postazione che IVAO non elenca si scrive a mano.",
-        "stations.name": "Quello che si dice in frequenza, come «Malpensa Tower». Vuoto in tutte le righe, la tabella non ha la colonna."
+        "stations.name": "Quello che si dice in frequenza, come «Example Tower». Vuoto in tutte le righe, la tabella non ha la colonna."
       },
       "columns": {
         "callsign": "Nominativo",

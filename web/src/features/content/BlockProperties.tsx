@@ -46,6 +46,7 @@ import {
 } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { collectionsOfKindQuery } from '../categories/queries';
+import { holdsPermissionAnywhere } from '../../shared/api/bootstrap';
 import { bootstrapQuery } from '../me/queries';
 import { emptyLocalized } from '../../shared/i18n/localized';
 import { aboutKeyOf, type Resizable } from '../../shared/modules';
@@ -58,6 +59,9 @@ import { defaultProps } from './body';
  * one byte too long is what keeps them agreeing.
  */
 const MAX_SOURCE_BYTES = 64 * 1024;
+
+/** Who may read the ATC positions of the division (`GET /api/atc/positions`), as who may read the site's addresses. */
+const CONTENT_EDIT = 'Content.Edit';
 
 import { AtcPositionNotices } from './AtcPositionNotices';
 import { driftOf, frequenciesPending, positionSuggestions, realigned } from './atcPositions';
@@ -529,14 +533,19 @@ export function BlockProperties({
   // first drawing, the screens at least, so the field never changes kind under somebody typing.
   const leadsSomewhere = registration !== undefined && namesAddresses(registration.schema);
   const addresses = useAddressesToLinkTo(leadsSomewhere);
-  // The ATC positions of the division, for a block that names them (design §5.8): offered by the callsign, which copies
-  // them into the row, and compared with the rows already written. Whoever may not read them writes the rows by hand.
-  const positionList = useMemo(() => atcPositionListOf(registration?.schema), [registration?.schema]);
-  const positions = useQuery({ ...divisionAtcPositionsQuery(), enabled: positionList !== null });
   // The kinds of the calendar a block chooses from (issue #360): the ones in use, from `/api/me`, and
   // any this block already holds that is no longer among them, said as retired rather than drawn
   // as an empty select — the block keeps it, and the calendar answers it with nothing.
   const { data: bootstrap } = useQuery(bootstrapQuery);
+  // The ATC positions of the division, for a block that names them (design §5.8): offered by the callsign, which copies
+  // them into the row, and compared with the rows already written. Asked only by whoever may read them (`Content.Edit`,
+  // as the addresses above): a writer of a tour's briefing without it writes the rows by hand, without a refusal each
+  // time the panel opens. And a suggested field from the first drawing, like the addresses, so the callsign never changes
+  // kind under somebody typing while the list is on its way.
+  const positionList = useMemo(() => atcPositionListOf(registration?.schema), [registration?.schema]);
+  const readsPositions =
+    positionList !== null && bootstrap !== undefined && holdsPermissionAnywhere(bootstrap, CONTENT_EDIT);
+  const positions = useQuery({ ...divisionAtcPositionsQuery(), enabled: readsPositions });
   const heldKinds = kindsHeld(block.props).join('\n');
   const schema = useMemo(() => {
     if (registration === undefined) {
@@ -560,8 +569,8 @@ export function BlockProperties({
       shaped = suggestAddresses(shaped, asSuggestions(addresses));
     }
 
-    if (positionList !== null && positions.data !== undefined) {
-      shaped = suggestAtcPositions(shaped, positionSuggestions(positions.data, positionList.entry));
+    if (positionList !== null && readsPositions) {
+      shaped = suggestAtcPositions(shaped, positionSuggestions(positions.data ?? [], positionList.entry));
     }
 
     if (bootstrap !== undefined && namesCalendarKinds(shaped)) {
@@ -593,6 +602,7 @@ export function BlockProperties({
     leadsSomewhere,
     addresses,
     positionList,
+    readsPositions,
     positions.data,
     bootstrap,
     heldKinds,

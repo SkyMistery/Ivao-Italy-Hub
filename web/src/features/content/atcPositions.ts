@@ -34,17 +34,22 @@ export interface AtcPositionDrift {
 }
 
 /**
- * What choosing `position` copies into the fields beside the callsign: the name, when the entry has a field for it and IVAO
- * gave one; the kind, when the entry's kinds include IVAO's; the frequency, once the synchronisation has brought it (until
- * then it is written by hand, and nothing writes an empty one over it).
+ * What choosing `position` copies into the fields beside the callsign: the name, when the entry has a field for it; the
+ * kind, when the entry's kinds include IVAO's; the frequency, once the synchronisation has brought the frequencies.
+ *
+ * ⚠️ **What IVAO leaves empty empties the row** (rilievo 2 della revisione): a row chosen as one station and then as another
+ * kept the first one's name, and its frequency, under the second one's callsign. A name IVAO did not give is an empty name;
+ * a frequency it did not give is an empty one — but only once the synchronisation has run (`synchronised`): until then no
+ * position has one, the frequency is written by hand, and nothing writes an empty one over it.
  */
 export function copiedFrom(
   position: AtcPositionDto,
   entry: AtcPositionList['entry'],
+  synchronised: boolean,
 ): Record<string, string> {
   const copied: Record<string, string> = {};
 
-  if (Object.hasOwn(entry.shape, 'name') && position.name !== '') {
+  if (Object.hasOwn(entry.shape, 'name')) {
     copied.name = position.name;
   }
 
@@ -52,12 +57,8 @@ export function copiedFrom(
     copied.kind = position.type;
   }
 
-  if (
-    Object.hasOwn(entry.shape, 'frequency') &&
-    typeof position.frequency === 'string' &&
-    position.frequency !== ''
-  ) {
-    copied.frequency = position.frequency;
+  if (Object.hasOwn(entry.shape, 'frequency') && synchronised) {
+    copied.frequency = position.frequency ?? '';
   }
 
   return copied;
@@ -71,11 +72,13 @@ export function positionSuggestions(
   positions: readonly AtcPositionDto[],
   entry: AtcPositionList['entry'],
 ): Suggestion[] {
+  const synchronised = !frequenciesPending(positions);
+
   return positions.map((position) => ({
     value: position.callsign,
     label: [position.name || position.callsign, position.frequency].filter(Boolean).join(' · '),
     ...(position.fir === null ? {} : { group: position.fir }),
-    fills: copiedFrom(position, entry),
+    fills: copiedFrom(position, entry, synchronised),
   }));
 }
 
@@ -121,6 +124,7 @@ export function driftOf(
   positions: readonly AtcPositionDto[],
 ): AtcPositionDrift[] {
   const byCallsign = indexed(positions);
+  const synchronised = !frequenciesPending(positions);
 
   return rowsOf(props, where).flatMap((row, index) => {
     const position = positionOf(row, where, byCallsign);
@@ -134,7 +138,7 @@ export function driftOf(
       changes.push({ field: where.field, written, ivao: position.callsign });
     }
 
-    for (const [field, ivao] of Object.entries(copiedFrom(position, where.entry))) {
+    for (const [field, ivao] of Object.entries(copiedFrom(position, where.entry, synchronised))) {
       const held = text(row[field]);
       const same = field === 'frequency' ? sameFrequency(held, ivao) : held === ivao;
       if (!same && !(field === 'name' && held === '')) {
@@ -160,7 +164,11 @@ export function realigned(
     return props;
   }
 
-  const copied = { ...row, [where.field]: position.callsign, ...copiedFrom(position, where.entry) };
+  const copied = {
+    ...row,
+    [where.field]: position.callsign,
+    ...copiedFrom(position, where.entry, !frequenciesPending(positions)),
+  };
   return { ...props, [where.list]: rows.map((each, at) => (at === index ? copied : each)) };
 }
 

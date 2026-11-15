@@ -948,7 +948,7 @@
       },
       "hints": {
         "stations.callsign": "Choose a position of the division to copy its name, kind and frequency into the row. A station IVAO does not list is written by hand.",
-        "stations.name": "What is said on the frequency, such as \"Malpensa Tower\". Left empty in every row, the table has no column for it."
+        "stations.name": "What is said on the frequency, such as \"Example Tower\". Left empty in every row, the table has no column for it."
       },
       "columns": {
         "callsign": "Callsign",

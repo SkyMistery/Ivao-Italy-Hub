@@ -57,14 +57,59 @@ test('the callsign offers the positions, grouped by FIR, each with what it copie
   expect(children.find((node) => node.path === 'stations.frequency')?.kind).toBe('text');
 });
 
-test('what a position copies is what the row has a field for, and what IVAO has given', () => {
-  // A kind the table does not list is not copied, and neither is an empty name or a frequency not synchronised yet.
-  expect(copiedFrom({ ...tower, type: 'XYZ', name: '', frequency: null }, where.entry)).toEqual({});
-  expect(copiedFrom(sector, where.entry)).toEqual({
+test('what a position copies is what the row has a field for, and what IVAO says of it', () => {
+  // A kind the table does not list is not copied.
+  expect(copiedFrom({ ...tower, type: 'XYZ' }, where.entry, true)).toEqual({
+    name: 'Example Tower',
+    frequency: '118.700',
+  });
+  expect(copiedFrom(sector, where.entry, true)).toEqual({
     name: 'Example Control',
     kind: 'CTR',
     frequency: '124.750',
   });
+
+  // What IVAO leaves empty empties the row (finding 2 of the review): the name always, the frequency once the
+  // synchronisation has run — before it, no frequency is copied, and the one written by hand stays.
+  expect(copiedFrom({ ...tower, name: '', frequency: null }, where.entry, true)).toEqual({
+    name: '',
+    kind: 'TWR',
+    frequency: '',
+  });
+  expect(copiedFrom({ ...tower, frequency: null }, where.entry, false)).toEqual({
+    name: 'Example Tower',
+    kind: 'TWR',
+  });
+});
+
+test('choosing another position leaves nothing of the first one in the row', () => {
+  const nameless: AtcPositionDto = {
+    callsign: 'XXXX_GND',
+    type: 'GND',
+    name: '',
+    airportIcao: 'XXXX',
+    fir: 'XXXF',
+    frequency: null,
+  };
+  const [, , ground] = positionSuggestions([...positions, nameless], where.entry);
+
+  // Chosen after the tower, the ground station writes over its name and frequency rather than keeping them.
+  expect(ground?.fills).toEqual({ name: '', kind: 'GND', frequency: '' });
+
+  // And a row left with the tower's name under the ground station's callsign is one IVAO now says otherwise.
+  const props = {
+    stations: [{ callsign: 'XXXX_GND', name: 'Example Tower', frequency: '118.700', kind: 'GND' }],
+  };
+  expect(driftOf(props, where, [...positions, nameless])).toEqual([
+    {
+      index: 0,
+      callsign: 'XXXX_GND',
+      changes: [
+        { field: 'name', written: 'Example Tower', ivao: '' },
+        { field: 'frequency', written: '118.700', ivao: '' },
+      ],
+    },
+  ]);
 });
 
 test('a row is flagged when IVAO now says otherwise, and only then', () => {

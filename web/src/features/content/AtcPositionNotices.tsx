@@ -49,7 +49,7 @@ export function AtcPositionNotices({
                     {t('atcPositions.change', {
                       field: t(`${labels}.fields.${list}.${change.field}`),
                       written: change.written === '' ? t('atcPositions.empty') : change.written,
-                      ivao: change.ivao,
+                      ivao: change.ivao === '' ? t('atcPositions.empty') : change.ivao,
                     })}
                   </li>
                 ))}

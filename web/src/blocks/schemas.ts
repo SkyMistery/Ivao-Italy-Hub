@@ -235,7 +235,7 @@ export const STATION_KINDS = ['DEL', 'GND', 'TWR', 'APP', 'DEP', 'CTR', 'FSS', '
  * The callsign offers the division's ATC positions (design of the editor, phase 3, §5.8): choosing one
  * **copies** its name, kind and frequency into the row, and the editor says when a row is no longer
  * what IVAO says — a SOP is approved as it is written, and changes when somebody publishes it again
- * (Carmine, 31 October 2026, answer 6). The name is what is said on the frequency ("Malpensa Tower"),
+ * (Carmine, 31 October 2026, answer 6). The name is what is said on the frequency ("Example Tower"),
  * not translated either; a table with no name in any row draws no column for it.
  */
 export const frequencyTableSchema = z.object({
