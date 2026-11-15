@@ -44,6 +44,9 @@ public sealed class ContentPublishService(
     /// <summary>A picture the page needs and nobody has chosen.</summary>
     public const string MediaToChooseKey = "errors.content.mediaToChoose";
 
+    /// <summary>A file drawn as a picture that is not one: a document chosen for a photo (#488).</summary>
+    public const string MediaNotPictureKey = "errors.content.mediaNotPicture";
+
     /// <summary>An address of this site that is neither a screen nor a content online.</summary>
     public const string LinkNowhereKey = "errors.content.linkNowhere";
 
@@ -99,6 +102,7 @@ public sealed class ContentPublishService(
                 content.FileMediaId,
                 cancellationToken),
             PicturesLeftToChoose(body),
+            await FilesThatAreNotPicturesAsync(body, content.CoverMediaId, cancellationToken),
             await LinksThatDoNotArriveAsync(content, body, cancellationToken));
     }
 
@@ -136,6 +140,50 @@ public sealed class ContentPublishService(
         var errors = walker.SectionsWithoutTheirPicture(body)
             .Concat(walker.BlocksWithoutTheirPictures(body, blocks))
             .ToDictionary(path => $"body.{path}", _ => new[] { MediaToChooseKey }, StringComparer.Ordinal);
+
+        return errors.Count == 0
+            ? null
+            : new ContentPublishFailure(errors, new Dictionary<string, string[]>(StringComparer.Ordinal));
+    }
+
+    /// <summary>
+    /// A file the body names, and the cover of a news item, are drawn as pictures: a document chosen there went out as a
+    /// broken image (#488; Carmine, 15 November 2026, note 2026-11-15-un-documento-al-posto-di-una-foto). Every
+    /// <c>mediaId</c> of a body is a picture today, the background of a section and every field of a block, so the
+    /// rule needs no schema: what the file <b>is</b>, its content type, against what the page does with it. The file
+    /// of a document is the one place a page offers a file to download, and it is not asked.
+    /// <para>A file that is not there is not asked about either: <see cref="PicturesTheReaderCannotSeeAsync"/> already
+    /// says so, and one problem on a field is enough.</para>
+    /// </summary>
+    private async Task<ContentPublishFailure?> FilesThatAreNotPicturesAsync(
+        JsonNode body,
+        long? coverMediaId,
+        CancellationToken cancellationToken)
+    {
+        var drawn = walker.MediaReferences(body)
+            .Select(reference => (Field: $"body.{reference.Path}", reference.Id))
+            .ToList();
+
+        if (coverMediaId is { } cover)
+        {
+            drawn.Add((CoverField, cover));
+        }
+
+        if (drawn.Count == 0)
+        {
+            return null;
+        }
+
+        var identifiers = drawn.Select(reference => reference.Id).Distinct().ToArray();
+        var types = await CrudSource.BackOffice<MediaAsset>(database)
+            .Where(media => identifiers.Contains(media.Id) && media.HasFile)
+            .Select(media => new { media.Id, media.ContentType })
+            .ToDictionaryAsync(media => media.Id, media => media.ContentType, cancellationToken);
+
+        var errors = drawn
+            .Where(reference => types.TryGetValue(reference.Id, out var type)
+                && !type.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(reference => reference.Field, _ => new[] { MediaNotPictureKey }, StringComparer.Ordinal);
 
         return errors.Count == 0
             ? null
