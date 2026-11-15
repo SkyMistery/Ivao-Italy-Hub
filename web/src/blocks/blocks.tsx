@@ -52,6 +52,7 @@ import { useEmbedding } from './embedding';
 import { usePrinting } from './print';
 import {
   ACCENTS,
+  ACCORDION_OPENINGS,
   CALLOUT_TONES,
   COORDINATION_DIRECTIONS,
   GALLERY_LAYOUTS,
@@ -1410,17 +1411,36 @@ export function TabsBlock({ props }: BlockComponentProps) {
 
 // ---- accordion -------------------------------------------------------------------------------
 
+/**
+ * Questions and answers (design of the editor's phase 3, §5.4): a title above them when it is written, the questions
+ * numbered when `numbered` says so, and `initially` deciding which answers the page opens with.
+ */
 export function AccordionBlock({ props }: BlockComponentProps) {
   const read = useLocalized();
   const printing = usePrinting();
+  const title = read(text(props, 'title')).trim();
+  const numbered = flag(props, 'numbered', false);
+  const initially = choice(props, 'initially', ACCORDION_OPENINGS, 'closed');
+  const all = entries(props, 'items');
+
+  // The number is part of the question's words, so a screen reader says it with them and paper prints it.
+  const question = (item: Record<string, unknown>, index: number) => {
+    const words = read(text(item, 'question'));
+
+    return numbered ? `${String(index + 1)}. ${words}` : words;
+  };
+  // A level above the questions, which Atmosphere's accordion sets as `h3`: the title stands where a heading block added
+  // by hand would, at the level a page's own headings start from.
+  const heading = title === '' ? null : <H2>{title}</H2>;
 
   // Unfolded for paper, question and answer one under the other, for the reason `tabs` is (G14).
   if (printing) {
     return (
       <div className="flex flex-col gap-4">
-        {entries(props, 'items').map((item, index) => (
+        {heading}
+        {all.map((item, index) => (
           <section key={index}>
-            <H3>{read(text(item, 'question'))}</H3>
+            <H3>{question(item, index)}</H3>
             <MarkdownContent source={read(text(item, 'answer'))} />
           </section>
         ))}
@@ -1428,25 +1448,51 @@ export function AccordionBlock({ props }: BlockComponentProps) {
     );
   }
 
-  const items = entries(props, 'items').map((item, index) => (
+  const items = all.map((item, index) => (
     <AccordionItem key={index} value={String(index)}>
-      <AccordionTrigger>{read(text(item, 'question'))}</AccordionTrigger>
+      <AccordionTrigger>{question(item, index)}</AccordionTrigger>
       <AccordionContent>
         <MarkdownContent source={read(text(item, 'answer'))} />
       </AccordionContent>
     </AccordionItem>
   ));
+  const opened =
+    initially === 'all' ? all.map((_, index) => String(index)) : initially === 'first' ? ['0'] : [];
 
-  // Two calls rather than a computed `type`: the two shapes of the underlying component take
-  // different properties, and one of them may only be collapsed when it is on its own.
-  return flag(props, 'allowMultiple', false) ? (
-    <AccordionRoot type="multiple" className="w-full">
-      {items}
-    </AccordionRoot>
+  // Two calls rather than a computed `type`: the two shapes of the underlying component take different properties, and
+  // one of them may only be collapsed when it is on its own. Every answer open is several open at once.
+  //
+  // ⚠️ The `key`: what is open at first is read once, when the accordion mounts. Without it, a choice changed in the
+  // editor would show only after the page is opened again.
+  const accordion =
+    initially === 'all' || flag(props, 'allowMultiple', false) ? (
+      <AccordionRoot
+        key={`${initially}:${String(all.length)}`}
+        type="multiple"
+        defaultValue={opened}
+        className="w-full"
+      >
+        {items}
+      </AccordionRoot>
+    ) : (
+      <AccordionRoot
+        key={initially}
+        type="single"
+        collapsible
+        {...(opened[0] === undefined ? {} : { defaultValue: opened[0] })}
+        className="w-full"
+      >
+        {items}
+      </AccordionRoot>
+    );
+
+  return heading === null ? (
+    accordion
   ) : (
-    <AccordionRoot type="single" collapsible className="w-full">
-      {items}
-    </AccordionRoot>
+    <div className="flex flex-col gap-2">
+      {heading}
+      {accordion}
+    </div>
   );
 }
 
@@ -1563,8 +1609,25 @@ interface StatsData {
   metrics?: { metric?: string; value?: number }[];
 }
 
+/**
+ * The word an editor wrote under a figure, in place of the hub's (design of the editor's phase 3, §5.7). The server
+ * answers each figure once, in the order asked, so the first entry asking for it is the one whose word it takes; an
+ * empty word is no word, and the hub's stands.
+ */
+function useFigureLabel(props: Record<string, unknown>, list: string, key: string) {
+  const read = useLocalized();
+
+  return (figure: string | undefined): string | null => {
+    const entry = entries(props, list).find((candidate) => candidate[key] === figure);
+    const written = entry === undefined ? '' : read(text(entry, 'label')).trim();
+
+    return written === '' ? null : written;
+  };
+}
+
 export function StatsBlock({ props, data }: BlockComponentProps) {
   const { t } = useTranslation();
+  const labelOf = useFigureLabel(props, 'metrics', 'metric');
   const metrics = (data as StatsData | null | undefined)?.metrics;
 
   if (metrics === undefined || metrics.length === 0) {
@@ -1577,9 +1640,9 @@ export function StatsBlock({ props, data }: BlockComponentProps) {
         <Figure
           key={metric.metric}
           value={metric.value ?? 0}
-          // The caption is the hub's, not the editor's: the set of metrics is closed, so what each
-          // one is called is a translation and never a field somebody has to fill in twice.
-          caption={t(`blocks.stats.captions.${metric.metric}`)}
+          // The caption is the hub's unless the editor wrote one: the set of metrics is closed, so what each one is
+          // called is a translation, and the field is one nobody has to fill in.
+          caption={labelOf(metric.metric) ?? t(`blocks.stats.captions.${metric.metric}`)}
         />
       ))}
     </div>
@@ -1599,8 +1662,9 @@ interface NetworkStatsData {
   positions?: { callsign?: string; station?: string; frequency?: string | null }[];
 }
 
-export function NetworkStatsBlock({ data }: BlockComponentProps) {
+export function NetworkStatsBlock({ props, data }: BlockComponentProps) {
   const { t } = useTranslation();
+  const labelOf = useFigureLabel(props, 'figures', 'figure');
   const answer = data as NetworkStatsData | null | undefined;
 
   if (answer === undefined || answer === null) {
@@ -1621,7 +1685,7 @@ export function NetworkStatsBlock({ data }: BlockComponentProps) {
           <Figure
             key={figure.figure}
             value={figure.value ?? 0}
-            caption={t(`blocks.networkStats.captions.${figure.figure}`)}
+            caption={labelOf(figure.figure) ?? t(`blocks.networkStats.captions.${figure.figure}`)}
           />
         ))}
       </div>

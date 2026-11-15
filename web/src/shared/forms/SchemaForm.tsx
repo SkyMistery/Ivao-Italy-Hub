@@ -820,8 +820,10 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
         </Row>
       );
 
-    case 'boolean':
-      return (
+    // The hint goes under the switch and its label, as under any other field (PR 3.13: "Several open at once" says when
+    // it counts). Without one the switch is drawn as it always was.
+    case 'boolean': {
+      const toggle = (
         <div className="flex items-center gap-3">
           <Controller
             control={control}
@@ -839,6 +841,16 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
           <FieldError error={error} />
         </div>
       );
+
+      return hint === undefined ? (
+        toggle
+      ) : (
+        <div className="flex flex-col gap-1">
+          {toggle}
+          <FieldHint hint={hint} />
+        </div>
+      );
+    }
 
     case 'enum':
       return (

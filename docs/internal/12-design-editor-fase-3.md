@@ -380,6 +380,15 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   scritto con la barra del §4.6. Nessun elenco di risposte.
 - In stampa resta tutto aperto, come oggi.
 - **File del nucleo**: `blocks/schemas.ts`, `blocks/blocks.tsx`, i file di lingua. **Nota sua**: no.
+- **Com'è andata** (PR 3.13, ramo `feat/questions-and-labels`, nota `2026-11-14-domande-e-risposte-e-le-etichette`): le
+  scelte sono della sessione. (1) `allowMultiple` resta, perché un corpo salvato con `true` deve restare a più aperte (principio 4);
+  `initially: 'all'` lo rende vero, e la frase sotto la casella lo dice (il form generato ora disegna il suggerimento anche sotto un
+  interruttore, `SchemaForm.tsx`). (2) `initially` vale `closed` di default, e anche quando il valore è
+  sconosciuto. (3) Il titolo è un `h2`: l'accordion di Atmosphere mette ogni domanda in un `h3`; vuoto, nessun titolo. (4) Il numero fa
+  parte delle parole della domanda («1. Quando?»), per il lettore di schermo e per la carta. (5) L'accordion ha una `key` fatta di
+  `initially`: la scelta cambiata nell'editor si vede subito. (6) La parte fissa delle istruzioni per Claude dice le domande; ⚠️
+  l'impronta `rules` cambia. Toccati in più del §5.4: `blocks/core.ts` (l'esempio della galleria),
+  `features/content/claudeInstructions.md`, `shared/forms/SchemaForm.tsx` (il suggerimento sotto un interruttore).
 
 ### 5.5 L'altezza dell'interattivo (VIII)
 
@@ -433,6 +442,14 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   hanno; gli eventi sono di `dalberone`, a cui va una issue.
 - **File del nucleo**: `blocks/schemas.ts`, `blocks/blocks.tsx`. Il server non cambia (non legge le `props`, e il fornitore dei dati
   risponde i numeri, non le parole). **Nota sua**: no.
+- **Com'è andata** (PR 3.13, nella stessa nota del §5.4): l'etichetta di un numero è quella della prima voce che lo chiede (il server
+  risponde ogni numero una volta); vuota o di soli spazi, la parola dell'hub; vuota in tutte le lingue non si salva nemmeno
+  (`writtenValues`), ⚠️ scritta in una lingua sola ferma la pubblicazione come ogni testo tradotto facoltativo. **L'etichetta non va nella richiesta**
+  (rilievo 1 della revisione, caso (b) nella nota, §3): `DataBlockView` chiede con `questionOf`, le `props` senza i campi `localized`,
+  così un tasto nell'etichetta non fa una richiesta e un blocco senza parole ha la chiave di prima. Toccati in più del §5.7:
+  `blocks/data.ts`, `blocks/ContentRenderer.tsx`. ⚖️ I blocchi di dati
+  dei moduli che mostrano numeri hanno le stesse etichette, come dice il secondo punto, e `events.atcCoverage` è uno di questi: non in
+  questa PR, ma con la issue #518 per gli eventi e la #521 per i blocchi dei tour (Carmine, 14 novembre 2026, nota §2 con i link alle risposte). Il server non è cambiato.
 
 ### 5.8 La tabella delle frequenze dalle postazioni dell'hub (XX)
 

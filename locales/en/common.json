@@ -1369,12 +1369,27 @@
     },
     "accordion": {
       "label": "Questions and answers",
-      "about": "Questions, each with its answer opened by a click: for frequently asked questions.",
+      "about": "Questions, each with its answer opened by a click, under a title if you want one and numbered if you ask: for frequently asked questions.",
       "fields": {
         "allowMultiple": "Several open at once",
         "items": "Entries",
         "items.question": "Question",
-        "items.answer": "Answer"
+        "items.answer": "Answer",
+        "title": "Title",
+        "numbered": "Numbered questions",
+        "initially": "When the page opens"
+      },
+      "options": {
+        "initially": {
+          "closed": "Every answer closed",
+          "first": "The first answer open",
+          "all": "Every answer open"
+        }
+      },
+      "hints": {
+        "title": "Above the questions. Leave it empty when a heading already stands above the block.",
+        "items.answer": "Text with formatting: several paragraphs and a list too. An answer holds text, never other blocks.",
+        "allowMultiple": "Only when the answers start closed or with the first one open: with every answer open, several stay open anyway."
       }
     },
     "testimonial": {
@@ -1445,7 +1460,8 @@
       "fields": {
         "metrics": "Figures",
         "metrics.metric": "Figure",
-        "columns": "Columns"
+        "columns": "Columns",
+        "metrics.label": "Label"
       },
       "options": {
         "metrics.metric": {
@@ -1467,6 +1483,9 @@
         "publishedNews": "news",
         "publishedDocuments": "documents",
         "upcomingEntries": "coming up"
+      },
+      "hints": {
+        "metrics.label": "Written under the figure. Left empty, the hub's own word."
       }
     },
     "networkStats": {
@@ -1476,7 +1495,8 @@
       "fields": {
         "figures": "Figures",
         "figures.figure": "Figure",
-        "showPositions": "Show who is on frequency"
+        "showPositions": "Show who is on frequency",
+        "figures.label": "Label"
       },
       "options": {
         "figures.figure": {
@@ -1491,6 +1511,9 @@
         "divisionPilots": "pilots",
         "networkAtc": "controllers on the network",
         "networkPilots": "pilots on the network"
+      },
+      "hints": {
+        "figures.label": "Written under the figure. Left empty, the hub's own word."
       }
     },
     "calendar": {

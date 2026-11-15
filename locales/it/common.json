@@ -1369,12 +1369,27 @@
     },
     "accordion": {
       "label": "Domande e risposte",
-      "about": "Delle domande, ognuna con la sua risposta che si apre con un clic: per le domande frequenti.",
+      "about": "Delle domande, ognuna con la sua risposta che si apre con un clic, sotto un titolo se lo vuoi e numerate se lo chiedi: per le domande frequenti.",
       "fields": {
         "allowMultiple": "Più di una aperta insieme",
         "items": "Voci",
         "items.question": "Domanda",
-        "items.answer": "Risposta"
+        "items.answer": "Risposta",
+        "title": "Titolo",
+        "numbered": "Domande numerate",
+        "initially": "Quando si apre la pagina"
+      },
+      "options": {
+        "initially": {
+          "closed": "Tutte le risposte chiuse",
+          "first": "La prima risposta aperta",
+          "all": "Tutte le risposte aperte"
+        }
+      },
+      "hints": {
+        "title": "Sopra le domande. Lascialo vuoto quando sopra il blocco c'è già un titolo.",
+        "items.answer": "Testo con la formattazione: anche più paragrafi e un elenco. Una risposta contiene testo, mai altri blocchi.",
+        "allowMultiple": "Solo quando le risposte partono chiuse o con la prima aperta: con tutte aperte, ne restano aperte più di una comunque."
       }
     },
     "testimonial": {
@@ -1445,7 +1460,8 @@
       "fields": {
         "metrics": "Numeri",
         "metrics.metric": "Numero",
-        "columns": "Colonne"
+        "columns": "Colonne",
+        "metrics.label": "Etichetta"
       },
       "options": {
         "metrics.metric": {
@@ -1467,6 +1483,9 @@
         "publishedNews": "news",
         "publishedDocuments": "documenti",
         "upcomingEntries": "in arrivo"
+      },
+      "hints": {
+        "metrics.label": "Scritta sotto il numero. Vuota, la parola dell'hub."
       }
     },
     "networkStats": {
@@ -1476,7 +1495,8 @@
       "fields": {
         "figures": "Numeri",
         "figures.figure": "Numero",
-        "showPositions": "Mostra chi è in frequenza"
+        "showPositions": "Mostra chi è in frequenza",
+        "figures.label": "Etichetta"
       },
       "options": {
         "figures.figure": {
@@ -1491,6 +1511,9 @@
         "divisionPilots": "piloti",
         "networkAtc": "controllori in rete",
         "networkPilots": "piloti in rete"
+      },
+      "hints": {
+        "figures.label": "Scritta sotto il numero. Vuota, la parola dell'hub."
       }
     },
     "calendar": {

@@ -1,7 +1,9 @@
 import { queryOptions } from '@tanstack/react-query';
+import type { z } from 'zod';
 
 import type { LocalizedString } from '../shared/api/bootstrap';
 import { api, unwrap } from '../shared/api/client';
+import { readFields, type FieldNode } from '../shared/forms';
 
 /**
  * Asking the server what a data block should show, right now. The same provider answers here and
@@ -21,6 +23,69 @@ export function encodeProps(props: Record<string, unknown>): string {
   const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('');
 
   return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
+}
+
+/** The fields of each block's schema, read once: a page draws its data blocks on every render. */
+const fieldsOfSchema = new WeakMap<z.ZodType, FieldNode[]>();
+
+/**
+ * The question a data block asks the server: its properties without its words (PR 3.13, note
+ * `2026-11-14-domande-e-risposte-e-le-etichette`). A translated field (`localized`) is what the block writes around the
+ * answer — the word under a figure — and never part of the question: no provider reads one. Left in, every letter typed
+ * in it would be a new request, with the figures back to "loading" and the provider counting again, and two pages asking
+ * the same thing with different words would not share the answer.
+ *
+ * Only `localized` fields go, inside the entries of a list too; everything else stays where it was, in the order it was.
+ * A block with no words gets its own properties back, so its request — and its place in the cache — is the one it
+ * always had. Publication's capture is the server's, from the whole properties, and does not change.
+ */
+export function questionOf(schema: z.ZodType, props: Record<string, unknown>): Record<string, unknown> {
+  let fields = fieldsOfSchema.get(schema);
+
+  if (fields === undefined) {
+    fields = readFields(schema);
+    fieldsOfSchema.set(schema, fields);
+  }
+
+  return withoutWords(fields, props);
+}
+
+function withoutWords(fields: FieldNode[], value: Record<string, unknown>): Record<string, unknown> {
+  const byName = new Map(fields.map((field) => [field.path.slice(field.path.lastIndexOf('.') + 1), field]));
+  let changed = false;
+  const kept: Record<string, unknown> = {};
+
+  for (const [name, held] of Object.entries(value)) {
+    const field = byName.get(name);
+
+    if (field?.kind === 'localized') {
+      changed = true;
+      continue;
+    }
+
+    if (field?.kind === 'list' && Array.isArray(held)) {
+      const children = field.children;
+      const entries = held.map((entry: unknown) =>
+        entry !== null && typeof entry === 'object' && !Array.isArray(entry)
+          ? withoutWords(children, entry as Record<string, unknown>)
+          : entry,
+      );
+      changed ||= entries.some((entry, index) => entry !== held[index]);
+      kept[name] = entries;
+      continue;
+    }
+
+    if (field?.kind === 'object' && held !== null && typeof held === 'object' && !Array.isArray(held)) {
+      const inner = withoutWords(field.children, held as Record<string, unknown>);
+      changed ||= inner !== held;
+      kept[name] = inner;
+      continue;
+    }
+
+    kept[name] = held;
+  }
+
+  return changed ? kept : value;
 }
 
 export function blockDataQuery(type: string, props: Record<string, unknown>) {
