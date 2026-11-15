@@ -586,7 +586,7 @@ function readSource(value: unknown, defaultLocale: string | undefined): string {
  */
 function Field({ node, name = node.path, env }: { node: FieldNode; name?: string; env: FormEnvironment }) {
   const { t, i18n } = useTranslation();
-  const { register, control, formState, getValues } = useFormContext();
+  const { register, control, formState, getValues, setValue } = useFormContext();
   const { locales, labels } = env;
 
   if (node.meta.hidden === true) {
@@ -776,6 +776,14 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
                 searchingText={t('form.suggest.searching')}
                 searching={env.suggestSearching}
                 onChange={field.onChange}
+                onChoose={(suggestion) => {
+                  // What a choice copies beside the field, into the object it is a field of: an ATC position's name,
+                  // kind and frequency into the row of a frequency table (design of the editor, phase 3, §5.8).
+                  const object = name.includes('.') ? name.slice(0, name.lastIndexOf('.') + 1) : '';
+                  for (const [sibling, value] of Object.entries(suggestion.fills ?? {})) {
+                    setValue(`${object}${sibling}`, value, { shouldDirty: true });
+                  }
+                }}
                 {...(env.onSuggestSearch === undefined
                   ? {}
                   : { onSearch: (typed: string) => env.onSuggestSearch?.(node.path, typed) })}

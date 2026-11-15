@@ -139,6 +139,13 @@ export interface FieldMeta {
    */
   address?: boolean;
   /**
+   * The callsign of an ATC position of the division (design of the editor, phase 3, §5.8): the station of a frequency table.
+   * The positions are IVAO's rows, so whoever draws the form turns it into `suggestions` with `suggestAtcPositions`, each
+   * carrying what choosing it copies into the fields beside it (`Suggestion.fills`). Still free text: a station IVAO does not
+   * list is written by hand.
+   */
+  atcPosition?: boolean;
+  /**
    * A key of the calendar's kinds (`cms_calendar_kinds`), chosen and never typed (issue #360): the
    * kinds are rows, so whoever draws the form turns it into `choices` with `chooseCalendarKinds`, out
    * of the kinds `/api/me` lists. Closed in the form only: the server keeps reading a block's
@@ -210,6 +217,13 @@ export interface ChoiceOption {
  */
 export interface Suggestion extends ChoiceOption {
   group?: string;
+  /**
+   * What choosing this suggestion writes into the fields **beside** it, in the same object, by their names: an ATC position
+   * copies its name, kind and frequency into the row of a frequency table (design of the editor, phase 3, §5.8). Only on a
+   * choice from the list: what is typed is the field's own, and copies nothing. A name the object has no field for is not
+   * written — whoever builds the suggestions names only fields the object has.
+   */
+  fills?: Readonly<Record<string, unknown>>;
 }
 
 export type FieldNode =
@@ -637,6 +651,62 @@ export function withoutDrawing<T>(schema: T, name: string): T {
 /** Whether a property of this schema, at any depth, leads somewhere: an `address`, or a `markdown` text. */
 export function namesAddresses(schema: unknown): boolean {
   return names(schema, leadsSomewhere);
+}
+
+/** An ATC position's callsign (§5.8). */
+const namesAtcPosition = (meta: FieldMeta) => meta.atcPosition === true;
+
+/**
+ * The same schema, with every `atcPosition` property — at any depth: the stations of a frequency table are a list —
+ * offering these suggestions. A new schema, like `suggestCollections`.
+ */
+export function suggestAtcPositions<T>(schema: T, suggestions: readonly Suggestion[]): T {
+  return withMeta(schema, namesAtcPosition, { suggestions: [...suggestions] }) as T;
+}
+
+/** Whether a property of this schema, at any depth, is an `atcPosition`. */
+export function namesAtcPositions(schema: unknown): boolean {
+  return names(schema, namesAtcPosition);
+}
+
+/**
+ * Where a block keeps its ATC positions: the list of its own properties whose entries have an `atcPosition` field, that
+ * field, and the entry's schema — what the editor compares with what IVAO says now (§5.8). Null for a block without one.
+ * Only a list of the block's top level: the one block that has positions keeps them there, and a deeper one would be one
+ * more branch when it exists.
+ */
+export function atcPositionListOf(
+  schema: unknown,
+): { list: string; field: string; entry: z.ZodObject<z.ZodRawShape> } | null {
+  if (!(schema instanceof z.ZodObject)) {
+    return null;
+  }
+
+  for (const [list, property] of Object.entries(schema.shape)) {
+    const { inner } = unwrap(property);
+    if (inner instanceof z.ZodArray && inner.element instanceof z.ZodObject) {
+      const entry = inner.element as z.ZodObject<z.ZodRawShape>;
+      const field = Object.entries(entry.shape).find(([, candidate]) =>
+        namesAtcPosition(unwrap(candidate).meta),
+      )?.[0];
+      if (field !== undefined) {
+        return { list, field, entry };
+      }
+    }
+  }
+
+  return null;
+}
+
+/** The options of an enum property of an object schema, or null when it has none of that name or it is not an enum. */
+export function enumOptionsOf(schema: z.ZodObject<z.ZodRawShape>, name: string): readonly string[] | null {
+  const property: unknown = schema.shape[name];
+  if (property === undefined) {
+    return null;
+  }
+
+  const { inner } = unwrap(property);
+  return inner instanceof z.ZodEnum ? (inner.options as string[]) : null;
 }
 
 /**
