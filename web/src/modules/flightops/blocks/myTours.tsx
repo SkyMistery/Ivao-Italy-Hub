@@ -93,13 +93,13 @@ export function MyToursBlock({ data }: BlockComponentProps) {
         </ul>
       )}
 
+      {/* One key per figure (#532): i18next picks the plural from one `count`, and the line holds two. */}
       <p className="text-muted-foreground text-sm tabular-nums">
-        {t('flightops:blocks.myTours.summary', {
-          legs: mine.summary.legsAccepted,
-          hours: flown.hours,
-          minutes: flown.minutes,
-          tours: mine.summary.toursCompleted,
-        })}
+        {[
+          t('flightops:blocks.myTours.legsAccepted', { count: mine.summary.legsAccepted }),
+          t('flightops:blocks.myTours.flown', { hours: flown.hours, minutes: flown.minutes }),
+          t('flightops:blocks.myTours.toursCompleted', { count: mine.summary.toursCompleted }),
+        ].join(' · ')}
       </p>
     </div>
   );

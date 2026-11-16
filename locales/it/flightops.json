@@ -979,7 +979,11 @@
       "answered": "Risposta: {{subject}}",
       "none": "Non hai ancora iniziato un tour.",
       "toTours": "Vedi i tour",
-      "summary": "{{legs}} leg accettate · {{hours}} h {{minutes}} min volati · {{tours}} tour completati"
+      "legsAccepted_one": "{{count}} leg accettata",
+      "legsAccepted_other": "{{count}} leg accettate",
+      "flown": "{{hours}} h {{minutes}} min volati",
+      "toursCompleted_one": "{{count}} tour completato",
+      "toursCompleted_other": "{{count}} tour completati"
     },
     "unavailable": "Al momento non si riesce a leggere. Riprova più tardi."
   },
