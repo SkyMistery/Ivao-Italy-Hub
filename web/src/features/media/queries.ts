@@ -84,11 +84,14 @@ const PICKER_PAGE_SIZE = 24;
  * `only` is the category a field asks for (the logos): that one for good, and no choice to offer.
  * `browse` is what the person has asked in the picker: the search the server already has, on the
  * name and on the alternative text (`CrudOptions.SearchFields`), the category, and the page.
+ * `pictures` is a field that draws a picture (#488): only the files whose type is `image/*`, the
+ * server's `filter[picture]`, and only pictures to upload.
  */
 export function mediaPickerQuery(
   department: Department,
   only?: string,
   browse: MediaBrowse = NOTHING_ASKED,
+  pictures = false,
 ): MediaLibraryQuery {
   const search = listSearchSchema.parse({
     page: browse.page,
@@ -107,6 +110,7 @@ export function mediaPickerQuery(
     'picker',
     PICKER_PAGE_SIZE,
     category,
+    pictures,
     browse.q,
     browse.page,
   ];
@@ -119,7 +123,10 @@ export function mediaPickerQuery(
           params: { query: toQuery(search) },
           // Only the files of one category, when a field asks for them (#359) or the person does:
           // the same filter the library's own list declares.
-          querySerializer: listQuerySerializer(category === null ? {} : { category }),
+          querySerializer: listQuerySerializer({
+            ...(category === null ? {} : { category }),
+            ...(pictures ? { picture: 'true' } : {}),
+          }),
         }),
       );
 
@@ -132,9 +139,13 @@ export function mediaPickerQuery(
     meta: {
       libraryHref: `/staff/media?department=${department}`,
       fileHref: (id: number) => `/staff/media/${id}`,
-      narrow: (category: string) => mediaPickerQuery(department, category),
-      browse: (asked: MediaBrowse) => mediaPickerQuery(department, only, asked),
+      narrow: (category: string) => mediaPickerQuery(department, category, NOTHING_ASKED, pictures),
+      pictures: () => mediaPickerQuery(department, only, NOTHING_ASKED, true),
+      browse: (asked: MediaBrowse) => mediaPickerQuery(department, only, asked, pictures),
+      // Every category, pictures or not: a category is filed by hand, and a scan filed as a document is still a
+      // picture. The type is what keeps the PDFs out.
       categories: only === undefined ? MEDIA_CATEGORIES : [],
+      accept: pictures ? 'image/*' : undefined,
     },
   });
 }

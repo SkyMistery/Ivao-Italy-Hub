@@ -52,7 +52,8 @@ export interface MediaPage<TRow extends PickableMedia = PickableMedia> {
  *
  * What it can do besides answering travels on its `meta`, for the same reason: `libraryHref` and
  * `fileHref` (where the files live), `narrow` (one category for good: `narrowLibrary`), `browse` (the
- * same library, asked for a `MediaBrowse`) and `categories` (the ones a person may choose among). A
+ * same library, asked for a `MediaBrowse`), `categories` (the ones a person may choose among), `pictures` (only
+ * pictures: `picturesOnly`) and `accept` (what the browser offers to upload). A
  * library that says none of it — the tests' — is a grid, and a grid is still a picker.
  */
 export type MediaLibraryQuery = UseQueryOptions<MediaPage, Error, MediaPage, readonly unknown[]>;
@@ -89,6 +90,8 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
   const browsable = typeof browse === 'function';
   const categories = (query.meta?.categories ?? []) as readonly string[];
   const fileHref = query.meta?.fileHref as ((id: number) => string) | undefined;
+  // Which files the browser offers to upload: only pictures where a picture is drawn (#488, `picturesOnly`).
+  const accept = typeof query.meta?.accept === 'string' ? query.meta.accept : undefined;
 
   const [asked, setAsked] = useState(NOTHING_ASKED);
   // Which search box is on screen. A new one is the only way of emptying what somebody typed: the
@@ -186,6 +189,7 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
           ref={fileInput}
           type="file"
           hidden
+          accept={accept}
           aria-label={t('media.picker.upload')}
           onChange={(event) => void upload(event.target.files?.[0])}
         />

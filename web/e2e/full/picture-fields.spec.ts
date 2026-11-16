@@ -3,7 +3,18 @@ import { fileURLToPath } from 'node:url';
 
 import { expect } from '@playwright/test';
 
-import { createContent, deleteContent, deleteMedia, readInEnglish, signIn, test, uploadMedia } from './bench';
+import {
+  createContent,
+  deleteContent,
+  deleteMedia,
+  openOutline,
+  properties,
+  readInEnglish,
+  selectBlock,
+  signIn,
+  test,
+  uploadMedia,
+} from './bench';
 
 /**
  * A document where a picture is drawn (#488, note 2026-11-15-un-documento-al-posto-di-una-foto): the editor says so in
@@ -14,7 +25,13 @@ const english = (name: string): unknown =>
   JSON.parse(
     readFileSync(fileURLToPath(new URL(`../../../locales/en/${name}.json`, import.meta.url)), 'utf8'),
   );
-const editor = (english('common') as { content: { editor: { publishMissing: string } } }).content.editor;
+const common = english('common') as {
+  content: { editor: { publishMissing: string; outline: string } };
+  media: { picker: { label: string; search: string } };
+  blocks: { image: { label: string } };
+};
+const editor = common.content.editor;
+const picker = common.media.picker;
 const errors = (english('errors') as { errors: { content: { mediaNotPicture: string } } }).errors;
 
 const stamp = Date.now().toString(36);
@@ -85,4 +102,18 @@ test('a document chosen for a picture is named before publishing, and the pictur
   const notPicture = page.getByRole('listitem').filter({ hasText: errors.content.mediaNotPicture });
   // The image, and the second picture of the gallery; the first picture of the gallery is a picture.
   await expect(notPicture).toHaveCount(2);
+
+  // And the picker of a picture offers the picture, not the document (#488, part A): searched by the name of this run,
+  // which the two files share.
+  await openOutline(page, editor.outline);
+  await selectBlock(page, common.blocks.image.label);
+  const panel = properties(page);
+  const grid = panel.getByRole('list', { name: picker.label });
+  const answered = page.waitForResponse(
+    (response) => response.url().includes('/api/media?') && response.url().includes(`q=fields-${stamp}`),
+  );
+  await panel.getByRole('searchbox', { name: picker.search }).fill(`fields-${stamp}`);
+  await answered;
+  await expect(grid.getByRole('button', { name: new RegExp(`fields-${stamp}[.]png`) })).toBeVisible();
+  await expect(grid.getByRole('button', { name: new RegExp(`fields-${stamp}[.]pdf`) })).toHaveCount(0);
 });
