@@ -43,8 +43,8 @@ ora **la consegna della 0.26.0** («Prima la fase 3», piano 1.51): prima Carmin
   il valore applicato non ha la chiave di quel file. Il testo alternativo di un'Immagine scritto prima di sceglierne il file non si perde
   più, e così ogni campo di una voce di Galleria o di un logo. Un altro rifiuto non applica niente, come prima (§16 punto 6).
 - **Il form riapre quello che ha salvato** ([#530][d156e], nota `2026-11-15-il-form-riapre-quello-che-ha-salvato`, trovato provando a
-  schermo la 3.14; **la PR a parte l'ha decisa Carmine** in chat al master il 15 nov 2026, «Fix a parte dopo la #529», senza un commento
-  da collegare; il modo è della sessione): un valore salvato senza un campo tradotto facoltativo dentro una voce di un elenco si riapriva
+  schermo la 3.14; **la PR a parte l'ha decisa Carmine** in chat al master il 15 nov 2026, «[Fix a parte dopo la
+  #529](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/530#issuecomment-6921844776)»; il modo è della sessione): un valore salvato senza un campo tradotto facoltativo dentro una voce di un elenco si riapriva
   invalido, e il pannello di un blocco non applicava più niente, senza dirlo. **`withUnwrittenBlanks`** rimette vuoti, a ogni profondità,
   **solo i campi facoltativi** che il salvataggio ha tolto; aprire e salvare senza toccare scrive quello che c'era. Con la #530 unita, una
   tabella delle frequenze già salvata con una postazione senza nota riceve di nuovo le modifiche del pannello (§13, §16 punto 6).
@@ -5470,7 +5470,7 @@ lingue mancanti comprese. Nessun modulo si scrive la sua classe dei rifiuti. **L
    testo troppo lungo, un titolo svuotato — non applica niente, come prima; il form che si invia con un pulsante non cambia. Prima il
    testo alternativo di un'Immagine scritto prima del file si perdeva, senza un messaggio, quando il form si smontava.
    **Lo stesso giorno** (#530, piano 1.56, nota `2026-11-15-il-form-riapre-quello-che-ha-salvato`, trovato provando a schermo la 3.14;
-   la PR a parte l'ha decisa Carmine in chat al master il 15 nov 2026, «Fix a parte dopo la #529», il modo è della sessione) **il form
+   la PR a parte l'ha decisa Carmine in chat al master il 15 nov 2026, «[Fix a parte dopo la #529](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/530#issuecomment-6921844776)», il modo è della sessione) **il form
    generato riapre un valore salvato rimettendo vuoti i campi che il salvataggio ha tolto perché non scritti**: `withUnwrittenBlanks`
    (`shared/forms/schema.ts`), che `SchemaForm` usa sui `defaults` prima di `useForm` e per `useNewerRow`, una volta per valore ricevuto,
    rimette a ogni profondità — le voci di un elenco, i campi di un oggetto — **solo i campi facoltativi**, e solo a un vuoto che il
