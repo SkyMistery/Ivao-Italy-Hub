@@ -4,6 +4,7 @@
 e le risposte di Carmine del §7).
 **Stato:** **approvato.** Le sette domande del §8 **le ha decise Carmine in chat al master, 31 ottobre 2026**, ognuna con l'opzione
 raccomandata (§9). Il codice comincia dopo il merge di #420 e di questo documento, nell'ordine del §7, una sessione per pezzo.
+**La fase è chiusa il 16 novembre 2026**: diciassette PR su diciassette, l'ultima la 3.14 (#523); com'è andata, in fondo al §7 (piano 1.56).
 **Classificazione** (`CLAUDE.md` §5): **(c)**, funzioni nuove dell'editor e dei blocchi del nucleo. Questo documento è la nota della
 fase: ogni pezzo dice quale meccanismo estende, quali file del nucleo tocca e se chiede una nota sua.
 **Che cosa tocca:** il nucleo del browser (`web/src/features/content/`, `web/src/blocks/`, `web/src/shared/forms/`, tre componenti
@@ -113,7 +114,8 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 - **Il modo vecchio di dire una cosa non si perde all'import** (piano 1.52 e 1.53): come l'`align` vecchio di un gruppo di pulsanti
   (3.9), il `width` vecchio di una foto (3.10) passa nel modo nuovo quando il file non scrive quello nuovo, dal blocco del file o
   altrimenti da quello della bozza. ⚠️ **L'impronta `rules` cambia con ogni PR che cambia uno schema** (3.9, 3.10, 3.11, 3.12 —
-  la tabella con `rowStyle`, piano 1.54 —, 3.13 — `accordion`, `stats` e `networkStats`, piano 1.55): un file per
+  la tabella con `rowStyle`, piano 1.54 —, 3.13 — `accordion`, `stats` e `networkStats`, piano 1.55 —, 3.14 — `frequencyTable` con
+  `name` e l'annotazione del nominativo, piano 1.56): un file per
   Claude scaricato prima è rifiutato (`content.import.rulesChanged`), e le note di rilascio lo dicono. La nota del 30 ottobre non si
   modifica dopo il merge: questi legami stanno qui.
 
@@ -446,7 +448,13 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   hanno~~ i tour con la issue #521, una PR a parte (Carmine, 14 novembre 2026, «[Issue a parte per i
   tour](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/511#issuecomment-6883857820)»); gli eventi sono di `dalberone`, a cui va una
   issue: la #518, per `events.atcCoverage` («[Sì a tutte e cinque, come
-  raccomandi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/511#issuecomment-6883307038)»).
+  raccomandi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/511#issuecomment-6883307038)»). **I blocchi di dati dei tour non
+  prendono etichette** (#526, la #521, nota `2026-11-15-le-etichette-dei-numeri-dei-tour`, piano 1.56, scelta della sessione dentro
+  la issue): in `openIssues`, `reviewQueue`, il riepilogo di `myTours` ed `errorCatalog` il numero sta dentro una frase con il suo
+  plurale, mai da solo con una parola sotto, e un campo tradotto, una stringa sola, non sa scrivere le due forme del plurale.
+  L'etichetta di questo paragrafo è per un numero con una parola sotto. Ridisegnare il riepilogo di `myTours` come tre numeri con la
+  parola sotto sarebbe una issue sua, da Carmine. ⚠️ Trovato strada facendo: `blocks.myTours.summary` non ha le forme del plurale
+  («1 tour completati»), un difetto delle parole dell'hub ancora senza issue.
 - **File del nucleo**: `blocks/schemas.ts`, `blocks/blocks.tsx`. Il server non cambia (non legge le `props`, e il fornitore dei dati
   risponde i numeri, non le parole). **Nota sua**: no.
 - **Com'è andata** (PR 3.13, nella stessa nota del §5.4): l'etichetta di un numero è quella della prima voce che lo chiede (il server
@@ -481,7 +489,10 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   riga ne ha uno (Carmine, «Sì, il campo name», https://github.com/SkyMistery/Ivao-Italy-Hub/pull/523#issuecomment-6901335039). (5) «Riallinea» per riga, sopra il form; il nome conta
   come differenza solo se scritto, la frequenza come numero. (6) ⚠️ L'impronta `rules` cambia. Toccati in più del §5.8:
   `shared/forms/` (`schema.ts`, `Suggest.tsx`, `SchemaForm.tsx`), `blocks/blocks.tsx`, `blocks/core.ts`, `RefDataSyncJob`,
-  `Program.cs`, i file di lingua.
+  `Program.cs`, i file di lingua. Il rilievo 5 della revisione («Riallinea» costruito dalle `props` dell'ultimo disegno) resta com'è,
+  con la ragione nella PR. ⚠️ Una tabella già salvata con una postazione senza nota non riceveva le modifiche del pannello per un
+  difetto del form generato: lo corregge la #530, unita lo stesso giorno (nota `2026-11-15-il-form-riapre-quello-che-ha-salvato`,
+  piano 1.56).
 
 ### 5.9 Pulsanti: la pagina scelta, e il controllo della visibilità (II)
 
@@ -548,6 +559,13 @@ Una PR per riga, ognuna con la sua versione come le altre (`Directory.Build.prop
 Le PR dei blocchi (3.10–3.14) toccano tutte `blocks/schemas.ts` e `blocks/blocks.tsx`: vanno in fila. Quelle segnate «in parallelo»
 toccano file loro e possono correre accanto, in sessioni diverse. Dopo 3.6, 3.10 e 3.12 la parte fissa delle istruzioni per Claude
 (3.0a) dice le cose nuove (colori, immagine, tabella) nella stessa PR che le introduce.
+
+**Com'è andata** (piano 1.56): **la fase è chiusa il 16 novembre 2026, diciassette PR su diciassette** — 3.0a #449, 3.0b #453, 3.1 #457,
+3.2 #471, 3.3 #458, 3.4 #462, 3.5 #472, 3.6 #474, 3.7 #476, 3.8 #459, 3.9 #479, 3.10 #485, 3.11 #487, 3.12 #506, 3.13 #511, 3.14 #523,
+3.15 #473 —, con le PR del nucleo nate dalle revisioni (#450, #451, #454). Dopo la 3.13 sono unite anche le correzioni del blocco
+immagine che la aspettavano: la #488 con la #525 e la #528, la #377 con la #529; la #376 è chiusa come fatta dalla 3.15, e il caso
+Video/Embed è la #524. La #530, il form generato che riapre quello che ha salvato, è nata dalla prova a schermo della 3.14. `main` è
+alla 0.26.0, e con la fase chiusa viene la consegna sulla prova («Prima la fase 3», piano 1.51).
 
 ## 8. Le domande per Carmine ⚖️
 
