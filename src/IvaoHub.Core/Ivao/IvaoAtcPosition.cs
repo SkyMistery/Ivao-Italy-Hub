@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -29,6 +30,9 @@ public sealed class IvaoAtcPosition
     /// <summary>Widest name; the longest IVAO had was fifty seven characters.</summary>
     public const int MaxNameLength = 256;
 
+    /// <summary>Widest frequency, written out in megahertz with three decimals: <c>118.700</c> is seven characters.</summary>
+    public const int MaxFrequencyLength = 8;
+
     /// <summary>
     /// The kinds of position IVAO's two lists use, as they spell them in <c>position</c>: six at an airport and two in a FIR,
     /// measured on 25 September 2026 (M3, A1 and A2) and nothing else since. What a division may name in
@@ -58,6 +62,14 @@ public sealed class IvaoAtcPosition
     /// <summary>What is said on the frequency: <c>Fiume Tower</c>, <c>Roma Radar</c>. IVAO leaves a few of them empty.</summary>
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The frequency of the position, in megahertz with three decimals as a controller reads it out — <c>118.700</c> —, the
+    /// way the network's own reading writes it (<see cref="IvaoWhazzup"/>). IVAO sends a number; null when it sends
+    /// none, and on a row the synchronisation has not passed over since the column was added (design of the editor's
+    /// phase 3, §5.8): the frequency table of a page copies it from here.
+    /// </summary>
+    public string? Frequency { get; set; }
+
     /// <summary>The row as IVAO sent it, without the outline of the sector, which is most of its weight.</summary>
     public string RawJson { get; set; } = "{}";
 
@@ -71,6 +83,7 @@ public sealed record IvaoAtcPositionDto(
     string? AirportIcao,
     string? CenterId,
     string Name,
+    string? Frequency,
     string RawJson);
 
 /// <summary>
@@ -125,6 +138,7 @@ public static class IvaoAtcPositionReader
                 sectors ? null : place,
                 sectors ? place : null,
                 name,
+                Frequency(item),
                 WithoutOutline(item)));
         }
 
@@ -152,6 +166,25 @@ public static class IvaoAtcPositionReader
         }
 
         return Encoding.UTF8.GetString(buffer.ToArray());
+    }
+
+    /// <summary>
+    /// The frequency of a row, written out: IVAO sends megahertz as a number, and three decimals is how a controller reads
+    /// one out loud. None when the row has no number there, or one that is no frequency (zero, negative, too wide).
+    /// </summary>
+    private static string? Frequency(JsonElement item)
+    {
+        if (item.ValueKind != JsonValueKind.Object
+            || !item.TryGetProperty("frequency", out var value)
+            || value.ValueKind != JsonValueKind.Number
+            || !value.TryGetDecimal(out var megahertz)
+            || megahertz <= 0)
+        {
+            return null;
+        }
+
+        var written = megahertz.ToString("0.000", CultureInfo.InvariantCulture);
+        return written.Length <= IvaoAtcPosition.MaxFrequencyLength ? written : null;
     }
 
     private static string? Text(JsonElement element, string property)

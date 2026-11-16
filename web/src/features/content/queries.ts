@@ -25,6 +25,7 @@ export type ContentPageNodeDto = components['schemas']['ContentPageNodeDto'];
 export type ContentReviewDto = components['schemas']['ContentReviewDto'];
 export type ContentAppearanceDto = components['schemas']['ContentAppearanceDto'];
 export type ContentVersionDto = components['schemas']['ContentVersionDto'];
+export type AtcPositionDto = components['schemas']['AtcPositionDto'];
 
 export const contentKey = ['content'] as const;
 
@@ -191,6 +192,19 @@ export function siteAddressesQuery() {
   return queryOptions({
     queryKey: [...contentKey, 'site-addresses'] as const,
     queryFn: async (): Promise<ContentSiteAddressDto[]> => unwrap(await api.GET('/api/content/addresses')),
+  });
+}
+
+/**
+ * The ATC positions of the division with their frequencies (design of the editor, phase 3, §5.8): what the frequency table
+ * offers and compares its rows with. Whole, a couple of hundred rows, and IVAO's snapshot changes once a night: a quarter of
+ * an hour before it is asked again.
+ */
+export function divisionAtcPositionsQuery() {
+  return queryOptions({
+    queryKey: ['atc-positions'] as const,
+    queryFn: async (): Promise<AtcPositionDto[]> => unwrap(await api.GET('/api/atc/positions')),
+    staleTime: 15 * 60 * 1000,
   });
 }
 

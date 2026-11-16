@@ -922,11 +922,12 @@
     },
     "frequencyTable": {
       "label": "Frequency table",
-      "about": "The stations of an operational document: callsign, frequency, kind, CPDLC and the rating asked for.",
+      "about": "The stations of an operational document: callsign, frequency, kind, CPDLC and the rating asked for. A position of the division is chosen by its callsign, and copies its name, kind and frequency into the row.",
       "fields": {
         "caption": "Caption",
         "stations": "Stations",
         "stations.callsign": "Callsign",
+        "stations.name": "Name",
         "stations.frequency": "Frequency",
         "stations.kind": "Kind",
         "stations.cpdlc": "CPDLC",
@@ -945,8 +946,13 @@
           "ATIS": "ATIS"
         }
       },
+      "hints": {
+        "stations.callsign": "Choose a position of the division to copy its name, kind and frequency into the row. A station IVAO does not list is written by hand.",
+        "stations.name": "What is said on the frequency, such as \"Example Tower\". Left empty in every row, the table has no column for it."
+      },
       "columns": {
         "callsign": "Callsign",
+        "name": "Name",
         "frequency": "Frequency",
         "kind": "Kind",
         "cpdlc": "CPDLC",
@@ -1907,7 +1913,12 @@
     }
   },
   "atcPositions": {
-    "belowMinimum": "Below the position's minimum on IVAO (its FRA): lift the FRA for this controller on IVAO."
+    "belowMinimum": "Below the position's minimum on IVAO (its FRA): lift the FRA for this controller on IVAO.",
+    "pending": "IVAO's frequencies arrive with the next synchronisation of the reference data: until then, the positions copy their name and kind, and the frequency is written here.",
+    "drift": "Row {{row}}, {{callsign}}: IVAO now says otherwise",
+    "change": "{{field}}: {{written}} here, {{ivao}} on IVAO",
+    "empty": "nothing",
+    "realign": "Realign"
   },
   "news": {
     "title": "News",

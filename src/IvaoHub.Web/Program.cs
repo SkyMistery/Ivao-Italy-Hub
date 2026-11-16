@@ -407,6 +407,7 @@ app.MapUserPreferenceEndpoints();
 app.MapModuleSettingsEndpoints();
 app.MapAircraftTypeEndpoints();
 app.MapAirportEndpoints();
+app.MapDivisionAtcPositionEndpoints();
 app.MapAwardEndpoints();
 app.MapBlockDataEndpoint();
 app.MapSeoEndpoints();

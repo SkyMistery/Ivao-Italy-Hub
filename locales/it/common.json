@@ -922,11 +922,12 @@
     },
     "frequencyTable": {
       "label": "Tabella delle frequenze",
-      "about": "Le postazioni di un documento operativo: nominativo, frequenza, tipo, CPDLC e rating richiesto.",
+      "about": "Le postazioni di un documento operativo: nominativo, frequenza, tipo, CPDLC e rating richiesto. Una postazione della divisione si sceglie dal nominativo, e ne copia nome, tipo e frequenza nella riga.",
       "fields": {
         "caption": "Didascalia",
         "stations": "Postazioni",
         "stations.callsign": "Nominativo",
+        "stations.name": "Nome",
         "stations.frequency": "Frequenza",
         "stations.kind": "Tipo",
         "stations.cpdlc": "CPDLC",
@@ -945,8 +946,13 @@
           "ATIS": "ATIS"
         }
       },
+      "hints": {
+        "stations.callsign": "Scegli una postazione della divisione per copiarne nome, tipo e frequenza nella riga. Una postazione che IVAO non elenca si scrive a mano.",
+        "stations.name": "Quello che si dice in frequenza, come «Example Tower». Vuoto in tutte le righe, la tabella non ha la colonna."
+      },
       "columns": {
         "callsign": "Nominativo",
+        "name": "Nome",
         "frequency": "Frequenza",
         "kind": "Tipo",
         "cpdlc": "CPDLC",
@@ -1907,7 +1913,12 @@
     }
   },
   "atcPositions": {
-    "belowMinimum": "Sotto il minimo della postazione su IVAO (il suo FRA): togli l'FRA a questo controllore su IVAO."
+    "belowMinimum": "Sotto il minimo della postazione su IVAO (il suo FRA): togli l'FRA a questo controllore su IVAO.",
+    "pending": "Le frequenze di IVAO arrivano con il prossimo sincronismo dei dati di riferimento: fino ad allora le postazioni copiano nome e tipo, e la frequenza si scrive qui.",
+    "drift": "Riga {{row}}, {{callsign}}: IVAO ora dice altro",
+    "change": "{{field}}: {{written}} qui, {{ivao}} su IVAO",
+    "empty": "niente",
+    "realign": "Riallinea"
   },
   "news": {
     "title": "News",

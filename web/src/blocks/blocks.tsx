@@ -1026,21 +1026,27 @@ export function FrequencyTableBlock({ props }: BlockComponentProps) {
   const read = useLocalized();
   const caption = read(text(props, 'caption'));
   const column = (name: string) => t(`blocks.frequencyTable.columns.${name}`);
+  const stations = entries(props, 'stations');
+  // The name said on the frequency, copied from IVAO's position since PR 3.14 (design §5.8): a table
+  // written before, or one whose rows have none, draws the columns it always had.
+  const named = stations.some((station) => plain(station, 'name').trim() !== '');
 
   return (
     <Table
       {...(caption === '' ? {} : { caption })}
       columns={[
         { label: column('callsign') },
+        ...(named ? [{ label: column('name') }] : []),
         { label: column('frequency') },
         { label: column('kind') },
         { label: column('cpdlc') },
         { label: column('minimumRating') },
         { label: column('note') },
       ]}
-      rows={entries(props, 'stations').map((station) => ({
+      rows={stations.map((station) => ({
         columns: [
           { value: plain(station, 'callsign'), className: 'font-mono' },
+          ...(named ? [{ value: plain(station, 'name') }] : []),
           { value: plain(station, 'frequency'), className: 'font-mono tabular-nums' },
           {
             value: t(

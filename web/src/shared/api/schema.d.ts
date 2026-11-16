@@ -167,6 +167,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/atc/positions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DivisionAtcPositions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/blocks/data/{type}": {
         parameters: {
             query?: never;
@@ -4388,6 +4404,22 @@ export interface components {
             name: string;
             type: string;
             fir: null | string;
+        };
+        /**
+         * @description One position, as a module offers it and keeps it: the callsign a controller connects as; its kind as IVAO spells it
+         *     (`TWR`, `APP`, `CTR`…), which a module hands to Rating? RatingVocabulary.PreferredFor(string? positionType) without naming
+         *     it; the name said on the frequency; the airport of an airport position; the FIR — for an airport position, its
+         *     airport's —; and the frequency, written out in megahertz (`118.700`), null until the synchronisation has brought it
+         *     (design of the editor's phase 3, §5.8). Last and optional, so that a module's own list of positions — its tests' — need
+         *     not name one.
+         */
+        AtcPositionDto: {
+            callsign: string;
+            type: string;
+            name: string;
+            airportIcao: null | string;
+            fir: null | string;
+            frequency?: null | string;
         };
         /**
          * @description What the form shows while the pilot fills it in: the controllers online along the chosen flights, or «not available» —
@@ -12151,6 +12183,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AirportDto"][];
+                };
+            };
+        };
+    };
+    DivisionAtcPositions: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AtcPositionDto"][];
                 };
             };
         };
