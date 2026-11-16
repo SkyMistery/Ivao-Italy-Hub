@@ -558,6 +558,77 @@ export function whereDrawn(fields: readonly FieldNode[], path: string, values: u
   return null;
 }
 
+/**
+ * The files still to choose that are **all** the schema refuses in `values`, as the paths zod gives them; `null` when
+ * anything else is wrong too (#377, note 2026-11-15-il-file-ancora-da-scegliere).
+ *
+ * A file nobody has chosen yet is a state a draft is allowed to be in: publication names it and stops
+ * (`errors.content.mediaToChoose`, note 2026-11-07-la-foto-rimasta-da-scegliere). A live form must not hold back what
+ * was written beside it until the file is chosen, or the alternative text written first is lost when the block is left.
+ * Only a media field with nothing in it counts: a text emptied halfway through is still not a value.
+ */
+export function filesToChoose(
+  fields: readonly FieldNode[],
+  issues: readonly { code: string; path: readonly PropertyKey[] }[],
+  values: unknown,
+): PropertyKey[][] | null {
+  if (issues.length === 0) {
+    return null;
+  }
+
+  const holes: PropertyKey[][] = [];
+  for (const issue of issues) {
+    if (issue.code !== 'invalid_type' || fieldAt(fields, issue.path)?.kind !== 'media') {
+      return null;
+    }
+
+    let value = values;
+    for (const segment of issue.path) {
+      value =
+        value !== null && typeof value === 'object'
+          ? (value as Record<PropertyKey, unknown>)[segment]
+          : undefined;
+    }
+
+    if (value !== undefined) {
+      return null;
+    }
+
+    holes.push([...issue.path]);
+  }
+
+  return holes;
+}
+
+/** The field a path of zod names (`['images', 1, 'mediaId']`), through objects and the entries of lists. */
+function fieldAt(fields: readonly FieldNode[], path: readonly PropertyKey[]): FieldNode | null {
+  let nodes = fields;
+  let parent = '';
+
+  for (let at = 0; at < path.length; at++) {
+    const node = nodes.find((candidate) => keyOf(candidate, parent) === String(path[at]));
+    if (node === undefined) {
+      return null;
+    }
+
+    if (at === path.length - 1) {
+      return node;
+    }
+
+    if (node.kind === 'list') {
+      // The index of the entry, which has no field of its own.
+      at++;
+    } else if (node.kind !== 'object') {
+      return null;
+    }
+
+    nodes = node.children;
+    parent = node.path;
+  }
+
+  return null;
+}
+
 /** A field's own name within whatever holds it: `name` of `aliases.name`. */
 function keyOf(node: FieldNode, parent: string): string {
   return parent === '' ? node.path : node.path.slice(parent.length + 1);
