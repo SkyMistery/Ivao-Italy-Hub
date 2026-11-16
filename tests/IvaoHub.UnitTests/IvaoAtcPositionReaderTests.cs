@@ -122,4 +122,36 @@ public sealed class IvaoAtcPositionReaderTests
         Assert.Equal("OIAD__APP", position.Callsign);
         Assert.Equal(string.Empty, position.Name);
     }
+
+    [Fact]
+    public void TheFrequencyIsWrittenOutWithThreeDecimals()
+    {
+        // IVAO sends megahertz as a number; the snapshot keeps it as a controller reads it out (design of the editor's
+        // phase 3, §5.8), as the network's own reading does.
+        Assert.Equal("118.700", Assert.Single(Positions(), position => position.Callsign == "LIRF_TWR").Frequency);
+        Assert.Equal("121.825", Assert.Single(Positions(), position => position.Callsign == "LIMC_N_GND").Frequency);
+        Assert.Equal("124.200", Assert.Single(Sectors(), position => position.Callsign == "LIRR_NE_CTR").Frequency);
+    }
+
+    [Fact]
+    public void AFrequencyThatIsNoNumberOrNoFrequencyIsNone()
+    {
+        // A row without one, with a word, with zero, below zero, or too wide for the column: a position all the same, with
+        // no frequency, which the editor then leaves to whoever writes the table.
+        using var answer = JsonDocument.Parse("""
+            [
+              { "airportId": "LIRF", "position": "TWR", "composePosition": "LIRF_A_TWR", "atcCallsign": "A" },
+              { "airportId": "LIRF", "position": "TWR", "composePosition": "LIRF_B_TWR", "atcCallsign": "B", "frequency": "118.7" },
+              { "airportId": "LIRF", "position": "TWR", "composePosition": "LIRF_C_TWR", "atcCallsign": "C", "frequency": 0 },
+              { "airportId": "LIRF", "position": "TWR", "composePosition": "LIRF_D_TWR", "atcCallsign": "D", "frequency": -1 },
+              { "airportId": "LIRF", "position": "TWR", "composePosition": "LIRF_E_TWR", "atcCallsign": "E", "frequency": 123456.7 },
+              { "airportId": "LIRF", "position": "TWR", "composePosition": "LIRF_F_TWR", "atcCallsign": "F", "frequency": null }
+            ]
+            """);
+
+        var positions = IvaoAtcPositionReader.ReadAirportPositions(answer.RootElement.EnumerateArray());
+
+        Assert.Equal(6, positions.Count);
+        Assert.All(positions, position => Assert.Null(position.Frequency));
+    }
 }

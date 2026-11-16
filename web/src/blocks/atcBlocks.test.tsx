@@ -37,6 +37,32 @@ test('a frequency table reads the kind and CPDLC as words, and the note in the l
   expect(screen.getByText('Runway 16L/16R')).toBeInTheDocument();
 });
 
+test('a frequency table draws the name of the stations only when a row has one', () => {
+  // Copied from IVAO's position since PR 3.14 (design of the editor, phase 3, §5.8). A table written before has no name
+  // anywhere, and keeps the columns it always had.
+  const { unmount } = renderWithProviders(
+    <FrequencyTableBlock
+      props={{ stations: [{ callsign: 'XXXX_TWR', frequency: '118.700', kind: 'TWR', cpdlc: false }] }}
+    />,
+  );
+  expect(screen.queryByRole('columnheader', { name: 'Name' })).not.toBeInTheDocument();
+  unmount();
+
+  renderWithProviders(
+    <FrequencyTableBlock
+      props={{
+        stations: [
+          { callsign: 'XXXX_TWR', name: 'Example Tower', frequency: '118.700', kind: 'TWR', cpdlc: false },
+          { callsign: 'XXXX_GND', frequency: '121.900', kind: 'GND', cpdlc: false },
+        ],
+      }}
+    />,
+  );
+  expect(screen.getByRole('columnheader', { name: 'Name' })).toBeInTheDocument();
+  expect(screen.getByText('Example Tower')).toBeInTheDocument();
+  expect(screen.getAllByRole('row')[2]?.querySelectorAll('td, th')).toHaveLength(7);
+});
+
 test('a coordination table reads the direction as words', () => {
   renderWithProviders(
     <CoordinationBlock

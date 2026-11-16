@@ -110,6 +110,7 @@ internal sealed class IvaoAtcPositionConfiguration : IEntityTypeConfiguration<Iv
         builder.Property(position => position.AirportIcao).HasMaxLength(IvaoAtcPosition.MaxAirportLength);
         builder.Property(position => position.CenterId).HasMaxLength(IvaoAtcPosition.MaxCenterLength);
         builder.Property(position => position.Name).HasMaxLength(IvaoAtcPosition.MaxNameLength).IsRequired();
+        builder.Property(position => position.Frequency).HasMaxLength(IvaoAtcPosition.MaxFrequencyLength);
         builder.Property(position => position.RawJson).HasColumnType("json").IsRequired();
         builder.HasIndex(position => position.PositionType);
         builder.HasIndex(position => position.AirportIcao);

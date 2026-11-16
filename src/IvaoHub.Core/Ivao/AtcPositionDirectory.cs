@@ -53,10 +53,18 @@ public interface IAtcPositionDirectory
 /// <summary>
 /// One position, as a module offers it and keeps it: the callsign a controller connects as; its kind as IVAO spells it
 /// (<c>TWR</c>, <c>APP</c>, <c>CTR</c>…), which a module hands to <see cref="RatingVocabulary.PreferredFor"/> without naming
-/// it; the name said on the frequency; the airport of an airport position; and the FIR — for an airport position, its
-/// airport's.
+/// it; the name said on the frequency; the airport of an airport position; the FIR — for an airport position, its
+/// airport's —; and the frequency, written out in megahertz (<c>118.700</c>), null until the synchronisation has brought it
+/// (design of the editor's phase 3, §5.8). Last and optional, so that a module's own list of positions — its tests' — need
+/// not name one.
 /// </summary>
-public sealed record AtcPositionDto(string Callsign, string Type, string Name, string? AirportIcao, string? Fir);
+public sealed record AtcPositionDto(
+    string Callsign,
+    string Type,
+    string Name,
+    string? AirportIcao,
+    string? Fir,
+    string? Frequency = null);
 
 /// <summary>
 /// One FRA of a position as its minimum reads it: IVAO's number of the lowest rating that may connect, from a time to a time
@@ -232,6 +240,7 @@ internal sealed class AtcPositionDirectory(HubDbContext database, IOptions<Divis
                 position.PositionType,
                 position.Name,
                 position.AirportIcao,
-                position.AirportIcao == null ? position.CenterId : airport!.CenterId);
+                position.AirportIcao == null ? position.CenterId : airport!.CenterId,
+                position.Frequency);
     }
 }

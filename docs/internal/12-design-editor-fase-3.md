@@ -472,6 +472,16 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 - **File del nucleo**: `Core/Ivao/IvaoAtcPosition.cs`, `Core/Ivao/AtcPositionDirectory.cs`, la configurazione e la migrazione di
   `HubDbContext`, un file di endpoint in `Core/Ivao/`, `blocks/schemas.ts`, `features/content/BlockProperties.tsx`. ⚠️ È un endpoint
   scritto a mano in più: il conteggio per famiglia del §16.6 del piano lo registra. **Nota sua**: no.
+- **Com'è andata** (PR 3.14, ramo `feat/atc-frequencies`, nota `2026-11-15-le-frequenze-dalle-postazioni`): le scelte sono della
+  sessione. (1) La frequenza è testo con tre decimali (`118.700`), `varchar(8)`; vuota fino al sincronismo, e il pannello lo dice.
+  (2) `AtcPositionDto.Frequency` in fondo e facoltativa, e la lettura filtra in memoria `OfDivisionAsync` senza un metodo nuovo
+  nell'interfaccia: i test di Eventi la implementano. L'editor legge l'elenco intero una volta. (3) Il form generato ha
+  `Suggestion.fills`: scelto dalla lista, un suggerimento scrive i campi accanto; digitato, niente; quello che IVAO lascia vuoto svuota
+  la riga (la frequenza dopo il sincronismo). (4) La riga non aveva un nome: ha `name` facoltativo, e la colonna si disegna solo se una
+  riga ne ha uno (Carmine, «Sì, il campo name», https://github.com/SkyMistery/Ivao-Italy-Hub/pull/523#issuecomment-6901335039). (5) «Riallinea» per riga, sopra il form; il nome conta
+  come differenza solo se scritto, la frequenza come numero. (6) ⚠️ L'impronta `rules` cambia. Toccati in più del §5.8:
+  `shared/forms/` (`schema.ts`, `Suggest.tsx`, `SchemaForm.tsx`), `blocks/blocks.tsx`, `blocks/core.ts`, `RefDataSyncJob`,
+  `Program.cs`, i file di lingua.
 
 ### 5.9 Pulsanti: la pagina scelta, e il controllo della visibilità (II)
 

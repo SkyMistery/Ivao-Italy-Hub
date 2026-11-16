@@ -231,12 +231,19 @@ export const STATION_KINDS = ['DEL', 'GND', 'TWR', 'APP', 'DEP', 'CTR', 'FSS', '
  * the network, whether the position takes CPDLC, the rating asked of whoever opens it, and a note.
  * Callsigns and frequencies are not prose and are not translated — and, by the rule of 9 September
  * 2026, not indexed for search either; the note is the one thing that is.
+ *
+ * The callsign offers the division's ATC positions (design of the editor, phase 3, §5.8): choosing one
+ * **copies** its name, kind and frequency into the row, and the editor says when a row is no longer
+ * what IVAO says — a SOP is approved as it is written, and changes when somebody publishes it again
+ * (Carmine, 31 October 2026, answer 6). The name is what is said on the frequency ("Example Tower"),
+ * not translated either; a table with no name in any row draws no column for it.
  */
 export const frequencyTableSchema = z.object({
   caption: localized().optional(),
   stations: z.array(
     z.object({
-      callsign: z.string(),
+      callsign: z.string().meta({ atcPosition: true }),
+      name: z.string().optional(),
       frequency: z.string(),
       kind: z.enum(STATION_KINDS).default('TWR'),
       cpdlc: z.boolean().default(false),

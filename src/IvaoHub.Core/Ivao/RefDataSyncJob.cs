@@ -385,6 +385,7 @@ public sealed class RefDataSyncJob(
                 row.AirportIcao = position.AirportIcao;
                 row.CenterId = position.CenterId;
                 row.Name = position.Name;
+                row.Frequency = position.Frequency;
                 row.RawJson = position.RawJson;
                 row.SyncedAt = clock.UtcNow;
             }

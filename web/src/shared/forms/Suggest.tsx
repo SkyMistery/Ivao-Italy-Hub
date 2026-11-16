@@ -54,6 +54,7 @@ export function Suggest({
   searchingText,
   searching = false,
   onChange,
+  onChoose,
   onSearch,
 }: {
   id: string;
@@ -70,6 +71,11 @@ export function Suggest({
   /** True while the caller's answer to the last search is on its way. */
   searching?: boolean | undefined;
   onChange: (next: string) => void;
+  /**
+   * Told when an option is chosen from the list, by the pointer or by Enter, after `onChange`: a choice may carry what it
+   * copies beside the field (`Suggestion.fills`). Typing the same text is not a choice, and tells nothing.
+   */
+  onChoose?: ((suggestion: Suggestion) => void) | undefined;
   /** Told what is being typed, after a pause, so the screen can go and ask for more. */
   onSearch?: ((typed: string) => void) | undefined;
 }) {
@@ -420,6 +426,7 @@ export function Suggest({
                     value={suggestion.value}
                     onSelect={() => {
                       onChange(suggestion.value);
+                      onChoose?.(suggestion);
                       // What was there, from now on, is the choice: the box may be entered again from
                       // the list while it is still closing, and that is not an arrival that reads it.
                       setOpened(suggestion.value);
