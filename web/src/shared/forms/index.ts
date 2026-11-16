@@ -21,6 +21,7 @@ export {
   blankValue,
   blankValues,
   writtenValues,
+  withUnwrittenBlanks,
   isBlank,
   NO_CHOICE,
   type ChoiceOption,
