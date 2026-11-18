@@ -5,9 +5,9 @@ import {
   createRootRouteWithContext,
   createRoute,
   createRouter,
+  type RouteComponent,
 } from '@tanstack/react-router';
 import { act, render, screen } from '@testing-library/react';
-import type { ComponentType } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { HubProviders } from '../../../app/Providers';
@@ -250,7 +250,7 @@ const FORMS: readonly {
   name: string;
   path: string;
   route: string;
-  component: ComponentType;
+  component: RouteComponent;
   title: string;
   answers: Readonly<Record<string, unknown>>;
 }[] = [
@@ -315,7 +315,7 @@ afterEach(() => {
 async function open(
   path: string,
   pattern: string,
-  component: ComponentType,
+  component: RouteComponent,
   bootstrap: Bootstrap,
   answers: Readonly<Record<string, unknown>>,
 ) {
