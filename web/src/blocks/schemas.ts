@@ -174,14 +174,17 @@ export const imageSchema = z.object({
 
 export const videoSchema = z.object({
   // An address on a host the hub knows how to frame; the block says so when it has none. Not a
-  // file of the library: the library takes no video (#359, Carmine, 28 October 2026).
-  url: z.string().optional(),
+  // file of the library: the library takes no video (#359, Carmine, 28 October 2026). Optional for
+  // the draft, but one the hub would not frame, or none, stops publication (#524): `framed` is the
+  // other half of the C# `FramedAddress`, and `app/blockFramedAddress.test.ts` keeps them together.
+  url: z.string().optional().meta({ framed: true }),
   caption: localized().optional(),
   aspect: z.enum(ASPECTS).default('16x9'),
 });
 
 export const embedSchema = z.object({
-  url: z.string(),
+  // Only an address the hub frames is published (#524), like the video's.
+  url: z.string().meta({ framed: true }),
   // Not decoration: it is the name of the frame, and without it somebody reading with a keyboard
   // finds a box with nothing to say what is inside (design M1 §1.2).
   title: localized(),

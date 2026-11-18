@@ -73,6 +73,17 @@ public interface IBlockDescriptor
     /// that forgets this field included.</para>
     /// </summary>
     IReadOnlyList<string> RequiredMedia { get; }
+
+    /// <summary>
+    /// The one field of <c>props</c> that holds an address the block frames, for <c>video</c> and <c>embed</c>: <c>url</c>.
+    /// An address the browser would not frame (<see cref="FramedAddresses"/>), or none, stops publication (Carmine,
+    /// 18 November 2026, "one JSON", issue #524, note 2026-11-18-l-indirizzo-che-l-hub-non-incorpora): on the public
+    /// page the visitor would read the editor's warning in place of the block.
+    /// <para>⚠️ <b>The second declared exception</b> to "the back end never replicates the schemas in C#" (CLAUDE.md
+    /// section 2), next to <see cref="RequiredMedia"/>: this one field and this one purpose. The other half is the schema's
+    /// <c>.meta({ framed: true })</c>, and <c>web/src/app/blockFramedAddress.test.ts</c> fails when the two disagree.</para>
+    /// </summary>
+    string? FramedAddress { get; }
 }
 
 /// <inheritdoc cref="IBlockDescriptor"/>
@@ -84,7 +95,8 @@ public sealed record BlockDescriptor(
     string? ProviderKey = null,
     TimeSpan? SharedFor = null,
     Visibility Audience = Visibility.Public,
-    IReadOnlyList<string>? RequiredMedia = null) : IBlockDescriptor
+    IReadOnlyList<string>? RequiredMedia = null,
+    string? FramedAddress = null) : IBlockDescriptor
 {
     IReadOnlyList<string> IBlockDescriptor.RequiredMedia => RequiredMedia ?? [];
 }
@@ -200,8 +212,8 @@ public static class CoreBlocks
 
         new BlockDescriptor(Hero, Version: 1, BlockKind.Content),
         new BlockDescriptor(Image, Version: 1, BlockKind.Content, RequiredMedia: ["mediaId"]),
-        new BlockDescriptor(Video, Version: 1, BlockKind.Content),
-        new BlockDescriptor(Embed, Version: 1, BlockKind.Content),
+        new BlockDescriptor(Video, Version: 1, BlockKind.Content, FramedAddress: "url"),
+        new BlockDescriptor(Embed, Version: 1, BlockKind.Content, FramedAddress: "url"),
         new BlockDescriptor(Interactive, Version: 1, BlockKind.Content),
         new BlockDescriptor(Timeline, Version: 1, BlockKind.Content),
         new BlockDescriptor(Table, Version: 1, BlockKind.Content),

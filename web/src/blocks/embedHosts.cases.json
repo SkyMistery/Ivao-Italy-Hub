@@ -1,0 +1,97 @@
+[
+  {
+    "address": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "framed": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  },
+  {
+    "address": "https://youtube.com/watch?list=PL&v=dQw4w9WgXcQ&t=10",
+    "framed": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  },
+  {
+    "address": "https://m.youtube.com/watch?v=dQw4w9WgXcQ",
+    "framed": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  },
+  {
+    "address": "https://youtu.be/dQw4w9WgXcQ",
+    "framed": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  },
+  {
+    "address": "https://youtu.be/dQw4w9WgXcQ?t=42",
+    "framed": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  },
+  {
+    "address": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "framed": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  },
+  {
+    "address": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+    "framed": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  },
+  {
+    "address": "https://www.youtube.com/shorts/dQw4w9WgXcQ",
+    "framed": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  },
+  {
+    "address": "HTTPS://WWW.YOUTUBE.COM/watch?v=dQw4w9WgXcQ",
+    "framed": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  },
+  {
+    "address": "  https://youtu.be/dQw4w9WgXcQ  ",
+    "framed": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  },
+  { "address": "https://www.youtube.com/", "framed": null },
+  { "address": "https://www.youtube.com/embed", "framed": null },
+  { "address": "https://www.youtube.com/embed/", "framed": null },
+  { "address": "https://www.youtube.com/watch?v=", "framed": null },
+  { "address": "https://www.youtube.com/watch?v=../../elsewhere", "framed": null },
+  { "address": "https://www.youtube.com/watch?v=%3Cscript%3E", "framed": null },
+  { "address": "https://www.youtube.com/watch?v=caf%C3%A9", "framed": null },
+  { "address": "https://www.youtube.com/watch?v=dQw4w9WgXcQ%0A", "framed": null },
+  { "address": "https://youtu.be/%64Qw4w9WgXcQ", "framed": null },
+  {
+    "address": "https://youtu.be\\dQw4w9WgXcQ",
+    "framed": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  },
+  {
+    "address": "https://evil.example@youtu.be/dQw4w9WgXcQ",
+    "framed": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  },
+  {
+    "address": "https://youtu.be:8443/dQw4w9WgXcQ",
+    "framed": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  },
+  { "address": "https://www.youtube.com/embed/caf%C3%A9", "framed": null },
+  {
+    "address": "https://www.youtube.com/watch?v=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "framed": null
+  },
+  { "address": "http://www.youtube.com/watch?v=dQw4w9WgXcQ", "framed": null },
+  { "address": "https://evil-youtube.com/watch?v=dQw4w9WgXcQ", "framed": null },
+  { "address": "https://youtube.com.example.org/watch?v=dQw4w9WgXcQ", "framed": null },
+  { "address": "https://example.org/watch?v=dQw4w9WgXcQ", "framed": null },
+  { "address": "https://evil.example/video.mp4", "framed": null },
+  { "address": "https://evil.example/", "framed": null },
+  { "address": "https://vimeo.com/76979871", "framed": "https://player.vimeo.com/video/76979871" },
+  {
+    "address": "https://player.vimeo.com/video/76979871",
+    "framed": "https://player.vimeo.com/video/76979871"
+  },
+  { "address": "https://vimeo.com/76979871/../..", "framed": null },
+  { "address": "https://vimeo.com/", "framed": null },
+  { "address": "https://vimeo.com/video", "framed": null },
+  {
+    "address": "https://www.twitch.tv/videos/123456789",
+    "framed": "https://player.twitch.tv/?video=123456789&parent=localhost"
+  },
+  {
+    "address": "https://www.twitch.tv/somechannel",
+    "framed": "https://player.twitch.tv/?channel=somechannel&parent=localhost"
+  },
+  { "address": "https://twitch.tv/videos", "framed": null },
+  { "address": "https://twitch.tv/", "framed": null },
+  { "address": "javascript:alert(1)", "framed": null },
+  { "address": "data:text/html,hello", "framed": null },
+  { "address": "/video.mp4", "framed": null },
+  { "address": "not an address at all", "framed": null },
+  { "address": "", "framed": null }
+]
