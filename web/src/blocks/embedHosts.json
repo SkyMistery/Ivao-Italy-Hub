@@ -1,0 +1,31 @@
+{
+  "identifier": "^[A-Za-z0-9_-]{1,64}$",
+  "sites": [
+    {
+      "key": "youtube",
+      "hosts": ["youtube.com", "youtube-nocookie.com", "youtu.be"],
+      "addresses": [
+        { "on": ["youtu.be"], "path": ["{id}"], "frame": "https://www.youtube-nocookie.com/embed/{id}" },
+        { "path": ["embed", "{id}"], "frame": "https://www.youtube-nocookie.com/embed/{id}" },
+        { "path": ["shorts", "{id}"], "frame": "https://www.youtube-nocookie.com/embed/{id}" },
+        { "query": { "v": "{id}" }, "frame": "https://www.youtube-nocookie.com/embed/{id}" }
+      ]
+    },
+    {
+      "key": "vimeo",
+      "hosts": ["vimeo.com", "player.vimeo.com"],
+      "addresses": [
+        { "path": ["video", "{id}"], "frame": "https://player.vimeo.com/video/{id}" },
+        { "path": ["{id}"], "frame": "https://player.vimeo.com/video/{id}" }
+      ]
+    },
+    {
+      "key": "twitch",
+      "hosts": ["twitch.tv", "www.twitch.tv", "player.twitch.tv"],
+      "addresses": [
+        { "path": ["videos", "{video}"], "frame": "https://player.twitch.tv/?video={video}&parent={parent}" },
+        { "path": ["{channel}"], "frame": "https://player.twitch.tv/?channel={channel}&parent={parent}" }
+      ]
+    }
+  ]
+}
