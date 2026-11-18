@@ -1,10 +1,8 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
 import { expect, test } from 'vitest';
 import { z } from 'zod';
 
 import { readFields, type FieldNode } from '../shared/forms';
+import { readServerDescriptors } from '../test/serverBlocks';
 
 import { registry } from './registry';
 
@@ -16,7 +14,7 @@ import { registry } from './registry';
  * and this comparison is part of the decision: it fails when either side changes, and it fails for a new block with a
  * required picture the C# does not declare.
  *
- * The C# is read with a narrow pattern, like `modules/manifest.test.ts`, and the test fails when the pattern stops
+ * The C# is read with a narrow pattern (`test/serverBlocks.ts`), like `modules/manifest.test.ts`, and the test fails when the pattern stops
  * finding a block rather than concluding that the block declares nothing.
  */
 
@@ -24,9 +22,6 @@ interface Registered {
   readonly type: string;
   readonly schema: z.ZodType;
 }
-
-// Vitest runs with `web/` as the working directory.
-const source = resolve(process.cwd(), '../src').split('\\').join('/');
 
 /** `images[].mediaId`, as `RequiredMedia` writes it: the required pictures of one schema. */
 function picturesOf(fields: readonly FieldNode[], prefix = ''): string[] {
@@ -54,41 +49,15 @@ function requiredBySchemas(blocks: readonly Registered[]): Record<string, string
   );
 }
 
-/** What `new BlockDescriptor(…)` says of each block in one C# file, comments left out. */
-function descriptorsIn(path: string): Map<string, string[]> {
-  const code = readFileSync(path, 'utf8').replace(/^\s*\/\/.*$/gm, '');
-  const constants = new Map(
-    [...code.matchAll(/public const string (\w+) = "([^"]+)";/g)].map((match) => [match[1]!, match[2]!]),
-  );
-
-  return new Map(
-    code
-      .split('new BlockDescriptor(')
-      .slice(1)
-      .map((descriptor) => {
-        const named = /^\s*(?:"([^"]+)"|(\w+))/.exec(descriptor);
-        const type = named?.[1] ?? constants.get(named?.[2] ?? '') ?? `unread in ${path}`;
-        // Up to the bracket that closes the list: a path has brackets of its own (`images[].mediaId`).
-        const declared = /RequiredMedia:\s*\[((?:\s*"[^"]*"\s*,?)*)\s*\]/.exec(descriptor)?.[1] ?? '';
-
-        return [type, [...declared.matchAll(/"([^"]+)"/g)].map((match) => match[1]!).sort()];
-      }),
-  );
-}
-
+/** What `RequiredMedia` says of each block the server declares. */
 function readServerBlocks(): Map<string, string[]> {
-  const modules = readdirSync(source, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && entry.name.startsWith('IvaoHub.Modules.'))
-    .flatMap((project) =>
-      readdirSync(`${source}/${project.name}`, { withFileTypes: true })
-        .filter((entry) => entry.isFile() && entry.name.endsWith('Module.cs'))
-        .map((entry) => `${source}/${project.name}/${entry.name}`),
-    );
-
   return new Map(
-    [`${source}/IvaoHub.Core/Content/BlockRegistry.cs`, ...modules].flatMap((path) => [
-      ...descriptorsIn(path),
-    ]),
+    [...readServerDescriptors()].map(([type, descriptor]) => {
+      // Up to the bracket that closes the list: a path has brackets of its own (`images[].mediaId`).
+      const declared = /RequiredMedia:\s*\[((?:\s*"[^"]*"\s*,?)*)\s*\]/.exec(descriptor)?.[1] ?? '';
+
+      return [type, [...declared.matchAll(/"([^"]+)"/g)].map((match) => match[1]!).sort()];
+    }),
   );
 }
 
