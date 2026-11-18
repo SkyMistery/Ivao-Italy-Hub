@@ -1,7 +1,8 @@
 # L'indirizzo che l'hub non incorpora: come lo ferma la pubblicazione
 
 - **Data**: 18 novembre 2026
-- **Stato**: **Proposta**, in attesa della risposta di Carmine
+- **Stato**: **decisa da Carmine in chat al master il 18 novembre 2026**: «A, un JSON solo», scritta sulla issue
+  (https://github.com/SkyMistery/Ivao-Italy-Hub/issues/524#issuecomment-6981533425)
 - **Chi**: la sessione di lavoro della issue #524 (ramo `fix/embed-host-at-publish`)
 - **Classificazione** (`CLAUDE.md` §5): **(c)**. Il server dovrebbe leggere un campo delle `props` e sapere quali indirizzi
   il browser incornicia: oggi lo sa solo `web/src/blocks/allowlist.ts`. La nota `2026-11-07-la-foto-rimasta-da-scegliere`
@@ -72,13 +73,46 @@ Se Carmine sceglie B, il resto (campo dichiarato, chiave, gesti fermati) non cam
 
 ## La risposta di Carmine
 
-(da scrivere, con il link al commento o «in chat al master, <data>»)
+Alle due domande del §5, in chat al master il 18 novembre 2026, scritta dal master sulla issue
+(https://github.com/SkyMistery/Ivao-Italy-Hub/issues/524#issuecomment-6981533425): **«A, un JSON solo»**. Vale anche come sì alla
+domanda 2: `IBlockDescriptor.FramedAddress` è la **seconda eccezione dichiarata** alla regola «il back end non replica gli
+schemi», accanto a `RequiredMedia`, solo per l'indirizzo incorniciato e solo per questo scopo. Si fermano la pubblicazione,
+l'invio all'approvazione e l'approvazione, non il salvataggio della bozza; e si fermano tutti e tre i casi del §1.
+
+## Com'è fatto
+
+- **La fonte unica** è `web/src/blocks/embedHosts.json`: per ogni sito gli host, le forme d'indirizzo che riconosce
+  (`on`, `path` con segmenti letterali o `{nome}`, `query`) e il player che ne esce (`frame`, con `{parent}` riempito dal
+  browser). L'espressione dell'identificativo sta nel file anche lei, scritta con una classe esplicita (`[A-Za-z0-9_-]`):
+  il `\w` di .NET prende le lettere accentate, quello del browser no.
+- ⚠️ **Dove sta il file**: tra i blocchi del nucleo nel browser, e non in `src/IvaoHub.Core/`, come diceva l'esempio del §3.
+  Il server di sviluppo di Vite serve solo i file sotto `web/`: un import da fuori risponde 403 in sviluppo, e aprire
+  `server.fs.allow` alla radice del repository esporrebbe anche `secrets/` e `config/ivao-oauth.json`. Il nucleo C# lo
+  compila dentro di sé come risorsa (`IvaoHub.Core.csproj`, `LogicalName` `IvaoHub.Core.Content.embedHosts.json`), come
+  i file del blocco interattivo: non si consegna un pacchetto senza.
+- **Il browser**: `allowlist.ts` costruisce `EMBED_HOSTS` dal JSON; `hostOf` ed `embedSource` restano quelli di prima, e
+  `allowlist.test.ts` passa senza una riga cambiata.
+- **Il server**: `Core/Content/FramedAddresses.cs` risponde solo «lo incornicerebbe?», con le stesse regole. Il campo è
+  `FramedAddress: "url"` su `video` ed `embed`; `BlockDocumentWalker.BlocksWithAddressesNotFramed` guarda solo quel campo;
+  `ContentPublishService` rifiuta con `errors.content.addressNotFramed` sul percorso del campo, accanto a
+  `mediaToChoose`.
+- **Che cosa tiene insieme le due metà**:
+  - `web/src/blocks/embedHosts.cases.json`, una tabella di indirizzi con il player atteso, letta da `embedHosts.test.ts`
+    (il browser) e da `FramedAddressesTests` (il server): un caso aggiunto lì lo chiedono tutti e due;
+  - `app/blockFramedAddress.test.ts` confronta `FramedAddress` con `.meta({ framed: true })` degli schemi, e cade per un
+    blocco nuovo che ne dimentica una metà;
+  - `embedHosts.test.ts` controlla che ogni player che il JSON sa costruire stia in `frame-src` di `config/security.json`,
+    non solo quelli di un esempio.
+- ⚠️ **Due differenze tra `URL` del browser e `Uri` di .NET**, trovate dalla tabella: una barra rovesciata prima della
+  query per il browser è una barra (il server la tratta così); un escape nel percorso (`/%64Qw…`) il browser lo tiene, e
+  .NET lo decodifica. Il server rifiuta un indirizzo con un `%` prima della query: un identificativo non lo contiene mai, e
+  l'unico indirizzo che così si ferma e il browser incornicerebbe ha un escape in una parte che nessuno legge.
 
 ## Da portare nel piano
 
 - **§9.3** (modello dei contenuti) e **§16** (meccanismi generici): un Video o un Embed con un indirizzo che l'hub non
   incornicia ferma la pubblicazione e l'invio all'approvazione; il blocco dichiara il campo in `IBlockDescriptor.FramedAddress`.
-- **`CLAUDE.md` §2**, alla regola «the back end never replicates the schemas in C#»: la seconda eccezione dichiarata, accanto
-  a `RequiredMedia`, e (con A) dove sta l'elenco degli host.
-- **`docs/UI-GUIDELINES.md`**, all'elenco degli host di `video` ed `embed`: dove si aggiunge un sito.
+- **`CLAUDE.md` §2**, alla regola «the back end never replicates the schemas in C#»: la seconda eccezione dichiarata,
+  `FramedAddress`, accanto a `RequiredMedia`, e la lista degli host in `web/src/blocks/embedHosts.json`, letta dalle due
+  parti. La modifica la fa il master dopo il merge. (`docs/UI-GUIDELINES.md` lo dice già, in questa PR.)
 - **Le note di rilascio**: una pagina già online con un indirizzo così resta online com'è; si ferma alla ripubblicazione.
