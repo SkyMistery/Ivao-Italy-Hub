@@ -2,7 +2,10 @@
 
 **Data:** 18 novembre 2026 — fase di test, fase 5 della nota `2026-10-22-il-piano-dopo-la-prova-dello-staff` (§4.E, punto c), parte
 del nucleo.
-**Stato:** **Proposta**. Le domande ⚖️ del §6 aspettano la risposta di Carmine; il codice viene dopo.
+**Stato:** **Decisa** da Carmine il 18 novembre 2026, tutte e quattro le domande del §6 come raccomandato (§7, [risposta sulla
+PR #536][r1]). Il codice del nucleo segue in una pull request sua.
+
+[r1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/536#issuecomment-6980596519
 **Regola applicata:** `CLAUDE.md` §5, caso **(c)**: un meccanismo nuovo del nucleo (una lettura del calendario per il selettore, un
 «blocca» che oggi non esiste, un campo del form che non è più quello del browser). Poi, in fasi dei moduli, l'uso in Training ed Eventi.
 
@@ -99,6 +102,17 @@ nuovo campo si scrive e si legge nell'ordine della divisione (`dd/mm/yyyy`), e v
    e un evento IVAO si legge in Zulu).
 4. **Il resto del §3** (le regole del tempo, il campo solo dove lo schema lo chiede, il calendario di Atmosphere senza componenti
    nuovi, la data scritta a mano nell'ordine della divisione): va bene come proposto?
+
+## 7. La risposta di Carmine
+
+Il 18 novembre 2026, in chat al master e poi riportata sulla PR ([commento][r1]): **«Sì, tutte e quattro»**, e alla sessione di
+lavoro «tutte come raccomandi, procedi col codice».
+
+1. **Il tipo** del calendario dice «blocca»: una casella nella schermata dei tipi.
+2. Ognuno vede occupato **solo ciò che può già leggere**; il controllo sul server legge come chi scrive.
+3. Giorni e ore in **UTC**, con l'ora della divisione accanto.
+4. **Il resto del §3 come proposto**: una voce senza fine occupa la sua ora, una di tutto il giorno il giorno, una bozza non occupa
+   niente; il calendario di Atmosphere senza componenti nuovi; la data scritta a mano nell'ordine della divisione.
 
 ## Da portare nel piano
 
