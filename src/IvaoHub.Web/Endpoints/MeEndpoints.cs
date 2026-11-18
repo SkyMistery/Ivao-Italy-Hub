@@ -125,7 +125,7 @@ internal static class MeEndpoints
                     .Where(kind => kind.IsActive)
                     .OrderBy(kind => kind.Sort)
                     .ThenBy(kind => kind.Key)
-                    .Select(kind => new BootstrapCalendarKind(kind.Key, kind.Label, kind.Colour))
+                    .Select(kind => new BootstrapCalendarKind(kind.Key, kind.Label, kind.Colour, kind.Blocks))
                     .ToListAsync(cancellationToken)],
                 Version: build.Version,
                 Commit: build.ShortCommit));
@@ -230,7 +230,10 @@ internal sealed record BootstrapResponse(
 internal sealed record BootstrapCalendarKind(
     string Key,
     IReadOnlyDictionary<string, string> Label,
-    string Colour);
+    string Colour,
+    // Whether its entries take their hours from the date picker (note 2026-11-18-il-calendario-libero-e-occupato): the legend
+    // says it next to the colour.
+    bool Blocks);
 
 internal sealed record BootstrapUser(
     int Vid,

@@ -1,5 +1,10 @@
+using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data.Crud;
+using IvaoHub.Core.Localization;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 
 namespace IvaoHub.Core.Content;
@@ -24,7 +29,7 @@ public static class CalendarEndpoints
 
         var mapper = new CalendarMapper();
 
-        return app.MapCrud<CalendarEntry, CalendarListDto, CalendarDetailDto, CalendarWriteDto>(
+        var group = app.MapCrud<CalendarEntry, CalendarListDto, CalendarDetailDto, CalendarWriteDto>(
             Pattern,
             options =>
             {
@@ -71,5 +76,59 @@ public static class CalendarEndpoints
                     }
                 };
             });
+
+        // ⚠️ One hand written read, counted: the free and the busy for the date picker of the form (note
+        // 2026-11-18-il-calendario-libero-e-occupato). Signed in at the door and nothing more, because the global query filter
+        // is the whole answer to "what may this person see": a member sees the public and the members' entries, the staff
+        // theirs, a department its own. Not Calendar.View, which is the back office's list, and which a trainee choosing a
+        // date does not hold.
+        group.MapGet("/busy", BusyAsync)
+            .WithName("CalendarBusy")
+            .Produces<IReadOnlyList<CalendarBusyDto>>()
+            .ProducesValidationProblem()
+            .RequireAuthorization(HubPolicies.SignedIn);
+
+        return group;
+    }
+
+    private static async Task<Results<Ok<IReadOnlyList<CalendarBusyDto>>, ValidationProblem>> BusyAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        string? exceptModule,
+        string? exceptId,
+        CalendarBusy busy,
+        LocaleCatalog catalog,
+        ICurrentUser currentUser,
+        HttpContext http)
+    {
+        var refusals = new Refusals();
+        if (fromUtc is null)
+        {
+            refusals.Add("fromUtc", "errors.required");
+        }
+
+        if (toUtc is null)
+        {
+            refusals.Add("toUtc", "errors.required");
+        }
+
+        if (fromUtc is { } from && toUtc is { } to && !CalendarBusy.IsWindow(from, to))
+        {
+            refusals.Add("toUtc", CalendarBusy.WindowKey);
+        }
+
+        if (!refusals.IsEmpty)
+        {
+            return TypedResults.ValidationProblem(
+                refusals.Errors,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.ValidationTitleKey));
+        }
+
+        // Both halves or neither: a module without an id would leave out every entry it ever projected.
+        var except = string.IsNullOrEmpty(exceptModule) || string.IsNullOrEmpty(exceptId)
+            ? null
+            : new CalendarSource(exceptModule, exceptId);
+
+        return TypedResults.Ok(await busy.ReadAsync(fromUtc!.Value, toUtc!.Value, except, http.RequestAborted));
     }
 }
