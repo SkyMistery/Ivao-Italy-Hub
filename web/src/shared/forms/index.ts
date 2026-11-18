@@ -1,4 +1,5 @@
 export { SchemaForm } from './SchemaForm';
+export type { CalendarSource, FormCalendar } from './busy';
 export { LocaleFields } from './LocaleFields';
 export { LocaleTabs } from './LocaleTabs';
 export { ProblemAlert } from './ProblemAlert';

@@ -115,7 +115,7 @@ describe('CalendarView', () => {
         view="agenda"
         timezone="Asia/Tokyo"
         empty="Nothing"
-        kinds={[{ key: 'meeting', label: { en: 'Meeting' }, colour: 'indigo' }]}
+        kinds={[{ key: 'meeting', label: { en: 'Meeting' }, colour: 'indigo', blocks: false }]}
       />,
     );
 
@@ -170,8 +170,8 @@ describe('CalendarView', () => {
 
 describe('the chip of a kind', () => {
   const vocabulary = [
-    { key: 'meeting', label: { en: 'Meeting' }, colour: 'indigo' },
-    { key: 'deadline', label: { en: 'Deadline' }, colour: 'orange' },
+    { key: 'meeting', label: { en: 'Meeting' }, colour: 'indigo', blocks: false },
+    { key: 'deadline', label: { en: 'Deadline' }, colour: 'orange', blocks: false },
   ];
 
   it('takes the colour the division chose for that word', () => {

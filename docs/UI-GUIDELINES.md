@@ -418,6 +418,14 @@ What the schema may say about how a field is drawn:
   local time underneath, which is the rule every list follows; a day does not, because "the same day
   elsewhere" is not a fact a day has, and echoing one is only ever a chance to read the wrong day.
   An optional one has a button beside it that takes it off. Both need `division` on `SchemaForm`;
+- `.meta({ datetime: true, calendar: true })` (or `date: true, calendar: true`) is a date chosen on the **free and busy
+  calendar** of the division: a box where it is written by hand in the division's order (`31/10/2026 14:05`, UTC) and,
+  beside it, a picker — Atmosphere's `Calendar` in a popover — with the free days in green, a dot of each kind's colour on a
+  busy day, the legend of the month, and the twenty-four UTC hours of the day chosen; an hour taken by an entry of a kind
+  that **blocks** cannot be chosen, and the server refuses it too. Each person sees busy only what they may read in the
+  calendar. Only where a date can be busy — the start of an event or of a session, not the opening of the bookings. The
+  screen hands `SchemaForm` `calendar`: the kinds of the bootstrap and, when a row is being edited, its own source, so that
+  its entry does not occupy its own date. The module's validator asks `CalendarBusy.BlockingAsync` on the same field;
 - `localizedObject({ ... })` is a small object per language: language tabs, and inside each of them
   the generator again. `seo` is the first, and it is how a translated JSON column becomes fields a
   coordinator can fill in rather than JSON they have to write;

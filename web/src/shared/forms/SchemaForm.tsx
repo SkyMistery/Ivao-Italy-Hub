@@ -8,12 +8,15 @@ import {
   H4,
   Input,
   Label,
+  PopoverContent,
+  PopoverRoot,
+  PopoverTrigger,
   Select,
   Subtle,
   Switch,
   Textarea,
 } from '@ivao/atmosphere-react';
-import { ChevronDown, ChevronRight, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronRight, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   Controller,
@@ -29,12 +32,15 @@ import {
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import type { z } from 'zod';
 
+import { parseMoment, writeMoment } from '../i18n/parseMoment';
 import { formatMoment } from '../i18n/useMoment';
 import { ICON_NAMES } from '../icons';
 import { iconGlyph } from '../icons/glyphs';
 import { MediaPicker, type MediaLibraryQuery } from '../ui/MediaPicker';
 import { narrowLibrary, picturesOnly } from '../ui/narrowLibrary';
 
+import { BusyCalendar } from './BusyCalendar';
+import type { FormCalendar } from './busy';
 import { LocaleFields } from './LocaleFields';
 import { LocaleTabs } from './LocaleTabs';
 import { ProblemAlert } from './ProblemAlert';
@@ -79,6 +85,8 @@ interface FormEnvironment {
   suggestSearching?: boolean | undefined;
   /** What a `creatable` field draws under its boxes to make a new value, and tick it (`choose`). */
   createChoice?: ((field: string, choose: (value: string) => void) => React.ReactNode) | undefined;
+  /** What a `calendar: true` date field draws its free and busy days with. */
+  calendar?: FormCalendar | undefined;
   /** How many times the form has taken the row again (`useNewerRow`). */
   rowsTaken: number;
 }
@@ -113,6 +121,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   onSuggestSearch,
   suggestSearching,
   createChoice,
+  calendar,
 }: {
   schema: z.ZodType<TValues, TValues>;
   defaults: TValues;
@@ -186,6 +195,12 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
    * screen that gives nothing leaves the field as it always was.
    */
   createChoice?: (field: string, choose: (value: string) => void) => React.ReactNode;
+  /**
+   * The ninth extension of the generator (note 2026-11-18-il-calendario-libero-e-occupato): what a `calendar: true` date field
+   * draws its free and busy days with — the division's calendar vocabulary, from the bootstrap, and the row being written, so
+   * that its own entry does not occupy its own date. A form with such a field and nothing here throws, and says why.
+   */
+  calendar?: FormCalendar;
 }) {
   const { t } = useTranslation();
   // A saved value comes back without the fields its save left out: they are put back empty, or a translated one would
@@ -211,6 +226,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
     onSuggestSearch,
     suggestSearching,
     createChoice,
+    calendar,
     rowsTaken,
   };
 
@@ -812,6 +828,7 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
           error={error}
           locale={i18n.language}
           timezone={env.division?.timezone}
+          calendar={env.calendar}
           rowsTaken={env.rowsTaken}
         />
       );
@@ -1521,6 +1538,7 @@ function Instant({
   error,
   locale,
   timezone,
+  calendar,
   rowsTaken,
 }: {
   node: Extract<FieldNode, { kind: 'instant' }>;
@@ -1530,6 +1548,7 @@ function Instant({
   error: string | undefined;
   locale: string;
   timezone: string | undefined;
+  calendar: FormCalendar | undefined;
   rowsTaken: number;
 }) {
   const { t } = useTranslation();
@@ -1538,6 +1557,36 @@ function Instant({
     throw new Error(
       `SchemaForm draws the instant at "${node.path}" only when it is given division.timezone: ` +
         'a UTC time with nothing beside it is a time somebody has to convert in their head.',
+    );
+  }
+
+  if (node.calendar) {
+    if (calendar === undefined) {
+      throw new Error(
+        `SchemaForm draws the date at "${node.path}" on the free and busy calendar only when it is given calendar: ` +
+          "the division's vocabulary, from the bootstrap, is what the colours and the legend come from.",
+      );
+    }
+
+    return (
+      <Row id={name} label={label} hint={hint} error={error}>
+        <HeldField
+          name={name}
+          rowsTaken={rowsTaken}
+          render={(held, field) => (
+            <BusyInstant
+              id={name}
+              label={label}
+              iso={typeof held === 'string' ? held : ''}
+              field={field}
+              node={node}
+              locale={locale}
+              timezone={timezone}
+              calendar={calendar}
+            />
+          )}
+        />
+      </Row>
     );
   }
 
@@ -1588,6 +1637,142 @@ function Instant({
         }}
       />
     </Row>
+  );
+}
+
+/**
+ * A date chosen on the free and busy calendar (note 2026-11-18-il-calendario-libero-e-occupato): a box where the date is
+ * written by hand in the division's order — `31/10/2026 14:05`, UTC — and read back with `parseMoment`, and beside it the
+ * button that opens the picker. What the box holds is a text until it is read: a text that is not a date says so under the box
+ * and changes nothing, and Enter does not save it. The value stays the ISO UTC instant every other instant field holds.
+ */
+function BusyInstant({
+  id,
+  label,
+  iso,
+  field,
+  node,
+  locale,
+  timezone,
+  calendar,
+}: {
+  id: string;
+  label: string;
+  iso: string;
+  field: ControllerRenderProps;
+  node: Extract<FieldNode, { kind: 'instant' }>;
+  locale: string;
+  timezone: string | undefined;
+  calendar: FormCalendar;
+}) {
+  const { t } = useTranslation();
+  const shown = iso === '' ? '' : writeMoment(iso, node.withTime);
+  // What is being written, while it is being written; the value's own text otherwise, so a value set by the picker shows.
+  const [typing, setTyping] = useState<string | null>(null);
+  const [unreadable, setUnreadable] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  // Read what was written: a date is held, nothing written clears the field, anything else is said and changes nothing.
+  const commit = (): boolean => {
+    if (typing === null) {
+      return true;
+    }
+
+    const read = parseMoment(typing, node.withTime);
+    if (read === null) {
+      setUnreadable(true);
+      return false;
+    }
+
+    setUnreadable(false);
+    setTyping(null);
+    field.onChange(read);
+    return true;
+  };
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          id={id}
+          className="max-w-xs tabular-nums"
+          value={typing ?? shown}
+          placeholder={writeMoment(new Date().toISOString().slice(0, 13) + ':00:00Z', node.withTime)}
+          aria-invalid={unreadable || undefined}
+          onChange={(event) => {
+            setTyping(event.target.value);
+            setUnreadable(false);
+          }}
+          onBlur={() => {
+            commit();
+            field.onBlur();
+          }}
+          onKeyDown={(event) => {
+            // Enter saves the form: what was written is read first, and a text that is not a date saves nothing.
+            if (event.key === 'Enter' && !commit()) {
+              event.preventDefault();
+            }
+          }}
+        />
+        <PopoverRoot open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label={`${t('form.busy.open')} (${label})`}
+            >
+              <CalendarDays aria-hidden className="size-4" />
+            </Button>
+          </PopoverTrigger>
+          {/* A month, its legend and twenty-four hours are taller than the room left above or below a field low on the
+              screen: the picker scrolls inside the height the popover has, rather than leaving the window. */}
+          <PopoverContent
+            align="start"
+            collisionPadding={8}
+            className="max-h-(--radix-popover-content-available-height) w-auto max-w-[min(100vw-2rem,24rem)] overflow-y-auto"
+          >
+            <BusyCalendar
+              value={iso}
+              withTime={node.withTime}
+              calendar={calendar}
+              onPick={(picked) => {
+                setTyping(null);
+                setUnreadable(false);
+                field.onChange(picked);
+                // The picker answers once it has the whole value: the day of a date, the day and the hour of an instant.
+                setOpen(false);
+              }}
+            />
+          </PopoverContent>
+        </PopoverRoot>
+        {node.optional && iso !== '' ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label={`${t('form.clearDate')} (${label})`}
+            onClick={() => {
+              setTyping(null);
+              setUnreadable(false);
+              field.onChange(undefined);
+            }}
+          >
+            {t('form.clearDate')}
+          </Button>
+        ) : null}
+      </div>
+      {unreadable ? (
+        <p role="alert" className="text-destructive text-sm">
+          {t(node.withTime ? 'form.busy.unreadableMoment' : 'form.busy.unreadableDay', {
+            example: writeMoment('2026-10-31T14:05:00Z', node.withTime),
+          })}
+        </p>
+      ) : null}
+      {node.withTime && iso !== '' && timezone !== undefined ? (
+        <Subtle className="tabular-nums">{localTime(iso, locale, timezone)}</Subtle>
+      ) : null}
+    </div>
   );
 }
 

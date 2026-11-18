@@ -104,7 +104,12 @@ const json = (body: unknown, status = 200) => ({
 });
 
 /** The division's word for the kind of these events, as the bootstrap carries it. */
-const rfo = { key: 'rfo', label: { en: 'Real Flight Ops', it: 'Real Flight Ops' }, colour: 'blue' };
+const rfo = {
+  key: 'rfo',
+  label: { en: 'Real Flight Ops', it: 'Real Flight Ops' },
+  colour: 'blue',
+  blocks: false,
+};
 
 /** A visitor of a division whose calendar has a word for the kind of these events. */
 const visitorBootstrap = { ...anonymousBootstrap, calendarKinds: [...anonymousBootstrap.calendarKinds, rfo] };
