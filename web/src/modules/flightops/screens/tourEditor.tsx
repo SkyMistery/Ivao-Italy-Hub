@@ -529,7 +529,8 @@ function CheckStep({
       {refusal === null ? null : <Notice tone="error" title={refusal} />}
       {writes.tour && tour.purgedAt === null ? (
         <div>
-          <Button disabled={status.isPending} onClick={() => status.mutate('Ready')}>
+          {/* Off while something is listed above: the server would refuse it for the same reasons. */}
+          <Button disabled={status.isPending || problems.length > 0} onClick={() => status.mutate('Ready')}>
             {t('flightops:tours.actions.ready')}
           </Button>
         </div>
@@ -793,8 +794,9 @@ export function TourEditor() {
       {/* The open step is in the address, so a reload or a link lands on it; a briefing not saved is asked about
           before the step changes (`TourBriefing`). Only the open step is mounted. */}
       <Tabs
-        // ⚠️ `w-full` is not decoration: Atmosphere pins `Tabs` to `w-[400px]` (HANDOFF §13).
-        className="w-full"
+        // ⚠️ `w-full` is not decoration: Atmosphere pins `Tabs` to `w-[400px]` (HANDOFF §13). The six steps go on two
+        // lines where they do not fit on one (a tablet's width): Atmosphere's list keeps them on one and cuts the last off.
+        className="w-full [&_[role=tablist]]:h-auto [&_[role=tablist]]:max-w-full [&_[role=tablist]]:flex-wrap"
         value={step}
         onValueChange={(target) => goTo(target as TourStep)}
         tabs={Object.fromEntries(
