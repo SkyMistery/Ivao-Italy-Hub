@@ -43,10 +43,15 @@ export function dayKeyOfPicker(day: Date): DayKey {
   return `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}`;
 }
 
-/** What one day of the picker shows: the kinds that take some of it, in the vocabulary's order, and whether it is all blocked. */
+/**
+ * What one day of the picker shows: the kinds that take some of it, in the vocabulary's order; whether blocking stretches take
+ * all of it — no hour of it can be chosen —; and whether one takes some of it — a day without a time, which takes the whole day
+ * (`CalendarBusy.BlockingAsync` with `allDay`), cannot be chosen.
+ */
 export interface BusyDay {
   kinds: string[];
   blocked: boolean;
+  blocking: boolean;
 }
 
 /** What one hour of the picker shows: the stretches that take some of it, and whether one of them blocks it. */
@@ -126,6 +131,7 @@ export function busyDays(
         {
           kinds: inVocabularyOrder(found, vocabulary),
           blocked: covered(touching.get(key) ?? [], from, from + DAY),
+          blocking: (touching.get(key) ?? []).some((stretch) => stretch.blocks),
         },
       ];
     }),

@@ -100,6 +100,32 @@ describe('a date on the free and busy calendar', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  test('the button saves nothing either while the box holds a text that is not a date, and saves once it is corrected', async () => {
+    // The review of #538, finding 2: the click blurs the box first, and the form used to send the value it held before.
+    const user = userEvent.setup();
+    const onSubmit = draw();
+
+    const box = screen.getByRole('textbox');
+    await user.clear(box);
+    await user.type(box, 'next friday');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('31/10/2026 14:05');
+    expect(box).toHaveAttribute('aria-invalid', 'true');
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    // A second click changes nothing: the refusal is put back on the field each time.
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    await user.clear(box);
+    await user.type(box, '22/11/2026 18:00');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({ meetsAt: '2026-11-22T18:00:00Z' }));
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   test('asks the calendar for the weeks of the month, leaving out the row being written', async () => {
     const user = userEvent.setup();
     draw();
@@ -147,6 +173,36 @@ describe('a date on the free and busy calendar', () => {
     expect(screen.getByRole('textbox')).toHaveValue('20/11/2026 11:00');
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({ meetsAt: '2026-11-20T11:00:00Z' }));
+  });
+
+  test('a date without a time cannot be put on a day a blocking kind touches, since it takes the whole day', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn(() => Promise.resolve());
+    renderWithProviders(
+      <SchemaForm
+        schema={z.object({ on: z.string().optional().meta({ date: true, calendar: true }) })}
+        defaults={{ on: '2026-11-19T00:00:00Z' }}
+        locales={['en']}
+        labels="test"
+        submitLabel="Save"
+        onSubmit={onSubmit}
+        division={{ defaultLocale: 'en', timezone: 'Europe/Rome' }}
+        calendar={{ kinds }}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /Choose on the calendar/ }));
+    const picker = await screen.findByTestId('busy-calendar');
+
+    // The 20th has a blocking event from 14:00 to 16:00: an instant could still take its morning, a day cannot.
+    await waitFor(() =>
+      expect(
+        within(picker).getByRole('button', { name: /November 20, 2026, blocked all day/ }),
+      ).toBeDisabled(),
+    );
+
+    await user.click(within(picker).getByRole('button', { name: /November 21, 2026, Free/ }));
+    expect(screen.getByRole('textbox')).toHaveValue('21/11/2026');
   });
 
   test('a form with such a field and no calendar says why it cannot draw it', () => {

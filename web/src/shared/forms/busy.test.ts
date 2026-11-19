@@ -68,6 +68,9 @@ describe('busyDays', () => {
     // Taken all day by a kind that does not block: busy, and still to be chosen.
     expect(days.get('2026-11-21')?.blocked).toBe(false);
     expect(days.get('2026-11-22')?.blocked).toBe(false);
+    // A blocking stretch on part of a day: no hour of it is lost to an instant, but a date without a time takes the day.
+    expect(days.get('2026-11-22')?.blocking).toBe(true);
+    expect(days.get('2026-11-21')?.blocking).toBe(false);
   });
 
   test("lists a day's kinds once each, in the vocabulary's order, the unknown ones last", () => {

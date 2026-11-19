@@ -105,7 +105,12 @@ export function BusyCalendar({
   const days = busyDays(stretches, calendar.kinds);
 
   const isFree = (date: Date) => !days.has(dayKeyOfPicker(date));
-  const isBlocked = (date: Date) => days.get(dayKeyOfPicker(date))?.blocked === true;
+  // An instant cannot be put on a day with no free hour; a day without a time takes the whole day, so a day any blocking entry
+  // touches cannot be chosen — the same answer the server gives (`BlockingAsync` with `allDay`).
+  const isBlocked = (date: Date) => {
+    const found = days.get(dayKeyOfPicker(date));
+    return found !== undefined && (withTime ? found.blocked : found.blocking);
+  };
 
   const kindLabel = (kind: string) => read(calendar.kinds.find((word) => word.key === kind)?.label) || kind;
   const longDay = (date: Date) => new Intl.DateTimeFormat(i18n.language, { dateStyle: 'full' }).format(date);
@@ -148,7 +153,7 @@ export function BusyCalendar({
               const state =
                 found === undefined
                   ? t('form.busy.free')
-                  : found.blocked
+                  : isBlocked(date)
                     ? t('form.busy.blockedDay')
                     : t('form.busy.busyDay', { kinds: found.kinds.map(kindLabel).join(', ') });
               return `${longDay(date)}, ${state}`;

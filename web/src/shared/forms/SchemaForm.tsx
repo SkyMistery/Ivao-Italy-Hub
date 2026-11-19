@@ -87,6 +87,12 @@ interface FormEnvironment {
   createChoice?: ((field: string, choose: (value: string) => void) => React.ReactNode) | undefined;
   /** What a `calendar: true` date field draws its free and busy days with. */
   calendar?: FormCalendar | undefined;
+  /**
+   * A box that holds a text which is not a value yet says so here, with the words of its refusal, and takes it back with null
+   * (`BusyInstant`). While one is said, the form saves nothing: the refusal is put back on its field at every submit, since the
+   * schema only sees the value the box held before, and would let it through.
+   */
+  unreadable: (path: string, message: string | null) => void;
   /** How many times the form has taken the row again (`useNewerRow`). */
   rowsTaken: number;
 }
@@ -215,6 +221,9 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
     mode: onChange === undefined ? 'onSubmit' : 'onChange',
   });
   const rowsTaken = useNewerRow(form, opened, onChange !== undefined);
+  // The boxes holding a text that is not a value yet (`FormEnvironment.unreadable`): one map for the life of the form, read and
+  // written only by handlers, never while drawing.
+  const [unreadable] = useState(() => new Map<string, string>());
   const fields = readFields(schema);
   const problem = useProblemDetails(form, (field) => whereDrawn(fields, field, form.getValues()));
   const env: FormEnvironment = {
@@ -227,6 +236,13 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
     suggestSearching,
     createChoice,
     calendar,
+    unreadable: (path, message) => {
+      if (message === null) {
+        unreadable.delete(path);
+      } else {
+        unreadable.set(path, message);
+      }
+    },
     rowsTaken,
   };
 
@@ -240,6 +256,15 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
 
   const submit = form.handleSubmit(async (values) => {
     if (onSubmit === undefined) {
+      return;
+    }
+
+    // A box holding a text that is not a date (the review of #538, finding 2): the schema passed the value it held before, so the
+    // refusal goes back on the field and nothing is sent — Enter, the button and a button elsewhere alike.
+    if (unreadable.size > 0) {
+      for (const [path, message] of unreadable) {
+        form.setError(path as never, { type: 'manual', message }, { shouldFocus: true });
+      }
       return;
     }
 
@@ -829,6 +854,7 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
           locale={i18n.language}
           timezone={env.division?.timezone}
           calendar={env.calendar}
+          unreadable={env.unreadable}
           rowsTaken={env.rowsTaken}
         />
       );
@@ -1539,6 +1565,7 @@ function Instant({
   locale,
   timezone,
   calendar,
+  unreadable,
   rowsTaken,
 }: {
   node: Extract<FieldNode, { kind: 'instant' }>;
@@ -1549,6 +1576,7 @@ function Instant({
   locale: string;
   timezone: string | undefined;
   calendar: FormCalendar | undefined;
+  unreadable: FormEnvironment['unreadable'];
   rowsTaken: number;
 }) {
   const { t } = useTranslation();
@@ -1583,6 +1611,7 @@ function Instant({
               locale={locale}
               timezone={timezone}
               calendar={calendar}
+              unreadable={unreadable}
             />
           )}
         />
@@ -1655,6 +1684,7 @@ function BusyInstant({
   locale,
   timezone,
   calendar,
+  unreadable,
 }: {
   id: string;
   label: string;
@@ -1664,15 +1694,27 @@ function BusyInstant({
   locale: string;
   timezone: string | undefined;
   calendar: FormCalendar;
+  unreadable: FormEnvironment['unreadable'];
 }) {
   const { t } = useTranslation();
+  const { setError, clearErrors } = useFormContext();
   const shown = iso === '' ? '' : writeMoment(iso, node.withTime);
   // What is being written, while it is being written; the value's own text otherwise, so a value set by the picker shows.
   const [typing, setTyping] = useState<string | null>(null);
-  const [unreadable, setUnreadable] = useState(false);
+  const [refused, setRefused] = useState(false);
   const [open, setOpen] = useState(false);
 
-  // Read what was written: a date is held, nothing written clears the field, anything else is said and changes nothing.
+  // Nothing unread in the box any more: the field's refusal goes, and the form may save again.
+  const settle = () => {
+    if (refused) {
+      setRefused(false);
+      unreadable(id, null);
+      clearErrors(id);
+    }
+  };
+
+  // Read what was written: a date is held, nothing written clears the field, anything else is refused on the field — with the
+  // core's words, from its language files — and stops the save until it is corrected (the review of #538, finding 2).
   const commit = (): boolean => {
     if (typing === null) {
       return true;
@@ -1680,11 +1722,16 @@ function BusyInstant({
 
     const read = parseMoment(typing, node.withTime);
     if (read === null) {
-      setUnreadable(true);
+      const message = t(node.withTime ? 'form.busy.unreadableMoment' : 'form.busy.unreadableDay', {
+        example: writeMoment('2026-10-31T14:05:00Z', node.withTime),
+      });
+      setRefused(true);
+      unreadable(id, message);
+      setError(id, { type: 'manual', message });
       return false;
     }
 
-    setUnreadable(false);
+    settle();
     setTyping(null);
     field.onChange(read);
     return true;
@@ -1698,10 +1745,9 @@ function BusyInstant({
           className="max-w-xs tabular-nums"
           value={typing ?? shown}
           placeholder={writeMoment(new Date().toISOString().slice(0, 13) + ':00:00Z', node.withTime)}
-          aria-invalid={unreadable || undefined}
+          aria-invalid={refused || undefined}
           onChange={(event) => {
             setTyping(event.target.value);
-            setUnreadable(false);
           }}
           onBlur={() => {
             commit();
@@ -1737,8 +1783,8 @@ function BusyInstant({
               withTime={node.withTime}
               calendar={calendar}
               onPick={(picked) => {
+                settle();
                 setTyping(null);
-                setUnreadable(false);
                 field.onChange(picked);
                 // The picker answers once it has the whole value: the day of a date, the day and the hour of an instant.
                 setOpen(false);
@@ -1753,8 +1799,8 @@ function BusyInstant({
             size="sm"
             aria-label={`${t('form.clearDate')} (${label})`}
             onClick={() => {
+              settle();
               setTyping(null);
-              setUnreadable(false);
               field.onChange(undefined);
             }}
           >
@@ -1762,13 +1808,6 @@ function BusyInstant({
           </Button>
         ) : null}
       </div>
-      {unreadable ? (
-        <p role="alert" className="text-destructive text-sm">
-          {t(node.withTime ? 'form.busy.unreadableMoment' : 'form.busy.unreadableDay', {
-            example: writeMoment('2026-10-31T14:05:00Z', node.withTime),
-          })}
-        </p>
-      ) : null}
       {node.withTime && iso !== '' && timezone !== undefined ? (
         <Subtle className="tabular-nums">{localTime(iso, locale, timezone)}</Subtle>
       ) : null}
