@@ -20,14 +20,32 @@ export type ContentScreenKind = (typeof CONTENT_SCREEN_KINDS)[number];
 /** The three states of a row; `Ready` is a page waiting for approval (G19). */
 export const CONTENT_STATUSES = ['Draft', 'Ready', 'Published'] as const;
 
+/**
+ * How the pages are shown (design `13-design-struttura-del-sito.md` §3.2): as the tree of the site, the default, or as the
+ * list that pages, sorts and filters. Only the pages have a tree: news and documents live under `/news` and `/documents`.
+ */
+export const CONTENT_VIEWS = ['tree', 'list'] as const;
+
+export type ContentView = (typeof CONTENT_VIEWS)[number];
+
 export const contentSearchSchema = departmentListSearchSchema.extend({
   // Read as the default when the address carries something else, as the parameters of every list are (issue #332, item 5).
   kind: z.enum(CONTENT_SCREEN_KINDS).default('Page').catch('Page'),
+  // Optional and not defaulted: a default would be written into every address of the list, news and documents included.
+  view: z.enum(CONTENT_VIEWS).optional().catch(undefined),
   // Optional and not defaulted, like the department: every state unless one is asked for.
   status: z.enum(CONTENT_STATUSES).optional().catch(undefined),
 });
 
 export type ContentSearch = z.output<typeof contentSearchSchema>;
+
+/**
+ * The view of the pages the address asks for, or the one it gets by default: the tree, unless a department is chosen —
+ * the entry of a department in the sidebar opens its own list (design 13 §3.2).
+ */
+export function defaultView(search: Pick<ContentSearch, 'view' | 'department'>): ContentView {
+  return search.view ?? (search.department === undefined ? 'tree' : 'list');
+}
 
 /** The kinds a template, or a row, can be. Not `Dashboard`: a department has one home, seeded. */
 export const ROW_KINDS = ['Page', 'News', 'Document'] as const;
@@ -46,6 +64,9 @@ export const contentEditorSearchSchema = z.object({
   kind: z.enum(ROW_KINDS).optional(),
   template: z.boolean().optional(),
   department: z.enum(DEPARTMENTS).optional(),
+  // The page a new page starts under, from «New page here» on the tree of the site (design 13 §3.2). A suggestion the
+  // form starts from, not a rule: the server checks the place like any other, and a number that is no page is refused.
+  parent: z.coerce.number().int().positive().optional().catch(undefined),
 });
 
 export type ContentEditorSearch = z.output<typeof contentEditorSearchSchema>;

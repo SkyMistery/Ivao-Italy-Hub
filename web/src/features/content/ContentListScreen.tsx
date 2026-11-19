@@ -1,4 +1,4 @@
-import { Label, Select } from '@ivao/atmosphere-react';
+import { Button, Label, Select } from '@ivao/atmosphere-react';
 import { Plus } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,13 +17,23 @@ import { PageShell } from '../../shared/ui';
 import {
   CONTENT_SCREEN_KINDS,
   CONTENT_STATUSES,
+  CONTENT_VIEWS,
+  defaultView,
   ROW_KINDS,
   type ContentSearch,
+  type ContentView,
   type RowKind,
 } from './contentSearch';
 import { ContentSettingsPanel } from './ContentSettingsPanel';
 import { CONTENT_KINDS, TEMPLATE_COLUMNS } from './kinds';
-import { contentListQuery, templateListQuery, type ContentListDto, type ContentStatus } from './queries';
+import { MAX_DEPTH, siteTree, type SiteTreeRow } from './pageTree';
+import {
+  contentListQuery,
+  siteTreeQuery,
+  templateListQuery,
+  type ContentListDto,
+  type ContentStatus,
+} from './queries';
 import { MANAGE_TEMPLATES } from './templateRules';
 import { TemplatePicker } from './TemplatePicker';
 
@@ -32,6 +42,19 @@ const CONTENT_EDIT = 'Content.Edit';
 
 /** Who may leave a page at the top of the site (note 2026-09-13-contenuti-centralizzati, 3.7). */
 const CONTENT_APPROVE = 'Content.Approve';
+
+/**
+ * The columns of the tree of the site (design `13-design-struttura-del-sito.md` §3.2): the title a step right for each
+ * level, the whole address in place of the slug, and whether a row is a page of the content or a page written in code.
+ */
+const TREE_COLUMNS: readonly ColumnSpec<SiteTreeRow>[] = [
+  col.localized('title', { indentBy: 'depth' }),
+  col.text('path'),
+  col.badge('source', 'content'),
+  col.department('ownerDepartment'),
+  col.badge('status', 'content'),
+  col.badge('visibility', 'content'),
+];
 
 /**
  * `/staff/content`: the pages, the news, the documents and the templates of every department a
@@ -54,6 +77,7 @@ export function ContentListScreen({
   onCreatedFromTemplate,
   createLink,
   rowAction,
+  treeAction,
 }: {
   bootstrap: Bootstrap;
   search: ContentSearch;
@@ -62,6 +86,11 @@ export function ContentListScreen({
   /** The "new" button, as a link to the editor of a row of this kind in this department. */
   createLink: (target: { department: Department; kind: RowKind; template: boolean }) => ReactNode;
   rowAction: (row: ContentListDto) => ReactNode;
+  /**
+   * What a row of the tree offers: to open a page the person may edit, and — `newHere`, the department a new page would be
+   * written in, when one may go under this row — «New page here». Nothing for a page written in code.
+   */
+  treeAction: (row: SiteTreeRow, newHere: Department | undefined) => ReactNode;
 }) {
   const { t, i18n } = useTranslation();
   const division = bootstrap.division;
@@ -83,6 +112,13 @@ export function ContentListScreen({
 
   // Which kind a new template is for: it decides which fields the form draws, so it is chosen first.
   const [templateKind, setTemplateKind] = useState<RowKind>('Page');
+
+  // The pages are shown as the tree of the site unless the list is asked for (design 13 §3.2): whoever looks for a page
+  // looks for it where it is. The tree is the whole site, so the department and the state do not filter it — and the
+  // entry of one department in the sidebar, which opens this screen with that department chosen, keeps its list.
+  const isPages = rowKind === 'Page';
+  const view: ContentView = isPages ? defaultView(search) : 'list';
+  const showsTree = view === 'tree';
 
   // The department is a column only when there is more than one to tell apart.
   const departmentColumn: readonly ColumnSpec<ContentListDto>[] =
@@ -152,7 +188,18 @@ export function ContentListScreen({
             items={CONTENT_SCREEN_KINDS.map((value) => ({ value, label: t(`backOffice.kinds.${value}`) }))}
           />
         </div>
-        {reachable.length > 1 ? (
+        {isPages ? (
+          <div className="flex min-w-40 flex-col gap-1">
+            <Label htmlFor="contentView">{t('content.view.label')}</Label>
+            <Select
+              id="contentView"
+              value={view}
+              onValueChange={(value) => onSearchChange({ view: value as ContentView, page: 1 })}
+              items={CONTENT_VIEWS.map((value) => ({ value, label: t(`content.view.${value}`) }))}
+            />
+          </div>
+        ) : null}
+        {showsTree ? null : reachable.length > 1 ? (
           <ListFilter
             id="contentDepartment"
             label={t('backOffice.filters.department')}
@@ -162,7 +209,7 @@ export function ContentListScreen({
             items={reachable.map((code) => ({ value: code, label: t(`departments.${code}`) }))}
           />
         ) : null}
-        {rowKind === null ? null : (
+        {rowKind === null || showsTree ? null : (
           <ListFilter
             id="contentStatus"
             label={t('backOffice.filters.status')}
@@ -219,12 +266,40 @@ export function ContentListScreen({
             the key makes them two lists to React as well. */}
         {rowKind === null ? (
           <DataList key="templates" query={templateListQuery(search.department, search)} {...list} />
-        ) : (
+        ) : showsTree ? (
           <DataList
-            key="rows"
-            query={contentListQuery(search.department, search, rowKind, search.status)}
+            key="tree"
             {...list}
+            columns={TREE_COLUMNS}
+            paged={false}
+            query={siteTreeQuery(i18n.language, (nodes) =>
+              siteTree(nodes, bootstrap.registries.screens, (key) => t(key), i18n.language),
+            )}
+            actions={(row) =>
+              treeAction(row, row.source === 'Page' && row.depth < MAX_DEPTH ? target : undefined)
+            }
           />
+        ) : (
+          <>
+            {isPages ? (
+              // The pages written in code are rows of no table, so the list the server pages does not have them.
+              <p className="text-muted-foreground text-sm">
+                {t('content.tree.screensAreInTheTree')}{' '}
+                <Button
+                  variant="link"
+                  className="h-auto p-0"
+                  onClick={() => onSearchChange({ view: 'tree', page: 1 })}
+                >
+                  {t('content.view.tree')}
+                </Button>
+              </p>
+            ) : null}
+            <DataList
+              key="rows"
+              query={contentListQuery(search.department, search, rowKind, search.status)}
+              {...list}
+            />
+          </>
         )}
       </div>
     </PageShell>

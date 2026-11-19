@@ -96,6 +96,7 @@ function ContentForm() {
       id={id}
       content={row}
       startsAsTemplate={isTemplate}
+      {...(isNew && search.parent !== undefined ? { newParentId: search.parent } : {})}
       {...(count === undefined ? {} : { note: t('templates.madeFromIt', { count }) })}
       breadcrumbTo={`/staff/content?kind=${listSearch.kind}&department=${department}`}
       onCreated={async (created) => {

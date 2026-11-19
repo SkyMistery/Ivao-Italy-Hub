@@ -489,7 +489,9 @@
       "supersededById": "Sostituito da",
       "showFooter": "Mostra il piè di pagina (versione, data, chi ha pubblicato, stampa)",
       "parentId": "Sotto la pagina",
-      "collections": "Raccolte"
+      "collections": "Raccolte",
+      "path": "Indirizzo",
+      "source": "Tipo di pagina"
     },
     "options": {
       "kind": {
@@ -517,6 +519,10 @@
       },
       "parentId": {
         "none": "In cima al sito"
+      },
+      "source": {
+        "Page": "Pagina",
+        "Screen": "Pagina dell'applicazione"
       }
     },
     "section": {
@@ -888,6 +894,16 @@
       },
       "none": "Nessuna",
       "saved": "Impostazioni salvate"
+    },
+    "view": {
+      "label": "Mostra",
+      "tree": "Albero del sito",
+      "list": "Elenco"
+    },
+    "tree": {
+      "newHere": "Nuova pagina qui",
+      "noPagesUnder": "una pagina dell'applicazione non ha pagine sotto di sé",
+      "screensAreInTheTree": "Le pagine scritte nell'applicazione, come il calendario o i tour, sono nell'albero del sito."
     }
   },
   "templates": {

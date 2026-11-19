@@ -363,6 +363,21 @@ export function pageTreeQuery() {
   });
 }
 
+/**
+ * The same read as the tree of the site, with the pages written in code among the pages, as the one page the list engine
+ * draws without a pager (design `13-design-struttura-del-sito.md` §3.2). `shape` is `siteTree` with the screens and the
+ * language already given: the language is in the key, because the name of a screen is written in it.
+ */
+export function siteTreeQuery<TRow>(locale: string, shape: (nodes: readonly ContentPageNodeDto[]) => TRow[]) {
+  return queryOptions({
+    queryKey: [...contentKey, 'page-tree', 'site', locale] as const,
+    queryFn: async () => {
+      const items = shape(unwrap(await api.GET('/api/content/pages')));
+      return { items, page: 1, pageSize: Math.max(items.length, 1), total: items.length };
+    },
+  });
+}
+
 /** What the approver of a page reads before deciding: the sections that changed, the address, the menu entry. */
 /**
  * The published pages a news item or a document appears on, through the collections it is filed in
