@@ -1,8 +1,9 @@
 # IVAO Division Hub — Design degli indirizzi e della struttura del sito (fase 4)
 
 **Data:** 18 novembre 2026, fase di test, fase 4 della nota `2026-10-22-il-piano-dopo-la-prova-dello-staff` (§4.C e §5 riga 4).
-**Stato:** **Proposta.** Le domande del §8 aspettano Carmine; il codice comincia dopo il suo sì e il merge di questo documento,
-nell'ordine del §7, una sessione per pezzo.
+**Stato:** **approvato.** Le sette domande del §8 **le ha decise Carmine in chat al master, 19 novembre 2026**, ognuna con l'opzione
+raccomandata (§9, [il commento che le riporta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/540#issuecomment-7011361289)).
+Il codice comincia nell'ordine del §7, una sessione per pezzo; la 4.1 parte in coda dopo questo documento.
 **Classificazione** (`CLAUDE.md` §5): **(c)** per due pezzi nuovi del nucleo — le schermate dell'applicazione dichiarate una volta
 (§3.1) e il blocco della mappa del sito (§5.1) —; **(b)** per il resto, che estende meccanismi che ci sono: gli indirizzi di
 `ContentAddresses`, la lettura delle pagine `GET /api/content/pages`, il form generato, il seme dei contenuti, le impostazioni dei
@@ -124,7 +125,7 @@ Letto nel codice di `main` (0.26.0, `1a174116`, piano 1.56). ⚠️ **Gran parte
   piatta (che il server pagina dalla tabella) non ci sono: una riga sopra la tabella lo dice e porta all'albero.
 - **Il selettore del genitore** (form della pagina, «nuovo da template», pannello di chi approva) diventa l'albero: le stesse scelte,
   in ordine di percorso, con l'etichetta «titolo — /percorso» rientrata. Le schermate ci compaiono **spente**, con la ragione («una
-  pagina dell'applicazione non ha pagine sotto di sé»), se Carmine risponde (a) alla domanda 4.
+  pagina dell'applicazione non ha pagine sotto di sé»): risposta 4 (a).
 - **«Nuova pagina qui»**: ogni riga dell'albero che chi guarda può usare come madre ha l'azione che apre il form della pagina con il
   genitore già scelto (un parametro di ricerca della rotta, come il dipartimento oggi). È il «chi crea sceglie dove va» della nota:
   si parte dal posto, non dall'indirizzo.
@@ -171,8 +172,7 @@ Letto nel codice di `main` (0.26.0, `1a174116`, piano 1.56). ⚠️ **Gran parte
   può anche mettere una pagina in cima e cambiarne lo slug (§4.1). Domanda 3.
 - **Che cosa non si tocca**: `ReachesEveryDepartment` e `StaffRoleMap` restano come sono. Togliere il permesso a DIR/ADIR/WM/AWM per
   ridarlo da configurazione cambierebbe la matrice universale (`CLAUDE.md` §3) per un risultato identico.
-- **File**: `config/division.json` e `config/division.example.json` solo con la risposta (b); un test d'integrazione che la riga vale
-  (WMA approva una pagina di un altro dipartimento e non ne diventa staff). **Nota sua**: no.
+- **File**: nessuno. Con la risposta 3 (a) di Carmine (§9) non si aggiunge nessuna riga, e la PR 4.6 non c'è. **Nota sua**: no.
 
 ## 5. La mappa del sito e la guida
 
@@ -240,7 +240,7 @@ questo documento come nota.
 | **4.3** | L'indirizzo dal titolo, lo slug solo con `Content.Approve` (§4.1) | `ContentEndpoints` (`PositionNotTheirsAsync`), `schema.ts`, `ContentFormScreen`, `ContentEditor` | — (in parallelo a 4.1; prima di 4.2 se tocca gli stessi file del form, altrimenti dopo) |
 | **4.4** | La mappa del sito: il blocco e la pagina seminata (§5.1) | `BlockRegistry`, `CoreDataBlockProviders`, `web/src/blocks/`, `seed/content-pages/` | 4.1 |
 | **4.5** | La guida: la pagina seminata e l'impostazione (§5.2) | `ContentSettingsEndpoints`, `ContentSeeder`, `ContentSettingsPanel`, il seme, `locales/` | 4.3 e 4.4 (racconta l'indirizzo e la mappa come sono) |
-| (4.6) | Solo con la risposta (b) alla domanda 3: la riga di `positionGrants` e il suo test (§4.2) | `config/division*.json`, un test | — |
+| ~~(4.6)~~ | ~~La riga di `positionGrants` per WMA~~: non c'è, con la risposta 3 (a) | — | — |
 
 4.2 e 4.3 toccano tutte e due il form della pagina (`schema.ts`, `ContentFormScreen.tsx`): vanno in fila, non accanto. 4.4 tocca
 file suoi e corre accanto a 4.2. Le istruzioni per Claude cambiano solo con la 4.4 (un blocco nuovo nella tavolozza): ⚠️ l'impronta
@@ -267,10 +267,28 @@ file suoi e corre accanto a 4.2. Le istruzioni per Claude cambiano solo con la 4
    WD la scrive a mano sulla prova, e l'impostazione la sceglie.
 7. **L'ordine del §7**: va bene, o qualcosa va prima?
 
+## 9. Le risposte di Carmine (19 novembre 2026, in chat al master)
+
+Con le sue parole: «Sì, tutte e sette» — ogni domanda con l'opzione raccomandata. Il master le ha riportate sulla PR:
+[https://github.com/SkyMistery/Ivao-Italy-Hub/pull/540#issuecomment-7011361289](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/540#issuecomment-7011361289).
+
+1. **Lo slug: (a)**, nasce alla creazione dal titolo nella lingua principale, e da lì lo cambia solo chi ha `Content.Approve`, anche in
+   bozza (§4.1).
+2. **News e documenti: (a)**, la stessa regola delle pagine (§4.1).
+3. **Chi approva: (a)**, nessun altro oltre a DIR, ADIR, WM, AWM e il superadmin; nessuna riga in `positionGrants`, e **la 4.6 non
+   c'è** (§4.2, §7).
+4. **Una pagina sotto una schermata: (a)**, no; nel selettore la schermata è spenta (§3.2).
+5. **La mappa del sito: (a)**, pagine e schermate, ognuno quelle che può leggere (§5.1).
+6. **La guida: (a)**, una pagina seminata del WD, visibile allo staff, con il testo in italiano e in inglese scritto da noi, nominata
+   dall'editor con un'impostazione come la pagina dello stile (§5.2).
+7. **L'ordine del §7: approvato**: 4.1, 4.2, 4.3, 4.4, 4.5.
+
+La risposta è stata data in chat al master e non in un commento: il documento è di una sessione di Carmine, non del collaboratore.
+
 ## Da portare nel piano
 
-- **§13** e le fasi della nota del 22 ottobre (§5 riga 4): la fase 4 in cinque PR (sei con la risposta (b) alla domanda 3) nell'ordine
-  del §7, con le risposte del §8.
+- **§13** e le fasi della nota del 22 ottobre (§5 riga 4): la fase 4 in cinque PR nell'ordine del §7, approvata da Carmine il
+  19 novembre 2026 con le risposte raccomandate (§9).
 - **§9.3** (il modello dei contenuti): l'albero del sito è `cms_contents` con `ParentId`, visto nella vista «Albero» di
   `/staff/content`; chi crea una pagina sceglie la madre, e lo slug nasce dal titolo e lo cambia solo chi ha `Content.Approve`
   (risposte 1 e 2); le schermate dell'applicazione compaiono nell'albero, segnate e ferme, e non hanno pagine sotto (risposta 4); chi
@@ -280,4 +298,4 @@ file suoi e corre accanto a 4.2. Le istruzioni per Claude cambiano solo con la 4
 - **§16** (meccanismi generici): il blocco di dati `siteMap`, sempre live, che risponde a chi legge; la lettura delle pagine del sito
   in una classe sola, per gli indirizzi e la mappa; l'impostazione «la pagina della guida» accanto a quella dello stile.
 - **`decisions/2026-09-13-contenuti-centralizzati.md` §3.7**, letta nel piano: «news e documenti non scelgono» arriva nel codice con la
-  4.3 (se la risposta 2 è (a)).
+  4.3 (risposta 2).
