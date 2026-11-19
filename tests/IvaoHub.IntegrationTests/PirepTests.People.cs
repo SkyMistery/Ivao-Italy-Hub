@@ -463,6 +463,8 @@ public sealed partial class PirepTests
         mine = await OkAsync(await pilot.GetAsync(MyToursEndpoints.Pattern, token), token);
         var toFix = Assert.Single(mine.GetProperty("toModify").EnumerateArray(), entry => entry.GetProperty("pirepId").GetInt64() == second);
         Assert.Equal(started.GetProperty("slug").GetString(), toFix.GetProperty("slug").GetString());
+        // With what to correct: the pilot reads the note on the site too, not only in the mail (issue #387).
+        Assert.Equal("fo-test the STAR", toFix.GetProperty("noteToPilot").GetString());
 
         // The block says the same, to the same pilot.
         var block = await OkAsync(await pilot.GetAsync($"/api/blocks/data/{MyToursProvider.BlockType}", token), token);

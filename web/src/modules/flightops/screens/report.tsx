@@ -56,6 +56,7 @@ import {
   sessionsOf,
   splitRefusal,
 } from './reporting';
+import { ValidatorNote } from './ValidatorNote';
 
 /**
  * The pilot's report (design M2 §3.2, §8.1), a page of its own at `/tours/{slug}/report` (note `2026-09-23-il-pirep` §4):
@@ -150,7 +151,11 @@ function ReportScreen({
       </header>
 
       {refusal === null ? (
-        <ReportForm tour={tour} leg={leg} report={report} back={back} />
+        <>
+          {/* What to correct, where it is corrected (issue #387). */}
+          {report === null ? null : <ValidatorNote report={report} />}
+          <ReportForm tour={tour} leg={leg} report={report} back={back} />
+        </>
       ) : (
         <div className="flex flex-col gap-4">
           <Notice tone="warning" title={refusal} />
