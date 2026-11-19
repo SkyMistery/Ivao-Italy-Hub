@@ -93,12 +93,15 @@ public sealed class CalendarBusy(HubDbContext database)
             .Select(kind => kind.Key)
             .ToListAsync(cancellationToken);
 
-        // A superset first, in the database: an entry with no end, or of a whole day, may take time up to a day after it starts,
-        // so the lower bound is a day earlier; the rule itself is applied below, once, in Occupies.
+        // A superset first, in the database, then the rule itself, once, in Occupies. Both bounds are a day wider than the window:
+        // an entry with no end, or of a whole day, may take time up to a day after its stored start; and an entry of a whole day
+        // stored at any hour — the calendar's form has a time next to "all day" — takes its day from midnight, up to a day before
+        // that start (the review of #538, finding 1: stored at 10:00, it took 03:00 in the picker and not in this query).
         var reach = from.AddDays(-1);
+        var until = to.AddDays(1);
         var query = database.CalendarEntries
             .AsNoTracking()
-            .Where(entry => entry.StartsAtUtc < to
+            .Where(entry => entry.StartsAtUtc < until
                 && (entry.EndsAtUtc == null ? entry.StartsAtUtc >= reach : entry.EndsAtUtc >= reach));
 
         if (except is not null)
@@ -128,17 +131,19 @@ public sealed class CalendarBusy(HubDbContext database)
     /// <summary>
     /// The entries of a kind that blocks which take some of the time a date takes, as its writer may see them; empty when the
     /// date is free. The date takes its time by the same rule as an entry (<see cref="Occupies"/>): with no end, the hour it
-    /// starts in — which is the hour the picker switches off.
+    /// starts in — which is the hour the picker switches off; a day (<paramref name="allDay"/>, the field of a date without a
+    /// time), its whole UTC day — which is why the picker of such a field switches off a day any blocking entry touches.
     /// <para>A module's validator asks it on the field of the date and refuses with <see cref="BlockedKey"/> when it is not empty;
     /// the module says which of its rows is being written, so that a date moved within its own time is not refused by itself.</para>
     /// </summary>
     public async Task<IReadOnlyList<CalendarBusyDto>> BlockingAsync(
         DateTime startsAtUtc,
         DateTime? endsAtUtc,
+        bool allDay,
         CalendarSource? except,
         CancellationToken cancellationToken)
     {
-        var (from, to) = Occupies(startsAtUtc, endsAtUtc, allDay: false);
+        var (from, to) = Occupies(startsAtUtc, endsAtUtc, allDay);
         var busy = await ReadAsync(from, to, except, cancellationToken);
         return [.. busy.Where(entry => entry.Blocks)];
     }

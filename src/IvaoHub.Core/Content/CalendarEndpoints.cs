@@ -4,7 +4,6 @@ using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Localization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 
 namespace IvaoHub.Core.Content;
@@ -91,7 +90,7 @@ public static class CalendarEndpoints
         return group;
     }
 
-    private static async Task<Results<Ok<IReadOnlyList<CalendarBusyDto>>, ValidationProblem>> BusyAsync(
+    private static async Task<IResult> BusyAsync(
         DateTime? fromUtc,
         DateTime? toUtc,
         string? exceptModule,
@@ -119,9 +118,7 @@ public static class CalendarEndpoints
 
         if (!refusals.IsEmpty)
         {
-            return TypedResults.ValidationProblem(
-                refusals.Errors,
-                title: catalog.Resolve(currentUser.Locale, CrudProblems.ValidationTitleKey));
+            return CrudProblems.Validation(refusals.Errors, refusals.MissingLocales, catalog, currentUser.Locale);
         }
 
         // Both halves or neither: a module without an id would leave out every entry it ever projected.
@@ -129,6 +126,6 @@ public static class CalendarEndpoints
             ? null
             : new CalendarSource(exceptModule, exceptId);
 
-        return TypedResults.Ok(await busy.ReadAsync(fromUtc!.Value, toUtc!.Value, except, http.RequestAborted));
+        return Results.Ok(await busy.ReadAsync(fromUtc!.Value, toUtc!.Value, except, http.RequestAborted));
     }
 }

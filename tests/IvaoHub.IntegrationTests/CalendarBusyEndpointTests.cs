@@ -55,17 +55,17 @@ public sealed class CalendarBusyEndpointTests(MariaDbFixture mariaDb) : IAsyncLi
         using var member = await SignedInAsync(MemberVid, position: null, token);
         var forMember = await ReadAsync(member, seeded, token);
         // In the order of the time they take: the members' entry at 09:00 before the public one at 14:00.
-        Assert.Equal(["members", "public"], forMember.Select(entry => entry.Title).ToArray());
+        Assert.Equal(["members", "public", "all-day"], forMember.Select(entry => entry.Title).ToArray());
 
         // The coordinator of another department: the staff's entry too, but not the events department's own.
         using var training = await SignedInAsync(TrainingCoordinatorVid, "IT-TC", token);
         var forTraining = await ReadAsync(training, seeded, token);
-        Assert.Equal(["members", "public", "staff"], forTraining.Select(entry => entry.Title).ToArray());
+        Assert.Equal(["members", "public", "staff", "all-day"], forTraining.Select(entry => entry.Title).ToArray());
 
         // The events department reads its own entry as well.
         using var events = await SignedInAsync(EventsCoordinatorVid, "IT-EC", token);
         var forEvents = await ReadAsync(events, seeded, token);
-        Assert.Equal(["members", "public", "department", "staff"], forEvents.Select(entry => entry.Title).ToArray());
+        Assert.Equal(["members", "public", "department", "staff", "all-day"], forEvents.Select(entry => entry.Title).ToArray());
 
         // The time each takes (answer 4): the entry with an end its span, the one with none its hour, the all-day its day.
         var byTitle = forEvents.ToDictionary(entry => entry.Title);
@@ -73,6 +73,12 @@ public sealed class CalendarBusyEndpointTests(MariaDbFixture mariaDb) : IAsyncLi
         Assert.Equal((Day.AddHours(9), Day.AddHours(10)), (byTitle["members"].StartsAtUtc, byTitle["members"].EndsAtUtc));
         Assert.Equal((Day.AddDays(1), Day.AddDays(2)), (byTitle["staff"].StartsAtUtc, byTitle["staff"].EndsAtUtc));
         Assert.True(byTitle["staff"].AllDay);
+
+        // An all-day entry stored at 10:00 takes its day from midnight, and a window that ends before 10:00 still finds it
+        // (the review of #538, finding 1).
+        Assert.Equal((Day.AddDays(2), Day.AddDays(3)), (byTitle["all-day"].StartsAtUtc, byTitle["all-day"].EndsAtUtc));
+        var early = Mine(await member.GetFromJsonAsync<JsonElement>(Busy(Day.AddDays(2), Day.AddDays(2).AddHours(4)), token), seeded);
+        Assert.Equal(["all-day"], early.Select(entry => entry.Title).ToArray());
 
         // And whether its kind blocks, from the vocabulary of the division.
         Assert.True(byTitle["public"].Blocks);
@@ -129,8 +135,8 @@ public sealed class CalendarBusyEndpointTests(MariaDbFixture mariaDb) : IAsyncLi
         await using var scope = _factory.Services.CreateAsyncScope();
         var busy = scope.ServiceProvider.GetRequiredService<CalendarBusy>();
 
-        async Task<string[]> BlockingAsync(DateTime start, DateTime? end, CalendarSource? except = null) =>
-            [.. (await busy.BlockingAsync(start, end, except, token))
+        async Task<string[]> BlockingAsync(DateTime start, DateTime? end, CalendarSource? except = null, bool allDay = false) =>
+            [.. (await busy.BlockingAsync(start, end, allDay, except, token))
                 .Where(entry => entry.Kind == seeded.BlockingKind)
                 .Select(entry => entry.Title.Get("en") ?? string.Empty)];
 
@@ -148,6 +154,13 @@ public sealed class CalendarBusyEndpointTests(MariaDbFixture mariaDb) : IAsyncLi
 
         // The department's blocking entry is not seen by this writer, so it refuses nothing.
         Assert.Empty(await BlockingAsync(Day.AddHours(18), end: null));
+
+        // An all-day blocking entry stored at 10:00 refuses 03:00 of its day, as the picker switches it off (finding 1).
+        Assert.Equal(["all-day"], await BlockingAsync(Day.AddDays(2).AddHours(3), end: null));
+
+        // A date without a time takes its whole UTC day: refused by any blocking entry that touches it (note 3 of the review).
+        Assert.Equal(["public"], await BlockingAsync(Day, end: null, allDay: true));
+        Assert.Empty(await BlockingAsync(Day.AddDays(1), end: null, allDay: true));
 
         // And the row being written does not refuse itself.
         Assert.Empty(await BlockingAsync(Day.AddHours(14).AddMinutes(30), end: null, new CalendarSource("events", seeded.PublicSourceId)));
@@ -223,7 +236,8 @@ public sealed class CalendarBusyEndpointTests(MariaDbFixture mariaDb) : IAsyncLi
 
     /// <summary>
     /// Two kinds of this run, one that blocks; four entries of the events department, one per visibility: public and blocking
-    /// from 14:00 to 16:00, members' with no end at 09:00, the staff's all the next day, the department's blocking at 18:00.
+    /// from 14:00 to 16:00, members' with no end at 09:00, the staff's all the next day, the department's blocking at 18:00; and a
+    /// public blocking entry of the whole day after, stored at 10:00 as the calendar's form may store one.
     /// </summary>
     private async Task<Seeded> SeedAsync(CancellationToken cancellationToken)
     {
@@ -246,7 +260,8 @@ public sealed class CalendarBusyEndpointTests(MariaDbFixture mariaDb) : IAsyncLi
             Entry(blocking, Visibility.Public, "events", publicSource, Day.AddHours(14), Day.AddHours(16), allDay: false, "public"),
             Entry(free, Visibility.Members, "core", $"staff:{run}-m", Day.AddHours(9), end: null, allDay: false, "members"),
             Entry(free, Visibility.Staff, "core", $"staff:{run}-s", Day.AddDays(1), end: null, allDay: true, "staff"),
-            Entry(blocking, Visibility.Department, "core", $"staff:{run}-d", Day.AddHours(18), Day.AddHours(19), allDay: false, "department"));
+            Entry(blocking, Visibility.Department, "core", $"staff:{run}-d", Day.AddHours(18), Day.AddHours(19), allDay: false, "department"),
+            Entry(blocking, Visibility.Public, "core", $"staff:{run}-a", Day.AddDays(2).AddHours(10), end: null, allDay: true, "all-day"));
 
         await database.SaveChangesAsync(cancellationToken);
 
