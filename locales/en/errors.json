@@ -77,6 +77,7 @@
       "mediaNotVisible": "This picture is not visible to the readers of this page. Make it public in the media library, or choose another one.",
       "mediaToChoose": "This picture has not been chosen yet. Choose one from the media library.",
       "mediaNotPicture": "This file is not a picture: a document cannot be shown here. Choose a picture from the media library.",
+      "addressNotFramed": "This block has no address, or one on a site the hub cannot show here. Paste the address of the page from one of the sites the block lists.",
       "linkNowhere": "This link leads nowhere: no screen and no published content has this address. Publish that page first, or choose another address.",
       "linkLessVisible": "This link leads somewhere the readers of this page cannot go. Choose another address, or change who can read one of the two.",
       "notADocument": "Only a document carries this. Leave it empty on a page or a news item.",

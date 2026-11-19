@@ -423,6 +423,35 @@ public sealed class BlockDocumentWalkerTests
     }
 
     [Fact]
+    public void AnAddressAVideoOrAnEmbedWouldNotFrameIsSaidAndOnlyThatFieldIsRead()
+    {
+        // #524: the field the descriptor names, and nothing else of props. A text block with an address is no business
+        // of this, and neither is the caption of a video.
+        var body = JsonNode.Parse("""
+        {
+          "sections": [ { "id": "s1", "blocks": [
+            { "id": "b1", "type": "video", "props": { "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ" } },
+            { "id": "b2", "type": "video", "props": { "url": "https://evil.example/video.mp4" } },
+            { "id": "b3", "type": "video", "props": { "aspect": "16x9" } },
+            { "id": "b4", "type": "embed", "props": { "url": "https://vimeo.com/76979871", "height": 360 } },
+            { "id": "b5", "type": "embed", "props": { "url": "https://www.youtube.com/" } },
+            { "id": "b6", "type": "embed", "props": { "url": 42 } },
+            { "id": "b7", "type": "text", "props": { "url": "https://evil.example/" } }
+          ] } ]
+        }
+        """);
+
+        Assert.Equal(
+            [
+                "sections[0].blocks[1].props.url",
+                "sections[0].blocks[2].props.url",
+                "sections[0].blocks[4].props.url",
+                "sections[0].blocks[5].props.url",
+            ],
+            Walker.BlocksWithAddressesNotFramed(body, new BlockRegistry(CoreBlocks.All)));
+    }
+
+    [Fact]
     public void TheLinksOfABodyAreAnHrefAtAnyDepthAndWhatMarkdownLinks()
     {
         var body = JsonNode.Parse("""
