@@ -71,7 +71,7 @@ const bootstrap: Bootstrap = {
     footer: [{ key: null, path: '/legal', label: { en: 'Legal' }, icon: null, children: [] }],
     staff: [],
   },
-  registries: { blocks: [], permissions: [] },
+  registries: { blocks: [], permissions: [], screens: [] },
   calendarKinds: [],
   version: '0.0.0-test',
   commit: null,

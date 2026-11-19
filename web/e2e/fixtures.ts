@@ -99,7 +99,16 @@ export const anonymousBootstrap = {
     ],
     staff: [],
   },
-  registries: { blocks: [], permissions: [] },
+  registries: {
+    blocks: [],
+    permissions: [],
+    // The core's screens as the server declares them (`SiteDestinations.CoreScreens`, design 13 §3.1).
+    screens: ['/', '/calendar', '/news', '/documents', '/search', '/contact'].map((path) => ({
+      path,
+      titleKey: `menu.screens.${path}`,
+      visibility: 'Public' as const,
+    })),
+  },
   // The division's calendar vocabulary, which a visitor gets too: a chip on a public calendar says
   // the word and takes the colour somebody chose (decided 8 Sep 2026).
   calendarKinds: [

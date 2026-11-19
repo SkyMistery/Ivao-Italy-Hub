@@ -143,7 +143,7 @@ export function ClaudeDownload({
         locales,
         blocks,
         template,
-        addresses: siteAddresses(pagesOfTheSite(pages), links, t, read),
+        addresses: siteAddresses(pagesOfTheSite(pages), links, t, read, bootstrap?.registries.screens ?? []),
         embedGuidelines: blocks.some((block) => block.carriesSource === true)
           ? `${window.location.origin}${EMBED_GUIDELINES_PATH}`
           : null,
