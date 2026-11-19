@@ -118,6 +118,9 @@ test('a released tour is read by a visitor, with its legs on the map', async ({
 
     await page.goto(`/staff/tours/${tourId}`);
     await page.getByRole('tab', { name: tours.steps.check }).click();
+    // The page as pilots will see it, drawn from the draft before it is marked ready (design 11 §5).
+    const preview = page.getByRole('region', { name: tours.steps.preview });
+    await expect(preview.getByRole('heading', { level: 1, name: tourName.en })).toBeVisible();
     await whileWaitingFor(page, 'POST', `/api/flightops/tours/${tourId}/status`, async () => {
       await page.getByRole('button', { name: tours.actions.ready }).click();
     });
@@ -205,7 +208,7 @@ function englishFlightOps() {
     tours: {
       fields: { title: string; summary: string; kind: string };
       options: { kind: { Free: string } };
-      steps: { next: string; check: string };
+      steps: { next: string; check: string; preview: string };
       actions: { ready: string; hide: string };
     };
     public: { simbrief: string; tabs: { route: string } };

@@ -52,7 +52,10 @@
       "nothingMissing": "Nothing is missing: the tour can be marked ready.",
       "isReady": "The tour is marked ready. Its page goes public at the release, on {{date}}.",
       "isReadyNoDate": "The tour is marked ready.",
-      "goTo": "Go to “{{step}}”"
+      "goTo": "Go to “{{step}}”",
+      "preview": "The page, as pilots will see it",
+      "previewLead": "Drawn from the tour as it is saved now, before its release. The part of each pilot — their progress, their reports — is not here.",
+      "previewNeeds": "The page needs an address and both dates, written at step 2."
     },
     "kindHelp": {
       "Sequential": "The legs are flown in their order, one after the other.",
@@ -265,6 +268,7 @@
     "countryCode": "Write the country as its two letter code.",
     "icaoPrefix": "Write the first two letters of the ICAO codes, as ED.",
     "closeBeforeRelease": "The close has to come after the release.",
+    "previewNeedsAddressAndDates": "The page of the tour is drawn once it has an address and both dates.",
     "closeTooSoon": "A ready tour closes at least two report windows from today, so that no pilot finds it closed under their feet.",
     "kindLocked": "The kind no longer changes: the tour is already visible to the public.",
     "templateFixed": "A tour does not become a template, nor a template a tour: use \"Save as template\" or \"New from template\".",

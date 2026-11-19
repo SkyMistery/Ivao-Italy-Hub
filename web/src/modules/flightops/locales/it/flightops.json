@@ -51,7 +51,10 @@
       "nothingMissing": "Non manca niente: il tour si può segnare pronto.",
       "isReady": "Il tour è segnato pronto. La sua pagina diventa pubblica al rilascio, il {{date}}.",
       "isReadyNoDate": "Il tour è segnato pronto.",
-      "goTo": "Vai a «{{step}}»"
+      "goTo": "Vai a «{{step}}»",
+      "preview": "La pagina, come la vedranno i piloti",
+      "previewLead": "Disegnata dal tour come è salvato adesso, prima del rilascio. La parte di ogni pilota — il suo progresso, i suoi rapporti — qui non c'è.",
+      "previewNeeds": "La pagina ha bisogno di un indirizzo e delle due date, che si scrivono al passo 2."
     },
     "kindHelp": {
       "Sequential": "Le leg si volano nel loro ordine, una dopo l'altra.",
@@ -264,6 +267,7 @@
     "countryCode": "Scrivi il paese con il suo codice di due lettere.",
     "icaoPrefix": "Scrivi le prime due lettere dei codici ICAO, come ED.",
     "closeBeforeRelease": "La chiusura dev'essere dopo il rilascio.",
+    "previewNeedsAddressAndDates": "La pagina del tour si disegna quando ha un indirizzo e le due date.",
     "closeTooSoon": "Un tour pronto si chiude almeno due finestre di invio da oggi, così nessun pilota se lo trova chiuso sotto i piedi.",
     "kindLocked": "Il tipo non si cambia più: il tour è già visibile al pubblico.",
     "templateFixed": "Un tour non diventa un template, e un template non diventa un tour: usa «Salva come template» o «Nuovo da template».",
