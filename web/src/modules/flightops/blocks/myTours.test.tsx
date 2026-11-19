@@ -28,7 +28,12 @@ vi.mock('../../../app/layouts/RouterAnchor', () => ({
   RouterAnchor: (props: ComponentProps<'a'>) => <a {...props} />,
 }));
 
-function draw(language: 'en' | 'it', legsAccepted: number, toursCompleted: number) {
+function draw(
+  language: 'en' | 'it',
+  legsAccepted: number,
+  toursCompleted: number,
+  toModify: MyToursData['toModify'] = [],
+) {
   const i18n = createTestI18n();
   i18n.addResourceBundle('en', 'flightops', englishFlightOps);
   i18n.addResourceBundle('it', 'flightops', italianFlightOps);
@@ -37,7 +42,7 @@ function draw(language: 'en' | 'it', legsAccepted: number, toursCompleted: numbe
   const data: MyToursData = {
     signedIn: true,
     tours: [],
-    toModify: [],
+    toModify,
     answered: [],
     summary: { legsAccepted, minutesFlown: 65, toursCompleted },
   };
@@ -69,5 +74,27 @@ describe('flightops.myTours summary', () => {
     draw('en', 1, 2);
 
     expect(screen.getByText('1 leg accepted · 1 h 05 min flown · 2 tours completed')).toBeInTheDocument();
+  });
+});
+
+describe('flightops.myTours, a report to correct', () => {
+  test('carries the validator note under its link (#387)', () => {
+    draw('en', 0, 0, [
+      {
+        pirepId: 9,
+        tourId: 7,
+        slug: 'alpine-loop',
+        tourTitle: { en: 'Alpine loop' },
+        departureIcao: 'LIRF',
+        arrivalIcao: 'LIMC',
+        takeoffAt: '2026-10-25T10:00:00Z',
+        noteToPilot: 'Correct the SID in the report.',
+      },
+    ]);
+
+    expect(
+      screen.getByRole('link', { name: 'Correct your report on Alpine loop: LIRF → LIMC' }),
+    ).toHaveAttribute('href', '/tours/alpine-loop/report?report=9');
+    expect(screen.getByText('The validator: Correct the SID in the report.')).toBeInTheDocument();
   });
 });
