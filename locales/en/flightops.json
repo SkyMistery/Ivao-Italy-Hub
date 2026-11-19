@@ -32,15 +32,36 @@
     "saved": "Tour saved.",
     "readyProblems": "Before it can be marked ready, it still needs:",
     "purged": "Archived on {{date}}: its rules, hubs, briefing and the details of its reports are gone. The reports and their decisions stay, and nothing on it changes any more.",
-    "tabs": {
-      "settings": "Settings",
+    "steps": {
+      "kind": "Kind",
+      "identity": "Name, dates and pictures",
+      "route": "Route",
+      "rules": "Rules",
       "briefing": "Briefing",
+      "check": "Check",
+      "toFix": "something to fix before ready",
+      "previous": "Previous step",
+      "next": "Next step",
+      "notYet": "This step opens once the tour is saved at step 2, “Name, dates and pictures”.",
+      "kindLead": "The kind decides how the tour is flown and what its route is made of. Choose it first: the next steps follow it.",
+      "kindLocked": "The kind no longer changes: the tour is already visible to the public.",
+      "noRoute": "A template carries no legs, hubs or subtours: the tours made from it get their own.",
       "legs": "Legs",
-      "hubs": "Hubs and rotations",
       "subtours": "Subtours",
       "callsigns": "Callsigns",
-      "open": "Goal and constraints",
-      "rules": "Rules"
+      "nothingMissing": "Nothing is missing: the tour can be marked ready.",
+      "isReady": "The tour is marked ready. Its page goes public at the release, on {{date}}.",
+      "isReadyNoDate": "The tour is marked ready.",
+      "goTo": "Go to “{{step}}”"
+    },
+    "kindHelp": {
+      "Sequential": "The legs are flown in their order, one after the other.",
+      "Free": "Every leg can be flown, in any order; the tour is complete when all are accepted.",
+      "Hub": "The pilot picks a hub by flying the first leg of one of its rotations, then flies every rotation of every hub.",
+      "SequentialChosenStart": "In order, from the leg the pilot chooses to start at, all the way round: the legs have to close a ring.",
+      "Distance": "Any of the tour's legs, in any order, until their distances add up to the miles asked.",
+      "Open": "No legs: every pilot flies what they like within the tour's rules, until the goal is reached.",
+      "Container": "No legs of its own: the tour is its subtours, and it is complete after the number of them it asks."
     },
     "briefing": {
       "save": "Save briefing",
