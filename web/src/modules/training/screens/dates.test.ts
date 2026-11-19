@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest';
 
 import { ApiError } from '../../../shared/api/problem';
+import { intervalText } from '../../../shared/i18n/useMoment';
 import {
   shownState,
   type DateConflictsDto,
@@ -20,7 +21,6 @@ import {
   isRefused,
   isWhole,
   sameDates,
-  spanText,
   warningSays,
   whatTheyMeet,
   type FormatMoment,
@@ -163,21 +163,23 @@ test('a trainee is offered the dates still to come while the training waits for 
   expect(choosableSlots(trainee('Closed', { slots }), NOW)).toEqual([]);
 });
 
-test('a span says its day once when it starts and ends on it, and both moments when it does not, in the zone asked', () => {
-  expect(spanText('2026-10-03T16:00:00Z', '2026-10-03T18:00:00Z', moment)).toBe('Oct 3, 2026, 16:00–18:00');
+test('a span says its day once when it starts and ends on it, and both moments when it does not, in the zone asked; the dash is spaced on one day as on two (#542)', () => {
+  expect(intervalText('2026-10-03T16:00:00Z', '2026-10-03T18:00:00Z', moment)).toBe(
+    'Oct 3, 2026, 16:00 – 18:00',
+  );
   // Where the division lives, the same two hours.
-  expect(spanText('2026-10-03T16:00:00Z', '2026-10-03T18:00:00Z', moment, 'Europe/Rome')).toBe(
-    'Oct 3, 2026, 18:00–20:00',
+  expect(intervalText('2026-10-03T16:00:00Z', '2026-10-03T18:00:00Z', moment, 'Europe/Rome')).toBe(
+    'Oct 3, 2026, 18:00 – 20:00',
   );
   // Across the midnight of UTC, two days; where the division lives it may be one.
-  expect(spanText('2026-10-03T23:00:00Z', '2026-10-04T01:00:00Z', moment)).toBe(
+  expect(intervalText('2026-10-03T23:00:00Z', '2026-10-04T01:00:00Z', moment)).toBe(
     'Oct 3, 2026, 23:00 – Oct 4, 2026, 01:00',
   );
-  expect(spanText('2026-10-03T23:00:00Z', '2026-10-04T01:00:00Z', moment, 'Europe/Rome')).toBe(
-    'Oct 4, 2026, 01:00–03:00',
+  expect(intervalText('2026-10-03T23:00:00Z', '2026-10-04T01:00:00Z', moment, 'Europe/Rome')).toBe(
+    'Oct 4, 2026, 01:00 – 03:00',
   );
   // A session has a start only.
-  expect(spanText('2026-10-03T16:00:00Z', null, moment)).toBe('Oct 3, 2026, 16:00');
+  expect(intervalText('2026-10-03T16:00:00Z', null, moment)).toBe('Oct 3, 2026, 16:00');
 });
 
 test('what the dates meet is asked only of whole dates, and a confirmation is of the very dates asked about', async () => {

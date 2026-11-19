@@ -130,6 +130,25 @@ export function intervalEnd(
     : moment(endsAt, zone);
 }
 
+/**
+ * An interval as one line: its start whole, a spaced dash, and its end as `intervalEnd` writes it — «21/11/2026 17:00 – 22:00»,
+ * «21/11/2026 23:00 – 22/11/2026 01:00» —, the days read in the zone asked, UTC when none. The dash is spaced everywhere, on one day
+ * as on two, because the part before it has spaces of its own (Carmine, 19 Nov 2026; note
+ * 2026-11-18-la-fine-di-un-intervallo-nel-nucleo). Without an end, its start. The one copy of what the events' and the training's
+ * `spanText` wrote each on their own; the zone is the sentence's to name.
+ */
+export function intervalText(
+  startsAt: string,
+  endsAt: string | null,
+  moment: MomentFormat,
+  timeZone?: string,
+): string {
+  const zone = timeZone === undefined ? {} : { timeZone };
+  const start = moment(startsAt, zone);
+
+  return endsAt === null ? start : `${start} – ${intervalEnd(startsAt, endsAt, moment, timeZone)}`;
+}
+
 /** The day of an instant in a zone, in numbers and in the division's order. */
 function numericDay(moment: Date, timeZone: string): string {
   // The digits, not the words, so any language that writes Latin digits will do: the order is the division's.

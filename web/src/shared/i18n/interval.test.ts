@@ -1,11 +1,12 @@
 import { describe, expect, test } from 'vitest';
 
-import { formatMoment, intervalEnd, onSameDay } from './useMoment';
+import { formatMoment, intervalEnd, intervalText, onSameDay } from './useMoment';
 
 /**
- * The end of an interval after its start (note 2026-11-18-la-fine-di-un-intervallo-nel-nucleo): a time on the same day, the date
- * with it past midnight, the days read in the zone asked. The cases of the events' `endOfHours` (#333, item 6) and of the tours'
- * `sessionEnd` (#334, item 4), which this replaces, are here as they were.
+ * An interval after its start (note 2026-11-18-la-fine-di-un-intervallo-nel-nucleo): its end a time on the same day, the date with
+ * it past midnight, the days read in the zone asked; the whole line with a spaced dash. The cases of the events' `endOfHours` (#333,
+ * item 6) and of the tours' `sessionEnd` (#334, item 4), which this replaces, are here as they were; the events' and the training's
+ * tests of their lines call `intervalText` where they are.
  */
 
 const moment = (value: unknown, options?: Parameters<typeof formatMoment>[2]) =>
@@ -46,4 +47,22 @@ test('onSameDay compares the days in the zone asked, UTC when none', () => {
   expect(onSameDay('2099-11-21T23:00:00Z', '2099-11-22T01:00:00Z', moment)).toBe(false);
   expect(onSameDay('2099-11-21T23:00:00Z', '2099-11-22T01:00:00Z', moment, 'Europe/Rome')).toBe(true);
   expect(onSameDay('2099-11-21T17:00:00Z', '2099-11-21T18:30:00Z', moment)).toBe(true);
+});
+
+describe('intervalText', () => {
+  test('the dash is spaced on one day as on two (Carmine on #542)', () => {
+    expect(intervalText('2099-11-21T17:00:00Z', '2099-11-21T22:00:00Z', moment)).toBe(
+      `${moment('2099-11-21T17:00:00Z')} – 22:00`,
+    );
+    expect(intervalText('2099-11-21T23:00:00Z', '2099-11-22T01:00:00Z', moment)).toBe(
+      `${moment('2099-11-21T23:00:00Z')} – ${moment('2099-11-22T01:00:00Z')}`,
+    );
+  });
+
+  test('the start is read in the zone asked, and without an end the line is its start', () => {
+    expect(intervalText('2099-11-21T23:00:00Z', '2099-11-22T01:00:00Z', moment, 'Europe/Rome')).toBe(
+      `${moment('2099-11-21T23:00:00Z', { timeZone: 'Europe/Rome' })} – 02:00`,
+    );
+    expect(intervalText('2099-11-21T17:00:00Z', null, moment)).toBe(moment('2099-11-21T17:00:00Z'));
+  });
 });

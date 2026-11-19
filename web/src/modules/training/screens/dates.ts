@@ -1,5 +1,4 @@
 import type { LocalizedString } from '../../../shared/api/bootstrap';
-import { intervalEnd, onSameDay } from '../../../shared/i18n/useMoment';
 import type {
   DateConflictsDto,
   DateWarning,
@@ -39,27 +38,6 @@ export type FormatMoment = (
   value: string,
   options?: { readonly timeZone?: string; readonly time?: boolean; readonly date?: boolean },
 ) => string;
-
-/**
- * A span of time in one zone, as a line says it: the day once and the two times when it starts and ends on the same day there,
- * both moments whole when it does not — a session at 23:00 UTC ends on the next day in UTC, and maybe not where the division
- * lives. The end is the core's `intervalEnd`. Without an end, its start. The zone is the sentence's to name.
- */
-export function spanText(
-  startsAtUtc: string,
-  endsAtUtc: string | null,
-  moment: FormatMoment,
-  timeZone?: string,
-): string {
-  const zone = timeZone === undefined ? {} : { timeZone };
-
-  if (endsAtUtc === null) {
-    return moment(startsAtUtc, zone);
-  }
-
-  const dash = onSameDay(startsAtUtc, endsAtUtc, moment, timeZone) ? '–' : ' – ';
-  return `${moment(startsAtUtc, zone)}${dash}${intervalEnd(startsAtUtc, endsAtUtc, moment, timeZone)}`;
-}
 
 /**
  * A date as a form of the staff writes it: its start, and — for a date proposed — its end; a box left empty is `null`. The date
