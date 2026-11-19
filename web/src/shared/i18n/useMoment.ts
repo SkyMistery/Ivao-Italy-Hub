@@ -94,6 +94,42 @@ export function formatMoment(locale: string, value: unknown, options: MomentOpti
   return time === '' ? day : `${day} ${time}`;
 }
 
+/**
+ * `useMoment`'s formatter as the helpers below take it, handed in so that what they say stays a function of their data and a test
+ * reads them without drawing anything. Any formatter that knows the zone and the two halves will do.
+ */
+export type MomentFormat = (
+  value: string,
+  options?: Pick<MomentOptions, 'timeZone' | 'time' | 'date'>,
+) => string;
+
+/** Whether two instants fall on the same day in a zone — UTC when none —, as the formatter writes the day. */
+export function onSameDay(one: string, other: string, moment: MomentFormat, timeZone?: string): boolean {
+  const zone = timeZone === undefined ? {} : { timeZone };
+
+  return moment(one, { ...zone, time: false }) === moment(other, { ...zone, time: false });
+}
+
+/**
+ * The end of an interval as a line writes it after its start (note 2026-11-18-la-fine-di-un-intervallo-nel-nucleo): the time alone
+ * when it ends on the day it starts, in the zone asked — UTC when none —, and the date with it when it does not, so that an hour
+ * which ends at 02:45 the next day never reads as a bare 02:45. The one copy of what a flight's end (#334, item 4), the end of an
+ * event's hours (#333, item 6) and the end of an event's or a training's span used to write each on their own; what stands before
+ * it — the start, a dash, a sentence — is the caller's.
+ */
+export function intervalEnd(
+  startsAt: string,
+  endsAt: string,
+  moment: MomentFormat,
+  timeZone?: string,
+): string {
+  const zone = timeZone === undefined ? {} : { timeZone };
+
+  return onSameDay(startsAt, endsAt, moment, timeZone)
+    ? moment(endsAt, { ...zone, date: false })
+    : moment(endsAt, zone);
+}
+
 /** The day of an instant in a zone, in numbers and in the division's order. */
 function numericDay(moment: Date, timeZone: string): string {
   // The digits, not the words, so any language that writes Latin digits will do: the order is the division's.
