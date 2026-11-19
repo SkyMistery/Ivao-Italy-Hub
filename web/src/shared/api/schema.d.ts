@@ -5466,16 +5466,32 @@ export interface components {
             updatedAt: string;
         };
         /**
-         * @description One page of the site as the tree a new page is put into sees it: where it is, and what it is
-         *     called. No body, no status, no department's business: an address is a public fact.
+         * @description One page of the site as its tree shows it (design `13-design-struttura-del-sito.md` §3.2): where it is, what it is
+         *     called, whose it is and who reads it — what a page online already says to whoever reads it — and, for a page this reader
+         *     may edit, its state. No body.
          */
         ContentPageNodeDto: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description The row.
+             */
             id: number;
+            /** @description Its whole address, without the leading slash: `about/team`. */
             path: string;
+            /** @description The title the site shows: the published version's for a page online, the draft's otherwise. */
             title: components["schemas"]["LocalizedOfstring"];
-            /** Format: int32 */
+            /**
+             * Format: int32
+             * @description How many levels down it sits, from 1 at the top of the site to 3.
+             */
             depth: number;
+            /** @description The department that writes it. */
+            ownerDepartment: components["schemas"]["Department"];
+            /** @description Who reads it. */
+            visibility: components["schemas"]["Visibility"];
+            status: null | components["schemas"]["PublishStatus"];
+            /** @description Whether the one handler lets the reader edit it: the tree offers to open it only then. */
+            mayEdit: boolean;
         };
         /**
          * @description What stands between a row and the public, asked before anybody presses publish.
