@@ -8,6 +8,8 @@ import { bootstrapKey } from '../../../features/me/queries';
 import { Route as rootRoute } from '../../../routes/__root';
 import type { Bootstrap } from '../../../shared/api/bootstrap';
 import { createTestI18n } from '../../../test/harness';
+import englishCommon from '../../../../../locales/en/common.json';
+import englishErrors from '../../../../../locales/en/errors.json';
 import type { PublicTourDto, TourDetailDto } from '../api';
 import englishFlightOps from '../locales/en/flightops.json';
 
@@ -134,12 +136,17 @@ afterEach(() => {
   api.get.mockReset();
 });
 
-async function open(tour: TourDetailDto) {
+/** The server's answer to the preview: the page, or a refusal with its status. */
+async function open(tour: TourDetailDto, refusedWith?: number) {
   api.get.mockImplementation((path: string) =>
-    Promise.resolve({
-      data: path === '/api/flightops/tours/{id}/preview' ? page : undefined,
-      response: new Response(null),
-    }),
+    Promise.resolve(
+      refusedWith === undefined
+        ? {
+            data: path === '/api/flightops/tours/{id}/preview' ? page : undefined,
+            response: new Response(null),
+          }
+        : { error: { status: refusedWith }, response: new Response(null, { status: refusedWith }) },
+    ),
   );
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -183,6 +190,15 @@ describe('the preview of a tour', () => {
     expect(api.get).toHaveBeenCalledWith('/api/flightops/tours/{id}/preview', {
       params: { path: { id: 7 } },
     });
+  });
+
+  // The master's review of #544: a refusal used to leave "loading" on the screen for ever.
+  test("a refusal of the server is said in the core's words, not left loading", async () => {
+    await open(draft(), 403);
+
+    expect(await screen.findByText(englishErrors.errors.forbidden.title)).toBeInTheDocument();
+    expect(screen.queryByText(englishCommon.common.loading)).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
   });
 
   test('without its dates, sends to the step that writes them and asks the server nothing', async () => {

@@ -4,6 +4,7 @@ import { useId, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
+import { describeProblem } from '../../../shared/forms';
 import { Notice } from '../../../shared/ui';
 import { tourPreviewQuery, type TourDetailDto } from '../api';
 import type { TourPageTab } from '../schemas';
@@ -20,10 +21,14 @@ import { openTab, pageTabs } from './tourPage';
  * which is the editor's.
  */
 export function TourPreview({ tour, identityHref }: { tour: TourDetailDto; identityHref: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // Without an address or a date there is no page: the server would say so, and the step says where to write them.
   const drawable = tour.slug !== null && tour.releaseAt !== null && tour.closeAt !== null;
-  const page = useQuery({ ...tourPreviewQuery(tour.id), enabled: drawable }).data;
+  const preview = useQuery({ ...tourPreviewQuery(tour.id), enabled: drawable });
+  const page = preview.data;
+  // A refusal — the permission gone meanwhile, a row another department took — is said in the core's words, never left
+  // as "loading" for ever.
+  const refusal = preview.isError ? describeProblem(preview.error, t, i18n.language) : null;
   const [asked, setAsked] = useState<TourPageTab | undefined>(undefined);
   const heading = useId();
 
@@ -41,6 +46,8 @@ export function TourPreview({ tour, identityHref }: { tour: TourDetailDto; ident
             </RouterAnchor>
           }
         />
+      ) : preview.isError ? (
+        <Notice tone="error" title={refusal ?? t('errors.title')} />
       ) : page === undefined ? (
         <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
       ) : (
