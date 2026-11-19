@@ -364,18 +364,17 @@ internal static class HubPipeline
 
         // The first start of an installation has no airspace yet, and a hub that does not know its
         // own FIRs cannot recognise a FIR staff position. A failure here is a row in hub_jobs_log,
-        // never a site that refuses to come up. Counted as the FIR directory counts them, of the division's country: a table
-        // that holds only another country's centres — a countryId corrected since — is an airspace this hub does not know yet.
-        var country = scope.ServiceProvider.GetRequiredService<IOptions<DivisionOptions>>().Value.CountryId;
-        if (!await scope.ServiceProvider.GetRequiredService<HubDbContext>().IvaoCenters.AnyAsync(
-                center => center.CountryId == country,
-                app.Lifetime.ApplicationStopping))
+        // never a site that refuses to come up. One process at a time, under the initialisation lock: two starts of a fresh
+        // installation used to download the whole snapshot each (issue #325, item 7).
+        // The step's name in starts.txt says which start paid for the download, and how long the other one waited.
+        var reference = await scope.ServiceProvider.GetRequiredService<FirstReferenceSync>().RunAsync(app.Lifetime.ApplicationStopping);
+        timings.Step(reference switch
         {
-            await scope.ServiceProvider.GetRequiredService<RefDataSyncJob>()
-                .RunAsync(app.Lifetime.ApplicationStopping);
-        }
-
-        timings.Step("reference data");
+            FirstReferenceSyncOutcome.Synced => "reference data synchronised",
+            FirstReferenceSyncOutcome.SyncedWithoutTheLock => "reference data synchronised without the initialisation lock",
+            FirstReferenceSyncOutcome.AnotherStartSynced => "reference data synchronised by another start",
+            _ => "reference data",
+        });
 
         await StartupDiagnostics.WriteAsync(
             paths,
