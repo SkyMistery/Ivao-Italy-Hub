@@ -136,6 +136,10 @@ const accepted = {
   diversionNote: null,
   pilotRemarks: null,
   flights: [],
+  // What the server always sends on a decided report (`PirepDto`): the page draws the validator's note from it (#387).
+  decidedAt: '2026-09-20T12:30:00Z',
+  noteToPilot: null,
+  violatedRules: [],
   rowVersion: '2026-09-20T12:00:00Z',
 };
 
