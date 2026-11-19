@@ -28,57 +28,112 @@ public sealed class RefDataSyncJob(
     /// <summary>Name under which the runs are recorded.</summary>
     public const string JobName = "ref-data-sync";
 
+    /// <summary>
+    /// Name under which the start of a fresh installation records the centres it downloads (<see cref="RunCentresAsync"/>):
+    /// not a scheduled job, and not <see cref="JobName"/>, which would make the scheduled job look as if it had run.
+    /// </summary>
+    public const string CentresJobName = "ref-data-centres";
+
     /// <summary>Longest failure message kept in <c>hub_jobs_log</c>; the log file has the rest.</summary>
     private const int MaxMessageLength = 2000;
 
     public Task Execute(IJobExecutionContext context) => RunAsync(context.CancellationToken);
 
     /// <summary>Returns how many centres and airports were written; zeroes when the run failed.</summary>
-    public async Task<(int Centers, int Airports)> RunAsync(CancellationToken cancellationToken = default)
+    public Task<(int Centers, int Airports)> RunAsync(CancellationToken cancellationToken = default)
     {
-        var started = clock.UtcNow;
         var countryId = division.Value.CountryId;
+        return RecordedAsync(
+            JobName,
+            async token =>
+            {
+                var centers = await SyncCentersAsync(countryId, token);
+                var airports = await SyncAirportsAsync(countryId, token);
+                var aircraft = await SyncAircraftAsync(token);
+                var (positions, sectors) = await SyncAtcPositionsAsync(countryId, token);
+                var fras = await SyncFrasAsync(countryId, token);
 
-        var entry = new JobLogEntry { Job = JobName, StartedAt = started, Status = "running" };
+                await database.SaveChangesAsync(token);
+
+                // The FRAs say how the run went in the message and not in the status: a division may have none at all, and
+                // "partial" every night would teach everybody to stop reading it.
+                var message = string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"{centers} centre(s) for {countryId}, {airports} airport(s) of the world, {aircraft} aircraft type(s)")
+                    + string.Create(CultureInfo.InvariantCulture, $", {positions} ATC position(s) and {sectors} sector(s) of the world")
+                    + (fras is { } count
+                        ? string.Create(CultureInfo.InvariantCulture, $", {count} FRA(s) for {countryId}")
+                        : string.Create(CultureInfo.InvariantCulture, $", no answer on the FRAs of {countryId}"));
+
+                return (Outcome(centers, airports, positions, sectors), message, (centers, airports));
+            },
+            failed: (0, 0),
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// The centres of the division alone: what the start of a fresh installation downloads, under the initialisation lock,
+    /// because a hub that does not know its own FIRs cannot recognise a FIR staff position at the first sign-in (issue #325,
+    /// item 7; note 2026-11-18-il-primo-allineamento-sotto-blocco, decided by the maintainer: «B, solo i centri»). One call,
+    /// where the whole snapshot is seven, each up to thirty seconds when IVAO hangs: longer than Passenger gives a start.
+    /// </summary>
+    /// <remarks>Recorded as <see cref="CentresJobName"/>, never as <see cref="JobName"/>: the scheduled job has then never run,
+    /// so it is due, and the first round of the jobs after the start (note 2026-11-14-il-primo-giro-dei-job-dopo-la-pagina)
+    /// takes the rest of the snapshot — airports, aircraft, positions, FRAs — out of the start.</remarks>
+    /// <returns>How many centres were written; zero when the run failed or IVAO gave none.</returns>
+    public Task<int> RunCentresAsync(CancellationToken cancellationToken = default)
+    {
+        var countryId = division.Value.CountryId;
+        return RecordedAsync(
+            CentresJobName,
+            async token =>
+            {
+                var centers = await SyncCentersAsync(countryId, token);
+                await database.SaveChangesAsync(token);
+
+                var message = string.Create(
+                    CultureInfo.InvariantCulture, $"{centers} centre(s) for {countryId}; the rest of the snapshot is the job's");
+                return (Outcome(centers), message, centers);
+            },
+            failed: 0,
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// One run with its row in <c>hub_jobs_log</c> under <paramref name="job"/>: written as running first, then with the
+    /// outcome and the message <paramref name="run"/> gives, or as failed. Never throws but for a cancellation.
+    /// </summary>
+    private async Task<T> RecordedAsync<T>(
+        string job,
+        Func<CancellationToken, Task<(string Status, string Message, T Result)>> run,
+        T failed,
+        CancellationToken cancellationToken)
+    {
+        var entry = new JobLogEntry { Job = job, StartedAt = clock.UtcNow, Status = "running" };
         database.JobsLog.Add(entry);
         await database.SaveChangesAsync(cancellationToken);
 
         try
         {
-            var centers = await SyncCentersAsync(countryId, cancellationToken);
-            var airports = await SyncAirportsAsync(countryId, cancellationToken);
-            var aircraft = await SyncAircraftAsync(cancellationToken);
-            var (positions, sectors) = await SyncAtcPositionsAsync(countryId, cancellationToken);
-            var fras = await SyncFrasAsync(countryId, cancellationToken);
+            var (status, message, result) = await run(cancellationToken);
 
-            await database.SaveChangesAsync(cancellationToken);
-
-            // The FRAs say how the run went in the message and not in the status: a division may have none at all, and
-            // "partial" every night would teach everybody to stop reading it.
             entry.FinishedAt = clock.UtcNow;
-            entry.Status = Outcome(centers, airports, positions, sectors);
-            entry.Message = string.Create(
-                CultureInfo.InvariantCulture,
-                $"{centers} centre(s) for {countryId}, {airports} airport(s) of the world, {aircraft} aircraft type(s)")
-                + string.Create(CultureInfo.InvariantCulture, $", {positions} ATC position(s) and {sectors} sector(s) of the world")
-                + (fras is { } count
-                    ? string.Create(CultureInfo.InvariantCulture, $", {count} FRA(s) for {countryId}")
-                    : string.Create(CultureInfo.InvariantCulture, $", no answer on the FRAs of {countryId}"));
-
+            entry.Status = status;
+            entry.Message = message;
             await database.SaveChangesAsync(cancellationToken);
 
             // The FIRs just changed, so anything holding the old set has to let go of it.
             firs.Invalidate();
 
-            logger.LogInformation("Reference data synchronised: {Message}.", entry.Message);
-            return (centers, airports);
+            logger.LogInformation("Reference data synchronised ({Job}): {Message}.", job, entry.Message);
+            return result;
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             await RecordFailureAsync(entry, exception);
 
-            logger.LogWarning(exception, "The reference data synchronisation failed; the snapshot is unchanged.");
-            return (0, 0);
+            logger.LogWarning(exception, "The reference data synchronisation failed ({Job}); the snapshot is unchanged.", job);
+            return failed;
         }
     }
 

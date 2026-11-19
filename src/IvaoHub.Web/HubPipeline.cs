@@ -364,15 +364,15 @@ internal static class HubPipeline
 
         // The first start of an installation has no airspace yet, and a hub that does not know its
         // own FIRs cannot recognise a FIR staff position. A failure here is a row in hub_jobs_log,
-        // never a site that refuses to come up. One process at a time, under the initialisation lock: two starts of a fresh
-        // installation used to download the whole snapshot each (issue #325, item 7).
+        // never a site that refuses to come up. Only the centres, one process at a time under the initialisation lock: the rest of
+        // the snapshot is the scheduled job's, due at the first round after the start (issue #325, item 7).
         // The step's name in starts.txt says which start paid for the download, and how long the other one waited.
         var reference = await scope.ServiceProvider.GetRequiredService<FirstReferenceSync>().RunAsync(app.Lifetime.ApplicationStopping);
         timings.Step(reference switch
         {
-            FirstReferenceSyncOutcome.Synced => "reference data synchronised",
-            FirstReferenceSyncOutcome.SyncedWithoutTheLock => "reference data synchronised without the initialisation lock",
-            FirstReferenceSyncOutcome.AnotherStartSynced => "reference data synchronised by another start",
+            FirstReferenceSyncOutcome.Synced => "reference centres synchronised",
+            FirstReferenceSyncOutcome.SyncedWithoutTheLock => "reference centres synchronised without the initialisation lock",
+            FirstReferenceSyncOutcome.AnotherStartSynced => "reference centres synchronised by another start",
             _ => "reference data",
         });
 

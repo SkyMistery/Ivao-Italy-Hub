@@ -1,9 +1,10 @@
 # Il primo allineamento dei dati di riferimento sotto il blocco dell'inizializzazione
 
 - **Data**: 18 novembre 2026
-- **Stato**: la forma (§2) è scelta di una sessione di lavoro del maintainer (`fix/first-ref-sync-lock`), dentro il caso (b), e il
-  revisore la legge come tale: non cambia **quando** i dati di riferimento ci sono la prima volta. La domanda del §4, che invece lo
-  cambierebbe, è **aperta**: posta al master il 18 novembre 2026, con la raccomandazione.
+- **Stato**: la forma del blocco (§2) è scelta di una sessione di lavoro del maintainer (`fix/first-ref-sync-lock`), dentro il caso
+  (b), e il revisore la legge come tale. La domanda del §4, che cambia **quando** i dati di riferimento ci sono la prima volta, è
+  **decisa da Carmine**: «B, solo i centri», in chat al master il 18 novembre 2026, registrata sulla issue:
+  <https://github.com/SkyMistery/Ivao-Italy-Hub/issues/325#issuecomment-6980597038>.
 - **Classificazione** (`CLAUDE.md` §5): **(b)**. Si estende un meccanismo che c'è, il blocco dell'inizializzazione
   (`InitialisationLock`, nota `2026-10-05-l-inizializzazione-sotto-blocco`), al passo dell'avvio che ne era rimasto fuori. Nessun
   blocco nuovo, nessuna configurazione nuova, nessun modulo tocca niente.
@@ -52,6 +53,8 @@ del database condiviso sono di tutte le classi della suite):
 - due avvii insieme su una tabella vuota: un download solo, un avvio `Synced` e l'altro `AnotherStartSynced`;
 - un avvio che trova i centri non chiede il blocco (tenuto da un altro, non aspetta) e non scarica;
 - un avvio che ha aspettato dietro a un download fallito scarica lui;
+- il download dell'avvio, con il job vero sulle fixture, scrive i centri e una riga `ref-data-centres`, e **nessuna** riga di
+  `ref-data-sync`: gli aeroporti non si toccano e il job resta dovuto;
 - con il blocco tenuto da un processo appeso, l'avvio aspetta, poi scarica senza (`SyncedWithoutTheLock`);
 - l'avvio vero dell'hub, dopo il primo, trova lo spazio aereo e non fa niente (`Present`).
 
@@ -70,11 +73,39 @@ processo, la tabella resta vuota, l'avvio dopo riprova: l'installazione nuova no
 - **C.** Tutto nell'avvio, con una scadenza (per esempio 45 s): tagliato, la riga diventa «failed» e l'avvio va avanti; ogni avvio
   dopo ripaga la scadenza finché IVAO non torna.
 
-**Raccomandazione**: **B**, con il blocco di questa nota. *In attesa della risposta.*
+**Raccomandazione**: **B**, con il blocco di questa nota. **Decisa: B** (Carmine, [commento sulla #325][b]).
+
+[b]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/325#issuecomment-6980597038
+
+## 5. Che cosa fa B nel codice
+
+- `RefDataSyncJob.RunCentresAsync`: **solo i centri** del paese della divisione, con la stessa lettura, gli stessi filtri e la stessa
+  potatura dell'esecuzione intera; una riga in `hub_jobs_log` sotto un nome suo, **`ref-data-centres`**, con l'esito e il messaggio
+  («N centre(s) for XX; the rest of the snapshot is the job's»), o «failed». La riga di un'esecuzione, la scrittura dell'esito, la
+  cancellazione dell'insieme delle FIR in memoria e il fallimento sono **una funzione sola** (`RecordedAsync`) per le due esecuzioni,
+  non una copia.
+- *Scelta*: **un nome suo, non `ref-data-sync`**. La guardia dei job legge l'ultima esecuzione di un job dalle sue righe
+  (`ScheduledJobs`): con il nome del job, l'avvio farebbe credere che l'allineamento intero ci sia stato, e aeroporti, aerei,
+  posizioni e FRA aspetterebbero la notte. Con un nome suo il job **non ha mai girato, quindi è dovuto** (`JobSchedule`), e il primo
+  giro dopo la pagina di chi ha svegliato l'hub (fra 5 e 30 s dall'avvio, nota `2026-11-14-il-primo-giro-dei-job-dopo-la-pagina`)
+  scarica il resto, sotto il blocco del job come ogni esecuzione.
+- `FirstReferenceSync` chiama `RunCentresAsync`; il resto del §2 non cambia.
+- ⚠️ **Che cosa cambia per chi usa l'hub**: su un'installazione nuova, fra l'avvio e il primo giro dei job, i tour non trovano gli
+  aeroporti, il briefing ATC le posizioni, l'aereo di un volo il suo tipo. Sono i primi secondi di un'installazione che nessuno sta
+  ancora usando. Se il primo giro fallisce (IVAO appeso), il job aspetta la sua prossima occorrenza, la notte, come ogni job fallito;
+  i centri, invece, li riprova ogni avvio finché mancano, come prima.
+- ⚠️ Un caso limite, non coperto: se il download dei centri di un avvio fallisce e un altro processo, nello stesso momento, ha già
+  cominciato il job intero, i due scrivono gli stessi centri. Il secondo che salva trova la chiave duplicata e registra «failed»; il
+  prossimo avvio o la prossima occorrenza rimette tutto in ordine. Per arrivarci servono un'installazione nuova, IVAO che risponde a
+  uno e non all'altro e due processi: non vale un meccanismo.
 
 ## Da portare nel piano
 
 - §11.3 punto 5, dove dice che «il controllo dei dati di riferimento» gira a ogni avvio e del blocco `hub-init:<database>`: il primo
   allineamento gira **sotto lo stesso blocco**, con la stessa regola (controllo, blocco, controllo di nuovo; un blocco non preso scarica
   come prima, mai un avvio senza i suoi dati); il passo di `starts.txt` dice quale avvio ha scaricato.
-- Issue #325, punto 7: chiuso per il doppio download; l'attesa con IVAO appeso secondo la risposta al §4.
+- §11.3 punto 5, sullo stesso passo: **dentro l'avvio solo i centri** (`ref-data-centres` in `hub_jobs_log`); il resto della
+  fotografia lo prende il job `ref-data-sync` al primo giro dopo l'avvio (Carmine, «B, solo i centri»). Dove la nota
+  `2026-09-28-l-avvio-a-freddo` §4.3 dice che il controllo dei dati vuoti «se la prima sincronizzazione è fallita deve riprovare»: vale
+  per i centri; il resto riprova con il job.
+- Issue #325, punto 7: chiuso (il doppio download con il blocco, l'attesa con IVAO appeso con B).

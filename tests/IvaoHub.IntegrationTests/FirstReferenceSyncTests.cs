@@ -1,6 +1,8 @@
 using System.Globalization;
+using IvaoHub.Core.Data;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using MySqlConnector;
@@ -12,7 +14,8 @@ namespace IvaoHub.IntegrationTests;
 /// The first synchronisation of the reference data under the initialisation lock, on the real database (issue #325, item 7;
 /// note 2026-11-18-il-primo-allineamento-sotto-blocco): of two starts on a fresh installation one downloads and the other
 /// waits and finds the centres; a start that finds them never asks for the lock; a start that waited behind a failed
-/// download tries itself; a lock that cannot be taken never leaves a start without its airspace.
+/// download tries itself; a lock that cannot be taken never leaves a start without its airspace. And the download is the
+/// centres alone, which leaves the scheduled job due (the maintainer's answer on the issue, «B, solo i centri»).
 /// </summary>
 /// <remarks>What is checked and what is run are the test's own, an airspace of a flag and a download that counts: the
 /// centres of the shared database belong to every class of the suite, and emptying them would change what the others read.
@@ -116,6 +119,38 @@ public sealed class FirstReferenceSyncTests(MariaDbFixture mariaDb)
         var outcome = await scope.ServiceProvider.GetRequiredService<FirstReferenceSync>().RunAsync(token);
 
         Assert.Equal(FirstReferenceSyncOutcome.Present, outcome);
+    }
+
+    [Fact]
+    public async Task TheStartDownloadsOnlyTheCentresAndLeavesTheScheduledJobDue()
+    {
+        // «B, solo i centri» (the maintainer, issue #325): the start's download is the centres alone, recorded under a name of
+        // its own, so that the scheduled job has not run and the first round of the jobs takes the rest of the snapshot.
+        var token = TestContext.Current.CancellationToken;
+        await using var factory = new HubWebApplicationFactory(mariaDb.ConnectionString, useIvaoFixtures: true);
+        await using var scope = factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+        var syncRuns = await database.JobsLog.CountAsync(entry => entry.Job == RefDataSyncJob.JobName, token);
+        var airports = await database.IvaoAirports.AsNoTracking().MaxAsync(airport => (DateTime?)airport.SyncedAt, token);
+        var centres = await scope.ServiceProvider.GetRequiredService<RefDataSyncJob>().RunCentresAsync(token);
+
+        Assert.True(centres > 0);
+        Assert.Contains(
+            await database.IvaoCenters.AsNoTracking().Select(center => center.Id).ToListAsync(token),
+            id => id == "LIRR");
+
+        var run = await database.JobsLog.AsNoTracking()
+            .Where(entry => entry.Job == RefDataSyncJob.CentresJobName)
+            .OrderByDescending(entry => entry.Id)
+            .FirstAsync(token);
+        Assert.Equal("succeeded", run.Status);
+        Assert.NotNull(run.FinishedAt);
+        Assert.StartsWith($"{centres} centre(s) for ", run.Message, StringComparison.Ordinal);
+
+        // Nothing else of the snapshot was touched, and the scheduled job has no run more than before.
+        Assert.Equal(syncRuns, await database.JobsLog.CountAsync(entry => entry.Job == RefDataSyncJob.JobName, token));
+        Assert.Equal(airports, await database.IvaoAirports.AsNoTracking().MaxAsync(airport => (DateTime?)airport.SyncedAt, token));
     }
 
     private Task<FirstReferenceSyncOutcome> RunAsync(

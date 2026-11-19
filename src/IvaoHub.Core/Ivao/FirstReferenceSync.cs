@@ -26,10 +26,15 @@ public enum FirstReferenceSyncOutcome
 /// <summary>
 /// The first synchronisation of the reference data, which a start runs when the database holds no centre of the division's
 /// country (note 2026-09-28-l-avvio-a-freddo, §4.3: a hub that does not know its own FIRs cannot recognise a FIR staff
-/// position). Under the initialisation lock (issue #325, item 7; note 2026-11-18-il-primo-allineamento-sotto-blocco):
-/// two processes that start together on a fresh installation used to download the whole snapshot each.
+/// position). Issue #325, item 7, and note 2026-11-18-il-primo-allineamento-sotto-blocco: two processes that start together
+/// on a fresh installation used to download the whole snapshot each, about 26 MB, and with IVAO hanging the seven calls of
+/// the whole snapshot outlasted the time Passenger gives a start.
 /// </summary>
 /// <remarks>
+/// <para><b>Only the centres</b> (<see cref="RefDataSyncJob.RunCentresAsync"/>; the maintainer's answer, «B, solo i centri»,
+/// <see href="https://github.com/SkyMistery/Ivao-Italy-Hub/issues/325#issuecomment-6980597038"/>): one call, at most the
+/// thirty seconds of the client's total. The rest of the snapshot is the scheduled job's, which has then never run and is due
+/// at the first round of the jobs after the start.</para>
 /// <para>The same lock as the initialisation's (<see cref="InitialisationLock"/>, note 2026-10-05-l-inizializzazione-sotto-blocco),
 /// with the same rule: the check comes first and costs one query, so a start that finds the airspace never asks for the lock;
 /// a start that has to synchronise takes it, and asks again with the lock in its hands. Of two starts on an empty table, one
@@ -50,7 +55,7 @@ public sealed class FirstReferenceSync(
 
     /// <summary>Synchronises when the division's airspace is missing, one process at a time.</summary>
     public Task<FirstReferenceSyncOutcome> RunAsync(CancellationToken cancellationToken = default) =>
-        RunAsync(ConnectionString(), HasAirspaceAsync, sync.RunAsync, LockWait, logger, cancellationToken);
+        RunAsync(ConnectionString(), HasAirspaceAsync, sync.RunCentresAsync, LockWait, logger, cancellationToken);
 
     /// <summary>
     /// The rule, apart from what it checks and what it runs: <paramref name="present"/> first, then, only when it says no,
