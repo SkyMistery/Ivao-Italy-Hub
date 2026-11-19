@@ -102,6 +102,23 @@ i gruppi delle regole, i numeri della testata), con i loro test. Le deviazioni:
 - **L'anteprima**: la pagina pubblica del §4 disegnata con la bozza, dentro il back office, prima del rilascio.
 - Restano il form generato (`SchemaForm`) e la griglia delle leg (`LegGrid`): cambia dove stanno, non come si scrivono.
 
+**Com'è andata** (terza PR della fase 6, ramo `feat/tour-editor-steps`, nota `2026-11-19-i-passi-di-un-tour`; l'anteprima è la PR dopo,
+in fila): l'editor è `TourEditor` in `screens/tourEditor.tsx`, uscito da `tours.tsx` con la barra delle azioni e il briefing; i fatti dei
+passi (quali passi ha un tour, a quale passo porta una voce di «che cosa manca», il passo prima e dopo) sono funzioni pure in
+`screens/tourSteps.ts`, con i loro test. Il tipo scelto al passo 1 viaggia nell'indirizzo (`?kind=`) finché il passo 2 non salva la
+bozza. Le scelte che il §5 non scrive:
+
+- **l'aereo di riferimento e l'award** stanno al passo 2, con il nome e le date: non sono regole né percorso;
+- **i callsign e i vincoli di un tour `Open`** stanno in «Regole», **l'obiettivo** in «Percorso»;
+- **«Segna pronto» solo nel Controllo**: la barra in alto non lo ha più;
+- **gli indirizzi di prima** (`?tab=legs`, `?tab=settings`…) portano al passo che ne contiene il contenuto;
+- **«Passo precedente» e «Passo successivo»** sotto ogni passo di un tour che esiste.
+
+⚠️ Gli spec e2e dei tour scelgono il tipo al passo 1 e premono «Passo successivo», e premono «Segna pronto» dopo aver aperto il
+Controllo: `bench.ts` (`releasedTourWithOneLeg`), `tours`, `tours-briefing`, `tours-hub`, `tours-import`, `tours-legs`, `tours-open`,
+`tours-public`, `tours-round`, `tours-rules`. In «Regole» ci sono più tabelle: i vincoli di un `Open` si trovano per il nome della loro
+sezione.
+
 ## 6. Che cosa non cambia
 
 Il modello, le API del back office, le regole del server, i blocchi del CMS (`flightops.tourCards` disegna le card del §3 e le segue).
