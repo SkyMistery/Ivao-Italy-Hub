@@ -145,6 +145,13 @@ export interface FieldMeta {
    */
   address?: boolean;
   /**
+   * An address a block frames, on a host of the allow list (`blocks/embedHosts.json`): the `url` of `video` and `embed`.
+   * The form draws it as any text; what it says is for the server, whose `FramedAddress` names the same field and refuses
+   * to publish an address the block would not frame (#524, note 2026-11-18-l-indirizzo-che-l-hub-non-incorpora).
+   * `app/blockFramedAddress.test.ts` holds the two halves together.
+   */
+  framed?: boolean;
+  /**
    * The callsign of an ATC position of the division (design of the editor, phase 3, §5.8): the station of a frequency table.
    * The positions are IVAO's rows, so whoever draws the form turns it into `suggestions` with `suggestAtcPositions`, each
    * carrying what choosing it copies into the fields beside it (`Suggestion.fills`). Still free text: a station IVAO does not

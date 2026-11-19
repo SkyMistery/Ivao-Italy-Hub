@@ -44,6 +44,9 @@ public sealed class ContentPublishService(
     /// <summary>A picture the page needs and nobody has chosen.</summary>
     public const string MediaToChooseKey = "errors.content.mediaToChoose";
 
+    /// <summary>An address a video or an embed block holds and the browser would not frame (#524).</summary>
+    public const string AddressNotFramedKey = "errors.content.addressNotFramed";
+
     /// <summary>A file drawn as a picture that is not one: a document chosen for a photo (#488).</summary>
     public const string MediaNotPictureKey = "errors.content.mediaNotPicture";
 
@@ -102,6 +105,7 @@ public sealed class ContentPublishService(
                 content.FileMediaId,
                 cancellationToken),
             PicturesLeftToChoose(body),
+            AddressesNotFramed(body),
             await FilesThatAreNotPicturesAsync(body, content.CoverMediaId, cancellationToken),
             await LinksThatDoNotArriveAsync(content, body, cancellationToken));
     }
@@ -140,6 +144,22 @@ public sealed class ContentPublishService(
         var errors = walker.SectionsWithoutTheirPicture(body)
             .Concat(walker.BlocksWithoutTheirPictures(body, blocks))
             .ToDictionary(path => $"body.{path}", _ => new[] { MediaToChooseKey }, StringComparer.Ordinal);
+
+        return errors.Count == 0
+            ? null
+            : new ContentPublishFailure(errors, new Dictionary<string, string[]>(StringComparer.Ordinal));
+    }
+
+    /// <summary>
+    /// An address a video or an embed block would frame and the browser will not, or none, stops the page: on the public
+    /// page the visitor would read the editor's warning in place of the block (issue #524; Carmine, 18 November 2026,
+    /// note 2026-11-18-l-indirizzo-che-l-hub-non-incorpora). The same three gestures as a picture left to choose, and
+    /// the same ⚠️: what is online is not touched, what stops is the next version.
+    /// </summary>
+    private ContentPublishFailure? AddressesNotFramed(JsonNode body)
+    {
+        var errors = walker.BlocksWithAddressesNotFramed(body, blocks)
+            .ToDictionary(path => $"body.{path}", _ => new[] { AddressNotFramedKey }, StringComparer.Ordinal);
 
         return errors.Count == 0
             ? null

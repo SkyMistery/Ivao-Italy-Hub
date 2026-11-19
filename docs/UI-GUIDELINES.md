@@ -695,8 +695,16 @@ markdown does not cover is a section with a column layout.
 **A frame is only ever pointed at a host on the allow list.** `video` and `embed` read
 `web/src/blocks/allowlist.ts`, which turns the address of a *page* — the one in the browser bar — into
 the address of a player, built from the identifier it recognised. Nothing typed is ever echoed into
-the `src`. Growing the list is adding an entry; pointing an `<iframe>` at whatever an editor typed is
-not something this hub does.
+the `src`. The list itself is data, `web/src/blocks/embedHosts.json`: each site's hosts, the shapes of
+address it recognises and the player each one becomes. Growing the list is adding an entry there, and
+the origin of its player to `frame-src` in `config/security.json` (a test fails until both are done);
+pointing an `<iframe>` at whatever an editor typed is not something this hub does.
+
+The server reads the same file: a `video` or an `embed` whose address would not be framed — a host
+outside the list, an address of one of its sites that names no video, or no address at all — stops
+publication (`errors.content.addressNotFramed`), so a visitor never reads the block's warning in its
+place. The block's C# half names the field in `FramedAddress`, and its schema marks it
+`.meta({ framed: true })`.
 
 ### How a block names a file
 
