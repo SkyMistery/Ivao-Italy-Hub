@@ -9,7 +9,7 @@ import { bootstrapQuery } from '../../../features/me/queries';
 import { loginHref } from '../../../shared/api/client';
 import { ApiError } from '../../../shared/api/problem';
 import { SchemaForm, type ChoiceOption } from '../../../shared/forms';
-import { useMoment } from '../../../shared/i18n/useMoment';
+import { intervalEnd, useMoment } from '../../../shared/i18n/useMoment';
 import { Dialog, Notice } from '../../../shared/ui';
 import {
   useBookPrivate,
@@ -29,7 +29,6 @@ import {
 import { bookingsOpen } from './bookingTimes';
 import { airportLabel } from './cards';
 import { AirportName } from './EventCards';
-import { endOfHours } from './hours';
 import { MY_EVENTS_PAGE, VISITOR, type SlotViewer } from './myBookings';
 import { isLimitRefusal } from './limits';
 import { LimitsNotice } from './myRecord';
@@ -73,7 +72,7 @@ export function PrivateSlots({ event, viewer = VISITOR }: { event: PublicEventDt
   const time = (value: string) => moment(value, sameDay ? { date: false } : {});
   // The end of an hour on the slots' one day is a time, and one past midnight has its date (#333, item 6).
   const until = (fromUtc: string, toUtc: string) =>
-    sameDay ? endOfHours(fromUtc, toUtc, moment) : time(toUtc);
+    sameDay ? intervalEnd(fromUtc, toUtc, moment) : time(toUtc);
   const first = event.privateSlots[0];
   const airportOf = (icao: string): PublicEventAirportDto =>
     event.airports.find((airport) => airport.icao === icao) ?? { icao, name: null };

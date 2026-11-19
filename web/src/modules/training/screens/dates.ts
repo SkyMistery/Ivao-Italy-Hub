@@ -1,4 +1,5 @@
 import type { LocalizedString } from '../../../shared/api/bootstrap';
+import { intervalEnd, onSameDay } from '../../../shared/i18n/useMoment';
 import type {
   DateConflictsDto,
   DateWarning,
@@ -42,7 +43,7 @@ export type FormatMoment = (
 /**
  * A span of time in one zone, as a line says it: the day once and the two times when it starts and ends on the same day there,
  * both moments whole when it does not — a session at 23:00 UTC ends on the next day in UTC, and maybe not where the division
- * lives. Without an end, its start. The zone is the sentence's to name.
+ * lives. The end is the core's `intervalEnd`. Without an end, its start. The zone is the sentence's to name.
  */
 export function spanText(
   startsAtUtc: string,
@@ -56,9 +57,8 @@ export function spanText(
     return moment(startsAtUtc, zone);
   }
 
-  return moment(startsAtUtc, { ...zone, time: false }) === moment(endsAtUtc, { ...zone, time: false })
-    ? `${moment(startsAtUtc, zone)}–${moment(endsAtUtc, { ...zone, date: false })}`
-    : `${moment(startsAtUtc, zone)} – ${moment(endsAtUtc, zone)}`;
+  const dash = onSameDay(startsAtUtc, endsAtUtc, moment, timeZone) ? '–' : ' – ';
+  return `${moment(startsAtUtc, zone)}${dash}${intervalEnd(startsAtUtc, endsAtUtc, moment, timeZone)}`;
 }
 
 /**
