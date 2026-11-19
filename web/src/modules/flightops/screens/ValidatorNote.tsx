@@ -20,7 +20,11 @@ const TONES: Partial<Record<PirepDto['status'], NoticeTone>> = {
  * Nothing when the report is not decided (a corrected report back in the queue keeps the old note on the row, and it is no
  * longer the word on it), nor when the decision said nothing. The server sends it only on the pilot's own reports.
  */
-export function ValidatorNote({ report }: { report: Pick<PirepDto, 'status' | 'noteToPilot' | 'violatedRules'> }) {
+export function ValidatorNote({
+  report,
+}: {
+  report: Pick<PirepDto, 'status' | 'noteToPilot' | 'violatedRules'>;
+}) {
   const { t } = useTranslation();
   const read = useLocalized();
   const tone = TONES[report.status];
