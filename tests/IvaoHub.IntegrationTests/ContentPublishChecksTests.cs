@@ -223,6 +223,38 @@ public sealed class ContentPublishChecksTests(MariaDbFixture mariaDb) : IAsyncLi
     }
 
     /// <summary>
+    /// #524: an address a video or an embed block would not frame, or none, stops the page, and the editor is told on the
+    /// field before the click; an address of the list does not. The list is the browser's, read by the server
+    /// (note 2026-11-18-l-indirizzo-che-l-hub-non-incorpora).
+    /// </summary>
+    [Theory]
+    [InlineData("video", """{ "url": "https://evil.example/video.mp4" }""")]
+    [InlineData("video", """{ "aspect": "16x9" }""")]
+    [InlineData("video", """{ "url": "https://www.youtube.com/" }""")]
+    [InlineData("embed", """{ "url": "https://evil.example/", "title": { "it": "Pagina", "en": "Page" } }""")]
+    [InlineData("embed", """{ "url": "http://vimeo.com/76979871", "title": { "it": "Pagina", "en": "Page" } }""")]
+    public async Task AnAddressTheBlockWouldNotFrameStopsThePageAndOneOfTheListDoesNot(string type, string props)
+    {
+        var token = TestContext.Current.CancellationToken;
+        const string Field = "body.sections[0].blocks[0].props.url";
+        var page = await WriteAsync(Visibility.Public, OneBlock(type, props), token);
+
+        Assert.Equal([ContentPublishService.AddressNotFramedKey], await ProblemsAsync(page.Id, Field, token));
+
+        using var refused = await PublishAsync(page.Id, token);
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        var errors = (await refused.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("errors");
+        Assert.Equal(ContentPublishService.AddressNotFramedKey, errors.GetProperty(Field)[0].GetString());
+
+        await SetBodyAsync(
+            page.Id,
+            OneBlock(type, """{ "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "title": { "it": "Pagina", "en": "Page" } }"""),
+            token);
+
+        Assert.Empty(await ProblemsAsync(page.Id, Field, token));
+    }
+
+    /// <summary>
     /// #488: a document chosen where a picture is drawn — a block, a section's background, a news item's cover — stops
     /// the page, and the picture beside it does not. The file of a document is a download, and stays any file.
     /// </summary>
