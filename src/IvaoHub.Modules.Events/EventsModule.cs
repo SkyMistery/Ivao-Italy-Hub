@@ -98,6 +98,8 @@ public sealed class EventsModule : ModuleBase
     /// </summary>
     public override IReadOnlyList<string> ReservedSegments => ["events"];
 
+    public override IReadOnlyList<SiteScreen> SiteScreens => [new("/events", "events:public.title")];
+
     /// <summary>The mails of the events (design M4 §8.3): each declared by the phase of the change it tells, cancelling first (E3a).</summary>
     public override IReadOnlyList<string> NotificationTypes => EventsNotifications.All;
 

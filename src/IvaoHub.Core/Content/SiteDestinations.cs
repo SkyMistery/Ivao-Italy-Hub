@@ -2,6 +2,7 @@ using System.Text.Json;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Modules;
 using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Core.Content;
@@ -21,19 +22,42 @@ public sealed record SiteDestination(Visibility Visibility, Department Departmen
 /// <para>Read past the query filter: the question is what the destination is, not whether whoever is writing may see
 /// it. A link of another department is a perfectly good destination.</para>
 /// </summary>
-public sealed class SiteDestinations(HubDbContext database, ContentAddresses addresses)
+public sealed class SiteDestinations(HubDbContext database, ContentAddresses addresses, ModuleRegistry modules)
 {
     /// <summary>
-    /// The addresses of this application that are not rows: they are screens of the single page
-    /// application, so no table can be asked about them.
-    /// <para>⚠️ The other half is <c>SITE_SCREENS</c> in
-    /// <c>web/src/features/content/siteAddresses.ts</c>, and the two agree **by hand** — a
-    /// route of the client is not something the contract can carry. The integration test that posts
-    /// a screen the server does not know is what keeps them agreeing, exactly as it does for the
-    /// backgrounds of a section.</para>
+    /// The core's own screens: the addresses of this application that are not rows, so no table can be asked about them.
+    /// Their names are the keys the menu has always shown them with (<c>menu.screens./calendar</c>).
+    /// <para>Declared here once (design <c>13-design-struttura-del-sito.md</c> §3.1). Until 4.1 the browser kept a copy,
+    /// <c>SITE_SCREENS</c>, agreed with this one by hand; now it reads <see cref="Screens"/> from <c>/api/me</c>, and a test of
+    /// the browser (<c>web/src/routes/-screens.test.ts</c>) reads this list and the modules' and checks that each one is a route.</para>
     /// </summary>
-    public static readonly IReadOnlyList<string> Screens =
-        ["/", "/calendar", "/news", "/documents", "/search", "/contact"];
+    public static readonly IReadOnlyList<SiteScreen> CoreScreens =
+    [
+        new("/", "menu.screens./"),
+        new("/calendar", "menu.screens./calendar"),
+        new("/news", "menu.screens./news"),
+        new("/documents", "menu.screens./documents"),
+        new("/search", "menu.screens./search"),
+        new("/contact", "menu.screens./contact"),
+    ];
+
+    /// <summary>
+    /// Every screen of the site this installation answers for: the core's and those of the enabled modules
+    /// (<see cref="IModule.SiteScreens"/>), in that order, and one per address.
+    /// </summary>
+    public IReadOnlyList<SiteScreen> Screens => _screens ??= Of(modules);
+
+    private IReadOnlyList<SiteScreen>? _screens;
+
+    /// <summary>The same list, for a caller with the registry and no database: the bootstrap.</summary>
+    public static IReadOnlyList<SiteScreen> Of(ModuleRegistry modules)
+    {
+        ArgumentNullException.ThrowIfNull(modules);
+        return [.. CoreScreens.Concat(modules.SiteScreens).DistinctBy(screen => screen.Path, StringComparer.Ordinal)];
+    }
+
+    private SiteScreen? ScreenAt(string path) =>
+        Screens.FirstOrDefault(screen => string.Equals(screen.Path, path, StringComparison.Ordinal));
 
     /// <summary>The back office: a link to it from a page for everybody is the case the check exists for.</summary>
     private const string StaffSegment = "staff";
@@ -114,7 +138,7 @@ public sealed class SiteDestinations(HubDbContext database, ContentAddresses add
             return false;
         }
 
-        if (Screens.Contains(path, StringComparer.Ordinal))
+        if (ScreenAt(path) is not null)
         {
             return true;
         }
@@ -159,9 +183,9 @@ public sealed class SiteDestinations(HubDbContext database, ContentAddresses add
         {
             var segments = path[1..].Split('/');
 
-            if (Screens.Contains(path, StringComparer.Ordinal))
+            if (ScreenAt(path) is { } screen)
             {
-                found[path] = new SiteDestination(Visibility.Public, default);
+                found[path] = new SiteDestination(screen.Visibility, default);
             }
             else if (segments is ["news", var newsSlug])
             {

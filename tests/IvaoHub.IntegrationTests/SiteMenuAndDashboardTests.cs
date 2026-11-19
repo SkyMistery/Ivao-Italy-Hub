@@ -218,6 +218,29 @@ public sealed class SiteMenuAndDashboardTests(MariaDbFixture mariaDb) : IAsyncLi
         Assert.True(problem.GetProperty("errors").TryGetProperty("parentId", out _));
     }
 
+    /// <summary>
+    /// The pages of the site written in code reach the browser with the bootstrap, the core's and the modules' together
+    /// (design 13 §3.1): the browser has no list of its own any more, so a visitor's bootstrap has to carry them.
+    /// </summary>
+    [Fact]
+    public async Task TheBootstrapCarriesTheScreensOfTheCoreAndOfTheModules()
+    {
+        var token = TestContext.Current.CancellationToken;
+
+        using var anonymous = _factory.CreateApiClient();
+        var bootstrap = await anonymous.GetFromJsonAsync<JsonElement>("/api/me", token);
+
+        var screens = bootstrap.GetProperty("registries").GetProperty("screens").EnumerateArray()
+            .ToDictionary(screen => screen.GetProperty("path").GetString()!, screen => screen);
+
+        Assert.Equal("menu.screens./calendar", screens["/calendar"].GetProperty("titleKey").GetString());
+        Assert.Equal("flightops:public.title", screens["/tours"].GetProperty("titleKey").GetString());
+        Assert.Equal(nameof(Visibility.Public), screens["/tours"].GetProperty("visibility").GetString());
+        Assert.Equal(
+            [.. SiteDestinations.CoreScreens.Select(screen => screen.Path), "/events", "/tours", "/training"],
+            screens.Keys);
+    }
+
     [Fact]
     public async Task AMenuEntryOnlyLeadsWhereTheSiteOwnsSomething()
     {
@@ -237,6 +260,11 @@ public sealed class SiteMenuAndDashboardTests(MariaDbFixture mariaDb) : IAsyncLi
         // A screen of the application: no table knows about it, the validator does.
         using var screen = await SendAsync(web, HttpMethod.Post, MenuEndpoints.Pattern, Entry("/news"), token);
         Assert.Equal(HttpStatusCode.Created, screen.StatusCode);
+
+        // And a screen of a module, which the module declares (design 13 §3.1): until then `/tours` was refused, because
+        // the menu knew only the core's screens and no page is called `tours`.
+        using var moduleScreen = await SendAsync(web, HttpMethod.Post, MenuEndpoints.Pattern, Entry("/tours"), token);
+        Assert.Equal(HttpStatusCode.Created, moduleScreen.StatusCode);
 
         // A page that is still a draft, on purpose: writing the entry before publishing the page is
         // how a menu is actually built, and the entry can wait, switched off, until the page is out.
