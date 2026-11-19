@@ -430,7 +430,7 @@
       "seatsEvery": "Seats per turn: {{seats}} · a turn lasts {{minutes}} minutes",
       "turn": "Turn",
       "free": "Free seats",
-      "hours": "{{from}}–{{to}} UTC",
+      "hours": "{{when}} UTC",
       "seatsFree": "{{seats}} free",
       "full": "Full",
       "yours": "Your seat",
@@ -443,7 +443,7 @@
     "lead": "A private slot is a time at an airport of the event, for the flight a pilot chooses: each hour opens with its free slots, and whoever books one writes where they come from or go to, and when. An arrival can take its departure from the same airport too, so that both get the same gate.",
     "hour": "Hour (UTC)",
     "free": "Free",
-    "range": "{{from}}–{{to}}",
+    "range": "{{from}} – {{to}}",
     "freeOf": "{{free}} of {{of}}",
     "full": "Full",
     "dialog": {
@@ -880,8 +880,8 @@
         "subject": "[Events] You are registered: {{title}}",
         "body": "You are registered to {{title}}, which starts on {{starts}} UTC.\n\nWhere: {{venue}}\n\nYour answers:\n{{answers}}{{seats}}\n\nYou can change them or withdraw until the event starts: {{mine}}\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page.",
         "seats": "Your turns in the activities:",
-        "seatLine": "{{activity}}: {{from}}–{{to}} UTC",
-        "seatLinePlace": "{{activity}} ({{place}}): {{from}}–{{to}} UTC"
+        "seatLine": "{{activity}}: {{from}} – {{to}} UTC",
+        "seatLinePlace": "{{activity}} ({{place}}): {{from}} – {{to}} UTC"
       },
       "registrationRemoved": {
         "subject": "[Events] Registration taken away: {{title}}",

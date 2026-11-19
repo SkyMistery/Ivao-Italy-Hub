@@ -330,8 +330,8 @@ test('the page of an event says when, who organises it, where, its routes and it
   // Under the title (E8b, note 2026-10-11-la-testa-della-pagina-di-un-evento): when, in UTC and where the division lives — the day
   // once, then the times of an evening.
   const head = page.locator('article > header');
-  await expect(head.getByText(/ · 18:00–22:00Z$/)).toBeVisible();
-  await expect(head.getByText('(19:00–23:00 LT)', { exact: true })).toBeVisible();
+  await expect(head.getByText(/ · 18:00 – 22:00Z$/)).toBeVisible();
+  await expect(head.getByText('(19:00 – 23:00 LT)', { exact: true })).toBeVisible();
 
   // In the same line its airports by their codes — the name the hub knows on the keyboard's focus too (Carmine, answer 1 on #249),
   // the code alone of one it no longer knows —, and who organises it, another division, with their page.

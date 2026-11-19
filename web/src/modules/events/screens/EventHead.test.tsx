@@ -87,7 +87,7 @@ async function draw(one: PublicEventDto) {
 /** The second line of the head: the bookings, the airports and who organises it. */
 function factsLine(): HTMLElement {
   return screen
-    .getByText(/17:00–21:00Z$/)
+    .getByText(/17:00 – 21:00Z$/)
     .closest('div')!
     .querySelectorAll('p')[1]!;
 }
@@ -97,8 +97,8 @@ describe('the head of the page of an event', () => {
     await draw(event());
 
     expect(screen.getByRole('heading', { level: 1, name: 'Smoke evening' })).toBeInTheDocument();
-    expect(screen.getByText('21/11/2099 · 17:00–21:00Z')).toBeInTheDocument();
-    expect(screen.getByText('(18:00–22:00 LT)')).toBeInTheDocument();
+    expect(screen.getByText('21/11/2099 · 17:00 – 21:00Z')).toBeInTheDocument();
+    expect(screen.getByText('(18:00 – 22:00 LT)')).toBeInTheDocument();
 
     const line = factsLine();
     expect(within(line).getByText(words.booking.open)).toBeInTheDocument();
