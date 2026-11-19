@@ -86,7 +86,8 @@ const moment = (instant: string) => {
   const iso = new Date(instant).toISOString();
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)} ${timeInUtc(instant)}`;
 };
-const span = (start: string, end: string) => `${moment(start)}–${timeInUtc(end)}`;
+// A span of one day, with the dash spaced as on two (the core's `intervalText`; Carmine on #542).
+const span = (start: string, end: string) => `${moment(start)} – ${timeInUtc(end)}`;
 
 const trainee = { vid: 790099, name: 'Test Trainee' };
 const trainer = { vid: 790098, name: 'Test Trainer' };
