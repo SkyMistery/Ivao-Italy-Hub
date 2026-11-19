@@ -90,10 +90,33 @@ processo, la tabella resta vuota, l'avvio dopo riprova: l'installazione nuova no
   giro dopo la pagina di chi ha svegliato l'hub (fra 5 e 30 s dall'avvio, nota `2026-11-14-il-primo-giro-dei-job-dopo-la-pagina`)
   scarica il resto, sotto il blocco del job come ogni esecuzione.
 - `FirstReferenceSync` chiama `RunCentresAsync`; il resto del §2 non cambia.
-- ⚠️ **Che cosa cambia per chi usa l'hub**: su un'installazione nuova, fra l'avvio e il primo giro dei job, i tour non trovano gli
-  aeroporti, il briefing ATC le posizioni, l'aereo di un volo il suo tipo. Sono i primi secondi di un'installazione che nessuno sta
-  ancora usando. Se il primo giro fallisce (IVAO appeso), il job aspetta la sua prossima occorrenza, la notte, come ogni job fallito;
-  i centri, invece, li riprova ogni avvio finché mancano, come prima.
+- ⚠️ **Che cosa cambia per un'installazione nuova vera** (richiesta del master sulla PR, da scrivere e non da scoprire):
+  - **fino alla fine del primo giro del job `ref-data-sync`**, un tour o un evento che nomina un aeroporto è rifiutato con
+    `airportUnknown` (`events:errors.airportUnknown`, e il rifiuto equivalente dei tour), il briefing ATC non trova le posizioni,
+    l'aereo di un volo non trova il suo tipo. I centri, e quindi le FIR e i posti di staff FIR all'accesso, ci sono dall'avvio;
+  - **il giro parte da solo, anche senza visite**, ma solo **mentre il processo vive**: `JobCatchUp` fa il primo controllo non prima
+    di 5 s dall'avvio, appena nessuna richiesta è in corso da 3 s e comunque entro 30 s (nota
+    `2026-11-14-il-primo-giro-dei-job-dopo-la-pagina`). Un processo nasce solo da una richiesta (Passenger), quindi «senza visite» vuol
+    dire: dopo la richiesta che lo ha svegliato, anche se non ne arrivano altre. Su un'installazione nuova il giro trova dovuti
+    **tutti** i job (nessuno ha mai girato) e li fa **uno dopo l'altro**: `ref-data-sync` può non essere il primo, e scarica circa
+    14 MB di aeroporti;
+  - se Passenger ferma il processo prima che il job finisca, la sua riga resta «running», che la guardia considera un'esecuzione mai
+    finita: al risveglio dopo il job è ancora dovuto e il giro lo riprende. Se invece il job **finisce male** (IVAO appeso: «failed»;
+    i centri sì e gli aeroporti no: «partial»), è un'esecuzione finita e aspetta la sua prossima occorrenza, la notte, come ogni job:
+    fino ad allora gli aeroporti mancano. Né un riavvio né l'indirizzo dei job pianificati (`/api/jobs/run`, che fa girare solo i job
+    dovuti) lo anticipano: è il comportamento che ogni job ha già (nota `2026-10-09-i-job-che-recuperano`), e qui lo si scrive perché
+    un'installazione nuova lo paga senza fotografia di ieri da tenere;
+  - è la scelta di Carmine («B, solo i centri»): il prezzo sono questi secondi, o questa notte, su un'installazione che nessuno sta
+    ancora usando, contro un avvio che con IVAO appeso non arrivava mai alla fine.
+- **Da dire nelle note di rilascio** (le scrive il master): «On a fresh installation the start downloads only the FIR centres; airports,
+  aircraft types, ATC positions and FRAs arrive with the first round of the `ref-data-sync` job, a few seconds after the first page.
+  Until then a tour or an event naming an airport is refused as an unknown airport; if that first run fails (IVAO not answering), they
+  arrive with the job's next nightly run. Installations that already have the reference data see no change.»
+- ⚠️ **Il banco end to end lo ha pagato per primo.** In CI parte su un database vuoto e le sue prove scrivono subito eventi e tour
+  fra Roma e Milano: senza gli aeroporti, 36 prove su 86 rifiutate con `events:errors.airportUnknown` (prima esecuzione della CI di
+  questa PR). Il banco ora chiede il job prima della prima prova, come una prova chiede qualunque job (`runJob`, nota
+  `2026-10-18-il-banco-fa-girare-un-job`): `web/e2e/full/global-setup.ts`, nel `globalSetup` di `playwright.full.config.ts`. Nessuna
+  eccezione nell'avvio per il banco: il banco fa quello che farebbe il primo giro dei job, prima.
 - ⚠️ Un caso limite, non coperto: se il download dei centri di un avvio fallisce e un altro processo, nello stesso momento, ha già
   cominciato il job intero, i due scrivono gli stessi centri. Il secondo che salva trova la chiave duplicata e registra «failed»; il
   prossimo avvio o la prossima occorrenza rimette tutto in ordine. Per arrivarci servono un'installazione nuova, IVAO che risponde a
