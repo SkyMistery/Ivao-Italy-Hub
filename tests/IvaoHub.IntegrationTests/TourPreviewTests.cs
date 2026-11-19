@@ -17,7 +17,7 @@ using Xunit;
 namespace IvaoHub.IntegrationTests;
 
 /// <summary>
-/// The preview of a tour (design <c>11-design-pagine-dei-tour</c> §5; the endpoint decided by the master on 18 November
+/// The preview of a tour (design <c>11-design-pagine-dei-tour</c> §5; the endpoint decided by the maintainer on 19 November
 /// 2026): the page of the site drawn from the row the back office holds, a draft included, with the same answer the site
 /// reads. Read with <c>Tours.View</c> through the one handler: refused without the permission, and refused on a tour
 /// another department curates; a tour with no address or no dates has no page yet, and the refusal names the field.

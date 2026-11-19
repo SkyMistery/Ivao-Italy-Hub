@@ -16,7 +16,7 @@ import { openTab, pageTabs } from './tourPage';
 /**
  * The preview of a tour (design 11 §5): the page of §4 drawn with the tour as the back office holds it, before its release —
  * the same head and the same tabs the public page draws, from the same `PublicTourDto`, which the server composes for the
- * draft (`/tours/{id}/preview`, the master, 18 November 2026). What belongs to one pilot — «Your tour», their reports, the
+ * draft (`/tours/{id}/preview`, the maintainer, 19 November 2026). What belongs to one pilot — «Your tour», their reports, the
  * buttons to report and to plan — is not here: nobody is flying a draft. Its tab is kept on the screen, not in the address,
  * which is the editor's.
  */

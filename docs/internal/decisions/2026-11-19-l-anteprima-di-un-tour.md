@@ -2,9 +2,9 @@
 
 **Data:** 19 novembre 2026, fase 6, voce (q), seconda PR delle due (`11-design-pagine-dei-tour.md` §5, ultimo punto: «L'anteprima: la
 pagina pubblica del §4 disegnata con la bozza, dentro il back office, prima del rilascio»). In fila dopo i passi (#543).
-**Stato:** **deciso dal master**, il 18 novembre 2026, in chat con la sessione di lavoro (ripetuto il 19 novembre): una scelta tecnica,
-non una domanda per Carmine. È una **deviazione dal §6 del design 11** («le API del back office non cambiano»), che il §5 rende
-necessaria.
+**Stato:** **deciso da Carmine**, il 19 novembre 2026, in chat al master: «Sì, l'endpoint»; riportato sulla #544:
+https://github.com/SkyMistery/Ivao-Italy-Hub/pull/544#issuecomment-7014155806. Il master l'aveva proposto alla sessione di lavoro il
+18 novembre. È una **deviazione dal §6 del design 11** («le API del back office non cambiano»), che il §5 rende necessaria.
 **Classificazione** (`CLAUDE.md` §5): (b) dentro il modulo dei tour. Nessun file del nucleo cambia (lo `schema.d.ts` generato a parte),
 nessuna migrazione, nessun componente nuovo.
 
@@ -49,6 +49,6 @@ pagina disegnata senza niente di un pilota, e senza date il link al passo 2 e ne
 ## Da portare nel piano
 
 - **Design 11 §6**: «le API del back office non cambiano» ha un'eccezione, l'anteprima (`GET /api/flightops/tours/{id}/preview`), decisa
-  dal master il 18 novembre 2026 perché il §5 la richiede e l'alternativa era copiare `PublicTours.ReadAsync`.
+  da Carmine il 19 novembre 2026 (https://github.com/SkyMistery/Ivao-Italy-Hub/pull/544#issuecomment-7014155806) perché il §5 la richiede e l'alternativa era copiare `PublicTours.ReadAsync`.
 - **Piano §16.6** (gli endpoint scritti a mano, per famiglia): uno in più nella famiglia dei tour, la lettura dell'anteprima, accanto a
   `ready-problems`.

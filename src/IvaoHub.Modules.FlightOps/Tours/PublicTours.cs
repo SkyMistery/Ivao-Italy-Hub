@@ -140,8 +140,8 @@ public sealed class PublicTours(
 
     /// <summary>
     /// The page of a tour as it would be drawn today, read from the row the back office holds — a draft, a tour not yet
-    /// released, a hidden one (design <c>11-design-pagine-dei-tour</c> §5, the preview; decided by the master on
-    /// 18 November 2026). The caller reads the row through the back office's source and asks the one handler first. The
+    /// released, a hidden one (design <c>11-design-pagine-dei-tour</c> §5, the preview; decided by the maintainer on
+    /// 19 November 2026). The caller reads the row through the back office's source and asks the one handler first. The
     /// page needs an address and both dates: without them there is nothing to draw, and the answer is null. Its parent is
     /// named only when it has an address too; its subtours are those the public would see, as on the page itself.
     /// </summary>

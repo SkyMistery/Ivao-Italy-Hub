@@ -121,7 +121,7 @@ public static class TourEndpoints
             .RequireAuthorization(TourPermissions.View);
 
         // The page of a tour as the public would see it, drawn from the row the back office holds (design 11 §5, the
-        // preview; the master, 18 November 2026): the same answer as `/public/{slug}`, for a draft too.
+        // preview; the maintainer, 19 November 2026): the same answer as `/public/{slug}`, for a draft too.
         group.MapGet("/{id:long}/preview", PreviewAsync)
             .WithName("FlightOpsTourPreview")
             .Produces<PublicTourDto>()
