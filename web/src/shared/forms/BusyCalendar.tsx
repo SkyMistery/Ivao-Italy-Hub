@@ -24,6 +24,7 @@ import {
   type BusyStretch,
   type DayKey,
   type FormCalendar,
+  vocabularyOf,
 } from './busy';
 
 /** What the cells of the month read while they draw: the busy days and the vocabulary their colours come from. */
@@ -102,7 +103,9 @@ export function BusyCalendar({
   const utcMonth = new Date(Date.UTC(month.getFullYear(), month.getMonth(), 1));
   const busy = useQuery(busyQuery(utcMonth, calendar.except));
   const stretches = busy.data ?? [];
-  const days = busyDays(stretches, calendar.kinds);
+  // The bootstrap's kinds and the retired ones the answer names, with their names and colours (`vocabularyOf`).
+  const vocabulary = vocabularyOf(calendar.kinds, stretches);
+  const days = busyDays(stretches, vocabulary);
 
   const isFree = (date: Date) => !days.has(dayKeyOfPicker(date));
   // An instant cannot be put on a day with no free hour; a day without a time takes the whole day, so a day any blocking entry
@@ -112,7 +115,7 @@ export function BusyCalendar({
     return found !== undefined && (withTime ? found.blocked : found.blocking);
   };
 
-  const kindLabel = (kind: string) => read(calendar.kinds.find((word) => word.key === kind)?.label) || kind;
+  const kindLabel = (kind: string) => read(vocabulary.find((word) => word.key === kind)?.label) || kind;
   const longDay = (date: Date) => new Intl.DateTimeFormat(i18n.language, { dateStyle: 'full' }).format(date);
 
   const choose = (key: DayKey) => {
@@ -122,11 +125,11 @@ export function BusyCalendar({
     }
   };
 
-  const legend = legendOf(stretches, calendar.kinds);
+  const legend = legendOf(stretches, vocabulary);
 
   return (
     <div className="flex flex-col gap-3" data-testid="busy-calendar">
-      <BusyDays.Provider value={{ days, kinds: calendar.kinds }}>
+      <BusyDays.Provider value={{ days, kinds: vocabulary }}>
         <Calendar
           mode="single"
           weekStartsOn={1}
@@ -189,7 +192,7 @@ export function BusyCalendar({
         <Hours
           day={day}
           stretches={stretches}
-          kinds={calendar.kinds}
+          kinds={vocabulary}
           chosen={held !== null && heldDay === day ? held.getUTCHours() : null}
           kindLabel={kindLabel}
           locale={i18n.language}

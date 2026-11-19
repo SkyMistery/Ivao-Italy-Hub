@@ -167,6 +167,51 @@ public sealed class CalendarBusyEndpointTests(MariaDbFixture mariaDb) : IAsyncLi
     }
 
     [Fact]
+    public async Task ARetiredKindKeepsBlockingAndTheAnswerNamesIt()
+    {
+        // Carmine's answer on #538 ("Sì, finché si toglie"): a retired kind that blocks keeps blocking until its box is
+        // unticked; the bootstrap does not carry it, so the answer brings its name and colour from the kinds table.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(MemberVid, position: null, token);
+
+        var retired = $"gone-{Guid.NewGuid():N}"[..20];
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            database.CalendarKinds.Add(new CalendarKind
+            {
+                Key = retired,
+                Label = "Fly-in di una volta".L("Fly-in of old"),
+                Colour = "pink",
+                Sort = 97,
+                Blocks = true,
+                IsActive = false,
+            });
+            database.CalendarEntries.Add(Entry(
+                retired, Visibility.Public, "core", $"staff:{retired}", Day.AddDays(1).AddHours(20), Day.AddDays(1).AddHours(21), allDay: false, "retired"));
+            await database.SaveChangesAsync(token);
+        }
+
+        using var member = await SignedInAsync(MemberVid, position: null, token);
+
+        var answer = await member.GetFromJsonAsync<JsonElement>(Busy(Day, Day.AddDays(3)), token);
+        var entry = answer.EnumerateArray().Single(row => row.GetProperty("kind").GetString() == retired);
+        Assert.True(entry.GetProperty("blocks").GetBoolean());
+        Assert.Equal("Fly-in of old", entry.GetProperty("kindLabel").GetProperty("en").GetString());
+        Assert.Equal("pink", entry.GetProperty("kindColour").GetString());
+
+        var me = await member.GetFromJsonAsync<JsonElement>("/api/me", token);
+        Assert.DoesNotContain(
+            me.GetProperty("calendarKinds").EnumerateArray(),
+            kind => kind.GetProperty("key").GetString() == retired);
+
+        await using var check = _factory.Services.CreateAsyncScope();
+        var busy = check.ServiceProvider.GetRequiredService<CalendarBusy>();
+        var refused = await busy.BlockingAsync(Day.AddDays(1).AddHours(20).AddMinutes(30), endsAtUtc: null, allDay: false, except: null, token);
+        Assert.Contains(refused, row => row.Kind == retired);
+    }
+
+    [Fact]
     public async Task TheDivisionSaysOnTheKindWhetherItBlocks()
     {
         var token = TestContext.Current.CancellationToken;

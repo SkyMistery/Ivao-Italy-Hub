@@ -19,13 +19,21 @@ public sealed record CalendarSource(string Module, string Id);
 /// <param name="Kind">The kind of the entry, the key the legend and its colour come from.</param>
 /// <param name="Blocks">Whether the kind takes these hours from the picker (<see cref="CalendarKind.Blocks"/>).</param>
 /// <param name="Title">What the entry is called, in the languages of the division.</param>
+/// <param name="KindLabel">
+/// The kind's name and colour from the kinds table, retired kinds included, so the legend never shows a raw key: the bootstrap
+/// carries only the kinds in use, and a retired kind that blocks keeps blocking until its box is unticked (Carmine's answer on
+/// #538). Null only for a word a module projected that the table does not know.
+/// </param>
+/// <param name="KindColour">See <paramref name="KindLabel"/>.</param>
 public sealed record CalendarBusyDto(
     DateTime StartsAtUtc,
     DateTime EndsAtUtc,
     bool AllDay,
     string Kind,
     bool Blocks,
-    Localized<string> Title);
+    Localized<string> Title,
+    Localized<string>? KindLabel,
+    string? KindColour);
 
 /// <summary>
 /// The free and the busy of the one calendar, for whoever chooses a date (note 2026-11-18-il-calendario-libero-e-occupato): the
@@ -87,11 +95,12 @@ public sealed class CalendarBusy(HubDbContext database)
         var from = Utc(fromUtc);
         var to = Utc(toUtc);
 
-        var blocking = await database.CalendarKinds
+        // Every kind, retired ones included: a retired kind that blocks keeps blocking until its box is unticked (Carmine's answer
+        // on #538, "finché si toglie"), and its name and colour travel with the answer for the legend. A table of a few rows.
+        var kinds = await database.CalendarKinds
             .AsNoTracking()
-            .Where(kind => kind.Blocks)
-            .Select(kind => kind.Key)
-            .ToListAsync(cancellationToken);
+            .Select(kind => new { kind.Key, kind.Label, kind.Colour, kind.Blocks })
+            .ToDictionaryAsync(kind => kind.Key, StringComparer.Ordinal, cancellationToken);
 
         // A superset first, in the database, then the rule itself, once, in Occupies. Both bounds are a day wider than the window:
         // an entry with no end, or of a whole day, may take time up to a day after its stored start; and an entry of a whole day
@@ -121,7 +130,16 @@ public sealed class CalendarBusy(HubDbContext database)
                 .Select(entry =>
                 {
                     var (starts, ends) = Occupies(entry.StartsAtUtc, entry.EndsAtUtc, entry.AllDay);
-                    return new CalendarBusyDto(starts, ends, entry.AllDay, entry.Kind, blocking.Contains(entry.Kind), entry.Title);
+                    var kind = kinds.GetValueOrDefault(entry.Kind);
+                    return new CalendarBusyDto(
+                        starts,
+                        ends,
+                        entry.AllDay,
+                        entry.Kind,
+                        kind?.Blocks == true,
+                        entry.Title,
+                        kind?.Label,
+                        kind?.Colour);
                 })
                 .Where(busy => busy.StartsAtUtc < to && busy.EndsAtUtc > from)
                 .OrderBy(busy => busy.StartsAtUtc),

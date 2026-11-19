@@ -7,6 +7,7 @@ import {
   busyHours,
   dayKeyOfPicker,
   legendOf,
+  vocabularyOf,
   pickerDay,
   stretchesOn,
   type BusyStretch,
@@ -30,7 +31,16 @@ function stretch(
   blocks: boolean,
   allDay = false,
 ): BusyStretch {
-  return { startsAtUtc, endsAtUtc, allDay, kind, blocks, title: { en: kind } };
+  return {
+    startsAtUtc,
+    endsAtUtc,
+    allDay,
+    kind,
+    blocks,
+    title: { en: kind },
+    kindLabel: null,
+    kindColour: null,
+  };
 }
 
 describe('busyDays', () => {
@@ -149,5 +159,24 @@ describe('the rest of the picker', () => {
   test('a UTC day goes to the picker and comes back the same, whatever the browser zone', () => {
     expect(dayKeyOfPicker(pickerDay('2026-03-29'))).toBe('2026-03-29');
     expect(dayKeyOfPicker(pickerDay('2026-10-25'))).toBe('2026-10-25');
+  });
+
+  test('a retired kind the answer names joins the vocabulary with its name and colour, so no raw key is drawn', () => {
+    // Retired, so not in the bootstrap; still blocking until its box is unticked (Carmine's answer on #538).
+    const retired: BusyStretch = {
+      ...stretch('2026-11-20T08:00:00Z', '2026-11-20T09:00:00Z', 'fly-in', true),
+      kindLabel: { en: 'Fly-in' },
+      kindColour: 'pink',
+    };
+    const unknown = stretch('2026-11-20T10:00:00Z', '2026-11-20T11:00:00Z', 'module-word', false);
+
+    const words = vocabularyOf(vocabulary, [retired, retired, unknown]);
+
+    expect(words.map((word) => word.key)).toEqual(['event', 'training', 'fly-in']);
+    expect(words[2]).toEqual({ key: 'fly-in', label: { en: 'Fly-in' }, colour: 'pink', blocks: true });
+    expect(legendOf([retired, unknown], words)).toEqual([
+      { kind: 'fly-in', colour: 'pink', blocks: true },
+      { kind: 'module-word', colour: 'gray', blocks: false },
+    ]);
   });
 });

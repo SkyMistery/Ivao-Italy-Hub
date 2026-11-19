@@ -36,6 +36,8 @@ const busy: BusyStretch[] = [
     kind: 'event',
     blocks: true,
     title: { en: 'Fly-in' },
+    kindLabel: { en: 'Event' },
+    kindColour: 'blue',
   },
   {
     startsAtUtc: '2026-11-20T09:00:00Z',
@@ -44,6 +46,8 @@ const busy: BusyStretch[] = [
     kind: 'training',
     blocks: false,
     title: { en: 'S2 · LIRF_TWR' },
+    kindLabel: { en: 'Training' },
+    kindColour: 'green',
   },
 ];
 
@@ -203,6 +207,37 @@ describe('a date on the free and busy calendar', () => {
 
     await user.click(within(picker).getByRole('button', { name: /November 21, 2026, Free/ }));
     expect(screen.getByRole('textbox')).toHaveValue('21/11/2026');
+  });
+
+  test('a retired kind keeps blocking, and the legend names it with the words of the kinds table', async () => {
+    // Carmine's answer on #538, "finché si toglie": retired, so not in the bootstrap, and blocking until its box is unticked.
+    api.get.mockResolvedValue({
+      data: [
+        {
+          startsAtUtc: '2026-11-20T14:00:00Z',
+          endsAtUtc: '2026-11-20T16:00:00Z',
+          allDay: false,
+          kind: 'old-fly-in',
+          blocks: true,
+          title: { en: 'Fly-in of the past' },
+          kindLabel: { en: 'Old fly-in' },
+          kindColour: 'pink',
+        },
+      ],
+      response: new Response(null, { status: 200 }),
+    });
+    const user = userEvent.setup();
+    draw();
+
+    await user.click(screen.getByRole('button', { name: /Choose on the calendar/ }));
+    const picker = await screen.findByTestId('busy-calendar');
+
+    const legend = within(picker).getByRole('list', { name: 'Legend' });
+    await waitFor(() => expect(legend).toHaveTextContent('Old fly-in'));
+    expect(legend).not.toHaveTextContent('old-fly-in');
+
+    await user.click(within(picker).getByRole('button', { name: /November 20, 2026, busy: Old fly-in/ }));
+    expect(within(picker).getByRole('button', { name: '14:00 UTC, blocked' })).toBeDisabled();
   });
 
   test('a form with such a field and no calendar says why it cannot draw it', () => {

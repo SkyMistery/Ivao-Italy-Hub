@@ -157,6 +157,36 @@ export function stretchesOn(stretches: readonly BusyStretch[], day: DayKey): Bus
     .sort((a, b) => Date.parse(a.startsAtUtc) - Date.parse(b.startsAtUtc));
 }
 
+/**
+ * The vocabulary the picker draws with: the kinds of the bootstrap, and after them the kinds the answer names that the bootstrap
+ * does not carry — a **retired** kind, which keeps blocking until its box is unticked (Carmine's answer on #538, "finché si
+ * toglie") — with the name and colour the server read from the kinds table. So the legend, the dots and the lines never show a
+ * raw key; only a word a module projected that no table knows keeps its key, in grey.
+ */
+export function vocabularyOf(
+  kinds: readonly CalendarKind[],
+  stretches: readonly BusyStretch[],
+): CalendarKind[] {
+  const known = new Set(kinds.map((kind) => kind.key));
+  const more: CalendarKind[] = [];
+
+  for (const stretch of stretches) {
+    if (known.has(stretch.kind) || !stretch.kindLabel || !stretch.kindColour) {
+      continue;
+    }
+
+    known.add(stretch.kind);
+    more.push({
+      key: stretch.kind,
+      label: stretch.kindLabel,
+      colour: stretch.kindColour,
+      blocks: stretch.blocks,
+    });
+  }
+
+  return [...kinds, ...more];
+}
+
 /** The kinds a month shows, for its legend, with their colour and whether they block. */
 export function legendOf(
   stretches: readonly BusyStretch[],

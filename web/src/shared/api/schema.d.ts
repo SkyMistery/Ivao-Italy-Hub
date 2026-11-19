@@ -4953,6 +4953,9 @@ export interface components {
             blocks: boolean;
             /** @description What the entry is called, in the languages of the division. */
             title: components["schemas"]["LocalizedOfstring"];
+            kindLabel: null | components["schemas"]["LocalizedOfstring"];
+            /** @description See KindLabel. */
+            kindColour: null | string;
         };
         /**
          * @description The same entry as the form loads it, with the audit trail.
