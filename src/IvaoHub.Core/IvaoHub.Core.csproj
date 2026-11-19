@@ -31,6 +31,14 @@
     <EmbeddedResource Include="Content\EmbedPreview.html" />
   </ItemGroup>
 
+  <!--
+    The hosts a video or an embed block may frame: one list, the browser's, read here to refuse publishing an address it
+    would not frame (issue #524, note 2026-11-18-l-indirizzo-che-l-hub-non-incorpora). Compiled in, like the files above.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\web\src\blocks\embedHosts.json" LogicalName="IvaoHub.Core.Content.embedHosts.json" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="EFCore.NamingConventions" />
     <PackageReference Include="FluentValidation" />

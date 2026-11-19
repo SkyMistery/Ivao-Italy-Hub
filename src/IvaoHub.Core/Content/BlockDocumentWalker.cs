@@ -464,6 +464,25 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     }
 
     /// <summary>
+    /// The addresses the blocks of the body would frame (<see cref="IBlockDescriptor.FramedAddress"/>) and the browser
+    /// would not, each with the path of the field: on a host outside the list, unrecognised on one of its hosts, or not
+    /// there at all. Only that field is looked at, and nothing else of <c>props</c>.
+    /// </summary>
+    public IReadOnlyList<string> BlocksWithAddressesNotFramed(JsonNode? body, BlockRegistry blocks)
+    {
+        ArgumentNullException.ThrowIfNull(blocks);
+
+        return
+        [
+            .. EnumerateBlocks(body)
+                .Select(block => (block, field: blocks.Find(block.Type)?.FramedAddress))
+                .Where(pair => pair.field is not null
+                    && !FramedAddresses.Frames(BlockDocumentNode.TextOf(pair.block.Node["props"]?[pair.field])))
+                .Select(pair => $"{pair.block.Path}.props.{pair.field}"),
+        ];
+    }
+
+    /// <summary>
     /// Every address the blocks of the body lead to, wherever it is named, inside or outside this site: which ones to
     /// ask about is for the caller. Nothing here knows what a button is: a string under the name <c>href</c> is an
     /// address at whatever depth it turns up, as a number under <c>mediaId</c> is a file, and any other string may be
