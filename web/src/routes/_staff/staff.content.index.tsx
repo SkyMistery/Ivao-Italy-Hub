@@ -38,7 +38,11 @@ function ContentPage() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
 
-  const open = (id: number) => void navigate({ to: '/staff/content/$id', params: { id: String(id) } });
+  // A form opened from the tree of the site goes back to the tree when it is left (review of #550, item 1).
+  const fromTree = search.kind === 'Page' && defaultView(search) === 'tree' ? { view: 'tree' as const } : {};
+
+  const open = (id: number) =>
+    void navigate({ to: '/staff/content/$id', params: { id: String(id) }, search: fromTree });
 
   return (
     <ContentListScreen
@@ -51,7 +55,7 @@ function ContentPage() {
           <Link
             to="/staff/content/$id"
             params={{ id: 'new' }}
-            search={{ kind, department, ...(template ? { template } : {}) }}
+            search={{ kind, department, ...(template ? { template } : {}), ...fromTree }}
           >
             <CreateLabel titles={template ? 'templates' : CONTENT_KINDS[kind].titles} />
           </Link>
@@ -72,7 +76,7 @@ function ContentPage() {
                 <Link
                   to="/staff/content/$id"
                   params={{ id: 'new' }}
-                  search={{ kind: 'Page', department: newHere, parent: row.id }}
+                  search={{ kind: 'Page', department: newHere, parent: row.id, ...fromTree }}
                 >
                   {t('content.tree.newHere')}
                 </Link>
@@ -80,7 +84,7 @@ function ContentPage() {
             )}
             {row.mayEdit ? (
               <Button asChild variant="ghost" size="sm">
-                <Link to="/staff/content/$id" params={{ id: String(row.id) }}>
+                <Link to="/staff/content/$id" params={{ id: String(row.id) }} search={fromTree}>
                   <EditLabel />
                 </Link>
               </Button>

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import type { Department } from '../../shared/api/bootstrap';
 import { DEPARTMENTS } from '../../shared/api/department';
 import { departmentListSearchSchema } from '../../shared/list';
 
@@ -67,9 +68,33 @@ export const contentEditorSearchSchema = z.object({
   // The page a new page starts under, from «New page here» on the tree of the site (design 13 §3.2). A suggestion the
   // form starts from, not a rule: the server checks the place like any other, and a number that is no page is refused.
   parent: z.coerce.number().int().positive().optional().catch(undefined),
+  // Where the form was opened from: `tree` when from the tree of the site, so that leaving it goes back there and not to a
+  // department's list (review of #550, item 1). Absent for every other way in, which goes back to the list.
+  view: z.enum(CONTENT_VIEWS).optional().catch(undefined),
 });
 
 export type ContentEditorSearch = z.output<typeof contentEditorSearchSchema>;
+
+/** What the address of `/staff/content` is given to go back to, from the form of a row. */
+export type ContentReturnSearch =
+  { kind: 'Page'; view: 'tree' } | { kind: ContentScreenKind; department: Department };
+
+/**
+ * Where the form of a row goes back to — by its breadcrumb and when it is finished: the tree of the site when it was opened
+ * from the tree, which is the whole site and so names no department; otherwise the list of its kind in its department.
+ */
+export function contentReturnSearch(
+  kind: ContentScreenKind,
+  department: Department,
+  openedFrom: ContentView | undefined,
+): ContentReturnSearch {
+  return kind === 'Page' && openedFrom === 'tree' ? { kind: 'Page', view: 'tree' } : { kind, department };
+}
+
+/** The same place as an address, for the breadcrumb. */
+export function contentReturnHref(search: ContentReturnSearch): string {
+  return `/staff/content?${new URLSearchParams(search).toString()}`;
+}
 
 /** The language the draft is looked at in, in a tab of its own: the one the editor was showing (design of phase 3, §4.7). */
 export const draftPreviewSearchSchema = z.object({

@@ -23,6 +23,7 @@ interface CommonStrings {
     readonly save: string;
     readonly delete: string;
     readonly close: string;
+    readonly breadcrumb: string;
   };
   readonly forbidden: { readonly title: string };
   readonly departments: { readonly WD: string; readonly ED: string };

@@ -47,4 +47,13 @@ test('«New page here» opens the form of a page already under that row', async 
 
   await expect(page).toHaveURL(/\/staff\/content\/new\?.*parent=2/);
   await expect(page.getByLabel(content.fields.parentId, { exact: true })).toContainText('/about/team');
+
+  // And whoever came from the tree goes back to the tree, not to a department's list (review of #550, item 1).
+  await page
+    .getByRole('navigation', { name: englishCommon.common.breadcrumb })
+    .getByRole('link', { name: content.title, exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/staff\/content\?kind=Page&view=tree(&|$)/);
+  expect(new URL(page.url()).searchParams.has('department')).toBe(false);
+  await expect(page.getByRole('row').filter({ hasText: '/about/team' })).toBeVisible();
 });

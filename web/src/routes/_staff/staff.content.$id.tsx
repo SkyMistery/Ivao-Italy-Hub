@@ -2,7 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
-import { contentEditorSearchSchema } from '../../features/content/contentSearch';
+import {
+  contentEditorSearchSchema,
+  contentReturnHref,
+  contentReturnSearch,
+} from '../../features/content/contentSearch';
 import { ContentFormScreen } from '../../features/content/ContentFormScreen';
 import { CONTENT_KINDS } from '../../features/content/kinds';
 import { contentQuery, madeFromTemplateQuery, type ContentDetailDto } from '../../features/content/queries';
@@ -81,12 +85,14 @@ function ContentForm() {
   const kind = row?.kind ?? search.kind ?? 'Page';
   const config = isTemplate ? { ...CONTENT_KINDS[kind], titles: 'templates' } : CONTENT_KINDS[kind];
 
-  // Where the list this row belongs to is: its kind, in its department. A department's home is not
-  // on that list — it has its own address under the department — so it goes back to the pages.
-  const listSearch = {
-    kind: isTemplate ? ('Template' as const) : kind === 'Dashboard' ? ('Page' as const) : kind,
+  // Where the list this row belongs to is: its kind, in its department — or the tree of the site, when the form was opened
+  // from there. A department's home is not on that list — it has its own address under the department — so it goes back to
+  // the pages.
+  const listSearch = contentReturnSearch(
+    isTemplate ? 'Template' : kind === 'Dashboard' ? 'Page' : kind,
     department,
-  };
+    search.view,
+  );
 
   return (
     <ContentFormScreen
@@ -98,9 +104,14 @@ function ContentForm() {
       startsAsTemplate={isTemplate}
       {...(isNew && search.parent !== undefined ? { newParentId: search.parent } : {})}
       {...(count === undefined ? {} : { note: t('templates.madeFromIt', { count }) })}
-      breadcrumbTo={`/staff/content?kind=${listSearch.kind}&department=${department}`}
+      breadcrumbTo={contentReturnHref(listSearch)}
       onCreated={async (created) => {
-        await navigate({ to: '/staff/content/$id', params: { id: String(created) } });
+        // The row just made keeps where it was opened from, so that finishing it still goes back there.
+        await navigate({
+          to: '/staff/content/$id',
+          params: { id: String(created) },
+          search: search.view === undefined ? {} : { view: search.view },
+        });
       }}
       onFinished={() => void navigate({ to: '/staff/content', search: listSearch })}
     />
