@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Department } from '../../shared/api/bootstrap';
-import { NO_CHOICE, ProblemAlert, describeProblem } from '../../shared/forms';
+import { NO_CHOICE, ProblemAlert, choiceItem, describeProblem } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { bootstrapQuery } from '../me/queries';
 
@@ -118,7 +118,7 @@ export function TemplatePicker({
               placeholder={mayBeAtTheTop ? t('content.options.parentId.none') : t('content.chooseParent')}
               items={[
                 ...(mayBeAtTheTop ? [{ value: NO_CHOICE, label: t('content.options.parentId.none') }] : []),
-                ...parents,
+                ...parents.map(choiceItem),
               ]}
             />
           </div>

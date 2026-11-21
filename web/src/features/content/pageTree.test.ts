@@ -84,9 +84,13 @@ test('a parent is chosen among the pages above the third level, and a page writt
     String('training/guide'.length),
   ]);
 
-  // Labelled as they always were, a level pushed right by spaces an accessible name leaves out.
+  // Labelled as they always were; a level is pushed right by its `level`, never by spaces in front of the label.
   expect(choices[0]).toEqual({ value: '5', label: '/about — ABOUT' });
-  expect(choices[3]!.label).toBe('    /training/guide — GUIDE');
+  expect(choices[3]).toEqual({
+    value: String('training/guide'.length),
+    label: '/training/guide — GUIDE',
+    level: 1,
+  });
   expect(choices[1]).toEqual({
     value: 'screen:/tours',
     label: '/tours — «flightops:public.title» (no pages under it)',

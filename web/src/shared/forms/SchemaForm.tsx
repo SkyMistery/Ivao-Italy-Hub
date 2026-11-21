@@ -45,6 +45,7 @@ import {
   filesToChoose,
   readFields,
   whereDrawn,
+  choiceItem,
   withUnwrittenBlanks,
   type FieldNode,
 } from './schema';
@@ -839,7 +840,10 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
                   // The labels are the caller's, already in the language on screen. For a set only
                   // known at runtime — the permission catalogue, which depends on the modules
                   // installed — the label *is* the value, and that is what `choices` hands over.
-                  items={[...(node.optional ? [{ value: NO_CHOICE, label: none }] : []), ...choices]}
+                  items={[
+                    ...(node.optional ? [{ value: NO_CHOICE, label: none }] : []),
+                    ...choices.map(choiceItem),
+                  ]}
                 />
               )}
             />

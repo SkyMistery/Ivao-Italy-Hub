@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { NO_CHOICE, ProblemAlert, describeProblem } from '../../shared/forms';
+import { NO_CHOICE, ProblemAlert, choiceItem, describeProblem } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { useMoment } from '../../shared/i18n/useMoment';
 import { ConfirmDialog, Notice, useNotice } from '../../shared/ui';
@@ -315,7 +315,7 @@ export function ReviewPanel({
                       (key) => t(key),
                       t('content.tree.noPagesUnder'),
                       content.path,
-                    ),
+                    ).map(choiceItem),
                   ]}
                 />
               </div>

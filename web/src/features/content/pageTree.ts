@@ -96,12 +96,16 @@ export function siteTree(
   ].sort((left, right) => byAddress(left.path, right.path));
 }
 
-/** The space that pushes a choice to the right of its parent: no-break spaces, which an accessible name leaves out. */
-const INDENT = '    ';
+/** How far right a choice at that depth is drawn: none at the top of the site, so a choice there is as it always was. */
+function levelOf(depth: number): Pick<ChoiceOption, 'level'> {
+  return depth > 1 ? { level: depth - 1 } : {};
+}
 
 /**
  * The pages a page may be put under, as the choices of a select (design 13 §3.2): in the order of the tree, each pushed
- * right by its level, labelled by address and title as they always were. A page at the third level is not one: nothing
+ * right by its level (`level`, drawn as padding: spaces in the label would be read aloud, would stand in front of what
+ * the select's typeahead matches and would show in the closed select — the review of #550, item 6), labelled by address and
+ * title as they always were. A page at the third level is not one: nothing
  * sits at a fourth. A page written in code is shown and switched off, with the reason (answer 4 of the maintainer): the
  * route of its module would take an address under it before any page could.
  *
@@ -122,7 +126,8 @@ export function parentChoices(
       path: `/${node.path}`,
       choice: {
         value: String(node.id),
-        label: `${INDENT.repeat(node.depth - 1)}/${node.path} — ${read(node.title) || node.path}`,
+        label: `/${node.path} — ${read(node.title) || node.path}`,
+        ...levelOf(node.depth),
       } satisfies ChoiceOption,
     }));
 
@@ -133,8 +138,9 @@ export function parentChoices(
       path: screen.path,
       choice: {
         value: `${SCREEN_VALUE}${screen.path}`,
-        label: `${INDENT.repeat(depthOf(screen.path) - 1)}${screen.path} — ${name(screen.titleKey)} (${noPagesUnder})`,
+        label: `${screen.path} — ${name(screen.titleKey)} (${noPagesUnder})`,
         disabled: true,
+        ...levelOf(depthOf(screen.path)),
       } satisfies ChoiceOption,
     }));
 

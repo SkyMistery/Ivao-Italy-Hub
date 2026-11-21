@@ -24,6 +24,7 @@ export {
   withUnwrittenBlanks,
   isBlank,
   NO_CHOICE,
+  choiceItem,
   type ChoiceOption,
   type Suggestion,
   type FieldMeta,
