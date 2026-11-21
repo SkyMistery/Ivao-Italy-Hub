@@ -3,7 +3,8 @@
 - **Data**: 19 novembre 2026
 - **Stato**: **decisa** — è il §3.1 del design `13-design-struttura-del-sito.md`, approvato da Carmine in chat al master il
   19 novembre 2026 («Sì, tutte e sette»), [riportato sulla #540](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/540#issuecomment-7011361289).
-  Questa nota dice com'è fatta la PR 4.1 e le due scelte che il design non scriveva (§4).
+  Questa nota dice com'è fatta la PR 4.1 e le due scelte che il design non scriveva (§4), decise anche quelle da Carmine il
+  21 novembre 2026 ([#546](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/546#issuecomment-7058790582)).
 - **Chi**: una sessione di lavoro di Carmine (fase 4, PR 4.1)
 - **Classificazione** (`CLAUDE.md` §5): **(c)**, un membro nuovo del contratto fra nucleo e moduli (`IModule.SiteScreens`), e
   **(b)** per il resto: il bootstrap `/api/me`, `SiteDestinations` e il lettore degli indirizzi del browser crescono, nessun
@@ -54,6 +55,11 @@ così). La fase 4 le vuole nell'albero del sito (4.2) e nella mappa (4.4), segna
 2. **`/contact` resta `Public`**, com'era nelle due liste, anche se la rotta del browser è sotto `_member` (chi non ha fatto
    l'accesso viene mandato al login). Stessa ragione: la 4.1 non cambia che cosa si può collegare. ⚠️ Da guardare con la mappa del
    sito (4.4), che mostra a ognuno le schermate che può aprire.
+
+**Le ha decise il maintainer**, non la sessione: «Sì, tutte e due», in chat al master il 21 novembre 2026, registrato sulla PR
+([#546, commento 7058790582](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/546#issuecomment-7058790582)).
+`/training/request` resta non dichiarata e `/contact` resta `Public`. Quello che la mappa del sito (4.4) mostra a un visitatore
+resta un punto da guardare in quella PR.
 
 Due cose del codice che sono volute, per chi aggiunge un quarto modulo:
 
