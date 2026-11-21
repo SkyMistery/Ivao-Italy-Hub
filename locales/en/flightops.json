@@ -1132,7 +1132,7 @@
     "noFlights": "No flight of yours with a flight plan between these airports in the last {{days}} days that is not already in another report. A flight that just landed can take a few minutes to reach the tracker.",
     "noFlightsOpen": "No flight of yours with a flight plan in the last {{days}} days that is not already in another report. A flight that just landed can take a few minutes to reach the tracker.",
     "noSecondFlight": "No flight of yours from {{from}} to {{to}} in the tracker that is not already in another report.",
-    "sessionTime": "{{from}} – {{to}} UTC",
+    "sessionTime": "{{when}} UTC",
     "diverted": "The flight ended at another airport (diversion)",
     "diversionFirst": "Write the airport you diverted to, then choose the flight that took the aircraft from there to the destination.",
     "details": "The details",
