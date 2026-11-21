@@ -22,7 +22,7 @@ scritto tre volte, nel form, in «nuovo da template» e nel pannello di chi appr
   indirizzo, un livello alla volta, con il titolo rientrato, l'indirizzo intero, il tipo («Pagina» o «Pagina dell'applicazione»), il
   dipartimento, lo stato e la visibilità. È **la lista generica** con due estensioni: `DataList` con `paged={false}` (nessun pager e
   nessuna casella di ricerca: il browser ha tutto) e `col.localized(…, { indentBy })` (un passo a destra per livello). Un
-  selettore «Mostra» passa all'elenco, che resta com'era; il parametro è `view` nell'indirizzo.
+  selettore «Vista» (non «Mostra», che è già il filtro del tipo) passa all'elenco, che resta com'era; il parametro è `view` nell'indirizzo.
 - **Le azioni di una riga**: «Modifica» per una pagina che chi guarda può modificare; **«Nuova pagina qui»** per una pagina sotto cui
   può andare una pagina (non al terzo livello), che apre il form di una pagina nuova con quella madre già scelta
   (`/staff/content/new?kind=Page&department=…&parent=<id>`; il form la prende come valore iniziale, il server controlla il posto come
