@@ -168,6 +168,37 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task APageOnlineForAnotherDepartmentOnlyIsNotInTheirTree()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(SuperadminVid, token);
+        await SeedUserAsync(EventsCoordinatorVid, token, position: "IT-EC");
+
+        // Published by the web team for the web team's staff alone: online, and still not the events coordinator's to read.
+        using var superadmin = _factory.CreateApiClient();
+        await _factory.SignInAsync(superadmin, SuperadminVid, token);
+        using var created = await SendAsync(
+            superadmin,
+            HttpMethod.Post,
+            ContentEndpoints.Pattern,
+            Payload($"{Stem()}-staffroom", parentId: null, visibility: Visibility.Department),
+            token);
+        Assert.True(created.StatusCode == HttpStatusCode.Created, await created.Content.ReadAsStringAsync(token));
+        var staffRoom = (await created.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64();
+        await PublishAsync(superadmin, staffRoom, token);
+
+        // The superadmin reads it in the tree, so it is a page online the tree has.
+        var all = await superadmin.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/pages", token);
+        Assert.Contains(all.EnumerateArray(), node => node.GetProperty("id").GetInt64() == staffRoom);
+
+        // The coordinator of another department does not: the tree is the site as they read it (the review of #550, item 2).
+        using var coordinator = _factory.CreateApiClient();
+        await _factory.SignInAsync(coordinator, EventsCoordinatorVid, token);
+        var theirs = await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/pages", token);
+        Assert.DoesNotContain(theirs.EnumerateArray(), node => node.GetProperty("id").GetInt64() == staffRoom);
+    }
+
+    [Fact]
     public async Task APublishedPageThatMovesSendsItsOldAddressesOnWithThePagesUnderIt()
     {
         var token = TestContext.Current.CancellationToken;
@@ -282,12 +313,13 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
         string slug,
         long? parentId,
         Department department = Department.WD,
-        string? rowVersion = null) => new
+        string? rowVersion = null,
+        Visibility visibility = Visibility.Public) => new
         {
             kind = nameof(ContentKind.Page),
             slug,
             ownerDepartment = department.ToString(),
-            visibility = nameof(Visibility.Public),
+            visibility = visibility.ToString(),
             isTemplate = false,
             title = new Dictionary<string, string>(StringComparer.Ordinal) { ["it"] = "Pagina", ["en"] = "Page" },
             summary = (Dictionary<string, string>?)null,
