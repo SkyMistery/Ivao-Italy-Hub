@@ -109,6 +109,8 @@ cd web && pnpm install && pnpm dev      # the single page application
    `tour`, `meeting` and `deadline`, each remembered one key at a time. Rename, recolour or retire
    them at `/staff/admin/calendar-kinds`; a word you wrote there before a release seeds the same key
    is left as you wrote it.
+   No kind **blocks the hours** until you say so there: an entry of a kind that does takes its hours from
+   whoever chooses a date on the free and busy calendar of a form, and the server refuses them.
 6. **Write your pages.** `/staff/<department>/content` — new from a template, edit, publish. Nothing
    about a page is in the code.
 7. **Put them in the menu.** `/staff/<web department>/menu` is the navigation of your site: a row
