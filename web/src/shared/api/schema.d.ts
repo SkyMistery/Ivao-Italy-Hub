@@ -1343,6 +1343,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/calendar/busy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CalendarBusy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/calendar-kinds": {
         parameters: {
             query?: never;
@@ -4798,6 +4814,7 @@ export interface components {
                 [key: string]: string;
             };
             colour: string;
+            blocks: boolean;
         };
         /**
          * @description SiteDepartment is the department the site itself belongs to: its menu, its
@@ -4914,6 +4931,33 @@ export interface components {
             tokenAudiences: string[];
         };
         /**
+         * @description One stretch of time the calendar says is taken, as the date picker draws it: already widened by the rules of
+         *     (DateTime StartsAtUtc, DateTime EndsAtUtc) CalendarBusy.Occupies(DateTime startsAtUtc, DateTime? endsAtUtc, bool allDay), so the browser draws what the server refuses and nothing else.
+         */
+        CalendarBusyDto: {
+            /**
+             * Format: date-time
+             * @description The first moment taken.
+             */
+            startsAtUtc: string;
+            /**
+             * Format: date-time
+             * @description The first moment free again.
+             */
+            endsAtUtc: string;
+            /** @description An entry of the whole day. */
+            allDay: boolean;
+            /** @description The kind of the entry, the key the legend and its colour come from. */
+            kind: string;
+            /** @description Whether the kind takes these hours from the picker (bool CalendarKind.Blocks). */
+            blocks: boolean;
+            /** @description What the entry is called, in the languages of the division. */
+            title: components["schemas"]["LocalizedOfstring"];
+            kindLabel: null | components["schemas"]["LocalizedOfstring"];
+            /** @description See KindLabel. */
+            kindColour: null | string;
+        };
+        /**
          * @description The same entry as the form loads it, with the audit trail.
          *     string CalendarDetailDto.SourceModule travels so that a read only screen can name the module
          *     the row belongs to instead of only refusing: "this entry comes from Events" is an explanation,
@@ -4954,6 +4998,7 @@ export interface components {
             /** Format: int32 */
             sort: number;
             isActive: boolean;
+            blocks: boolean;
             /** Format: date-time */
             createdAt: string;
             /** Format: int32 */
@@ -4975,6 +5020,7 @@ export interface components {
             /** Format: int32 */
             sort: number;
             isActive: boolean;
+            blocks: boolean;
             /** Format: date-time */
             updatedAt: string;
         };
@@ -4992,6 +5038,8 @@ export interface components {
             isActive: boolean;
             /** Format: date-time */
             rowVersion: string;
+            /** @default false */
+            blocks: boolean;
         };
         /**
          * @description One calendar entry as a list shows it.
@@ -14985,6 +15033,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    CalendarBusy: {
+        parameters: {
+            query?: {
+                fromUtc?: string;
+                toUtc?: string;
+                exceptModule?: string;
+                exceptId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarBusyDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
             };
         };
     };
