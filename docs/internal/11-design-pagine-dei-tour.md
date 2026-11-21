@@ -119,6 +119,13 @@ Controllo: `bench.ts` (`releasedTourWithOneLeg`), `tours`, `tours-briefing`, `to
 `tours-public`, `tours-round`, `tours-rules`. In «Regole» ci sono più tabelle: i vincoli di un `Open` si trovano per il nome della loro
 sezione.
 
+**Com'è andata l'anteprima** (quarta PR della fase 6, ramo `feat/tour-editor-preview`, in fila dopo i passi; nota
+`2026-11-19-l-anteprima-di-un-tour`): **una deviazione dal §6**, decisa da Carmine il 19 novembre 2026, «Sì, l'endpoint» (https://github.com/SkyMistery/Ivao-Italy-Hub/pull/544#issuecomment-7014155806). Un endpoint del modulo,
+`GET /api/flightops/tours/{id}/preview` (`Tours.View`, la riga dal back office e l'handler unico), risponde lo stesso `PublicTourDto` della
+pagina, composto dallo stesso codice (`PublicTours.ComposeAsync`); una bozza senza indirizzo o senza date non ha pagina, e il passo manda al
+passo 2. L'anteprima sta nel Controllo, sotto «Segna pronto»: la testata e le schede di un visitatore, con i pezzi di `screens/public.tsx`
+(esportati, non cambiati); niente di un pilota.
+
 ## 6. Che cosa non cambia
 
 Il modello, le API del back office, le regole del server, i blocchi del CMS (`flightops.tourCards` disegna le card del §3 e le segue).

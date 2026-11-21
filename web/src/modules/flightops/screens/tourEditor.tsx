@@ -44,6 +44,7 @@ import {
 import { LegGrid } from './LegGrid';
 import { keepingCurrent, useStaff, useTypeSuggestions } from './hooks';
 import { TourRulesTab } from './rules';
+import { TourPreview } from './TourPreview';
 import { TourCallsignsTab, TourConstraints, TourHubsTab, TourOpenGoal, TourSubtoursTab } from './shape';
 import { neighbours, openStep, routeParts, stepOfProblem, stepsToFix, tourSteps } from './tourSteps';
 import { TEMPLATES, TOURS } from './tours';
@@ -477,10 +478,32 @@ function RulesStep({ tour, conditions }: { tour: TourDetailDto; conditions: Reac
 }
 
 /**
- * The last step: every problem of "ready", each with the step it is fixed in, and "Mark ready". A tour already ready says
- * so, with the day its page goes public.
+ * The last step: every problem of "ready", each with the step it is fixed in, and "Mark ready"; a tour already ready says
+ * so, with the day its page goes public. Under it, the page as the pilots will see it (design 11 §5, the preview).
  */
 function CheckStep({
+  tour,
+  problems,
+  localized,
+  linkTo,
+  identityHref,
+}: {
+  tour: TourDetailDto;
+  problems: Problems | undefined;
+  localized: TourReadyProblemsDto['localized'];
+  linkTo: (field: string) => { step: TourStep; href: string };
+  identityHref: string;
+}) {
+  return (
+    <div className="flex flex-col gap-10">
+      <ReadyCheck tour={tour} problems={problems} localized={localized} linkTo={linkTo} />
+      <TourPreview tour={tour} identityHref={identityHref} />
+    </div>
+  );
+}
+
+/** What stands between the tour and "ready", and the button; or the word that it is ready. */
+function ReadyCheck({
   tour,
   problems,
   localized,
@@ -764,6 +787,7 @@ export function TourEditor() {
             problems={ready === undefined ? undefined : problems}
             localized={localized}
             linkTo={linkTo}
+            identityHref={hrefOf('identity')}
           />
         );
     }
