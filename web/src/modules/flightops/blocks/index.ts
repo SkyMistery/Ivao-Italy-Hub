@@ -166,7 +166,19 @@ export const myToursBlock: BlockRegistration = {
         next: { id: 4, number: 4, departureIcao: 'XXAA', arrivalIcao: 'XXBB' },
       },
     ],
-    toModify: [],
+    // With the validator's note under it (#387), as `/me` draws it.
+    toModify: [
+      {
+        pirepId: 21,
+        tourId: 1,
+        slug: 'round-the-alps',
+        tourTitle: { en: 'Round the Alps', it: 'Giro delle Alpi' },
+        departureIcao: 'XXAA',
+        arrivalIcao: 'XXBB',
+        takeoffAt: '2026-09-18T17:40:00.000Z',
+        noteToPilot: 'The STAR is missing: add it to the report.',
+      },
+    ],
     answered: [
       {
         id: 12,

@@ -44,7 +44,10 @@ public sealed record StartedTourDto(
 
 public sealed record NextLegDto(long Id, int Number, string DepartureIcao, string ArrivalIcao);
 
-/// <summary>A report the validator sent back «to modify», with the address of the form that corrects it.</summary>
+/// <summary>
+/// A report the validator sent back «to modify», with the address of the form that corrects it and what to correct: the note
+/// to the pilot, which «to modify» always has (issue #387). Only ever the reader's own report, like the rest of this answer.
+/// </summary>
 public sealed record ReportToFixDto(
     long PirepId,
     long TourId,
@@ -52,7 +55,8 @@ public sealed record ReportToFixDto(
     Localized<string> TourTitle,
     string DepartureIcao,
     string ArrivalIcao,
-    DateTime TakeoffAt);
+    DateTime TakeoffAt,
+    string? NoteToPilot);
 
 /// <summary>A dispute or a clarification about the tours that the staff answered and the pilot has not read yet.</summary>
 public sealed record AnsweredThreadDto(long Id, string Kind, string Subject, DateTime UpdatedAt);
@@ -138,7 +142,8 @@ public sealed class MyTours(
                         visible[report.TourId].Title,
                         report.DepartureIcao,
                         report.ArrivalIcao,
-                        report.TakeoffAt)),
+                        report.TakeoffAt,
+                        report.NoteToPilot)),
             ],
             await AnsweredAsync(vid, cancellationToken),
             new PilotSummaryDto(
