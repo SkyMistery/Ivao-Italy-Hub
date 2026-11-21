@@ -274,7 +274,7 @@ test('the full round of M4a: an RFO pasted, generated and published, booked and 
   const arrivals = page
     .getByRole('region', { name: events.private.title })
     .getByRole('table', { name: events.public.arrivals });
-  await arrivals.getByRole('button', { name: '17:00–18:00' }).click();
+  await arrivals.getByRole('button', { name: '17:00 – 18:00' }).click();
   const hour = page.getByRole('dialog', {
     name: events.private.dialog.arrivals.replace('{{airport}}', rome),
     exact: false,

@@ -430,7 +430,7 @@
       "seatsEvery": "Posti per turno: {{seats}} · un turno dura {{minutes}} minuti",
       "turn": "Turno",
       "free": "Posti liberi",
-      "hours": "{{from}}–{{to}} UTC",
+      "hours": "{{when}} UTC",
       "seatsFree": "{{seats}} liberi",
       "full": "Pieno",
       "yours": "Il tuo posto",
@@ -443,7 +443,7 @@
     "lead": "Uno slot privato è un orario a uno scalo dell'evento, per il volo che un pilota sceglie: ogni ora si apre con i suoi slot liberi, e chi ne prenota uno scrive da dove arriva o dove va, e quando. Un arrivo può prendere anche la sua partenza dallo stesso scalo, così che tutte e due abbiano lo stesso gate.",
     "hour": "Ora (UTC)",
     "free": "Liberi",
-    "range": "{{from}}–{{to}}",
+    "range": "{{from}} – {{to}}",
     "freeOf": "{{free}} su {{of}}",
     "full": "Pieno",
     "dialog": {
@@ -880,8 +880,8 @@
         "subject": "[Eventi] Sei iscritto: {{title}}",
         "body": "Sei iscritto a {{title}}, che comincia il {{starts}} UTC.\n\nDove: {{venue}}\n\nLe tue risposte:\n{{answers}}{{seats}}\n\nPuoi cambiarle o ritirarti fino all'inizio dell'evento: {{mine}}\nL'evento: {{url}}\n\n---\nPuoi disattivare queste email dalla pagina del tuo profilo.",
         "seats": "I tuoi turni nelle attività:",
-        "seatLine": "{{activity}}: {{from}}–{{to}} UTC",
-        "seatLinePlace": "{{activity}} ({{place}}): {{from}}–{{to}} UTC"
+        "seatLine": "{{activity}}: {{from}} – {{to}} UTC",
+        "seatLinePlace": "{{activity}} ({{place}}): {{from}} – {{to}} UTC"
       },
       "registrationRemoved": {
         "subject": "[Eventi] Iscrizione tolta: {{title}}",

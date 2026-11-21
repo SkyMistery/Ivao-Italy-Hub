@@ -18,7 +18,7 @@ import { ApiError } from '../../../shared/api/problem';
 import { NEW_ROW_VERSION } from '../../../shared/api/rowVersion';
 import { SchemaForm, describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
-import { useMoment } from '../../../shared/i18n/useMoment';
+import { intervalEnd, useMoment } from '../../../shared/i18n/useMoment';
 import { NotFound, Notice, useNotice } from '../../../shared/ui';
 import {
   atcProposalQuery,
@@ -52,7 +52,6 @@ import {
   declarationOf,
   exemptionsToSend,
   mergeSessions,
-  sessionEnd,
   sessionsOf,
   splitRefusal,
 } from './reporting';
@@ -554,7 +553,7 @@ function FlightChoice({
               <span className="text-muted-foreground text-sm tabular-nums">
                 {t('flightops:report.sessionTime', {
                   from: moment(session.startedAt),
-                  to: sessionEnd(session, moment),
+                  to: intervalEnd(session.startedAt, session.endedAt, moment),
                 })}
               </span>
             </Label>

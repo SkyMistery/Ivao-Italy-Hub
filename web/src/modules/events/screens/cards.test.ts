@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
+import { intervalText } from '../../../shared/i18n/useMoment';
+
 import {
   airportLabel,
   calendarItems,
@@ -9,7 +11,6 @@ import {
   headMoment,
   headSpan,
   narrowCards,
-  spanText,
   type EventCard,
 } from './cards';
 
@@ -105,17 +106,19 @@ describe('when an event runs', () => {
   };
 
   test('an evening is one date and two times', () => {
-    expect(spanText('2026-11-21T17:00:00Z', '2026-11-21T22:00:00Z', format)).toBe('2026-11-21 17:00 – 22:00');
+    expect(intervalText('2026-11-21T17:00:00Z', '2026-11-21T22:00:00Z', format)).toBe(
+      '2026-11-21 17:00 – 22:00',
+    );
   });
 
   test('an event over midnight writes the date of its end too, and the days are read in the zone asked', () => {
-    expect(spanText('2026-11-21T20:00:00Z', '2026-11-22T02:00:00Z', format)).toBe(
+    expect(intervalText('2026-11-21T20:00:00Z', '2026-11-22T02:00:00Z', format)).toBe(
       '2026-11-21 20:00 – 2026-11-22 02:00',
     );
-    expect(spanText('2026-11-21T21:00:00Z', '2026-11-21T22:30:00Z', format, 'Europe/Rome')).toBe(
+    expect(intervalText('2026-11-21T21:00:00Z', '2026-11-21T22:30:00Z', format, 'Europe/Rome')).toBe(
       '2026-11-21 22:00 – 23:30',
     );
-    expect(spanText('2026-11-21T22:30:00Z', '2026-11-21T23:30:00Z', format, 'Europe/Rome')).toBe(
+    expect(intervalText('2026-11-21T22:30:00Z', '2026-11-21T23:30:00Z', format, 'Europe/Rome')).toBe(
       '2026-11-21 23:30 – 2026-11-22 00:30',
     );
   });
@@ -123,25 +126,25 @@ describe('when an event runs', () => {
   describe('as the head of its page says it (E8b)', () => {
     test('an evening is its day once, then its times; where the division lives, the times alone', () => {
       expect(headSpan('2026-11-21T17:00:00Z', '2026-11-21T21:00:00Z', format, 'Europe/Rome')).toEqual({
-        utc: '2026-11-21 · 17:00–21:00',
-        local: '18:00–22:00',
+        utc: '2026-11-21 · 17:00 – 21:00',
+        local: '18:00 – 22:00',
       });
     });
 
     test('a local time on another day says its day; an event over midnight both its dates', () => {
       expect(headSpan('2026-11-21T21:00:00Z', '2026-11-21T23:30:00Z', format, 'Europe/Rome')).toEqual({
-        utc: '2026-11-21 · 21:00–23:30',
+        utc: '2026-11-21 · 21:00 – 23:30',
         local: '2026-11-21 22:00 – 2026-11-22 00:30',
       });
       expect(headSpan('2026-11-21T23:00:00Z', '2026-11-22T01:00:00Z', format, 'Europe/Rome')).toEqual({
         utc: '2026-11-21 23:00 – 2026-11-22 01:00',
-        local: '2026-11-22 · 00:00–02:00',
+        local: '2026-11-22 · 00:00 – 02:00',
       });
     });
 
     test('without the zone of the division, UTC alone', () => {
       expect(headSpan('2026-11-21T17:00:00Z', '2026-11-21T21:00:00Z', format)).toEqual({
-        utc: '2026-11-21 · 17:00–21:00',
+        utc: '2026-11-21 · 17:00 – 21:00',
         local: null,
       });
     });

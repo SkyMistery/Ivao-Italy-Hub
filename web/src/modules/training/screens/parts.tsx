@@ -6,7 +6,7 @@ import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import type { LocalizedString } from '../../../shared/api/bootstrap';
 import { describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
-import { useMoment } from '../../../shared/i18n/useMoment';
+import { intervalText, useMoment } from '../../../shared/i18n/useMoment';
 import { ConfirmDialog, RatingBadge, personName, useNotice } from '../../../shared/ui';
 import {
   useCancelTraining,
@@ -19,7 +19,7 @@ import {
   type TrainingMemberDto,
 } from '../api';
 
-import { closingOf, spanText } from './dates';
+import { closingOf } from './dates';
 import { OUTCOME_COLOURS, evaluationSays } from './report';
 import {
   MINE,
@@ -198,11 +198,11 @@ export function WhenText({
   return (
     <span className="flex flex-col leading-tight">
       <span className={emphasis ? 'font-semibold tabular-nums' : 'tabular-nums'}>
-        {t('training:time.utc', { when: spanText(startsAtUtc, endsAtUtc, moment) })}
+        {t('training:time.utc', { when: intervalText(startsAtUtc, endsAtUtc, moment) })}
       </span>
       <Subtle className="tabular-nums">
         {t('training:time.local', {
-          when: spanText(startsAtUtc, endsAtUtc, moment, timezone),
+          when: intervalText(startsAtUtc, endsAtUtc, moment, timezone),
           zone: timezone,
         })}
       </Subtle>

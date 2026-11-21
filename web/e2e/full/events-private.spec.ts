@@ -227,10 +227,10 @@ test('the staff generate the private slots of an RFO, a pilot books an arrival w
 
   const privateSlots = page.getByRole('region', { name: events.private.title });
   const arrivals = privateSlots.getByRole('table', { name: events.public.arrivals });
-  await expect(arrivals.getByRole('row').filter({ hasText: '18:00–19:00' })).toContainText(
+  await expect(arrivals.getByRole('row').filter({ hasText: '18:00 – 19:00' })).toContainText(
     events.private.freeOf.replace('{{free}}', '2').replace('{{of}}', '2'),
   );
-  await arrivals.getByRole('button', { name: '18:00–19:00' }).click();
+  await arrivals.getByRole('button', { name: '18:00 – 19:00' }).click();
 
   const hour = page.getByRole('dialog', {
     name: events.private.dialog.arrivals.replace('{{airport}}', rome),

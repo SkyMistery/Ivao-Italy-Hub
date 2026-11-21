@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { ApiError } from '../../../shared/api/problem';
 import { describeProblem } from '../../../shared/forms';
-import { useMoment } from '../../../shared/i18n/useMoment';
+import { intervalText, useMoment } from '../../../shared/i18n/useMoment';
 import { ConfirmDialog, NotFound, RatingBadge, personName, useNotice } from '../../../shared/ui';
 import {
   mineOneQuery,
@@ -18,7 +18,7 @@ import {
   type TraineeTrainingDto,
 } from '../api';
 
-import { choosableSlots, spanText } from './dates';
+import { choosableSlots } from './dates';
 import {
   CancelRequest,
   OutcomeText,
@@ -254,7 +254,7 @@ function DatesToChoose({
       </div>
       <ul className="grid gap-3 sm:grid-cols-2">
         {slots.map((slot) => {
-          const when = spanText(slot.startsAtUtc, slot.endsAtUtc, moment);
+          const when = intervalText(slot.startsAtUtc, slot.endsAtUtc, moment);
 
           return (
             <li
@@ -274,7 +274,7 @@ function DatesToChoose({
                   title={t('training:detail.dates.confirmTitle', {
                     when,
                     local: t('training:time.local', {
-                      when: spanText(slot.startsAtUtc, slot.endsAtUtc, moment, timezone),
+                      when: intervalText(slot.startsAtUtc, slot.endsAtUtc, moment, timezone),
                       zone: timezone,
                     }),
                   })}
