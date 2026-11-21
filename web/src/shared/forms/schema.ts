@@ -88,6 +88,13 @@ export interface FieldMeta {
   date?: boolean;
   /** An instant, held as ISO UTC and shown in UTC and in the time zone of the division. */
   datetime?: boolean;
+  /**
+   * On a `date` or `datetime` field: the date is chosen on the free and busy calendar of the division (note
+   * 2026-11-18-il-calendario-libero-e-occupato) — free days in green, busy ones with the colour of their kind, the hours an
+   * entry of a blocking kind takes not to be chosen — and written by hand in the division's order. Only where a date can be
+   * busy: the start of an event or of a session, never the opening of the bookings. The form is then given `calendar`.
+   */
+  calendar?: boolean;
   /** One small object per language. Set by `localizedObject()`, never written by hand. */
   localizedObject?: boolean;
   /**
@@ -278,7 +285,7 @@ export type FieldNode =
   | ({ kind: 'localized' } & FieldCommon)
   | ({ kind: 'media'; category: string | null; pictures: boolean } & FieldCommon)
   | ({ kind: 'icon' } & FieldCommon)
-  | ({ kind: 'instant'; withTime: boolean } & FieldCommon)
+  | ({ kind: 'instant'; withTime: boolean; calendar: boolean } & FieldCommon)
   | ({ kind: 'localizedObject'; children: FieldNode[] } & FieldCommon)
   | ({ kind: 'object'; children: FieldNode[] } & FieldCommon)
   | ({ kind: 'list'; children: FieldNode[] } & FieldCommon);
@@ -1058,7 +1065,7 @@ function readField(schema: unknown, path: string): FieldNode {
   }
 
   if (meta.date === true || meta.datetime === true) {
-    return { kind: 'instant', ...common, withTime: meta.datetime === true };
+    return { kind: 'instant', ...common, withTime: meta.datetime === true, calendar: meta.calendar === true };
   }
 
   switch (def.type) {

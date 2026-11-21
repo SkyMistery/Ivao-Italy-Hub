@@ -154,6 +154,7 @@ test('a general rule with parameters is amended by a tour, and a page shows the 
     const now = Date.now();
     await page.goto('/staff/tours/new');
     await choose(page, flightops.tours.fields.kind, flightops.tours.options.kind.Free);
+    await page.getByRole('button', { name: flightops.tours.steps.next, exact: true }).click();
     await writeInBothLanguages(page.locator('form'), flightops.tours.fields.title, 'title', tourName);
     await page.locator('[id="slug"]').fill(slug);
     await writeInBothLanguages(page.locator('form'), flightops.tours.fields.summary, 'summary', tourName);
@@ -162,10 +163,10 @@ test('a general rule with parameters is amended by a tour, and a page shows the 
     await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
       await page.getByRole('button', { name: englishCommon.common.save }).click();
     });
-    await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+    await expect(page).toHaveURL(/\/staff\/tours\/\d+(\?|$)/);
     await writeDailyLegLimit(page, '5');
 
-    await page.getByRole('tab', { name: flightops.tours.tabs.rules }).click();
+    await page.getByRole('tab', { name: flightops.tours.steps.rules }).click();
     const inForce = page.getByTestId('effective-rules');
     // Each rule in force is a row of its own; the bench may hold other general rules of other runs.
     const ruleInForce = (ruleCode: string) =>
@@ -238,7 +239,14 @@ function englishFlightOps() {
     readFileSync(fileURLToPath(new URL('../../../locales/en/flightops.json', import.meta.url)), 'utf8'),
   ) as {
     tours: {
-      tabs: { rules: string };
+      steps: {
+        next: string;
+        identity: string;
+        route: string;
+        rules: string;
+        briefing: string;
+        check: string;
+      };
       fields: { title: string; summary: string; kind: string };
       options: { kind: { Free: string } };
     };

@@ -51,6 +51,7 @@ interface CommonStrings {
   readonly form: {
     readonly addEntry: string;
     readonly suggest: { readonly emptyClosed: string };
+    readonly busy: { readonly open: string; readonly legend: string; readonly blocks: string };
     readonly markdown: {
       readonly bar: string;
       readonly bold: string;

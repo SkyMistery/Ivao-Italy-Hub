@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
@@ -134,6 +135,36 @@ public sealed class PublicTours(
             return null;
         }
 
+        return await ComposeAsync(tour, parent, now, cancellationToken);
+    }
+
+    /// <summary>
+    /// The page of a tour as it would be drawn today, read from the row the back office holds — a draft, a tour not yet
+    /// released, a hidden one (design <c>11-design-pagine-dei-tour</c> §5, the preview; decided by the maintainer on
+    /// 19 November 2026). The caller reads the row through the back office's source and asks the one handler first. The
+    /// page needs an address and both dates: without them there is nothing to draw, and the answer is null. Its parent is
+    /// named only when it has an address too; its subtours are those the public would see, as on the page itself.
+    /// </summary>
+    public async Task<PublicTourDto?> PreviewAsync(Tour tour, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(tour);
+
+        if (tour.Slug is null || tour.ReleaseAt is null || tour.CloseAt is null)
+        {
+            return null;
+        }
+
+        var parent = tour.ParentTourId is { } parentId
+            ? await CrudSource.BackOffice<Tour>(database).AsNoTracking()
+                .FirstOrDefaultAsync(row => row.Id == parentId && row.Slug != null, cancellationToken)
+            : null;
+
+        return await ComposeAsync(tour, parent, clock.UtcNow, cancellationToken);
+    }
+
+    /// <summary>Everything the page of a tour shows, composed from its row: the public's and the preview's, written once.</summary>
+    private async Task<PublicTourDto> ComposeAsync(Tour tour, Tour? parent, DateTime now, CancellationToken cancellationToken)
+    {
         var rows = await database.Legs.AsNoTracking()
             .Where(leg => leg.TourId == tour.Id && leg.RetiredAt == null)
             .OrderBy(leg => leg.Number)

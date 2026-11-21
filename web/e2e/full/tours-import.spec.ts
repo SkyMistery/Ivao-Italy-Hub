@@ -79,6 +79,8 @@ test('the legs of a tour are imported from a file, previewed by the server first
   await expect(page.getByRole('heading', { name: flightops.tours.create })).toBeVisible();
 
   await choose(page, flightops.tours.fields.kind, flightops.tours.options.kind.Free);
+
+  await page.getByRole('button', { name: flightops.tours.steps.next, exact: true }).click();
   await writeInBothLanguages(page.locator('form'), flightops.tours.fields.title, 'title', tourName);
   await page.locator('[id="slug"]').fill(slug);
   await writeInBothLanguages(page.locator('form'), flightops.tours.fields.summary, 'summary', summary);
@@ -88,11 +90,11 @@ test('the legs of a tour are imported from a file, previewed by the server first
   await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
-  await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+  await expect(page).toHaveURL(/\/staff\/tours\/\d+(\?|$)/);
   await writeDailyLegLimit(page, '5');
   const tourUrl = page.url();
 
-  await page.getByRole('tab', { name: flightops.tours.tabs.legs }).click();
+  await page.getByRole('tab', { name: flightops.tours.steps.route }).click();
   await page.getByRole('button', { name: legs.actions.import }).click();
   const panel = page.getByRole('region', { name: importing.title });
   await expect(panel).toBeVisible();
@@ -152,6 +154,7 @@ test('a hub tour imports its hubs and rotations from a file', async ({ page, con
   const now = Date.now();
   await page.goto('/staff/tours/new');
   await choose(page, flightops.tours.fields.kind, flightops.tours.options.kind.Hub);
+  await page.getByRole('button', { name: flightops.tours.steps.next, exact: true }).click();
   await writeInBothLanguages(page.locator('form'), flightops.tours.fields.title, 'title', {
     en: `Bench hub import ${stamp}`,
     it: `Import hub del banco ${stamp}`,
@@ -164,10 +167,10 @@ test('a hub tour imports its hubs and rotations from a file', async ({ page, con
   await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
-  await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+  await expect(page).toHaveURL(/\/staff\/tours\/\d+(\?|$)/);
   const tourUrl = page.url();
 
-  await page.getByRole('tab', { name: flightops.tours.tabs.legs }).click();
+  await page.getByRole('tab', { name: flightops.tours.steps.route }).click();
   await page.getByRole('button', { name: legs.actions.import }).click();
   const panel = page.getByRole('region', { name: importing.title });
 
@@ -208,7 +211,14 @@ function englishFlightOps() {
   ) as {
     tours: {
       create: string;
-      tabs: { legs: string };
+      steps: {
+        next: string;
+        identity: string;
+        route: string;
+        rules: string;
+        briefing: string;
+        check: string;
+      };
       fields: { title: string; summary: string; kind: string };
       options: { kind: { Free: string; Hub: string } };
     };
