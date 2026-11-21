@@ -112,8 +112,8 @@ export const anonymousBootstrap = {
   // The division's calendar vocabulary, which a visitor gets too: a chip on a public calendar says
   // the word and takes the colour somebody chose (decided 8 Sep 2026).
   calendarKinds: [
-    { key: 'meeting', label: { en: 'Meeting', it: 'Riunione' }, colour: 'indigo' },
-    { key: 'deadline', label: { en: 'Deadline', it: 'Scadenza' }, colour: 'orange' },
+    { key: 'meeting', label: { en: 'Meeting', it: 'Riunione' }, colour: 'indigo', blocks: false },
+    { key: 'deadline', label: { en: 'Deadline', it: 'Scadenza' }, colour: 'orange', blocks: false },
   ],
   version: '0.0.0-e2e',
   commit: 'abc1234',

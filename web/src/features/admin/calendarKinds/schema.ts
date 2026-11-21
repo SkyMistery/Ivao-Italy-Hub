@@ -25,6 +25,9 @@ export const calendarKindSchema = z.object({
   // Retires a word without deleting it: the entries written with it keep it, and nobody can file a
   // new one there.
   isActive: z.boolean(),
+  // Whether an entry of this kind takes its hours from the date picker of the form: they cannot be chosen, and the server
+  // refuses them (note 2026-11-18-il-calendario-libero-e-occupato). The division decides it here, once, for every module.
+  blocks: z.boolean(),
   rowVersion: z.string().meta({ hidden: true }),
 });
 

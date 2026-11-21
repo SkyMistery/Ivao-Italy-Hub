@@ -770,6 +770,10 @@ namespace IvaoHub.Core.Data.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
 
+                    b.Property<bool>("Blocks")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("blocks");
+
                     b.Property<string>("Colour")
                         .IsRequired()
                         .HasMaxLength(16)

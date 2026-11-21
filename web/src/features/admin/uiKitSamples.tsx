@@ -60,6 +60,8 @@ const sampleSchema = z.object({
   picture: z.number().optional().meta({ media: true }),
   icon: z.string().optional().meta({ icon: true }),
   happensAt: z.string().optional().meta({ datetime: true }),
+  // Chosen on the free and busy calendar of the division (note 2026-11-18-il-calendario-libero-e-occupato).
+  meetsAt: z.string().optional().meta({ datetime: true, calendar: true }),
   expiresOn: z.string().optional().meta({ date: true }),
   seo: localizedObject({
     title: z.string().optional(),
@@ -348,6 +350,7 @@ export function SchemaFormSample({ bootstrap }: { bootstrap: Bootstrap }) {
       }}
       locales={locales}
       labels="uiKit.sample.form"
+      calendar={{ kinds: bootstrap.calendarKinds }}
       submitLabel={t('common.save')}
       onSubmit={() => Promise.resolve()}
       // The gallery is a page about the components, so the library is the two invented files above
