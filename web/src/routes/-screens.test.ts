@@ -14,11 +14,14 @@ import { expect, test } from 'vitest';
 
 const repository = resolve(process.cwd(), '..');
 
+/** One screen in C#, written short (`new("/x", …)`) or the long way (`new SiteScreen("/x", …)`): its path. */
+const screenPath = /new(?:\s*SiteScreen)?\s*\(\s*"([^"]+)"/g;
+
 function screensOfTheCore(): string[] {
   const source = readFileSync(resolve(repository, 'src/IvaoHub.Core/Content/SiteDestinations.cs'), 'utf8');
   const block = /CoreScreens\s*=\s*\[([\s\S]*?)\];/.exec(source)?.[1];
   expect(block, 'SiteDestinations.CoreScreens is no longer a literal list').toBeDefined();
-  return [...block!.matchAll(/new\("([^"]+)"/g)].map((match) => match[1]!);
+  return [...block!.matchAll(screenPath)].map((match) => match[1]!);
 }
 
 /** Every module's screens, by the folder of the module, from the one line each module writes. */
@@ -30,7 +33,7 @@ function screensOfTheModules(): { module: string; path: string }[] {
     for (const file of readdirSync(resolve(source, folder)).filter((name) => name.endsWith('Module.cs'))) {
       const text = readFileSync(resolve(source, folder, file), 'utf8');
       const line = /SiteScreens\s*=>\s*\[([\s\S]*?)\];/.exec(text)?.[1];
-      for (const match of line?.matchAll(/new\("([^"]+)"/g) ?? []) {
+      for (const match of line?.matchAll(screenPath) ?? []) {
         screens.push({ module: folder, path: match[1]! });
       }
     }
