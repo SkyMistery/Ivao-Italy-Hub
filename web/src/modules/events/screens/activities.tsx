@@ -134,6 +134,9 @@ export function ActivityForm() {
   const back = `${EVENTS}/${eventId}?tab=activities`;
   const title = t(id === null ? 'events:activities.create' : 'events:activities.edit');
   const refusal = describeProblem(remove.error, t, i18n.language);
+  // «Save» and «Delete» are the server's answer on the event (`actions`, #444): an activity is judged on its event's care and scope as
+  // the event is now, so the event's answer is the activity's — and a new activity's.
+  const editable = event.actions.canWriteBookings;
 
   return (
     <PageShell
@@ -145,7 +148,7 @@ export function ActivityForm() {
         { label: title },
       ]}
       actions={
-        activity === null ? undefined : (
+        activity === null || !editable ? undefined : (
           <ConfirmDialog
             triggerText={t('common.delete')}
             title={t('events:activities.delete.title')}
@@ -172,10 +175,15 @@ export function ActivityForm() {
             defaultLocale: bootstrap.division.defaultLocale,
             timezone: bootstrap.division.timezone,
           }}
-          onSubmit={async (values) => {
-            await save.mutateAsync(values);
-            void navigate({ href: back });
-          }}
+          // Read, and never sent, by whoever does not write the bookings of the event: no «Save».
+          onSubmit={
+            editable
+              ? async (values) => {
+                  await save.mutateAsync(values);
+                  void navigate({ href: back });
+                }
+              : undefined
+          }
           submitLabel={t('common.save')}
           secondaryAction={
             <Button asChild variant="ghost">

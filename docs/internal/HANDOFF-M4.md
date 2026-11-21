@@ -6,7 +6,13 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 5 novembre 2026 — **la metà eventi dell'issue #427** (le azioni di un evento e di una postazione dette dal
+**Ultimo aggiornamento:** 18 novembre 2026 — **la correzione dell'issue #444** (i form figli di un evento — rotte, aeroporti, slot,
+domande, attività e regole dei premi — disegnano «Salva» ed «Elimina» dalle `actions` dell'evento, il seguito della #427 dal punto 3 della
+revisione della #439), sul branch `fix/events-child-forms-actions`, **PR #535** verso `main` con «Closes #444»: nata `--no-track` da `main`
+a `40c4d781` e portata avanti a `1a174116`. Nessuna nota nuova, nessuna migrazione, nessun file del nucleo («Che cosa ha lasciato la
+#444», sotto).
+
+**L'aggiornamento della metà eventi dell'issue #427:** 5 novembre 2026 — **la metà eventi dell'issue #427** (le azioni di un evento e di una postazione dette dal
 server, la (A) di [Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/427#issuecomment-6555197465)), sul branch
 `fix/events-actions-from-server`, **PR #439** verso `main`: nata `--no-track` dalla testa della #438 `5fc9d536` (il nucleo:
 `CrudOptions.ToDetailPage` e la rotta `unscoped`), con la #429 della #311 unita, che tocca lo stesso endpoint; entrate la #429 e la #438, ha
@@ -387,6 +393,36 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato la #444 (18 novembre 2026, branch `fix/events-child-forms-actions`, PR #535; da `main` a `1a174116`)
+
+- **Che cosa c'è** (non è una fase di `10`: il seguito della #427, dal punto 3 della [revisione della
+  #439](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/439#issuecomment-6597639268); nessuna nota, nessuna migrazione, nessun file del
+  nucleo, **nessun cambio sul server**):
+  - **i sei form figli** (`screens/routes.tsx`, `airports.tsx`, `slots.tsx`, `questions.tsx`, `activities.tsx`, `awardRules.tsx`) e la
+    pagina «Incolla o carica» degli slot leggono le `actions` dell'evento che caricano già (`eventQuery`): `canWriteRoutes` per una rotta,
+    `canEdit` per un aeroporto, una domanda e una regola dei premi, `canWriteBookings` per uno slot, un'attività e il caricamento. Chi non
+    scrive legge il form senza «Salva» né «Annulla», e non ha «Elimina»; il caricamento non ha il pulsante e il campo del file è spento.
+    Le schede dell'evento li leggevano già dalla #439;
+  - **perché le `actions` dell'evento e non un `Editable` per riga** (la via suggerita dall'issue, `ToDetailPage` di ogni risorsa figlia):
+    una riga figlia ha la cura e l'ambito del suo evento e nessun FIR, e il server la giudica sulla cura dell'evento **com'è adesso**
+    (`EventChildren.AdoptAsync` → `RowCare.Adopt`, nota `2026-11-05-la-cura-che-una-riga-prende-dal-genitore`) prima di chiedere il permesso
+    di scrittura: la risposta dell'unico handler sull'evento è quella sulla riga, e anche quella di una riga nuova. Un `Editable` chiesto
+    sulla riga salvata direbbe il falso proprio quando la sua copia della cura è vecchia; chiesto sulla cura dell'evento, sarebbe la stessa
+    domanda della #439 ripetuta per sei risorse. È una scelta tecnica dentro la (A) della nota `2026-11-01-le-azioni-di-un-evento-dal-server`
+    (il server dice le azioni, le pagine le leggono), proposta dalla sessione a dalberone, che l'ha lasciata procedere («vai», 18 novembre
+    2026): nessun meccanismo nuovo, quindi nessuna nota.
+- **Che cosa deve sapere chi viene dopo**:
+  - un form nuovo di una riga di un evento legge il flag dell'evento per la sua area, mai `holdsPermission`; se un giorno una riga figlia
+    avrà un FIR o un ambito suo, allora le servirà un `Editable` suo (come la postazione ATC, `EventAtcPositionDto.Editable`);
+  - ⚠️ i test d'integrazione sono `EventsChildFormsActionsTests` (VID 761415–761418 del range 761415–761429 dato da dalberone per la #444):
+    per ogni lettore — lo staff del dipartimento, un grant su un evento (su quello e su un altro), il capo di un FIR, chi legge e basta — il
+    flag dell'evento è quello che il server fa sulle sue sei righe (un `DELETE`: 204 o 403). Sono **verdi anche sul codice di prima**: il
+    server non è cambiato. Il test rosso sul codice di prima è quello delle pagine, `screens/childFormsFromServer.test.tsx` (7 casi su 14:
+    quelli in cui il server dice di no e il bootstrap di sì);
+  - ⚠️ non toccato, da sapere: la pagina di una regola dei premi chiede `award-rules/choices`, che vuole `Events.Edit` in qualche dipartimento;
+    chi legge e basta, aprendo l'indirizzo a mano (la scheda non ha il link per lui), vede la pagina vuota, com'era prima. E le pagine
+    «Annulla» e «Duplica» di un evento, aperte a mano, sono dell'evento e non dei form figli: fuori dalla #444.
 
 ### Che cosa ha lasciato la #427, metà eventi (1°–5 novembre 2026, branch `fix/events-actions-from-server`, PR #439; nata sulla #438 del nucleo con la #429 della #311 unita, poi `main` a `8755eb9f` con entrambe)
 

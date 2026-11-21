@@ -181,6 +181,9 @@ export function SlotForm() {
   const back = `${EVENTS}/${eventId}?tab=slots`;
   const title = t(id === null ? 'events:slots.create' : 'events:slots.edit');
   const refusal = describeProblem(remove.error, t, i18n.language);
+  // «Save» and «Delete» are the server's answer on the event (`actions`, #444): a slot is judged on its event's care and scope as the
+  // event is now, so the event's answer is the slot's — and a new slot's.
+  const editable = event.actions.canWriteBookings;
 
   return (
     <PageShell
@@ -192,7 +195,7 @@ export function SlotForm() {
         { label: title },
       ]}
       actions={
-        slot === null ? undefined : (
+        slot === null || !editable ? undefined : (
           <ConfirmDialog
             triggerText={t('common.delete')}
             title={t('events:slots.delete.title')}
@@ -215,10 +218,15 @@ export function SlotForm() {
             defaultLocale: bootstrap.division.defaultLocale,
             timezone: bootstrap.division.timezone,
           }}
-          onSubmit={async (values) => {
-            await save.mutateAsync(values);
-            void navigate({ href: back });
-          }}
+          // Read, and never sent, by whoever does not write the bookings of the event: no «Save».
+          onSubmit={
+            editable
+              ? async (values) => {
+                  await save.mutateAsync(values);
+                  void navigate({ href: back });
+                }
+              : undefined
+          }
           submitLabel={t('common.save')}
           secondaryAction={
             <Button asChild variant="ghost">
@@ -269,6 +277,8 @@ export function SlotLoadPage() {
 
   const back = `${EVENTS}/${eventId}?tab=slots`;
   const title = t('events:slots.load.title');
+  // Loading writes the slots: the server's answer on the event (`actions`, #444). Whoever does not write them reads the page and loads nothing.
+  const editable = event.actions.canWriteBookings;
   const problems = loadProblems(load.error);
   // Anything else — a 403, a 409 — is one sentence.
   const refusal = problems === null ? describeProblem(load.error, t, i18n.language) : null;
@@ -312,7 +322,7 @@ export function SlotLoadPage() {
             type="file"
             accept=".csv,.tsv,.txt,text/csv,text/plain"
             className="w-fit"
-            disabled={load.isPending}
+            disabled={!editable || load.isPending}
             onChange={(change) => void chooseFile(change.target.files?.[0])}
           />
         </div>
@@ -329,17 +339,21 @@ export function SlotLoadPage() {
           onChange={(values) => {
             written.current = values;
           }}
-          onSubmit={async (values) => {
-            try {
-              await load.mutateAsync(values);
-            } catch {
-              // The refusals are listed above the form, row by row: none is about a field of it.
-              return;
-            }
+          onSubmit={
+            editable
+              ? async (values) => {
+                  try {
+                    await load.mutateAsync(values);
+                  } catch {
+                    // The refusals are listed above the form, row by row: none is about a field of it.
+                    return;
+                  }
 
-            // Loaded: the tab lists them.
-            void navigate({ href: back });
-          }}
+                  // Loaded: the tab lists them.
+                  void navigate({ href: back });
+                }
+              : undefined
+          }
           submitLabel={t('events:slots.load.submit')}
           secondaryAction={
             <Button asChild variant="ghost">
