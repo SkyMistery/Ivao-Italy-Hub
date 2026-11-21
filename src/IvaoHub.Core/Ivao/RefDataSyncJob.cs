@@ -74,8 +74,9 @@ public sealed class RefDataSyncJob(
     /// <summary>
     /// The centres of the division alone: what the start of a fresh installation downloads, under the initialisation lock,
     /// because a hub that does not know its own FIRs cannot recognise a FIR staff position at the first sign-in (issue #325,
-    /// item 7; note 2026-11-18-il-primo-allineamento-sotto-blocco, decided by the maintainer: «B, solo i centri»). One call,
-    /// where the whole snapshot is seven, each up to thirty seconds when IVAO hangs: longer than Passenger gives a start.
+    /// item 7; note 2026-11-18-il-primo-allineamento-sotto-blocco, decided by the maintainer: "B, only the centres"). One data
+    /// call after the token's, where the whole snapshot is seven, each up to thirty seconds when IVAO hangs: longer than
+    /// Passenger gives a start.
     /// </summary>
     /// <remarks>Recorded as <see cref="CentresJobName"/>, never as <see cref="JobName"/>: the scheduled job has then never run,
     /// so it is due, and the first round of the jobs after the start (note 2026-11-14-il-primo-giro-dei-job-dopo-la-pagina)

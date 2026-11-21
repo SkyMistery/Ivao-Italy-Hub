@@ -2,6 +2,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -21,6 +22,12 @@ public enum FirstReferenceSyncOutcome
 
     /// <summary>This start waited for the lock, and the start that held it had synchronised meanwhile.</summary>
     AnotherStartSynced,
+
+    /// <summary>
+    /// This start tried and the division's centres are still missing: the download failed, or IVAO gave none. The run's row
+    /// in <c>hub_jobs_log</c> says which; the next start tries again, and so does the scheduled job.
+    /// </summary>
+    NotSynced,
 }
 
 /// <summary>
@@ -31,12 +38,12 @@ public enum FirstReferenceSyncOutcome
 /// the whole snapshot outlasted the time Passenger gives a start.
 /// </summary>
 /// <remarks>
-/// <para><b>Only the centres</b> (<see cref="RefDataSyncJob.RunCentresAsync"/>; the maintainer's answer, «B, solo i centri»,
-/// <see href="https://github.com/SkyMistery/Ivao-Italy-Hub/issues/325#issuecomment-6980597038"/>): one call, at most the
-/// thirty seconds of the client's total. The rest of the snapshot is the scheduled job's, which has then never run and is due
-/// at the first round of the jobs after the start.</para>
+/// <para><b>Only the centres</b> (<see cref="RefDataSyncJob.RunCentresAsync"/>; the maintainer's answer, "B, only the
+/// centres", <see href="https://github.com/SkyMistery/Ivao-Italy-Hub/issues/325#issuecomment-6980597038"/>): one data call,
+/// after the token's, each at most the thirty seconds of the client's total. The rest of the snapshot is the scheduled job's,
+/// which has then never run and is due at the first round of the jobs after the start.</para>
 /// <para>The same lock as the initialisation's (<see cref="InitialisationLock"/>, note 2026-10-05-l-inizializzazione-sotto-blocco),
-/// with the same rule: the check comes first and costs one query, so a start that finds the airspace never asks for the lock;
+/// with the same rule and a wait of its own (<see cref="DefaultLockWait"/>): the check comes first and costs one query, so a start that finds the airspace never asks for the lock;
 /// a start that has to synchronise takes it, and asks again with the lock in its hands. Of two starts on an empty table, one
 /// synchronises; the other waits, finds the centres and goes on — the airspace is there for both exactly when it would have
 /// been for the first.</para>
@@ -50,22 +57,36 @@ public sealed class FirstReferenceSync(
     IOptions<DivisionOptions> division,
     ILogger<FirstReferenceSync> logger)
 {
+    /// <summary>
+    /// How long a start waits for another one's download: the holder's two calls, the token and the centres, each up to the
+    /// standard resilience handler's total of thirty seconds, and five seconds for the writes. The initialisation's thirty
+    /// seconds gave up behind an IVAO slow but answering, and the waiter downloaded a second time, which is what the lock is
+    /// there to stop. With the cold start of eight to ten seconds measured on the server, the holder's start stays inside the
+    /// ninety seconds Passenger gives it (note 2026-11-18-il-primo-allineamento-sotto-blocco, §2).
+    /// </summary>
+    public static readonly TimeSpan DefaultLockWait =
+        (2 * new HttpStandardResilienceOptions().TotalRequestTimeout.Timeout) + TimeSpan.FromSeconds(5);
+
+    /// <summary>What the lock's warnings say this start runs without it.</summary>
+    private const string Work = "the first reference synchronisation";
+
     /// <summary>How long a start waits for another one's synchronisation before it goes on without the lock.</summary>
-    public TimeSpan LockWait { get; set; } = InitialisationLock.DefaultWait;
+    public TimeSpan LockWait { get; set; } = DefaultLockWait;
 
     /// <summary>Synchronises when the division's airspace is missing, one process at a time.</summary>
     public Task<FirstReferenceSyncOutcome> RunAsync(CancellationToken cancellationToken = default) =>
-        RunAsync(ConnectionString(), HasAirspaceAsync, sync.RunCentresAsync, LockWait, logger, cancellationToken);
+        RunAsync(ConnectionString(), HasAirspaceAsync, SynchroniseCentresAsync, LockWait, logger, cancellationToken);
 
     /// <summary>
     /// The rule, apart from what it checks and what it runs: <paramref name="present"/> first, then, only when it says no,
     /// the lock of the database <paramref name="connectionString"/> names, <paramref name="present"/> again with the lock in
-    /// hand, and <paramref name="synchronise"/> when it still says no or the lock could not be taken.
+    /// hand, and <paramref name="synchronise"/> when it still says no or the lock could not be taken. <paramref name="synchronise"/>
+    /// answers whether it wrote the division's centres: a download that failed is never reported as one that did.
     /// </summary>
     public static async Task<FirstReferenceSyncOutcome> RunAsync(
         string? connectionString,
         Func<CancellationToken, Task<bool>> present,
-        Func<CancellationToken, Task> synchronise,
+        Func<CancellationToken, Task<bool>> synchronise,
         TimeSpan lockWait,
         ILogger logger,
         CancellationToken cancellationToken = default)
@@ -80,7 +101,7 @@ public sealed class FirstReferenceSync(
         }
 
         // Held until the synchronisation ends, so that whoever waits behind it finds the centres.
-        await using var held = await InitialisationLock.TakeAsync(connectionString, lockWait, logger, cancellationToken);
+        await using var held = await InitialisationLock.TakeAsync(connectionString, lockWait, logger, cancellationToken, Work);
 
         if (held.Held && await present(cancellationToken))
         {
@@ -90,7 +111,11 @@ public sealed class FirstReferenceSync(
             return FirstReferenceSyncOutcome.AnotherStartSynced;
         }
 
-        await synchronise(cancellationToken);
+        if (!await synchronise(cancellationToken))
+        {
+            return FirstReferenceSyncOutcome.NotSynced;
+        }
+
         return held.Held ? FirstReferenceSyncOutcome.Synced : FirstReferenceSyncOutcome.SyncedWithoutTheLock;
     }
 
@@ -103,6 +128,10 @@ public sealed class FirstReferenceSync(
         var country = division.Value.CountryId;
         return database.IvaoCenters.AnyAsync(center => center.CountryId == country, cancellationToken);
     }
+
+    /// <summary>The centres alone, and whether any was written: zero is a run that failed, or IVAO that gave none.</summary>
+    private async Task<bool> SynchroniseCentresAsync(CancellationToken cancellationToken) =>
+        await sync.RunCentresAsync(cancellationToken) > 0;
 
     /// <summary>The database the centres are in, for the lock's own connection; null when the context cannot say.</summary>
     private string? ConnectionString()

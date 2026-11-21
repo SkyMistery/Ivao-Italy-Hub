@@ -373,6 +373,7 @@ internal static class HubPipeline
             FirstReferenceSyncOutcome.Synced => "reference centres synchronised",
             FirstReferenceSyncOutcome.SyncedWithoutTheLock => "reference centres synchronised without the initialisation lock",
             FirstReferenceSyncOutcome.AnotherStartSynced => "reference centres synchronised by another start",
+            FirstReferenceSyncOutcome.NotSynced => "reference centres not synchronised",
             _ => "reference data",
         });
 
