@@ -115,7 +115,11 @@ internal static class MeEndpoints
                         new BootstrapPermissionName(
                             permission.Name,
                             permission.IsGlobal,
-                            permission.IsGlobal && permission.GrantableAlthoughGlobal))]),
+                            permission.IsGlobal && permission.GrantableAlthoughGlobal))],
+                    // The pages of the site written in code, the core's and the enabled modules' (design 13 §3.1): declared
+                    // once on the server, so the browser has no copy of its own to keep agreeing with.
+                    [.. SiteDestinations.Of(modules).Select(screen =>
+                        new BootstrapScreen(screen.Path, screen.TitleKey, screen.Visibility))]),
                 // The one vocabulary the division decides centrally, and the only one so far. It
                 // travels with the bootstrap because a chip on a public calendar needs the word and
                 // the colour, and a visitor may not read `/api/calendar-kinds` — which is behind
@@ -338,7 +342,15 @@ internal sealed record NavItem(
 
 internal sealed record BootstrapRegistries(
     IReadOnlyList<BootstrapBlock> Blocks,
-    IReadOnlyList<BootstrapPermissionName> Permissions);
+    IReadOnlyList<BootstrapPermissionName> Permissions,
+    IReadOnlyList<BootstrapScreen> Screens);
+
+/// <summary>
+/// One page of the site written in code (<see cref="SiteScreen"/>): where it is, the key of its name and who it is for. The
+/// browser shows these in the tree of the site and offers them wherever an address of the site is chosen (design 13 §3.1).
+/// <para>Not sensitive: the list is in the source of every fork, minus the modules this division switched off.</para>
+/// </summary>
+internal sealed record BootstrapScreen(string Path, string TitleKey, Visibility Visibility);
 
 /// <summary>
 /// One permission of the catalogue: core plus whatever the installed modules declare. It is here so

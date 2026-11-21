@@ -62,7 +62,7 @@ function bootstrap(user: Bootstrap['user']): Bootstrap {
     },
     modules: [],
     navigation: { public: [], footer: [], staff: [] },
-    registries: { blocks: [], permissions: [] },
+    registries: { blocks: [], permissions: [], screens: [] },
     calendarKinds: [],
     version: '0.0.0-test',
     commit: null,

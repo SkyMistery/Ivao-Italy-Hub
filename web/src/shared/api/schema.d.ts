@@ -4883,6 +4883,7 @@ export interface components {
         BootstrapRegistries: {
             blocks: components["schemas"]["BootstrapBlock"][];
             permissions: components["schemas"]["BootstrapPermissionName"][];
+            screens: components["schemas"]["BootstrapScreen"][];
         };
         /**
          * @description The bootstrap payload. Menu entries are translation keys, never text: the server does not know
@@ -4898,6 +4899,16 @@ export interface components {
             calendarKinds: components["schemas"]["BootstrapCalendarKind"][];
             version: string;
             commit: null | string;
+        };
+        /**
+         * @description One page of the site written in code (SiteScreen): where it is, the key of its name and who it is for. The
+         *     browser shows these in the tree of the site and offers them wherever an address of the site is chosen (design 13 §3.1).
+         *     Not sensitive: the list is in the source of every fork, minus the modules this division switched off.
+         */
+        BootstrapScreen: {
+            path: string;
+            titleKey: string;
+            visibility: components["schemas"]["Visibility"];
         };
         BootstrapUser: {
             /** Format: int32 */
@@ -5455,16 +5466,32 @@ export interface components {
             updatedAt: string;
         };
         /**
-         * @description One page of the site as the tree a new page is put into sees it: where it is, and what it is
-         *     called. No body, no status, no department's business: an address is a public fact.
+         * @description One page of the site as its tree shows it (design `13-design-struttura-del-sito.md` §3.2): where it is, what it is
+         *     called, whose it is and who reads it — what a page online already says to whoever reads it — and, for a page this reader
+         *     may edit, its state. No body.
          */
         ContentPageNodeDto: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description The row.
+             */
             id: number;
+            /** @description Its whole address, without the leading slash: `about/team`. */
             path: string;
+            /** @description The title the site shows: the published version's for a page online, the draft's otherwise. */
             title: components["schemas"]["LocalizedOfstring"];
-            /** Format: int32 */
+            /**
+             * Format: int32
+             * @description How many levels down it sits, from 1 at the top of the site to 3.
+             */
             depth: number;
+            /** @description The department that writes it. */
+            ownerDepartment: components["schemas"]["Department"];
+            /** @description Who reads it. */
+            visibility: components["schemas"]["Visibility"];
+            status: null | components["schemas"]["PublishStatus"];
+            /** @description Whether the one handler lets the reader edit it: the tree offers to open it only then. */
+            mayEdit: boolean;
         };
         /**
          * @description What stands between a row and the public, asked before anybody presses publish.

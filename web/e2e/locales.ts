@@ -164,7 +164,10 @@ interface CommonStrings {
       readonly parentId: { readonly none: string };
       readonly visibility: { readonly Public: string };
       readonly kind: { readonly Page: string; readonly Document: string };
+      readonly source: { readonly Page: string; readonly Screen: string };
     };
+    readonly view: { readonly label: string; readonly tree: string; readonly list: string };
+    readonly tree: { readonly newHere: string };
     readonly section: {
       readonly fields: {
         readonly title: string;

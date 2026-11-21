@@ -39,6 +39,7 @@ api.get.mockImplementation((path: string) =>
                 { type: 'heading', version: 1, kind: 'Content', alwaysLive: false, audience: 'Public' },
               ],
               permissions: [],
+              screens: [],
             },
           }
         : null,

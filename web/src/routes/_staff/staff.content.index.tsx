@@ -1,7 +1,8 @@
 import { Button } from '@ivao/atmosphere-react';
 import { Link, createFileRoute } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 
-import { contentSearchSchema } from '../../features/content/contentSearch';
+import { contentSearchSchema, defaultView } from '../../features/content/contentSearch';
 import { ContentListScreen, CreateLabel, EditLabel } from '../../features/content/ContentListScreen';
 import { CONTENT_KINDS } from '../../features/content/kinds';
 import { contentListQuery, templateListQuery } from '../../features/content/queries';
@@ -22,6 +23,8 @@ export const Route = createFileRoute('/_staff/staff/content/')({
   loader: async ({ context, deps }) => {
     if (deps.kind === 'Template') {
       await context.queryClient.ensureQueryData(templateListQuery(deps.department, deps));
+    } else if (deps.kind === 'Page' && defaultView(deps) === 'tree') {
+      // The tree is read by the screen, in the language on screen, which names the pages written in code.
     } else {
       await context.queryClient.ensureQueryData(contentListQuery(deps.department, deps, deps.kind));
     }
@@ -30,6 +33,7 @@ export const Route = createFileRoute('/_staff/staff/content/')({
 });
 
 function ContentPage() {
+  const { t } = useTranslation();
   const { bootstrap } = Route.useRouteContext();
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
@@ -60,6 +64,30 @@ function ContentPage() {
           </Link>
         </Button>
       )}
+      treeAction={(row, newHere) =>
+        row.id === null ? null : (
+          <>
+            {newHere === undefined ? null : (
+              <Button asChild variant="ghost" size="sm">
+                <Link
+                  to="/staff/content/$id"
+                  params={{ id: 'new' }}
+                  search={{ kind: 'Page', department: newHere, parent: row.id }}
+                >
+                  {t('content.tree.newHere')}
+                </Link>
+              </Button>
+            )}
+            {row.mayEdit ? (
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/staff/content/$id" params={{ id: String(row.id) }}>
+                  <EditLabel />
+                </Link>
+              </Button>
+            ) : null}
+          </>
+        )
+      }
     />
   );
 }

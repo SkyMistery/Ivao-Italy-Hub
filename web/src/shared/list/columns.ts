@@ -13,7 +13,7 @@ import type { NamedPerson } from '../ui/people';
 export type ColumnSpec<TRow> =
   | { kind: 'text'; field: TextKey<TRow>; sortable: boolean }
   | { kind: 'list'; field: ListKey<TRow>; sortable: false }
-  | { kind: 'localized'; field: LocalizedKey<TRow>; sortable: boolean }
+  | { kind: 'localized'; field: LocalizedKey<TRow>; sortable: boolean; indentBy?: NumberKey<TRow> }
   | { kind: 'number'; field: NumberKey<TRow>; sortable: boolean; editable: boolean }
   | { kind: 'boolean'; field: BooleanKey<TRow>; sortable: boolean }
   | { kind: 'date'; field: TextKey<TRow>; sortable: boolean }
@@ -61,9 +61,20 @@ export const col = {
     return { kind: 'list', field, sortable: false };
   },
 
-  /** A translated column, read in the language on screen. */
-  localized<TRow>(field: LocalizedKey<TRow>, options: Options = {}): ColumnSpec<TRow> {
-    return { kind: 'localized', field, sortable: options.sortable ?? false };
+  /**
+   * A translated column, read in the language on screen. `indentBy` names the level of the row, for a tree: the value is
+   * pushed right one step a level (the tree of the site, design `13-design-struttura-del-sito.md` §3.2).
+   */
+  localized<TRow>(
+    field: LocalizedKey<TRow>,
+    options: Options & { indentBy?: NumberKey<TRow> } = {},
+  ): ColumnSpec<TRow> {
+    return {
+      kind: 'localized',
+      field,
+      sortable: options.sortable ?? false,
+      ...(options.indentBy === undefined ? {} : { indentBy: options.indentBy }),
+    };
   },
 
   number<TRow>(field: NumberKey<TRow>, options: Options & Editable = {}): ColumnSpec<TRow> {

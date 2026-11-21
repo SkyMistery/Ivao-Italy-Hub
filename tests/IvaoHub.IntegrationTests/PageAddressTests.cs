@@ -131,6 +131,12 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal("Page", offered.GetProperty("title").GetProperty("en").GetString());
         Assert.DoesNotContain(tree.EnumerateArray(), node => node.GetProperty("id").GetInt64() == draftOfTheWebTeam.Id);
 
+        // What the tree of the site shows of it (design 13 §3.2): whose it is and who reads it, which the page online says
+        // already; not its state, which is its department's business, and not a way to open it.
+        Assert.Equal(nameof(Department.WD), offered.GetProperty("ownerDepartment").GetString());
+        Assert.Equal(JsonValueKind.Null, offered.GetProperty("status").ValueKind);
+        Assert.False(offered.GetProperty("mayEdit").GetBoolean());
+
         // At the top: refused on the field that chose it.
         using var top = await SendAsync(
             coordinator,
@@ -153,7 +159,12 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // A draft of their own department is offered: a section is built under its first page before it comes out.
         var mine = (await under.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64();
         var after = await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/pages", token);
-        Assert.Contains(after.EnumerateArray(), node => node.GetProperty("id").GetInt64() == mine);
+        var own = Assert.Single(after.EnumerateArray(), node => node.GetProperty("id").GetInt64() == mine);
+
+        // Their own page they may open, and they see its state.
+        Assert.True(own.GetProperty("mayEdit").GetBoolean());
+        Assert.Equal(nameof(PublishStatus.Draft), own.GetProperty("status").GetString());
+        Assert.Equal(2, own.GetProperty("depth").GetInt32());
     }
 
     [Fact]

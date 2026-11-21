@@ -86,6 +86,7 @@ public sealed class ModuleRegistry
             .. Enabled.SelectMany(module => module.ReservedSegments)
                 .Distinct(StringComparer.OrdinalIgnoreCase),
         ];
+        SiteScreens = [.. Enabled.SelectMany(module => module.SiteScreens)];
     }
 
     /// <summary>How a maintenance flag is keyed in <c>hub_division_settings</c>.</summary>
@@ -131,6 +132,12 @@ public sealed class ModuleRegistry
 
     /// <summary>What the single page application must not answer for, on top of the core's own.</summary>
     public IReadOnlyList<string> SpaFallbackExclusions { get; }
+
+    /// <summary>
+    /// The public pages of the enabled modules that the site shows among its own (design 13 §3.1): a module switched off
+    /// takes its screens away with it, so nothing offers an address it no longer answers.
+    /// </summary>
+    public IReadOnlyList<SiteScreen> SiteScreens { get; }
 
     /// <summary>The first segments the enabled modules' public pages answer for, which no page may take.</summary>
     public IReadOnlyList<string> ReservedSegments { get; }

@@ -121,6 +121,7 @@ export function ContentEditor({
   content,
   kind,
   startsAsTemplate = false,
+  newParentId,
   categories,
   successors = [],
   pageChoices,
@@ -150,6 +151,8 @@ export function ContentEditor({
    * rather than after a reload.
    */
   startsAsTemplate?: boolean;
+  /** The page a new page starts under: «New page here» on the tree of the site (design 13 §3.2). */
+  newParentId?: number;
   /** The shelves of this department, already resolved into the language on screen. */
   categories: readonly ChoiceOption[];
   /** The published documents this one may say it was replaced by, already labelled. */
@@ -250,7 +253,7 @@ export function ContentEditor({
   // through travels as the last one that was whole (`SchemaForm.onChange`).
   const [metadata, setMetadata] = useState<ContentFormValues>(() =>
     content === null
-      ? emptyContent(department, locales, kind, startsAsTemplate)
+      ? emptyContent(department, locales, kind, startsAsTemplate, newParentId)
       : toFormValues(content, locales),
   );
 
@@ -482,7 +485,7 @@ export function ContentEditor({
         defaults={
           formStart?.values ??
           (content === null
-            ? emptyContent(department, locales, kind, startsAsTemplate)
+            ? emptyContent(department, locales, kind, startsAsTemplate, newParentId)
             : toFormValues(content, locales))
         }
         locales={locales}

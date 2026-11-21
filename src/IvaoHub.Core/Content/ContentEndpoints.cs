@@ -34,10 +34,28 @@ public sealed record ContentFromTemplateRequest(Department OwnerDepartment, stri
 public sealed record PublicPageDto(PublicContentDto? Page, string? MovedTo);
 
 /// <summary>
-/// One page of the site as the tree a new page is put into sees it: where it is, and what it is
-/// called. No body, no status, no department's business: an address is a public fact.
+/// One page of the site as its tree shows it (design <c>13-design-struttura-del-sito.md</c> §3.2): where it is, what it is
+/// called, whose it is and who reads it — what a page online already says to whoever reads it — and, for a page this reader
+/// may edit, its state. No body.
 /// </summary>
-public sealed record ContentPageNodeDto(long Id, string Path, Localized<string> Title, int Depth);
+/// <param name="Id">The row.</param>
+/// <param name="Path">Its whole address, without the leading slash: <c>about/team</c>.</param>
+/// <param name="Title">The title the site shows: the published version's for a page online, the draft's otherwise.</param>
+/// <param name="Depth">How many levels down it sits, from 1 at the top of the site to 3.</param>
+/// <param name="OwnerDepartment">The department that writes it.</param>
+/// <param name="Visibility">Who reads it.</param>
+/// <param name="Status">The state of the row, only for a page the reader may edit; null for one they only read online, whose
+/// draft is not their business (a page of another department waiting for approval stays its department's).</param>
+/// <param name="MayEdit">Whether the one handler lets the reader edit it: the tree offers to open it only then.</param>
+public sealed record ContentPageNodeDto(
+    long Id,
+    string Path,
+    Localized<string> Title,
+    int Depth,
+    Department OwnerDepartment,
+    Visibility Visibility,
+    PublishStatus? Status,
+    bool MayEdit);
 
 /// <summary>
 /// One address of the site that whoever asks can read online: a page, a news item or a document, with where it is, what it is
@@ -952,21 +970,26 @@ public static class ContentEndpoints
                 Title = row.Title,
                 OwnerDepartment = row.OwnerDepartment,
                 Visibility = row.Visibility,
+                Status = row.Status,
                 PublishedVersionId = row.PublishedVersionId,
             })
             .ToListAsync(http.RequestAborted);
 
-        var rows = new List<ContentEntry>();
+        // Asked of every page, online ones too: the tree offers to open a page only to whoever may edit it (design 13 §3.2).
+        var rows = new List<(ContentEntry Page, bool MayEdit)>();
         foreach (var page in pages)
         {
+            var mayEdit = (await authorization.AuthorizeAsync(http.User, page, CorePermissions.ContentEdit)).Succeeded;
+
             if (online.TryGetValue(page.Id, out var published))
             {
+                // Under the title the site shows, read after the handler, which is asked about the row as it is.
                 page.Title = published;
-                rows.Add(page);
+                rows.Add((page, mayEdit));
             }
-            else if ((await authorization.AuthorizeAsync(http.User, page, CorePermissions.ContentEdit)).Succeeded)
+            else if (mayEdit)
             {
-                rows.Add(page);
+                rows.Add((page, mayEdit));
             }
         }
 
@@ -975,8 +998,17 @@ public static class ContentEndpoints
             .. rows
                 .Select(row =>
                 {
-                    var path = row.ParentPath is null ? row.Slug : $"{row.ParentPath}/{row.Slug}";
-                    return new ContentPageNodeDto(row.Id, path, row.Title, path.Count(character => character == '/') + 1);
+                    var (page, mayEdit) = row;
+                    var path = page.ParentPath is null ? page.Slug : $"{page.ParentPath}/{page.Slug}";
+                    return new ContentPageNodeDto(
+                        page.Id,
+                        path,
+                        page.Title,
+                        path.Count(character => character == '/') + 1,
+                        page.OwnerDepartment,
+                        page.Visibility,
+                        mayEdit ? page.Status : null,
+                        mayEdit);
                 })
                 .OrderBy(node => node.Path, StringComparer.Ordinal),
         ];

@@ -222,6 +222,11 @@ interface FieldCommon {
 export interface ChoiceOption {
   value: string;
   label: string;
+  /**
+   * Shown and not choosable: a choice the person should see is there, and why it cannot be taken is in its label — a
+   * page of the application among the pages a page may sit under (design `13-design-struttura-del-sito.md` §3.2).
+   */
+  disabled?: boolean;
 }
 
 /**
