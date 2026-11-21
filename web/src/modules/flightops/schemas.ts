@@ -138,18 +138,21 @@ export const TOUR_RULE_FIELDS = [
   'allowedGroups',
 ] as const;
 
-/** Which half of a tour a form draws: its settings, or its rules. Both carry the whole tour and send it. */
-export type TourFormPart = 'settings' | 'rules';
+/**
+ * Which part of a tour a form draws, one per step of its editor that has a form (design 11 §5): its name, dates and
+ * pictures, or its rules. Both carry the whole tour and send it (#369).
+ */
+export type TourFormPart = 'identity' | 'rules';
 
 /**
  * The form of a tour, mirroring `TourWriteDto` (design M2 §1.2, §8.3). A function, because what it offers is known
  * only at runtime — the types as they are typed, the awards of the division — and because three things are decided
- * before it opens: a template has no address, no dates and no award (§1.10), the kind of a tour the public already
- * sees no longer changes (§1.2.1), and a subtour is never a container, has no award, and may leave its dates empty to
- * take its container's (§2.7, note 2026-09-21-la-forma-dei-tour). Those fields are carried and not drawn, and so are
- * those of the other `part`: the settings and the rules of a tour are two forms of the one payload (#369). The fields
- * of one kind of tour only are greyed out on a tour of another `kind` (#367): drawn, so that the form is the same on
- * every tour, and not written in, since the server ignores them there. Every rule is the server's.
+ * before it opens: a template has no address, no dates and no award (§1.10), and a subtour has no award and may leave
+ * its dates empty to take its container's (§2.7, note 2026-09-21-la-forma-dei-tour). Those fields are carried and not
+ * drawn, and so are those of the other `part`, and the kind, which is the first step of the editor and has a form of its
+ * own (`tourKindSchema`, design 11 §5): the identity and the rules of a tour are two forms of the one payload (#369). The
+ * fields of one kind of tour only are greyed out on a tour of another `kind` (#367): drawn, so that the form is the same
+ * on every tour, and not written in, since the server ignores them there. Every rule is the server's.
  */
 export function tourSchema({
   types = [],
@@ -157,9 +160,8 @@ export function tourSchema({
   groups = [],
   ratings = [],
   isTemplate = false,
-  kindLocked = false,
   isSubtour = false,
-  part = 'settings',
+  part = 'identity',
   kind,
 }: {
   types?: readonly Suggestion[];
@@ -168,7 +170,6 @@ export function tourSchema({
   /** The pilot ratings of the core's vocabulary, lowest first, the number of each as the text of its choice. */
   ratings?: readonly ChoiceOption[];
   isTemplate?: boolean;
-  kindLocked?: boolean;
   isSubtour?: boolean;
   part?: TourFormPart;
   /** The kind the tour has, for its fields of one kind only; none for a new tour. */
@@ -181,13 +182,13 @@ export function tourSchema({
     isTemplate: z.boolean().meta({ hidden: true }),
     // Chosen when a subtour is created, and never changed.
     parentTourId: z.number().int().optional().meta({ hidden: true }),
-    // A subtour offers every kind but a container; what the form holds is a kind either way.
+    // Carried: the kind is chosen at its own step (`tourKindSchema`). A subtour's is any but a container.
     kind: (
       (isSubtour ? z.enum(SUBTOUR_KINDS) : z.enum(TOUR_KINDS)) as z.ZodType<
         (typeof TOUR_KINDS)[number],
         (typeof TOUR_KINDS)[number]
       >
-    ).meta({ hidden: kindLocked || rule }),
+    ).meta({ hidden: true }),
     title: localized().meta({ localized: true, hidden: rule }),
     slug: z.string().meta({ slugFrom: 'title', hidden: isTemplate || rule }),
     summary: localized().meta({ localized: true, multiline: true, hidden: rule }),
@@ -245,17 +246,54 @@ export function tourSchema({
 export type TourFormValues = z.output<ReturnType<typeof tourSchema>>;
 
 /**
+ * The first step of a tour's editor (design 11 §5): its kind alone, applied as it is chosen, the sentence of each kind
+ * beside it. A subtour is never a container (design M2 §2.7).
+ */
+export function tourKindSchema(isSubtour = false) {
+  return z.object({
+    kind: isSubtour ? z.enum(SUBTOUR_KINDS) : z.enum(TOUR_KINDS),
+  });
+}
+
+/**
+ * The steps of a tour's editor, in the order a tour is written (design 11 §5): its kind; its name, dates and pictures;
+ * its route — legs, hubs and rotations, subtours or goal, by kind; its rules; its briefing; the check of what stands
+ * between it and "ready". A new tour walks them one after the other, one that exists has them as tabs.
+ */
+export const TOUR_STEPS = ['kind', 'identity', 'route', 'rules', 'briefing', 'check'] as const;
+
+export type TourStep = (typeof TOUR_STEPS)[number];
+
+/**
+ * The tabs the editor had before its steps (T6b–T9), and the step each one's content is in now: an address written
+ * before — a bookmark, a link in a message — still lands where what it named is.
+ */
+const FORMER_TABS: Readonly<Record<string, TourStep>> = {
+  settings: 'identity',
+  legs: 'route',
+  hubs: 'route',
+  subtours: 'route',
+  open: 'route',
+  callsigns: 'rules',
+};
+
+/**
  * The address a tour's own screen is opened with: `?template=true` makes a new one a template, `?parent=` a subtour of
- * that container, `?tab=` says which tab is open (T6b: settings and briefing; T7a the legs; T7b the hubs, the subtours
- * and the callsigns; T9 adds its own).
+ * that container, `?kind=` the kind chosen at the first step of a new one, `?tab=` the step that is open.
  */
 export const tourEditorSearchSchema = z.object({
   template: z.boolean().optional(),
   parent: z.number().int().optional(),
-  tab: z.enum(['settings', 'briefing', 'legs', 'hubs', 'subtours', 'callsigns', 'open', 'rules']).optional(),
+  kind: z.enum(TOUR_KINDS).optional().catch(undefined),
+  tab: z
+    .preprocess(
+      (value) => (typeof value === 'string' ? (FORMER_TABS[value] ?? value) : value),
+      z.enum(TOUR_STEPS).optional(),
+    )
+    .catch(undefined),
 });
 
-export type TourEditorTab = NonNullable<z.infer<typeof tourEditorSearchSchema>['tab']>;
+export type TourEditorSearch = z.infer<typeof tourEditorSearchSchema>;
 
 /** "New from a template": which one, and the name and address of the tour it makes. */
 export function tourFromTemplateSchema(templates: readonly ChoiceOption[] = []) {

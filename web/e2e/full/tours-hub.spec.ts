@@ -72,7 +72,7 @@ async function newHub(page: Page, icao: string, sort: string): Promise<void> {
   await whileWaitingFor(page, 'POST', '/api/flightops/hubs', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
-  await expect(page).toHaveURL(/tab=hubs/);
+  await expect(page).toHaveURL(/tab=route/);
 }
 
 async function newRotation(page: Page, hub: string): Promise<void> {
@@ -83,7 +83,7 @@ async function newRotation(page: Page, hub: string): Promise<void> {
   await whileWaitingFor(page, 'POST', '/api/flightops/rotations', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
-  await expect(page).toHaveURL(/tab=hubs/);
+  await expect(page).toHaveURL(/tab=route/);
 }
 
 test('a hub tour is composed from nothing — hubs, rotations, a connection — and marked ready', async ({
@@ -101,6 +101,7 @@ test('a hub tour is composed from nothing — hubs, rotations, a connection — 
   const now = Date.now();
   await page.goto('/staff/tours/new');
   await choose(page, flightops.tours.fields.kind, flightops.tours.options.kind.Hub);
+  await page.getByRole('button', { name: flightops.tours.steps.next, exact: true }).click();
   await writeInBothLanguages(page.locator('form'), flightops.tours.fields.title, 'title', tourName);
   await page.locator('[id="slug"]').fill(slug);
   await writeInBothLanguages(page.locator('form'), flightops.tours.fields.summary, 'summary', summary);
@@ -110,7 +111,7 @@ test('a hub tour is composed from nothing — hubs, rotations, a connection — 
   await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
-  await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+  await expect(page).toHaveURL(/\/staff\/tours\/\d+(\?|$)/);
   await writeDailyLegLimit(page, '5');
   const tourUrl = page.url();
 
@@ -118,8 +119,8 @@ test('a hub tour is composed from nothing — hubs, rotations, a connection — 
   await expect(page.getByText(flightops.errors.noHubs)).toBeVisible();
 
   // ---------------------------------------------------------------- hubs and rotations, in their tab
-  await page.getByRole('tab', { name: flightops.tours.tabs.hubs }).click();
-  await expect(page).toHaveURL(/tab=hubs/);
+  await page.getByRole('tab', { name: flightops.tours.steps.route }).click();
+  await expect(page).toHaveURL(/tab=route/);
 
   await newHub(page, benchAirports.rome, '1');
   await newHub(page, benchAirports.milan, '2');
@@ -131,8 +132,8 @@ test('a hub tour is composed from nothing — hubs, rotations, a connection — 
   await expect(page.getByText(flightops.errors.rotationSize).first()).toBeVisible();
 
   // ---------------------------------------------------------------- the legs, each in its place
-  await page.getByRole('tab', { name: flightops.tours.tabs.legs }).click();
-  await expect(page).toHaveURL(/tab=legs/);
+  await page.getByRole('tab', { name: flightops.tours.steps.route }).click();
+  await expect(page).toHaveURL(/tab=route/);
 
   await addLeg(page, benchAirports.rome, benchAirports.bari, rotationOf(benchAirports.rome));
   await addLeg(page, benchAirports.bari, benchAirports.rome, rotationOf(benchAirports.rome));
@@ -145,6 +146,7 @@ test('a hub tour is composed from nothing — hubs, rotations, a connection — 
   await addLeg(page, benchAirports.bari, benchAirports.milan, rotationOf(benchAirports.milan));
 
   // ---------------------------------------------------------------- ready
+  await page.getByRole('tab', { name: flightops.tours.steps.check }).click();
   await expect(page.getByText(flightops.tours.readyProblems)).toBeHidden();
   await whileWaitingFor(page, 'POST', '/status', async () => {
     await page.getByRole('button', { name: flightops.tours.actions.ready }).click();
@@ -166,7 +168,14 @@ function englishFlightOps() {
   ) as {
     tours: {
       readyProblems: string;
-      tabs: { legs: string; hubs: string };
+      steps: {
+        next: string;
+        identity: string;
+        route: string;
+        rules: string;
+        briefing: string;
+        check: string;
+      };
       actions: { ready: string; hide: string };
       fields: { title: string; summary: string; kind: string };
       options: { kind: { Hub: string } };

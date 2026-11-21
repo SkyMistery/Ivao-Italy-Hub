@@ -70,6 +70,8 @@ test('a tour with a chosen start is composed in the table of its legs and marked
   await expect(page.getByRole('heading', { name: flightops.tours.create })).toBeVisible();
 
   await choose(page, flightops.tours.fields.kind, flightops.tours.options.kind.SequentialChosenStart);
+
+  await page.getByRole('button', { name: flightops.tours.steps.next, exact: true }).click();
   await writeInBothLanguages(page.locator('form'), flightops.tours.fields.title, 'title', tourName);
   await page.locator('[id="slug"]').fill(slug);
   await writeInBothLanguages(page.locator('form'), flightops.tours.fields.summary, 'summary', summary);
@@ -79,7 +81,7 @@ test('a tour with a chosen start is composed in the table of its legs and marked
   await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
-  await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+  await expect(page).toHaveURL(/\/staff\/tours\/\d+(\?|$)/);
   await writeDailyLegLimit(page, '5');
   const tourUrl = page.url();
 
@@ -87,8 +89,8 @@ test('a tour with a chosen start is composed in the table of its legs and marked
   await expect(page.getByText(flightops.errors.noLegs)).toBeVisible();
 
   // ---------------------------------------------------------------- the legs
-  await page.getByRole('tab', { name: flightops.tours.tabs.legs }).click();
-  await expect(page).toHaveURL(/tab=legs/);
+  await page.getByRole('tab', { name: flightops.tours.steps.route }).click();
+  await expect(page).toHaveURL(/tab=route/);
   await expect(page.getByText(legs.empty)).toBeVisible();
 
   // One at the end.
@@ -146,6 +148,7 @@ test('a tour with a chosen start is composed in the table of its legs and marked
   );
 
   // ---------------------------------------------------------------- ready
+  await page.getByRole('tab', { name: flightops.tours.steps.check }).click();
   await expect(page.getByText(flightops.tours.readyProblems)).toBeHidden();
   await whileWaitingFor(page, 'POST', '/status', async () => {
     await page.getByRole('button', { name: flightops.tours.actions.ready }).click();
@@ -168,7 +171,14 @@ function englishFlightOps() {
     tours: {
       create: string;
       readyProblems: string;
-      tabs: { legs: string };
+      steps: {
+        next: string;
+        identity: string;
+        route: string;
+        rules: string;
+        briefing: string;
+        check: string;
+      };
       actions: { ready: string; hide: string };
       fields: { title: string; summary: string; kind: string };
       options: { kind: { SequentialChosenStart: string } };

@@ -11,6 +11,7 @@ public sealed record CalendarKindListDto(
     string Colour,
     int Sort,
     bool IsActive,
+    bool Blocks,
     DateTime UpdatedAt);
 
 /// <summary>The same, as the form loads it, with the version to write back.</summary>
@@ -21,6 +22,7 @@ public sealed record CalendarKindDetailDto(
     string Colour,
     int Sort,
     bool IsActive,
+    bool Blocks,
     DateTime CreatedAt,
     int CreatedBy,
     DateTime UpdatedAt,
@@ -38,7 +40,8 @@ public sealed record CalendarKindWriteDto(
     string Colour,
     int Sort,
     bool IsActive,
-    DateTime RowVersion);
+    DateTime RowVersion,
+    bool Blocks = false);
 
 /// <summary>Entity to payload and back. Generated, like every other mapping of the hub.</summary>
 [Mapper(RequiredMappingStrategy = RequiredMappingStrategy.None)]

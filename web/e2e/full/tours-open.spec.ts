@@ -43,7 +43,7 @@ async function newConstraint(page: Page, kind: string, fill: () => Promise<void>
   await whileWaitingFor(page, 'POST', '/api/flightops/tour-constraints', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
-  await expect(page).toHaveURL(/tab=open/);
+  await expect(page).toHaveURL(/tab=rules/);
 }
 
 test('an Open tour is composed from nothing — a goal, two filters, a sequence rule — and marked ready', async ({
@@ -61,6 +61,7 @@ test('an Open tour is composed from nothing — a goal, two filters, a sequence 
   const now = Date.now();
   await page.goto('/staff/tours/new');
   await choose(page, flightops.tours.fields.kind, flightops.tours.options.kind.Open);
+  await page.getByRole('button', { name: flightops.tours.steps.next, exact: true }).click();
   await writeInBothLanguages(page.locator('form'), flightops.tours.fields.title, 'title', tourName);
   await page.locator('[id="slug"]').fill(slug);
   await writeInBothLanguages(page.locator('form'), flightops.tours.fields.summary, 'summary', summary);
@@ -70,16 +71,16 @@ test('an Open tour is composed from nothing — a goal, two filters, a sequence 
   await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
-  await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+  await expect(page).toHaveURL(/\/staff\/tours\/\d+(\?|$)/);
   await writeDailyLegLimit(page, '5');
   const tourUrl = page.url();
 
   // No goal, no ready: said before anybody presses.
   await expect(page.getByText(`${flightops.tours.fields.openGoal}:`)).toBeVisible();
 
-  // ---------------------------------------------------------------- the goal, in its tab
-  await page.getByRole('tab', { name: flightops.tours.tabs.open }).click();
-  await expect(page).toHaveURL(/tab=open/);
+  // ---------------------------------------------------------------- the goal, in the route
+  await page.getByRole('tab', { name: flightops.tours.steps.route }).click();
+  await expect(page).toHaveURL(/tab=route/);
 
   await choose(page, flightops.tours.fields.openGoal, flightops.tours.options.openGoal.CollectList);
   await expect(page.getByText(flightops.open.goals.CollectList)).toBeVisible();
@@ -95,7 +96,9 @@ test('an Open tour is composed from nothing — a goal, two filters, a sequence 
   await expect(page.getByText(flightops.open.goalSaved)).toBeVisible();
   await expect(page.getByText(`${flightops.tours.fields.openGoal}:`)).toBeHidden();
 
-  // ---------------------------------------------------------------- two filters and a sequence rule
+  // ---------------------------------------------------------------- two filters and a sequence rule, in the rules
+  await page.getByRole('tab', { name: flightops.tours.steps.rules }).click();
+  await expect(page).toHaveURL(/tab=rules/);
   await newConstraint(page, constraints.options.kind.DepartureOrArrivalIn, async () => {
     await page.getByRole('button', { name: englishCommon.form.addEntry }).click();
     await page.locator('[id="parameters.countries.0.code"]').fill('it');
@@ -118,20 +121,21 @@ test('an Open tour is composed from nothing — a goal, two filters, a sequence 
   await whileWaitingFor(page, 'POST', '/api/flightops/tour-constraints', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
-  await expect(page).toHaveURL(/tab=open/);
+  await expect(page).toHaveURL(/tab=rules/);
 
   await newConstraint(page, constraints.options.kind.Chained, async () => {
     await expect(page.getByText(constraints.explain.Chained)).toBeVisible();
   });
 
   // The three rows, each with its values.
-  const table = page.getByRole('table');
+  const table = page.getByRole('region', { name: constraints.title }).getByRole('table');
   await expect(table.getByText(constraints.options.kind.DepartureOrArrivalIn)).toBeVisible();
   await expect(table.getByText('IT', { exact: true })).toBeVisible();
   await expect(table.getByText('≤ 1500 NM')).toBeVisible();
   await expect(table.getByText(constraints.options.kind.Chained)).toBeVisible();
 
   // ---------------------------------------------------------------- ready
+  await page.getByRole('tab', { name: flightops.tours.steps.check }).click();
   await expect(page.getByText(flightops.tours.readyProblems)).toBeHidden();
   await whileWaitingFor(page, 'POST', '/status', async () => {
     await page.getByRole('button', { name: flightops.tours.actions.ready }).click();
@@ -153,13 +157,21 @@ function englishFlightOps() {
   ) as {
     tours: {
       readyProblems: string;
-      tabs: { open: string };
+      steps: {
+        next: string;
+        identity: string;
+        route: string;
+        rules: string;
+        briefing: string;
+        check: string;
+      };
       actions: { ready: string; hide: string };
       fields: { title: string; summary: string; kind: string; openGoal: string };
       options: { kind: { Open: string }; openGoal: { CollectList: string } };
     };
     open: { saveGoal: string; goalSaved: string; goals: { CollectList: string } };
     constraints: {
+      title: string;
       create: string;
       fields: { kind: string };
       options: { kind: { DepartureOrArrivalIn: string; DistanceBetween: string; Chained: string } };
