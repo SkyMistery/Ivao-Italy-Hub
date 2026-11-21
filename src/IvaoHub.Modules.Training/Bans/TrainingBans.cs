@@ -197,25 +197,40 @@ public sealed class TrainingBans(
     }
 
     /// <summary>
-    /// What a ban does before it is saved: the refusal of <see cref="RefusalAsync"/>; and a new one closes every training of its member
-    /// still open (<see cref="Closable"/>), in the same save, by the reader who gives it (issue #312). A step on one of them saved
-    /// meanwhile moved its version: the ban is then a 409, and nothing of it is written.
+    /// What a ban does before it is saved: the refusal of <see cref="RefusalAsync"/>; and a new one follows the newest ban of its member
+    /// the reader saw (<see cref="TraineeBan.FollowsBanId"/>, issue #434) and closes every training of its member still open
+    /// (<see cref="Closable"/>), in the same save, by the reader who gives it (issue #312). A step on one of them saved meanwhile moved
+    /// its version, or another ban given meanwhile after the same one holds the chain's key: the ban is then a 409, and nothing of it is
+    /// written — no mail either, since the mail follows the save.
     /// </summary>
     public async Task<IReadOnlyDictionary<string, string[]>?> BeforeGivingAsync(TraineeBan ban, bool isNew, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ban);
 
-        if (await RefusalAsync(ban, cancellationToken) is { } refused)
+        var others = await OthersAsync(ban, cancellationToken);
+        if (Refusal(others) is { } refused)
         {
             return refused;
         }
 
         if (isNew)
         {
+            ban.FollowsBanId = Newest(others);
             _closed.AddRange(await CloseOpenAsync(ban.Vid, cancellationToken));
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// The newest of a member's bans, by its id — the order they were written in, whatever their dates say —, or <c>0</c> when they have
+    /// none: what a new ban follows (issue #434). The migration that made the chain ordered the bans already written the same way.
+    /// </summary>
+    public static long Newest(IEnumerable<TraineeBan> bans)
+    {
+        ArgumentNullException.ThrowIfNull(bans);
+
+        return bans.Select(ban => ban.Id).DefaultIfEmpty(0).Max();
     }
 
     /// <summary>
@@ -274,12 +289,7 @@ public sealed class TrainingBans(
     {
         ArgumentNullException.ThrowIfNull(ban);
 
-        var now = clock.UtcNow;
-        var others = await CrudSource.BackOffice<TraineeBan>(database).AsNoTracking()
-            .Where(other => other.Vid == ban.Vid && other.Id != ban.Id)
-            .ToListAsync(cancellationToken);
-
-        return others.Any(other => other.Holds(now)) ? new Refusals().Add("vid", AlreadyHolds).Errors : null;
+        return Refusal(await OthersAsync(ban, cancellationToken));
     }
 
     /// <summary>
@@ -458,6 +468,19 @@ public sealed class TrainingBans(
                     : string.Empty;
             },
             cancellationToken);
+    }
+
+    /// <summary>The other bans of the ban's member, past every filter: what holds already, and the newest.</summary>
+    private Task<List<TraineeBan>> OthersAsync(TraineeBan ban, CancellationToken cancellationToken) =>
+        CrudSource.BackOffice<TraineeBan>(database).AsNoTracking()
+            .Where(other => other.Vid == ban.Vid && other.Id != ban.Id)
+            .ToListAsync(cancellationToken);
+
+    /// <summary>Why a new ban may not be, among the other bans of its member: one holds already.</summary>
+    private IReadOnlyDictionary<string, string[]>? Refusal(IReadOnlyCollection<TraineeBan> others)
+    {
+        var now = clock.UtcNow;
+        return others.Any(other => other.Holds(now)) ? new Refusals().Add("vid", AlreadyHolds).Errors : null;
     }
 
     /// <summary>A ban of this member as the base department of the module would hold it, not saved: what the handler is asked about.</summary>

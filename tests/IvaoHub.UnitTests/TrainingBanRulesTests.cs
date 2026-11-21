@@ -90,6 +90,25 @@ public sealed class TrainingBanRulesTests
         Assert.Equal([1L, 2L, 3L, 4L], TrainingBans.Closable(trainings.AsQueryable(), 4242, Now).Select(training => training.Id));
     }
 
+    /// <summary>
+    /// What a new ban follows (issue #434): the newest ban of its member by the order they were written in — its id —, whatever their
+    /// dates say; none, <c>0</c>, for a member never banned.
+    /// </summary>
+    [Fact]
+    public void ANewBanFollowsTheNewestWrittenOrNone()
+    {
+        Assert.Equal(0L, TrainingBans.Newest([]));
+
+        TraineeBan[] bans =
+        [
+            new() { Id = 3, Vid = 4242, CreatedAt = Now },
+            new() { Id = 7, Vid = 4242, CreatedAt = Now.AddDays(-2) },
+            new() { Id = 5, Vid = 4242, CreatedAt = Now.AddDays(-1) },
+        ];
+
+        Assert.Equal(7L, TrainingBans.Newest(bans));
+    }
+
     private sealed class StubClock(DateTime now) : IClock
     {
         public DateTime UtcNow => now;

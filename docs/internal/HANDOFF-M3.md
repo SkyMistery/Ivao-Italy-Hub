@@ -11,7 +11,9 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 1 novembre 2026 — **la correzione di #312** (un ban chiude i training aperti del membro), branch
+**Ultimo aggiornamento:** 18 novembre 2026 — **la correzione di #434** (due ban dello stesso membro nello stesso istante ne danno
+uno, con una mail e un 409), branch `fix/training-two-bans-at-once`, PR #534, da `main` a `1a174116` («Che cosa ha lasciato la
+correzione di #434» qui sotto). Prima: 1 novembre 2026 — **la correzione di #312** (un ban chiude i training aperti del membro), branch
 `fix/training-ban-closes-open`, PR #433, da `main` a `b12ec725`, con `main` a `1fc7a039` unito dopo la revisione del master e a `345d6ba1` dopo la sua approvazione (#430, #431) («Che cosa
 ha lasciato la correzione di #312» qui sotto). Prima: 12
 ottobre 2026 — **fase A13f**, due pezzi del nucleo uniti il 12 ottobre: il training legge i nomi con il
@@ -130,6 +132,37 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato la correzione di #434 (18 novembre 2026, branch `fix/training-two-bans-at-once`, PR #534)
+
+- **Da dove viene**: il punto 4 della revisione #327, lasciato fuori da #431 e da #433: due staff che bannano lo stesso membro nello
+  stesso istante passano entrambi il controllo «nessun ban in vigore», e i ban salvati sono due, con due mail. La issue chiedeva prima un
+  pezzo del nucleo (la (A): una chiave unica violata al salvataggio risponde 409); #494 di Carmine (unita il 14 novembre) l'ha fatto
+  (`WriteConflicts.AnotherWriteWon` in `DomainExceptionHandler`), e la correzione è diventata una PR sola del training ([commento
+  sull'issue][fix434-plan]). Carmine non ha risposto in modo esplicito. Codice del modulo, una migrazione additiva, i test; nessun file
+  del nucleo, nessuna nota nuova (caso (b): il meccanismo del nucleo c'è già).
+- **Che cosa c'è**:
+  - **la catena dei ban**: `trn_bans.follows_ban_id` è il ban più recente del membro che chi dà il ban ha visto (0 per nessuno), scritto
+    in `TrainingBans.BeforeGivingAsync` (il `BeforeSave` della CRUD) con `TrainingBans.Newest`; indice unico
+    `ix_trn_bans_vid_follows_ban_id` su `(vid, follows_ban_id)`. Il secondo salvataggio incontra la chiave del primo: 409, e il suo
+    `AfterSave` non gira, quindi niente seconda mail. Quando un ban finisce o si toglie sulla catena non si scrive niente;
+  - **la migrazione `AddBanChain`**: la colonna, il riempimento dei ban già scritti (`LAG(id)` per VID, in ordine di id, con `COALESCE`
+    perché il `LAG` di MariaDB non prende un predefinito), poi l'indice. Ogni riga di un VID ha il suo predecessore, quindi i dati di
+    oggi non possono violarlo.
+- **Che cosa deve sapere chi viene dopo**:
+  - ⚠️ **«Il più recente» è per id, non per `created_at`**: la issue diceva `created_at, id`; l'id è l'ordine in cui le righe sono state
+    scritte, e una data cambiata a mano (un test, un'installazione) farebbe seguire a due ban nuovi lo stesso ban → un 409 senza corsa.
+    Codice e riempimento usano lo stesso ordine;
+  - ⚠️ **un ban scritto a mano** (un test «come l'installazione», un seed) senza passare da `BeforeGivingAsync` ha `follows_ban_id = 0`:
+    il secondo di uno stesso VID è rifiutato dall'indice. Il primo giro dell'integrazione l'ha mostrato: il test della cancellazione del
+    trainee ne scrive due (`TrainingTraineeTests.AddBanAsync`), e ora l'helper segue il più recente, come il modulo; un helper nuovo
+    che scrive più ban di un VID fa lo stesso;
+  - **la cancellazione dei dati** non rompe l'indice: i ban finiti passano allo pseudonimo nuovo di quella cancellazione, tutti con i
+    loro predecessori distinti; quello in vigore resta col VID ed è il più recente. `follows_ban_id` è un id, non una persona
+    (`PersonColumns`, `ErasureTests` invariati);
+  - VID: nessuno nuovo, il test usa 790140 e 790144 di `TrainingBanClosingTests`.
+
+[fix434-plan]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/434#issuecomment-6926607114
 
 ### Che cosa ha lasciato la correzione di #312 (1 novembre 2026, branch `fix/training-ban-closes-open`, PR #433)
 

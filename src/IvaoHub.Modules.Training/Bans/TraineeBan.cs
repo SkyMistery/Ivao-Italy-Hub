@@ -24,6 +24,15 @@ public sealed class TraineeBan : IOwnedByDepartment, IAuditable, IHasStakeholder
     /// <summary>The member banned.</summary>
     public int Vid { get; set; }
 
+    /// <summary>
+    /// The newest ban of the member that whoever gave this one saw, <c>0</c> for none (issue #434): a chain, unique on
+    /// <c>(vid, follows_ban_id)</c>. Two staff banning the same member at the same instant both read the same newest ban, so the
+    /// second save meets the key the first one holds and is a 409 (<c>WriteConflicts</c>): one ban, one mail. «In force» depends on
+    /// the clock, which no index reads; the chain does not, and nothing is written on it when a ban ends or is lifted. Written once,
+    /// where a ban is given (<see cref="TrainingBans.BeforeGivingAsync"/>); an id, not a person.
+    /// </summary>
+    public long FollowsBanId { get; set; }
+
     /// <summary>Why, in the mail to the member (A10) and on their page.</summary>
     public string Reason { get; set; } = string.Empty;
 

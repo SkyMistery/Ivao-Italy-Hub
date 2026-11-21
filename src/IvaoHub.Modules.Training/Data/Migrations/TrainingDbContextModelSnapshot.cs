@@ -573,6 +573,10 @@ namespace IvaoHub.Modules.Training.Data.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("ends_at");
 
+                    b.Property<long>("FollowsBanId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("follows_ban_id");
+
                     b.Property<DateTime?>("LiftedAt")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("lifted_at");
@@ -621,6 +625,10 @@ namespace IvaoHub.Modules.Training.Data.Migrations
 
                     b.HasIndex("Vid")
                         .HasDatabaseName("ix_trn_bans_vid");
+
+                    b.HasIndex("Vid", "FollowsBanId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_trn_bans_vid_follows_ban_id");
 
                     b.ToTable("trn_bans", (string)null);
                 });
