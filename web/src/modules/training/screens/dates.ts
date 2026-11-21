@@ -40,28 +40,6 @@ export type FormatMoment = (
 ) => string;
 
 /**
- * A span of time in one zone, as a line says it: the day once and the two times when it starts and ends on the same day there,
- * both moments whole when it does not — a session at 23:00 UTC ends on the next day in UTC, and maybe not where the division
- * lives. Without an end, its start. The zone is the sentence's to name.
- */
-export function spanText(
-  startsAtUtc: string,
-  endsAtUtc: string | null,
-  moment: FormatMoment,
-  timeZone?: string,
-): string {
-  const zone = timeZone === undefined ? {} : { timeZone };
-
-  if (endsAtUtc === null) {
-    return moment(startsAtUtc, zone);
-  }
-
-  return moment(startsAtUtc, { ...zone, time: false }) === moment(endsAtUtc, { ...zone, time: false })
-    ? `${moment(startsAtUtc, zone)}–${moment(endsAtUtc, { ...zone, date: false })}`
-    : `${moment(startsAtUtc, zone)} – ${moment(endsAtUtc, zone)}`;
-}
-
-/**
  * A date as a form of the staff writes it: its start, and — for a date proposed — its end; a box left empty is `null`. The date
  * set by hand has no end at all.
  */

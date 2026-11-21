@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { SchemaForm, describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
-import { useMoment } from '../../../shared/i18n/useMoment';
+import { intervalText, useMoment } from '../../../shared/i18n/useMoment';
 import { DataList, col, listSearchSchema, type ColumnSpec, type ListSearch } from '../../../shared/list';
 import { ConfirmDialog, Notice, PageShell } from '../../../shared/ui';
 import {
@@ -187,7 +187,7 @@ export function ShiftForm() {
   // The positions of the event, each with its hours: the same callsign may open twice in an evening. Writing, the reader's own.
   const choices = (editable ? writable : positions).map((position) => ({
     value: String(position.id),
-    label: `${position.callsign} · ${moment(position.fromUtc)} – ${moment(position.toUtc)}`,
+    label: `${position.callsign} · ${intervalText(position.fromUtc, position.toUtc, moment)}`,
   }));
   const positionId = shift?.positionId ?? search.positionId;
   // From the start a shift is only cut, to now or later (Carmine's answer on #262): the form says so before the server does.
