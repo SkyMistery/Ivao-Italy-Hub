@@ -34,7 +34,8 @@ così). La fase 4 le vuole nell'albero del sito (4.2) e nella mappa (4.4), segna
   schermata di un modulo sta sotto un segmento che il modulo riserva); `SiteMenuAndDashboardTests` (il bootstrap le porta, e una voce
   di menu verso `/tours` ora è accettata); nel browser `web/src/routes/-screens.test.ts`, che legge i sorgenti del server come
   `-reserved.test.ts` e controlla che ogni schermata del nucleo sia una rotta dell'albero del router e ogni schermata di un modulo
-  una sua rotta pubblica (provato con una mutazione: `/tourz` lo fa fallire). Le prove con un bootstrap finto hanno
+  una sua rotta pubblica, che la schermata sia scritta corta (`new("/x", …)`) o per esteso (`new SiteScreen("/x", …)`)
+  (provato con due mutazioni: `/tourz`, e `new SiteScreen("/nowhere", …)` negli eventi, lo fanno fallire). Le prove con un bootstrap finto hanno
   `screens: []`, quelle e2e le sei del nucleo.
 
 ## 3. Che cosa cambia per chi usa l'hub
@@ -53,6 +54,16 @@ così). La fase 4 le vuole nell'albero del sito (4.2) e nella mappa (4.4), segna
 2. **`/contact` resta `Public`**, com'era nelle due liste, anche se la rotta del browser è sotto `_member` (chi non ha fatto
    l'accesso viene mandato al login). Stessa ragione: la 4.1 non cambia che cosa si può collegare. ⚠️ Da guardare con la mappa del
    sito (4.4), che mostra a ognuno le schermate che può aprire.
+
+Due cose del codice che sono volute, per chi aggiunge un quarto modulo:
+
+- **`SiteDestinations.Of` tiene una schermata per indirizzo** (`DistinctBy(Path)`), la prima: prima il nucleo, poi i moduli
+  nell'ordine del registro. Un modulo che dichiara un indirizzo che c'è già non cambia il titolo né la visibilità di quello, e
+  l'avvio non si ferma; è la stessa regola di `ReservedSegments`, che si compone con `Distinct`.
+- **`ModuleCompositionTests.EveryScreenOfAModuleIsUnderASegmentItReserves` elenca i tre moduli a mano**: il progetto dei test
+  unitari non vede la lista di `IvaoHub.Web/Modules.cs` (non referenzia il Web, e la lista è `internal`). Un modulo nuovo con delle
+  schermate si aggiunge a quella riga, accanto al `ProjectReference` che aggiunge comunque; la prova del browser
+  (`-screens.test.ts`) invece legge da sola ogni `IvaoHub.Modules.*`.
 
 ## Da portare nel piano
 
