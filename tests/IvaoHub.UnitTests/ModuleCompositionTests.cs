@@ -1,7 +1,11 @@
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Modules;
+using IvaoHub.Modules.Events;
+using IvaoHub.Modules.FlightOps;
+using IvaoHub.Modules.Training;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
@@ -137,6 +141,47 @@ public sealed class ModuleCompositionTests
             PermissionCatalog.Core.All.Select(permission => permission.Name).Order(StringComparer.Ordinal));
     }
 
+    /// <summary>
+    /// The pages of the site written in code (design 13 §3.1): the core's first, then those of the enabled modules, one per
+    /// address; a module switched off takes its screens with it, so nothing offers an address it no longer answers.
+    /// </summary>
+    [Fact]
+    public void TheScreensOfTheSiteAreTheCoresAndThoseOfTheEnabledModules()
+    {
+        var registry = Compose(
+            new Dictionary<string, bool> { ["optional"] = false },
+            new TestModule("required"),
+            new TestModule("optional", isOptional: true),
+            new TestModule("again", screen: "/required"));
+
+        var screens = SiteDestinations.Of(registry);
+
+        Assert.Equal(
+            [.. SiteDestinations.CoreScreens.Select(screen => screen.Path), "/required"],
+            screens.Select(screen => screen.Path));
+        Assert.Equal("required:public.title", screens[^1].TitleKey);
+        Assert.Equal(Visibility.Public, screens[^1].Visibility);
+    }
+
+    /// <summary>
+    /// Each module's screen sits under a first segment the module reserves: otherwise a page of the content could take the
+    /// address, and the visitor would reach the page or the screen depending on which the router tried first.
+    /// </summary>
+    [Fact]
+    public void EveryScreenOfAModuleIsUnderASegmentItReserves()
+    {
+        IModule[] modules = [new EventsModule(), new FlightOpsModule(), new TrainingModule()];
+
+        foreach (var module in modules)
+        {
+            Assert.NotEmpty(module.SiteScreens);
+            foreach (var screen in module.SiteScreens)
+            {
+                Assert.Contains(screen.Path.TrimStart('/').Split('/')[0], module.ReservedSegments);
+            }
+        }
+    }
+
     // --- helpers ------------------------------------------------------------------------------
 
     /// <summary>A division that says nothing about any module, which is the ordinary case.</summary>
@@ -162,7 +207,8 @@ public sealed class ModuleCompositionTests
     private sealed class TestModule(
         string key,
         bool isOptional = false,
-        IReadOnlyList<string>? exclusions = null) : ModuleBase
+        IReadOnlyList<string>? exclusions = null,
+        string? screen = null) : ModuleBase
     {
         public override string Key => key;
 
@@ -172,6 +218,8 @@ public sealed class ModuleCompositionTests
 
         public override IReadOnlyList<NavItemDescriptor> PublicNavigation =>
             [new NavItemDescriptor($"nav.{key}", $"/{key}")];
+
+        public override IReadOnlyList<SiteScreen> SiteScreens => [new(screen ?? $"/{key}", $"{key}:public.title")];
     }
 
     /// <summary>Enough of a scope factory to construct the registry, and nothing more.</summary>

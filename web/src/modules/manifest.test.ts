@@ -208,5 +208,5 @@ describe('the third side, the gallery', () => {
 
 /** Only the part of the bootstrap the comparison reads; the rest is not this test's business. */
 function bootstrapWith(blocks: Bootstrap['registries']['blocks']): Bootstrap {
-  return { registries: { blocks, permissions: [] } } as unknown as Bootstrap;
+  return { registries: { blocks, permissions: [], screens: [] } } as unknown as Bootstrap;
 }

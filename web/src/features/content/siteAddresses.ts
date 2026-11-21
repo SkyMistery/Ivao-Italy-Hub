@@ -3,7 +3,7 @@ import type { TFunction } from 'i18next';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { holdsPermissionAnywhere, type LocalizedString } from '../../shared/api/bootstrap';
+import { holdsPermissionAnywhere, type LocalizedString, type SiteScreen } from '../../shared/api/bootstrap';
 import type { Suggestion } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import type { Visibility } from '../../shared/ui';
@@ -34,21 +34,11 @@ import {
  *   page, news item and document online that the reader may read, of every department
  *   (`decisions/2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere.md`), for the instructions for Claude,
  *   the page of the style and the address fields of the blocks;
- * - **the screens of the application**, which are routes and not rows;
+ * - **the screens of the application**, which are routes and not rows: the server declares them, the core's and the
+ *   enabled modules', and the bootstrap carries them (`registries.screens`, design `13-design-struttura-del-sito.md` §3.1);
  * - **the links of the library**, the only addresses outside the site a menu entry may lead to
  *   (decided 8 September 2026).
  */
-
-/**
- * The addresses of this application that are not rows: they are routes, so they cannot be read from
- * a table and they are written here. A fork that adds a screen adds a line; a fork that removes one
- * removes a line, and nothing of that installation offers an address it does not have.
- *
- * ⚠️ The other half is `SiteDestinations.Screens`, and the two agree **by hand** — a
- * route of this client is not something the contract can carry. An integration test posts a screen
- * the server does not know, exactly as one does for the backgrounds of a section.
- */
-export const SITE_SCREENS = ['/', '/calendar', '/news', '/documents', '/search', '/contact'] as const;
 
 /** One row of the content, from either read, as the list is built from it. */
 export interface SitePage {
@@ -96,8 +86,11 @@ export function pagesOfTheSite(rows: readonly ContentSiteAddressDto[] | undefine
  * Where an address of this site may lead, for the import of a file (note 2026-10-30-una-pagina-scritta-con-claude §3.5):
  * the addresses the instructions listed, the rows of the site's read and the screens.
  */
-export function knownAddresses(rows: readonly ContentSiteAddressDto[]): ReadonlySet<string> {
-  return new Set<string>([...SITE_SCREENS, ...rows.map((row) => row.url)]);
+export function knownAddresses(
+  rows: readonly ContentSiteAddressDto[],
+  screens: readonly SiteScreen[],
+): ReadonlySet<string> {
+  return new Set<string>([...screens.map((screen) => screen.path), ...rows.map((row) => row.url)]);
 }
 
 /** One address of the site, with what a screen needs to offer it and what the instructions say of it. */
@@ -126,6 +119,7 @@ export function siteAddresses(
   links: LinkPage | undefined,
   t: TFunction,
   read: (value: LocalizedString | null | undefined) => string,
+  screens: readonly SiteScreen[],
 ): SiteAddress[] {
   return [
     ...pages.map((page): SiteAddress => ({
@@ -141,14 +135,14 @@ export function siteAddresses(
       published: page.published,
       visibility: page.visibility,
     })),
-    ...SITE_SCREENS.map((path): SiteAddress => ({
+    ...screens.map((screen): SiteAddress => ({
       id: null,
-      path,
-      label: t(`menu.screens.${path}`),
+      path: screen.path,
+      label: t(screen.titleKey),
       group: t('menu.screensGroup'),
       kind: 'screen',
       published: true,
-      visibility: 'Public',
+      visibility: screen.visibility,
     })),
     ...(links?.items ?? []).map((link): SiteAddress => ({
       id: null,
@@ -195,9 +189,11 @@ export function useAddressesToLinkTo(wanted: boolean): readonly SiteAddress[] {
   const pages = useQuery({ ...siteAddressesQuery(), enabled: mayRead(CONTENT_EDIT) });
   const links = useQuery({ ...activeLinksQuery(), enabled: mayRead(LINKS_VIEW) });
 
+  const screens = bootstrap?.registries.screens;
+
   return useMemo(
-    () => siteAddresses(pagesOfTheSite(pages.data), links.data, t, read),
-    [pages.data, links.data, t, read],
+    () => siteAddresses(pagesOfTheSite(pages.data), links.data, t, read, screens ?? []),
+    [pages.data, links.data, t, read, screens],
   );
 }
 
@@ -215,11 +211,18 @@ export function useSiteAddresses(typed = ''): { addresses: SiteAddress[]; search
   const { t } = useTranslation();
   const read = useLocalized();
 
+  const { data: bootstrap } = useQuery(bootstrapQuery);
   const pages = useQuery({ ...menuDestinationPagesQuery(typed), placeholderData: keepPreviousData });
   const links = useQuery({ ...activeLinksQuery(typed), placeholderData: keepPreviousData });
 
   return {
-    addresses: siteAddresses(pagesOfTheMenu(pages.data), links.data, t, read),
+    addresses: siteAddresses(
+      pagesOfTheMenu(pages.data),
+      links.data,
+      t,
+      read,
+      bootstrap?.registries.screens ?? [],
+    ),
     searching: pages.isFetching || links.isFetching,
   };
 }

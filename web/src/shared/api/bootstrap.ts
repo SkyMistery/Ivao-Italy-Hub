@@ -26,6 +26,13 @@ export type NavItem = components['schemas']['NavItem'];
 export type CalendarKind = components['schemas']['BootstrapCalendarKind'];
 
 /**
+ * A page of the site written in code, as the bootstrap carries it: its address, the key of its name and who it is for — the
+ * core's screens (`/calendar`) and those of the enabled modules (`/tours`). Declared once, on the server
+ * (`SiteDestinations.Screens`, design `13-design-struttura-del-sito.md` §3.1): the browser keeps no list of its own.
+ */
+export type SiteScreen = components['schemas']['BootstrapScreen'];
+
+/**
  * The department codes IVAO itself uses. Not a mechanical suffix: ATC operations is `AOD` but
  * training is `TD`, and headquarters is plain `HQ`.
  */
