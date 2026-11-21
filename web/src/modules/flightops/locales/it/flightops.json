@@ -31,15 +31,36 @@
     "saved": "Tour salvato.",
     "readyProblems": "Prima di segnarlo pronto manca ancora:",
     "purged": "In archivio dal {{date}}: regole, hub, briefing e i dettagli dei report non ci sono più. I report e le loro decisioni restano, e non si cambia più niente.",
-    "tabs": {
-      "settings": "Impostazioni",
+    "steps": {
+      "kind": "Tipo",
+      "identity": "Nome, date e immagini",
+      "route": "Percorso",
+      "rules": "Regole",
       "briefing": "Briefing",
+      "check": "Controllo",
+      "toFix": "qualcosa da sistemare prima di «pronto»",
+      "previous": "Passo precedente",
+      "next": "Passo successivo",
+      "notYet": "Questo passo si apre quando il tour è salvato al passo 2, «Nome, date e immagini».",
+      "kindLead": "Il tipo decide come si vola il tour e di che cosa è fatto il suo percorso. Si sceglie per primo: i passi dopo lo seguono.",
+      "kindLocked": "Il tipo non cambia più: il tour è già visibile al pubblico.",
+      "noRoute": "Un modello non porta leg, hub né sottotour: i tour creati da lui hanno i loro.",
       "legs": "Leg",
-      "hubs": "Hub e rotazioni",
       "subtours": "Sottotour",
       "callsigns": "Callsign",
-      "open": "Obiettivo e vincoli",
-      "rules": "Regole"
+      "nothingMissing": "Non manca niente: il tour si può segnare pronto.",
+      "isReady": "Il tour è segnato pronto. La sua pagina diventa pubblica al rilascio, il {{date}}.",
+      "isReadyNoDate": "Il tour è segnato pronto.",
+      "goTo": "Vai a «{{step}}»"
+    },
+    "kindHelp": {
+      "Sequential": "Le leg si volano nel loro ordine, una dopo l'altra.",
+      "Free": "Ogni leg si può volare, in qualsiasi ordine; il tour è finito quando sono tutte accettate.",
+      "Hub": "Il pilota sceglie un hub volando la prima leg di una sua rotazione, poi vola ogni rotazione di ogni hub.",
+      "SequentialChosenStart": "In ordine, dalla leg da cui il pilota sceglie di partire, per tutto il giro: le leg devono chiudere un anello.",
+      "Distance": "Le leg del tour, in qualsiasi ordine, finché le loro distanze sommano le miglia chieste.",
+      "Open": "Nessuna leg: ogni pilota vola quello che vuole dentro le regole del tour, finché raggiunge l'obiettivo.",
+      "Container": "Nessuna leg sua: il tour sono i suoi sottotour, ed è finito dopo il numero di sottotour che chiede."
     },
     "briefing": {
       "save": "Salva il briefing",

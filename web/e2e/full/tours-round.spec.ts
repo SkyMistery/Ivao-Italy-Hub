@@ -46,7 +46,7 @@ const words = JSON.parse(
   tours: {
     fromTemplate: string;
     saved: string;
-    tabs: { legs: string };
+    steps: { next: string; identity: string; route: string; rules: string; briefing: string; check: string };
     fields: { title: string; summary: string; kind: string; awardId: string };
     options: { kind: { Free: string } };
     actions: { ready: string; hide: string };
@@ -195,11 +195,12 @@ test('a tour from a template, its legs imported, flown, checked, validated, disp
     await page.goto('/staff/tours/new?template=true');
     await expect(page.getByRole('heading', { name: words.tourTemplates.create })).toBeVisible();
     await choose(page, words.tours.fields.kind, words.tours.options.kind.Free);
+    await page.getByRole('button', { name: words.tours.steps.next, exact: true }).click();
     await writeInBothLanguages(page.locator('form'), words.tours.fields.title, 'title', templateName);
     await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
       await page.getByRole('button', { name: common.common.save }).click();
     });
-    await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+    await expect(page).toHaveURL(/\/staff\/tours\/\d+(\?|$)/);
     await writeDailyLegLimit(page, '5');
     made.template = idOf(page);
 
@@ -211,13 +212,13 @@ test('a tour from a template, its legs imported, flown, checked, validated, disp
     await whileWaitingFor(page, 'POST', '/api/flightops/tours/from-template/', async () => {
       await page.getByRole('button', { name: words.tourFromTemplate.submit }).click();
     });
-    await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+    await expect(page).toHaveURL(/\/staff\/tours\/\d+(\?|$)/);
     await expect(page.getByRole('heading', { name: tourName.en })).toBeVisible();
     const tourId = idOf(page);
     const tourUrl = page.url();
 
     // ---------------------------------------------------------------- 2. the legs, from a workbook
-    await page.getByRole('tab', { name: words.tours.tabs.legs }).click();
+    await page.getByRole('tab', { name: words.tours.steps.route }).click();
     await page.getByRole('button', { name: words.legs.actions.import }).click();
     const panel = page.getByRole('region', { name: words.legs.import.title });
     await whileWaitingFor(page, 'POST', '/import/preview', async () => {
@@ -253,6 +254,7 @@ test('a tour from a template, its legs imported, flown, checked, validated, disp
       await page.getByRole('button', { name: common.common.save }).click();
     });
     await expect(page.getByText(words.tours.saved)).toBeVisible();
+    await page.getByRole('tab', { name: words.tours.steps.check }).click();
     await whileWaitingFor(page, 'POST', `/api/flightops/tours/${tourId}/status`, async () => {
       await page.getByRole('button', { name: words.tours.actions.ready }).click();
     });
