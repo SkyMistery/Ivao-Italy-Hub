@@ -17,5 +17,6 @@ export const calendarKindColumns: readonly ColumnSpec<CalendarKindListDto>[] = [
   col.text('colour'),
   col.number('sort', { sortable: true }),
   col.boolean('isActive'),
+  col.boolean('blocks'),
   col.date('updatedAt', { sortable: true }),
 ];

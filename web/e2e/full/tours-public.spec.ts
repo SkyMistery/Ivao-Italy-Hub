@@ -92,6 +92,7 @@ test('a released tour is read by a visitor, with its legs on the map', async ({
     const now = Date.now();
     await page.goto('/staff/tours/new');
     await choose(page, tours.fields.kind, tours.options.kind.Free);
+    await page.getByRole('button', { name: tours.steps.next, exact: true }).click();
     await writeInBothLanguages(page.locator('form'), tours.fields.title, 'title', tourName);
     await page.locator('[id="slug"]').fill(slug);
     await writeInBothLanguages(page.locator('form'), tours.fields.summary, 'summary', {
@@ -103,7 +104,7 @@ test('a released tour is read by a visitor, with its legs on the map', async ({
     await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
       await page.getByRole('button', { name: englishCommon.common.save }).click();
     });
-    await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+    await expect(page).toHaveURL(/\/staff\/tours\/\d+(\?|$)/);
     await writeDailyLegLimit(page, '5');
 
     const tourId = Number(/\/staff\/tours\/(\d+)/.exec(page.url())![1]);
@@ -116,6 +117,10 @@ test('a released tour is read by a visitor, with its legs on the map', async ({
     expect(beforeReady.status()).toBe(404);
 
     await page.goto(`/staff/tours/${tourId}`);
+    await page.getByRole('tab', { name: tours.steps.check }).click();
+    // The page as pilots will see it, drawn from the draft before it is marked ready (design 11 §5).
+    const preview = page.getByRole('region', { name: tours.steps.preview });
+    await expect(preview.getByRole('heading', { level: 1, name: tourName.en })).toBeVisible();
     await whileWaitingFor(page, 'POST', `/api/flightops/tours/${tourId}/status`, async () => {
       await page.getByRole('button', { name: tours.actions.ready }).click();
     });
@@ -203,6 +208,7 @@ function englishFlightOps() {
     tours: {
       fields: { title: string; summary: string; kind: string };
       options: { kind: { Free: string } };
+      steps: { next: string; check: string; preview: string };
       actions: { ready: string; hide: string };
     };
     public: { simbrief: string; tabs: { route: string } };

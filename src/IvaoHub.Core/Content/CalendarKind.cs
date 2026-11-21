@@ -52,6 +52,14 @@ public sealed class CalendarKind : IAuditable
     /// </summary>
     public bool IsActive { get; set; } = true;
 
+    /// <summary>
+    /// True when an entry of this kind takes its hours from whoever chooses a date with the picker of the form: those hours
+    /// cannot be chosen, and the server refuses them (<see cref="CalendarBusy"/>, note 2026-11-18-il-calendario-libero-e-occupato,
+    /// Carmine's answer 1). A property of the kind and not of the entry, so the division decides it once, on this screen, for
+    /// every module that projects an entry of it.
+    /// </summary>
+    public bool Blocks { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public int CreatedBy { get; set; }

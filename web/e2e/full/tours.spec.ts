@@ -54,13 +54,14 @@ test('a tour is made from a template, marked ready, found in search and calendar
   // ---------------------------------------------------------------- the template
   await page.goto('/staff/tours/new?template=true');
   await expect(page.getByRole('heading', { name: flightops.tourTemplates.create })).toBeVisible();
+  await page.getByRole('button', { name: flightops.tours.steps.next, exact: true }).click();
 
   await writeInBothLanguages(page.locator('form'), flightops.tours.fields.title, 'title', templateName);
 
   await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
-  await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+  await expect(page).toHaveURL(/\/staff\/tours\/\d+(\?|$)/);
   await writeDailyLegLimit(page, '5');
   const templateUrl = page.url();
 
@@ -80,7 +81,7 @@ test('a tour is made from a template, marked ready, found in search and calendar
   await whileWaitingFor(page, 'POST', '/api/flightops/tours/from-template/', async () => {
     await page.getByRole('button', { name: flightops.tourFromTemplate.submit }).click();
   });
-  await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+  await expect(page).toHaveURL(/\/staff\/tours\/\d+(\?|$)/);
   await expect(page.getByRole('heading', { name: tourName.en })).toBeVisible();
 
   // A sequential tour is ready only with a leg (T7a); the legs have a spec of their own.
@@ -89,9 +90,9 @@ test('a tour is made from a template, marked ready, found in search and calendar
   // What stands in the way of "ready" is said before anybody presses it: the dates are not copied.
   await expect(page.getByText(flightops.tours.readyProblems)).toBeVisible();
   // The template's limit came with it, in the tour's rules (#369).
-  await page.getByRole('tab', { name: flightops.tours.tabs.rules }).click();
+  await page.getByRole('tab', { name: flightops.tours.steps.rules }).click();
   await expect(page.locator('[id="dailyLegLimit"]')).toHaveValue('5');
-  await page.getByRole('tab', { name: flightops.tours.tabs.settings }).click();
+  await page.getByRole('tab', { name: flightops.tours.steps.identity }).click();
 
   // ---------------------------------------------------------------- dates, summary, ready
   const now = Date.now();
@@ -103,6 +104,7 @@ test('a tour is made from a template, marked ready, found in search and calendar
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
   await expect(page.getByText(flightops.tours.saved)).toBeVisible();
+  await page.getByRole('tab', { name: flightops.tours.steps.check }).click();
   await expect(page.getByText(flightops.tours.readyProblems)).toBeHidden();
 
   await whileWaitingFor(page, 'POST', '/status', async () => {
@@ -186,7 +188,14 @@ function flightOpsWords(language: string) {
       saved: string;
       readyProblems: string;
       actions: { ready: string; hide: string };
-      tabs: { settings: string; rules: string };
+      steps: {
+        next: string;
+        identity: string;
+        route: string;
+        rules: string;
+        briefing: string;
+        check: string;
+      };
       fields: { title: string; summary: string };
     };
     tourTemplates: { create: string };

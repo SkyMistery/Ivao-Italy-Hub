@@ -40,13 +40,8 @@ import { ErrorForm, ErrorsPage, RuleForm, RulesPage, TourRuleForm } from './scre
 import { LegGridSample } from './screens/LegGridSample';
 import { FlightOpsSettingsPage } from './screens/settings';
 import { CallsignRuleForm, HubForm, RotationForm, TourConstraintForm } from './screens/shape';
-import {
-  TourEditor,
-  TourFromTemplatePage,
-  TourSaveAsTemplatePage,
-  TourTemplatesPage,
-  ToursPage,
-} from './screens/tours';
+import { TourEditor } from './screens/tourEditor';
+import { TourFromTemplatePage, TourSaveAsTemplatePage, TourTemplatesPage, ToursPage } from './screens/tours';
 
 /**
  * The tours (M2), as the front end knows them: `IvaoHub.Modules.FlightOps` on the other side. T5 is the

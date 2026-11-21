@@ -429,7 +429,7 @@ const tourWords = JSON.parse(
     fields: { title: string; summary: string; kind: string };
     options: { kind: { Free: string } };
     actions: { ready: string };
-    tabs: { rules: string };
+    steps: { next: string; identity: string; route: string; rules: string; briefing: string; check: string };
   };
 };
 
@@ -439,7 +439,7 @@ const tourWords = JSON.parse(
  */
 export async function writeDailyLegLimit(page: Page, limit: string): Promise<void> {
   const where = page.url();
-  await page.getByRole('tab', { name: tourWords.tours.tabs.rules }).click();
+  await page.getByRole('tab', { name: tourWords.tours.steps.rules }).click();
   const field = page.locator('[id="dailyLegLimit"]');
   await field.fill(limit);
   await whileWaitingFor(page, 'PUT', '/api/flightops/tours/', async () => {
@@ -467,6 +467,7 @@ export async function releasedTourWithOneLeg(
   const now = Date.now();
   await page.goto('/staff/tours/new');
   await choose(page, tourWords.tours.fields.kind, tourWords.tours.options.kind.Free);
+  await page.getByRole('button', { name: tourWords.tours.steps.next, exact: true }).click();
   await writeInBothLanguages(page.locator('form'), tourWords.tours.fields.title, 'title', name);
   await page.locator('[id="slug"]').fill(slug);
   await writeInBothLanguages(page.locator('form'), tourWords.tours.fields.summary, 'summary', {
@@ -478,13 +479,14 @@ export async function releasedTourWithOneLeg(
   await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
-  await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+  await expect(page).toHaveURL(/\/staff\/tours\/\d+(\?|$)/);
   await writeDailyLegLimit(page, '5');
 
   const tourId = Number(/\/staff\/tours\/(\d+)/.exec(page.url())![1]);
   await addLeg(context, tourId, benchAirports.rome, benchAirports.milan);
 
   await page.goto(`/staff/tours/${tourId}`);
+  await page.getByRole('tab', { name: tourWords.tours.steps.check }).click();
   await whileWaitingFor(page, 'POST', `/api/flightops/tours/${tourId}/status`, async () => {
     await page.getByRole('button', { name: tourWords.tours.actions.ready }).click();
   });

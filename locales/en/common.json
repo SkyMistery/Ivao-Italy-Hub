@@ -148,6 +148,23 @@
     "removeEntry": "Remove",
     "entry": "Item {{number}}",
     "clearDate": "Remove the date",
+    "busy": {
+      "open": "Choose on the calendar",
+      "free": "Free",
+      "busyDay": "busy: {{kinds}}",
+      "blockedDay": "blocked all day",
+      "busyHour": "busy: {{kinds}}",
+      "blockedHour": "blocked",
+      "blocks": "blocks",
+      "legend": "Legend",
+      "hours": "Hours (UTC)",
+      "allDay": "All day",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "unknown": "What is busy could not be read: the calendar shows every day as free.",
+      "unreadableMoment": "This is not a date and time. Write it like {{example}}, in UTC.",
+      "unreadableDay": "This is not a date. Write it like {{example}}."
+    },
     "submitHint": "Press Enter to save.",
     "submitHintOneLine": "Press Enter in a one-line field to save.",
     "moveUp": "Move up",
@@ -396,6 +413,7 @@
           "picture": "Picture",
           "icon": "Icon",
           "happensAt": "Happens at",
+          "meetsAt": "Meets at (free and busy)",
           "expiresOn": "Expires on",
           "seo": "Sharing",
           "seo.title": "Title",
@@ -2166,7 +2184,11 @@
       "colour": "Colour",
       "sort": "Order",
       "isActive": "In use",
+      "blocks": "Blocks the hours",
       "updatedAt": "Last change"
+    },
+    "hints": {
+      "blocks": "An entry of this kind takes its hours from whoever chooses a date on the calendar: they cannot be chosen, and the server refuses them."
     },
     "options": {
       "colour": {

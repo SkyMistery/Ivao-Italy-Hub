@@ -41,6 +41,16 @@ describe('intervalEnd', () => {
     );
     expect(intervalEnd('2099-11-21T23:00:00Z', '2099-11-22T01:00:00Z', moment, 'Europe/Rome')).toBe('02:00');
   });
+
+  test('an end at midnight is the next day, and carries its date', () => {
+    expect(intervalEnd('2099-11-21T22:00:00Z', '2099-11-22T00:00:00Z', moment)).toBe(
+      moment('2099-11-22T00:00:00Z'),
+    );
+  });
+
+  test('an empty end is no instant, and writes nothing', () => {
+    expect(intervalEnd('2099-11-21T17:00:00Z', '', moment)).toBe('');
+  });
 });
 
 test('onSameDay compares the days in the zone asked, UTC when none', () => {
