@@ -28,8 +28,8 @@ Una classe del nucleo, `FirstReferenceSync` (`Core/Ivao/`), con la regola dell'i
 
 1. il controllo **prima**, una query come oggi: un avvio che trova i centri non chiede il blocco (è il caso di ogni avvio tranne il
    primo, e non paga niente di più);
-2. se mancano, prende **il blocco dell'inizializzazione** (`hub-init:<database>`, `InitialisationLock`, la stessa attesa di 30 s) e
-   **rilegge** con il blocco in mano;
+2. se mancano, prende **il blocco dell'inizializzazione** (`hub-init:<database>`, `InitialisationLock`) con un'attesa sua di **65 s**
+   (`FirstReferenceSync.DefaultLockWait`, sotto) e **rilegge** con il blocco in mano;
 3. se un altro avvio li ha scritti mentre questo aspettava, va avanti senza scaricare; altrimenti scarica, tenendo il blocco fino alla
    fine perché chi aspetta trovi i centri;
 4. **un blocco non preso** (l'attesa finita, il database che non risponde al blocco) **scarica come prima**: mai un avvio senza i
@@ -41,9 +41,35 @@ Una classe del nucleo, `FirstReferenceSync` (`Core/Ivao/`), con la regola dell'i
 - *Scelta*: **un download fallito non si eredita**. `RefDataSyncJob` non lancia mai: un'esecuzione fallita lascia la tabella vuota e
   la sua riga «failed» in `hub_jobs_log`. L'avvio che aspettava, con il blocco in mano, rilegge, non trova i centri e scarica lui,
   come farebbe l'avvio dopo.
-- *Scelta*: **il passo di `starts.txt` dice chi ha pagato**: `reference data` quando i centri c'erano, `reference data synchronised`,
-  `… synchronised without the initialisation lock`, `… synchronised by another start`. Il punto 7 era «da provare»: sul server lo
-  dice il file, con i millisecondi del passo.
+- *Scelta*: **un download fallito non si dice riuscito** (rilievo 1 del master sulla PR). `RunCentresAsync` risponde quanti centri ha
+  scritto, zero quando è fallito o IVAO non ne ha dati; `FirstReferenceSync` lo legge (`synchronise` risponde se ci sono centri) e
+  in quel caso l'esito è **`NotSynced`**, non `Synced`. Prima l'avvio scriveva «synchronised» anche con IVAO spento, ed era proprio il
+  caso in cui il file doveva dirlo.
+- *Scelta*: **il passo di `starts.txt` dice chi ha pagato**, con i nomi che il codice scrive (`HubPipeline`): `reference data`
+  quando i centri c'erano, `reference centres synchronised`, `reference centres synchronised without the initialisation lock`,
+  `reference centres synchronised by another start`, `reference centres not synchronised`. Il punto 7 era «da provare»: sul server
+  lo dice il file, con i millisecondi del passo. Gli avvisi del blocco nel log dicono che cosa l'avvio fa senza («this start runs the
+  first reference synchronisation without it»), non più «initialises» (rilievo 3).
+- *Scelta*: **l'attesa copre le due chiamate di chi scarica** (rilievo 2). Chi tiene il blocco prende prima il token, sul suo client
+  resiliente, poi i centri: ognuna fino ai 30 s del totale del gestore standard di resilienza, quindi fino a circa **60 s**, non i 30
+  s di una chiamata che la nota diceva. Con i 30 s dell'inizializzazione, un IVAO lento ma vivo (35 s, per dire) faceva arrendere chi
+  aspettava, che scaricava una seconda volta: il doppio download che il blocco toglie. L'attesa è quindi **due totali più 5 s per le
+  scritture, 65 s**, calcolata dal totale del gestore (`HttpStandardResilienceOptions`), non scritta a mano; un test controlla che
+  copra le due chiamate e stia sotto i 90 s.
+  - *Il conto con Passenger* (90 s di default): l'avvio a freddo misurato sul server è di 8–10 s (nota
+    `2026-09-28-i-job-quando-passenger-spegne-l-hub`), quindi chi scarica arriva al massimo a circa 70 s. Chi aspetta finisce
+    d'aspettare quando chi scarica ha finito: se ha trovato i centri, è dentro come lui.
+  - *Il caso che non sta nei 90 s*, con l'attesa lunga come con quella corta: IVAO **appeso** per tutti e due. Chi aspetta, dietro un
+    download fallito, scarica lui e si appende a sua volta (65 + 60 s; con 30 s era 30 + 60): Passenger lo ferma, la tabella resta
+    vuota, e l'avvio dopo riprova, come prima di questa PR. L'attesa lunga non lo peggiora e toglie il doppio download quando IVAO
+    risponde piano.
+  - *Scartata*: chi ha aspettato dietro un download fallito non riprova e lascia i centri al job. Starebbe nei 90 s, ma `FirDirectory`
+    terrebbe l'insieme vuoto per sei ore nel processo che non fa girare il job: è il salto che la #422 ha scartato.
+- ⚠️ **Il nome del blocco è condiviso con l'inizializzazione** (rilievo 7). Un avvio che ha letto un segno non valido appena prima
+  che un altro lo scrivesse può trovarsi ad aspettare `hub-init:<database>` dietro il download di quell'altro, fino a 65 s invece dei
+  secondi di un'inizializzazione. La finestra è stretta (il segno si legge prima del blocco, e chi l'ha scritto ha appena lasciato il
+  blocco) e i seeder sono idempotenti: un'attesa in più, mai un errore. Un nome a parte non serve: due blocchi diversi lascerebbero
+  scaricare un avvio mentre l'altro inizializza ancora lo stesso database.
 
 ## 3. Le prove
 
@@ -52,7 +78,11 @@ del database condiviso sono di tutte le classi della suite):
 
 - due avvii insieme su una tabella vuota: un download solo, un avvio `Synced` e l'altro `AnotherStartSynced`;
 - un avvio che trova i centri non chiede il blocco (tenuto da un altro, non aspetta) e non scarica;
-- un avvio che ha aspettato dietro a un download fallito scarica lui;
+- un avvio che ha aspettato dietro a un download fallito scarica lui, e quello fallito risponde `NotSynced`;
+- **attraverso `FirstReferenceSync`** (la classe che l'avvio chiama, con il job vero sulle fixture), uno spazio aereo che il database
+  non ha ancora fa scaricare i centri e **non** gli aeroporti: una riga `ref-data-centres` in più, nessuna `ref-data-sync`, gli
+  aeroporti non toccati (rilievo 5: rimettere l'esecuzione intera in `FirstReferenceSync` fa diventare rosso questo test);
+- l'attesa del blocco copre le due chiamate di chi scarica e sta sotto i 90 s;
 - il download dell'avvio, con il job vero sulle fixture, scrive i centri e una riga `ref-data-centres`, e **nessuna** riga di
   `ref-data-sync`: gli aeroporti non si toccano e il job resta dovuto;
 - con il blocco tenuto da un processo appeso, l'avvio aspetta, poi scarica senza (`SyncedWithoutTheLock`);
@@ -67,7 +97,7 @@ processo, la tabella resta vuota, l'avvio dopo riprova: l'installazione nuova no
 
 - **A.** Solo il blocco (questo codice). Il quando non cambia.
 - **B.** Dentro l'avvio **solo i centri** (le FIR: sono il motivo per cui l'allineamento sta nell'avvio, riconoscere un posto di staff
-  FIR al primo accesso), una chiamata, al massimo 30 s; il resto lo fa il job `ref-data-sync`, che non ha mai girato e quindi è dovuto
+  FIR al primo accesso), una chiamata dei dati dopo quella del token, al massimo 30 s ciascuna (§2); il resto lo fa il job `ref-data-sync`, che non ha mai girato e quindi è dovuto
   al primo giro dopo la pagina (nota `2026-11-14-il-primo-giro-dei-job-dopo-la-pagina`). Cambia il quando: aeroporti e posizioni
   arrivano qualche secondo dopo l'avvio invece che prima della prima richiesta.
 - **C.** Tutto nell'avvio, con una scadenza (per esempio 45 s): tagliato, la riga diventa «failed» e l'avvio va avanti; ogni avvio
@@ -89,7 +119,7 @@ processo, la tabella resta vuota, l'avvio dopo riprova: l'installazione nuova no
   posizioni e FRA aspetterebbero la notte. Con un nome suo il job **non ha mai girato, quindi è dovuto** (`JobSchedule`), e il primo
   giro dopo la pagina di chi ha svegliato l'hub (fra 5 e 30 s dall'avvio, nota `2026-11-14-il-primo-giro-dei-job-dopo-la-pagina`)
   scarica il resto, sotto il blocco del job come ogni esecuzione.
-- `FirstReferenceSync` chiama `RunCentresAsync`; il resto del §2 non cambia.
+- `FirstReferenceSync` chiama `RunCentresAsync` e legge quanti centri ha scritto (§2, `NotSynced`); il resto del §2 non cambia.
 - ⚠️ **Che cosa cambia per un'installazione nuova vera** (richiesta del master sulla PR, da scrivere e non da scoprire):
   - **fino alla fine del primo giro del job `ref-data-sync`**, un tour o un evento che nomina un aeroporto è rifiutato con
     `airportUnknown` (`events:errors.airportUnknown`, e il rifiuto equivalente dei tour), il briefing ATC non trova le posizioni,
@@ -126,7 +156,8 @@ processo, la tabella resta vuota, l'avvio dopo riprova: l'installazione nuova no
 
 - §11.3 punto 5, dove dice che «il controllo dei dati di riferimento» gira a ogni avvio e del blocco `hub-init:<database>`: il primo
   allineamento gira **sotto lo stesso blocco**, con la stessa regola (controllo, blocco, controllo di nuovo; un blocco non preso scarica
-  come prima, mai un avvio senza i suoi dati); il passo di `starts.txt` dice quale avvio ha scaricato.
+  come prima, mai un avvio senza i suoi dati) e un'attesa sua di 65 s, le due chiamate di chi scarica; il passo di `starts.txt` dice
+  quale avvio ha scaricato, o che il download non ha portato centri.
 - §11.3 punto 5, sullo stesso passo: **dentro l'avvio solo i centri** (`ref-data-centres` in `hub_jobs_log`); il resto della
   fotografia lo prende il job `ref-data-sync` al primo giro dopo l'avvio (Carmine, «B, solo i centri»). Dove la nota
   `2026-09-28-l-avvio-a-freddo` §4.3 dice che il controllo dei dati vuoti «se la prima sincronizzazione è fallita deve riprovare»: vale
