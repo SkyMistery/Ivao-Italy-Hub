@@ -4,7 +4,9 @@ using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using IvaoHub.Core.Division;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using MySqlConnector;
 using Xunit;
 
@@ -14,8 +16,9 @@ namespace IvaoHub.IntegrationTests;
 /// The first synchronisation of the reference data under the initialisation lock, on the real database (issue #325, item 7;
 /// note 2026-11-18-il-primo-allineamento-sotto-blocco): of two starts on a fresh installation one downloads and the other
 /// waits and finds the centres; a start that finds them never asks for the lock; a start that waited behind a failed
-/// download tries itself; a lock that cannot be taken never leaves a start without its airspace. And the download is the
-/// centres alone, which leaves the scheduled job due (the maintainer's answer on the issue, «B, solo i centri»).
+/// download tries itself, and a download that failed is never reported as a success; a lock that cannot be taken never
+/// leaves a start without its airspace. And the download is the centres alone, which leaves the scheduled job due (the
+/// maintainer's answer on the issue, "B, only the centres").
 /// </summary>
 /// <remarks>What is checked and what is run are the test's own, an airspace of a flag and a download that counts: the
 /// centres of the shared database belong to every class of the suite, and emptying them would change what the others read.
@@ -34,12 +37,12 @@ public sealed class FirstReferenceSyncTests(MariaDbFixture mariaDb)
             RunAsync(airspace, async cancellationToken =>
             {
                 await WaitForALockWaiterAsync(cancellationToken);
-                airspace.Download();
+                return airspace.Download();
             }, token),
             RunAsync(airspace, async cancellationToken =>
             {
                 await WaitForALockWaiterAsync(cancellationToken);
-                airspace.Download();
+                return airspace.Download();
             }, token));
 
         Assert.Equal(1, airspace.Downloads);
@@ -65,7 +68,7 @@ public sealed class FirstReferenceSyncTests(MariaDbFixture mariaDb)
     }
 
     [Fact]
-    public async Task AStartThatWaitedBehindAFailedDownloadDownloadsItself()
+    public async Task AStartThatWaitedBehindAFailedDownloadDownloadsItselfAndTheFailedOneSaysSo()
     {
         var token = TestContext.Current.CancellationToken;
         var airspace = new FakeAirspace();
@@ -78,14 +81,15 @@ public sealed class FirstReferenceSyncTests(MariaDbFixture mariaDb)
             {
                 inside.SetResult();
                 await WaitForALockWaiterAsync(cancellationToken);
-                airspace.Fail();
+                return airspace.Fail();
             },
             token);
         await inside.Task;
 
-        var second = await RunAsync(airspace, _ => { airspace.Download(); return Task.CompletedTask; }, token);
+        var second = await RunAsync(airspace, _ => Task.FromResult(airspace.Download()), token);
 
-        Assert.Equal(FirstReferenceSyncOutcome.Synced, await failing);
+        // The start whose download failed says so, in starts.txt as in its outcome: never "synchronised".
+        Assert.Equal(FirstReferenceSyncOutcome.NotSynced, await failing);
         Assert.Equal(FirstReferenceSyncOutcome.Synced, second);
         Assert.Equal(1, airspace.Failures);
         Assert.Equal(1, airspace.Downloads);
@@ -101,7 +105,7 @@ public sealed class FirstReferenceSyncTests(MariaDbFixture mariaDb)
         await using var holder = await HoldTheLockAsync(token);
 
         var outcome = await RunAsync(
-            airspace, _ => { airspace.Download(); return Task.CompletedTask; }, token, lockWait: TimeSpan.FromMilliseconds(300));
+            airspace, _ => Task.FromResult(airspace.Download()), token, lockWait: TimeSpan.FromMilliseconds(300));
 
         Assert.Equal(FirstReferenceSyncOutcome.SyncedWithoutTheLock, outcome);
         Assert.Equal(1, airspace.Downloads);
@@ -122,9 +126,51 @@ public sealed class FirstReferenceSyncTests(MariaDbFixture mariaDb)
     }
 
     [Fact]
+    public void TheWaitCoversTheHoldersTwoCallsAndStaysInsideTheStartBudget()
+    {
+        // The holder takes a token and then the centres, each up to the resilience handler's total: a waiter that gave up
+        // sooner would download a second time behind an IVAO slow but answering. Passenger gives a start ninety seconds.
+        var oneCall = new Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions().TotalRequestTimeout.Timeout;
+
+        Assert.True(FirstReferenceSync.DefaultLockWait > 2 * oneCall);
+        Assert.True(FirstReferenceSync.DefaultLockWait < TimeSpan.FromSeconds(90));
+    }
+
+    [Fact]
+    public async Task TheStartsSynchronisationDownloadsTheCentresAndNotTheAirports()
+    {
+        // Through the class the start calls, not through the job: an airspace this hub does not know yet (a country with no
+        // centre in the database, as on a fresh installation) makes it download, and what it downloads is the centres alone.
+        // The job is the hub's, on the fixtures, so the centres it writes are the ones every start writes.
+        var token = TestContext.Current.CancellationToken;
+        await using var factory = new HubWebApplicationFactory(mariaDb.ConnectionString, useIvaoFixtures: true);
+        await using var scope = factory.Services.CreateAsyncScope();
+        var services = scope.ServiceProvider;
+        var database = services.GetRequiredService<HubDbContext>();
+        var division = services.GetRequiredService<IOptions<DivisionOptions>>().Value;
+
+        var syncRuns = await database.JobsLog.CountAsync(entry => entry.Job == RefDataSyncJob.JobName, token);
+        var centreRuns = await database.JobsLog.CountAsync(entry => entry.Job == RefDataSyncJob.CentresJobName, token);
+        var airports = await database.IvaoAirports.AsNoTracking().MaxAsync(airport => (DateTime?)airport.SyncedAt, token);
+
+        var unknownAirspace = Options.Create(division with { CountryId = "ZZ" });
+        var outcome = await new FirstReferenceSync(
+                database,
+                services.GetRequiredService<RefDataSyncJob>(),
+                unknownAirspace,
+                NullLogger<FirstReferenceSync>.Instance)
+            .RunAsync(token);
+
+        Assert.Equal(FirstReferenceSyncOutcome.Synced, outcome);
+        Assert.Equal(centreRuns + 1, await database.JobsLog.CountAsync(entry => entry.Job == RefDataSyncJob.CentresJobName, token));
+        Assert.Equal(syncRuns, await database.JobsLog.CountAsync(entry => entry.Job == RefDataSyncJob.JobName, token));
+        Assert.Equal(airports, await database.IvaoAirports.AsNoTracking().MaxAsync(airport => (DateTime?)airport.SyncedAt, token));
+    }
+
+    [Fact]
     public async Task TheStartDownloadsOnlyTheCentresAndLeavesTheScheduledJobDue()
     {
-        // «B, solo i centri» (the maintainer, issue #325): the start's download is the centres alone, recorded under a name of
+        // "B, only the centres" (the maintainer, issue #325): the start's download is the centres alone, recorded under a name of
         // its own, so that the scheduled job has not run and the first round of the jobs takes the rest of the snapshot.
         var token = TestContext.Current.CancellationToken;
         await using var factory = new HubWebApplicationFactory(mariaDb.ConnectionString, useIvaoFixtures: true);
@@ -155,7 +201,7 @@ public sealed class FirstReferenceSyncTests(MariaDbFixture mariaDb)
 
     private Task<FirstReferenceSyncOutcome> RunAsync(
         FakeAirspace airspace,
-        Func<CancellationToken, Task> synchronise,
+        Func<CancellationToken, Task<bool>> synchronise,
         CancellationToken cancellationToken,
         TimeSpan? lockWait = null) =>
         FirstReferenceSync.RunAsync(
@@ -211,12 +257,19 @@ public sealed class FirstReferenceSyncTests(MariaDbFixture mariaDb)
 
         public int Failures => _failures;
 
-        public void Download()
+        /// <summary>A download that wrote the centres: true, as the job's count above zero.</summary>
+        public bool Download()
         {
             Interlocked.Increment(ref _downloads);
             _present = true;
+            return true;
         }
 
-        public void Fail() => Interlocked.Increment(ref _failures);
+        /// <summary>A download that failed: the table stays empty, and the job answers zero.</summary>
+        public bool Fail()
+        {
+            Interlocked.Increment(ref _failures);
+            return false;
+        }
     }
 }
