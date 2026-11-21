@@ -120,6 +120,15 @@ public static class TourEndpoints
             .Produces(StatusCodes.Status404NotFound)
             .RequireAuthorization(TourPermissions.View);
 
+        // The page of a tour as the public would see it, drawn from the row the back office holds (design 11 §5, the
+        // preview; the maintainer, 19 November 2026): the same answer as `/public/{slug}`, for a draft too.
+        group.MapGet("/{id:long}/preview", PreviewAsync)
+            .WithName("FlightOpsTourPreview")
+            .Produces<PublicTourDto>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(TourPermissions.View);
+
         group.MapPost("/from-template/{templateId:long}", CreateFromTemplateAsync)
             .WithName("FlightOpsTourFromTemplate")
             .Produces<TourDetailDto>(StatusCodes.Status201Created)
@@ -276,6 +285,41 @@ public static class TourEndpoints
         var problems = await readiness.ProblemsAsync(tour, http.RequestAborted);
 
         return Results.Ok(new TourReadyProblemsDto(problems.Errors, problems.MissingLocales));
+    }
+
+    /// <summary>
+    /// The page of one tour as the public would see it, read from the back office: the row through its source and the one
+    /// handler, then <see cref="PublicTours.PreviewAsync"/>. A tour without its address or its dates has no page yet, and
+    /// the refusal names the first field missing, so the editor can send the staff to the step that writes it.
+    /// </summary>
+    private static async Task<IResult> PreviewAsync(
+        long id,
+        FlightOpsDbContext database,
+        PublicTours tours,
+        IAuthorizationService authorization,
+        ICurrentUser currentUser,
+        LocaleCatalog catalog,
+        HttpContext http)
+    {
+        var tour = await CrudSource.BackOffice<Tour>(database).AsNoTracking()
+            .FirstOrDefaultAsync(row => row.Id == id, http.RequestAborted);
+        if (tour is null)
+        {
+            return NotFound(catalog, currentUser);
+        }
+
+        if (!(await authorization.AuthorizeAsync(http.User, tour, TourPermissions.View)).Succeeded)
+        {
+            return Forbidden(catalog, currentUser);
+        }
+
+        if (await tours.PreviewAsync(tour, http.RequestAborted) is { } page)
+        {
+            return Results.Ok(page);
+        }
+
+        var missing = tour.Slug is null ? "slug" : tour.ReleaseAt is null ? "releaseAt" : "closeAt";
+        return Refused(missing, "flightops:errors.previewNeedsAddressAndDates", catalog, currentUser);
     }
 
     private static async Task<IResult> CreateFromTemplateAsync(
