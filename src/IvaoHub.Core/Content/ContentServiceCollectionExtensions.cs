@@ -52,6 +52,7 @@ public static class ContentServiceCollectionExtensions
 
         services.TryAddScoped<ContentPublishService>();
         services.TryAddScoped<ContentReferenceIndex>();
+        services.TryAddScoped<CalendarBusy>();
         services.TryAddScoped<MediaDeletion>();
         services.TryAddScoped<ContentAddresses>();
         services.TryAddScoped<SiteDestinations>();

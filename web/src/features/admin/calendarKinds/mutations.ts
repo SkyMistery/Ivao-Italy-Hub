@@ -30,6 +30,7 @@ export function toWriteDto(values: CalendarKindFormValues): CalendarKindWriteDto
     colour: values.colour,
     sort: values.sort,
     isActive: values.isActive,
+    blocks: values.blocks,
     rowVersion: values.rowVersion,
   };
 }
@@ -42,6 +43,7 @@ export function emptyCalendarKind(locales: readonly string[]): CalendarKindFormV
     colour: 'blue',
     sort: 0,
     isActive: true,
+    blocks: false,
     // The server reads an empty version as "the row as it is now", which for a create is the only
     // thing it can mean (`shared/api/rowVersion.ts`).
     rowVersion: NEW_ROW_VERSION,
@@ -61,6 +63,7 @@ export function toFormValues(
     colour: kind.colour as CalendarKindFormValues['colour'],
     sort: kind.sort,
     isActive: kind.isActive,
+    blocks: kind.blocks,
     rowVersion: kind.rowVersion,
   };
 }
