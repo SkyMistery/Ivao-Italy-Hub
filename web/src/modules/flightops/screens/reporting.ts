@@ -178,9 +178,18 @@ export function exemptionsToSend(exemptions: AtcDeclarationValues['exemptions'])
     }));
 }
 
+/** The statuses a validator's decision leaves on a report, written once: `isDecided` and the note's tones read them. */
+export const DECIDED_STATUSES = [
+  'Accepted',
+  'ToModify',
+  'Rejected',
+] as const satisfies readonly PirepStatus[];
+
+export type DecidedStatus = (typeof DECIDED_STATUSES)[number];
+
 /** A report the pilot may ask to have explained (§3.10, T14b): one that was decided. */
-export function isDecided(status: PirepStatus): boolean {
-  return status === 'Accepted' || status === 'ToModify' || status === 'Rejected';
+export function isDecided(status: PirepStatus): status is DecidedStatus {
+  return (DECIDED_STATUSES as readonly PirepStatus[]).includes(status);
 }
 
 /** How a clarification cites the tour's objects, spelled as `FlightOpsReferences` reads them on the server. */

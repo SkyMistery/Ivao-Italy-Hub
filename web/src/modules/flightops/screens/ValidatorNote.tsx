@@ -3,12 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { Notice, type NoticeTone } from '../../../shared/ui';
 import type { PirepDto } from '../api';
+import { type DecidedStatus, isDecided } from './reporting';
 
 /**
- * The tone of a decision's note, one per decided status (`isDecided`): what to correct is worth attention, a rejection went
- * wrong, an acceptance is to know. A status out of this table is not decided, and has no note to show.
+ * The tone of a decision's note, one for every decided status (`DECIDED_STATUSES`, so a new one does not compile without
+ * its tone): what to correct is worth attention, a rejection went wrong, an acceptance is to know. A status that is not
+ * decided has no note to show.
  */
-const TONES: Partial<Record<PirepDto['status'], NoticeTone>> = {
+const TONES: Record<DecidedStatus, NoticeTone> = {
   ToModify: 'warning',
   Rejected: 'error',
   Accepted: 'info',
@@ -27,7 +29,7 @@ export function ValidatorNote({
 }) {
   const { t } = useTranslation();
   const read = useLocalized();
-  const tone = TONES[report.status];
+  const tone = isDecided(report.status) ? TONES[report.status] : undefined;
   const note = report.noteToPilot?.trim() ?? '';
 
   if (tone === undefined || (note === '' && report.violatedRules.length === 0)) {
