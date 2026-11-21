@@ -24,6 +24,7 @@ import {
   openGoalSchema,
   rotationSchema,
   tourConstraintSchema,
+  tourKindSchema,
   tourSchema,
 } from './schemas';
 
@@ -68,9 +69,10 @@ test('the tour form carries the fields of TourWriteDto but the briefing, and the
   expect(Object.keys(tourSchema().shape).sort()).toEqual([...TOUR_FIELDS, 'allowedGroups'].sort());
 });
 
-// Every rule of a tour is in "Rules", and nothing of it in "Settings" (#369); both halves carry the whole payload.
-test('the settings of a tour draw no rule, and its rules draw every rule and nothing else', () => {
-  const drawnBy = (part: 'settings' | 'rules') =>
+// Every rule of a tour is in "Rules", and nothing of it in "Name, dates and pictures" (#369, design 11 §5); both halves
+// carry the whole payload.
+test('the identity of a tour draws no rule, and its rules draw every rule and nothing else', () => {
+  const drawnBy = (part: 'identity' | 'rules') =>
     readFields(tourSchema({ part }))
       .filter((field) => field.meta.hidden !== true)
       .map((field) => field.path)
@@ -78,9 +80,9 @@ test('the settings of a tour draw no rule, and its rules draw every rule and not
 
   expect(drawnBy('rules')).toEqual([...TOUR_RULE_FIELDS].sort());
   expect(
-    drawnBy('settings').filter((path) => (TOUR_RULE_FIELDS as readonly string[]).includes(path)),
+    drawnBy('identity').filter((path) => (TOUR_RULE_FIELDS as readonly string[]).includes(path)),
   ).toEqual([]);
-  expect(drawnBy('settings')).toContain('title');
+  expect(drawnBy('identity')).toContain('title');
   expect(Object.keys(tourSchema({ part: 'rules' }).shape).sort()).toEqual(
     [...TOUR_FIELDS, 'allowedGroups'].sort(),
   );
@@ -112,15 +114,18 @@ test('the two lists of the form become the aircraft a tour admits, empty entries
   expect(allowedFromFormValues([], [])).toEqual({ types: [], groupIds: [] });
 });
 
-test('a template carries no address, dates or award, and a public tour no longer offers its kind', () => {
+test('a template carries no address, dates or award, and the kind is chosen at its own step', () => {
   const template = tourSchema({ isTemplate: true }).shape;
   expect(template.slug.meta()).toMatchObject({ hidden: true });
   expect(template.releaseAt.meta()).toMatchObject({ hidden: true });
   expect(template.closeAt.meta()).toMatchObject({ hidden: true });
   expect(template.awardId.meta()).toMatchObject({ hidden: true });
 
-  expect(tourSchema({ kindLocked: true }).shape.kind.meta()).toMatchObject({ hidden: true });
-  expect(tourSchema().shape.kind.meta()).toMatchObject({ hidden: false });
+  // The kind is the first step of the editor (design 11 §5): the forms of the other steps carry it and never draw it.
+  expect(tourSchema().shape.kind.meta()).toMatchObject({ hidden: true });
+  expect(tourSchema({ part: 'rules' }).shape.kind.meta()).toMatchObject({ hidden: true });
+  expect(tourKindSchema().safeParse({ kind: 'Container' }).success).toBe(true);
+  expect(tourKindSchema(true).safeParse({ kind: 'Container' }).success).toBe(false);
 });
 
 // The least rating of a tour is one of the core's, chosen from a list and never typed as a number (phase 6, f).

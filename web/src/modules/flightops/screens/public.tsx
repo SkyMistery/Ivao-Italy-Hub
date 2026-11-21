@@ -342,7 +342,7 @@ export function PublicTourPage() {
 }
 
 /** The first tab: the briefing, as the department wrote it. */
-function Overview({ tour }: { tour: PublicTourDto }) {
+export function Overview({ tour }: { tour: PublicTourDto }) {
   const { t } = useTranslation();
   const body = readBody(tour.briefing);
 
@@ -543,7 +543,7 @@ function NextLeg({ tour, leg }: { tour: PublicTourDto; leg: PublicLegDto }) {
  * The second tab (design 11 §4, tab 2): the map and the legs, with the pilot's state leg by leg; a hub tour grouped by hub
  * and rotation; a container's subtours as cards.
  */
-function RouteTab({ tour, mine }: { tour: PublicTourDto; mine: MyTourDto | undefined }) {
+export function RouteTab({ tour, mine }: { tour: PublicTourDto; mine: MyTourDto | undefined }) {
   const { t } = useTranslation();
   const read = useLocalized();
 
@@ -700,7 +700,7 @@ const PROGRESS_COLOURS: Readonly<Record<LegProgress, 'blue' | 'green' | 'orange'
 };
 
 /** What the tour asks of a pilot before any rule: aircraft, rating, procedures, the goal of an open tour. */
-function TourFacts({ tour }: { tour: PublicTourDto }) {
+export function TourFacts({ tour }: { tour: PublicTourDto }) {
   const { t } = useTranslation();
   const read = useLocalized();
 
@@ -815,7 +815,7 @@ function TourFacts({ tour }: { tour: PublicTourDto }) {
  * closed under its code and title and opened one at a time (design 11 §4, tab 3); the errors a pilot can be given at the
  * bottom (§5.3). A signed in pilot may ask for a rule to be explained (§3.10), from the rule itself.
  */
-function TourRulesSection({ tour, signedIn }: { tour: PublicTourDto; signedIn: boolean }) {
+export function TourRulesSection({ tour, signedIn }: { tour: PublicTourDto; signedIn: boolean }) {
   const { t } = useTranslation();
   const read = useLocalized();
 
