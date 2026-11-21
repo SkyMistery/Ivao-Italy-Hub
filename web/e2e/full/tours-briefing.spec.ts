@@ -70,6 +70,7 @@ test('a tour gets a briefing with a picture, is asked for its second language, i
   const now = Date.now();
   await page.goto('/staff/tours/new');
   await expect(page.getByRole('heading', { name: flightops.tours.create })).toBeVisible();
+  await page.getByRole('button', { name: flightops.tours.steps.next, exact: true }).click();
 
   await writeInBothLanguages(page.locator('form'), flightops.tours.fields.title, 'title', tourName);
   await page.locator('[id="slug"]').fill(slug);
@@ -80,7 +81,7 @@ test('a tour gets a briefing with a picture, is asked for its second language, i
   await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
-  await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+  await expect(page).toHaveURL(/\/staff\/tours\/\d+(\?|$)/);
   await writeDailyLegLimit(page, '5');
   const tourId = Number(/\/staff\/tours\/(\d+)/.exec(page.url())![1]);
 
@@ -98,7 +99,7 @@ test('a tour gets a briefing with a picture, is asked for its second language, i
   await expect(page.getByText(flightops.tours.readyProblems)).toBeHidden();
 
   // ---------------------------------------------------------------- the briefing
-  await page.getByRole('tab', { name: flightops.tours.tabs.briefing }).click();
+  await page.getByRole('tab', { name: flightops.tours.steps.briefing }).click();
   await expect(page).toHaveURL(/tab=briefing/);
   const onThePage = page.getByRole('region', { name: editor.preview });
 
@@ -148,6 +149,7 @@ test('a tour gets a briefing with a picture, is asked for its second language, i
   expect(JSON.stringify(saved.briefing)).toContain(`"mediaId":${mediaId}`);
 
   // ---------------------------------------------------------------- ready, and found
+  await page.getByRole('tab', { name: flightops.tours.steps.check }).click();
   await whileWaitingFor(page, 'POST', '/status', async () => {
     await page.getByRole('button', { name: flightops.tours.actions.ready }).click();
   });
@@ -179,7 +181,14 @@ function englishFlightOps() {
       readyProblems: string;
       actions: { ready: string; hide: string };
       fields: { title: string; summary: string; briefing: string };
-      tabs: { briefing: string };
+      steps: {
+        next: string;
+        identity: string;
+        route: string;
+        rules: string;
+        briefing: string;
+        check: string;
+      };
       briefing: { save: string; saved: string };
     };
   };

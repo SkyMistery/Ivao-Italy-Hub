@@ -148,6 +148,23 @@
     "removeEntry": "Rimuovi",
     "entry": "Voce {{number}}",
     "clearDate": "Togli la data",
+    "busy": {
+      "open": "Scegli sul calendario",
+      "free": "Libero",
+      "busyDay": "occupato: {{kinds}}",
+      "blockedDay": "bloccato tutto il giorno",
+      "busyHour": "occupata: {{kinds}}",
+      "blockedHour": "bloccata",
+      "blocks": "blocca",
+      "legend": "Legenda",
+      "hours": "Ore (UTC)",
+      "allDay": "Tutto il giorno",
+      "previousMonth": "Mese precedente",
+      "nextMonth": "Mese successivo",
+      "unknown": "Non è stato possibile leggere che cosa è occupato: il calendario mostra ogni giorno come libero.",
+      "unreadableMoment": "Questa non è una data con l'ora. Scrivila come {{example}}, in UTC.",
+      "unreadableDay": "Questa non è una data. Scrivila come {{example}}."
+    },
     "submitHint": "Premi Invio per salvare.",
     "submitHintOneLine": "Premi Invio in un campo di una riga per salvare.",
     "moveUp": "Sposta su",
@@ -396,6 +413,7 @@
           "picture": "Immagine",
           "icon": "Icona",
           "happensAt": "Quando",
+          "meetsAt": "Si riunisce il (libero e occupato)",
           "expiresOn": "Scade il",
           "seo": "Condivisione",
           "seo.title": "Titolo",
@@ -2166,7 +2184,11 @@
       "colour": "Colore",
       "sort": "Ordine",
       "isActive": "In uso",
+      "blocks": "Blocca le ore",
       "updatedAt": "Ultima modifica"
+    },
+    "hints": {
+      "blocks": "Un impegno di questo tipo toglie le sue ore a chi sceglie una data sul calendario: non si possono scegliere, e il server le rifiuta."
     },
     "options": {
       "colour": {

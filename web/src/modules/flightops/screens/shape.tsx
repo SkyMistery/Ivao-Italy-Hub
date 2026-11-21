@@ -1,7 +1,7 @@
 import { Button } from '@ivao/atmosphere-react';
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import { useNavigate, useParams } from '@tanstack/react-router';
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
@@ -64,7 +64,7 @@ import {
   tourConstraintSchema,
   type OpenGoalKind,
   type TourConstraintKind,
-  type TourEditorTab,
+  type TourStep,
 } from '../schemas';
 
 import { NewButton } from './NewButton';
@@ -228,35 +228,48 @@ export function TourCallsignsTab({ tour, editable }: { tour: TourDetailDto; edit
 }
 
 /**
- * The goal of an Open tour, and its filters and sequence rules (design M2 §2.6.1, note 2026-09-22-il-tour-open): the goal
- * is saved with the tour, the constraints are rows of their own.
+ * The goal of an Open tour (design M2 §2.6.1, note 2026-09-22-il-tour-open), saved with the tour: its route, in the
+ * editor's steps (design 11 §5).
  */
-export function TourOpenTab({ tour, editable }: { tour: TourDetailDto; editable: boolean }) {
+export function TourOpenGoal({ tour, editable }: { tour: TourDetailDto; editable: boolean }) {
   const { t } = useTranslation();
-  const base = `${TOURS}/${tour.id}`;
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-2">
-        <h3 className="text-lg font-semibold">{t('flightops:open.goal')}</h3>
-        <OpenGoalEditor tour={tour} editable={editable} />
-      </section>
-      <section className="flex flex-col gap-2">
-        <h3 className="text-lg font-semibold">{t('flightops:constraints.title')}</h3>
-        <p className="text-sm">{t('flightops:constraints.description')}</p>
-        <TabList
-          columns={constraintColumns}
-          query={(search) => constraintsQuery(tour.id, search)}
-          labels="flightops:constraints"
-          edit={editable ? (row) => `${base}/constraints/${row.id}` : null}
-          create={
-            editable ? (
-              <NewButton href={`${base}/constraints/new`} label={t('flightops:constraints.create')} />
-            ) : null
-          }
-        />
-      </section>
-    </div>
+    <section className="flex flex-col gap-2">
+      <h3 className="text-lg font-semibold">{t('flightops:open.goal')}</h3>
+      <OpenGoalEditor tour={tour} editable={editable} />
+    </section>
+  );
+}
+
+/**
+ * The filters and sequence rules of an Open tour (design M2 §2.6.1), rows of their own: rules of how it is flown, so in
+ * the editor's step of the rules (design 11 §5).
+ */
+export function TourConstraints({ tour, editable }: { tour: TourDetailDto; editable: boolean }) {
+  const { t } = useTranslation();
+  const base = `${TOURS}/${tour.id}`;
+  const heading = useId();
+
+  return (
+    // Named by its heading: the step of the rules has other lists, and this one is found by its name.
+    <section aria-labelledby={heading} className="flex flex-col gap-2">
+      <h3 id={heading} className="text-lg font-semibold">
+        {t('flightops:constraints.title')}
+      </h3>
+      <p className="text-sm">{t('flightops:constraints.description')}</p>
+      <TabList
+        columns={constraintColumns}
+        query={(search) => constraintsQuery(tour.id, search)}
+        labels="flightops:constraints"
+        edit={editable ? (row) => `${base}/constraints/${row.id}` : null}
+        create={
+          editable ? (
+            <NewButton href={`${base}/constraints/new`} label={t('flightops:constraints.create')} />
+          ) : null
+        }
+      />
+    </section>
   );
 }
 
@@ -374,7 +387,7 @@ export function ShapeFormPage({
   deleting,
 }: {
   labels: string;
-  tab: TourEditorTab;
+  tab: TourStep;
   isNew: boolean;
   children: (tour: TourDetailDto, back: () => void) => ReactNode;
   onDelete: (back: () => void) => void;
@@ -447,7 +460,7 @@ export function HubForm() {
   return (
     <ShapeFormPage
       labels="flightops:hubs"
-      tab="hubs"
+      tab="route"
       isNew={id === null}
       deleting={remove.isPending}
       onDelete={(back) => remove.mutate(id ?? 0, { onSuccess: back })}
@@ -463,7 +476,7 @@ export function HubForm() {
             back();
           }}
           submitLabel={t('common.save')}
-          secondaryAction={<Cancel href={`${TOURS}/${tour.id}?tab=hubs`} />}
+          secondaryAction={<Cancel href={`${TOURS}/${tour.id}?tab=route`} />}
         />
       )}
     </ShapeFormPage>
@@ -490,7 +503,7 @@ export function RotationForm() {
   return (
     <ShapeFormPage
       labels="flightops:rotations"
-      tab="hubs"
+      tab="route"
       isNew={id === null}
       deleting={remove.isPending}
       onDelete={(back) => remove.mutate(id ?? 0, { onSuccess: back })}
@@ -509,7 +522,7 @@ export function RotationForm() {
             back();
           }}
           submitLabel={t('common.save')}
-          secondaryAction={<Cancel href={`${TOURS}/${tour.id}?tab=hubs`} />}
+          secondaryAction={<Cancel href={`${TOURS}/${tour.id}?tab=route`} />}
         />
       )}
     </ShapeFormPage>
@@ -542,7 +555,7 @@ export function CallsignRuleForm() {
   return (
     <ShapeFormPage
       labels="flightops:callsigns"
-      tab="callsigns"
+      tab="rules"
       isNew={id === null}
       deleting={remove.isPending}
       onDelete={(back) => remove.mutate(id ?? 0, { onSuccess: back })}
@@ -558,7 +571,7 @@ export function CallsignRuleForm() {
             back();
           }}
           submitLabel={t('common.save')}
-          secondaryAction={<Cancel href={`${TOURS}/${current.id}?tab=callsigns`} />}
+          secondaryAction={<Cancel href={`${TOURS}/${current.id}?tab=rules`} />}
         />
       )}
     </ShapeFormPage>
@@ -592,7 +605,7 @@ export function TourConstraintForm() {
   return (
     <ShapeFormPage
       labels="flightops:constraints"
-      tab="open"
+      tab="rules"
       isNew={id === null}
       deleting={remove.isPending}
       onDelete={(back) => remove.mutate(id ?? 0, { onSuccess: back })}
@@ -620,7 +633,7 @@ export function TourConstraintForm() {
               back();
             }}
             submitLabel={t('common.save')}
-            secondaryAction={<Cancel href={`${TOURS}/${tour.id}?tab=open`} />}
+            secondaryAction={<Cancel href={`${TOURS}/${tour.id}?tab=rules`} />}
           />
         </div>
       )}

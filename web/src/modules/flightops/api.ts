@@ -367,6 +367,18 @@ export function tourReadyProblemsQuery(id: number) {
   });
 }
 
+/**
+ * The page of a tour as the public would see it, drawn from the row as the back office holds it (design 11 §5, the
+ * preview): the same `PublicTourDto` the site reads, for a draft too. Under the tours' key, so every save asks it again.
+ */
+export function tourPreviewQuery(id: number) {
+  return queryOptions({
+    queryKey: [...toursKey, 'preview', id] as const,
+    queryFn: async (): Promise<PublicTourDto> =>
+      unwrap(await api.GET('/api/flightops/tours/{id}/preview', { params: { path: { id } } })),
+  });
+}
+
 /** A new tour, template, or subtour of a container — whose dates, left empty, are the container's. */
 export function emptyTour(
   department: Department,
