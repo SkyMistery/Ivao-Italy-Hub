@@ -131,6 +131,12 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal("Page", offered.GetProperty("title").GetProperty("en").GetString());
         Assert.DoesNotContain(tree.EnumerateArray(), node => node.GetProperty("id").GetInt64() == draftOfTheWebTeam.Id);
 
+        // What the tree of the site shows of it (design 13 §3.2): whose it is and who reads it, which the page online says
+        // already; not its state, which is its department's business, and not a way to open it.
+        Assert.Equal(nameof(Department.WD), offered.GetProperty("ownerDepartment").GetString());
+        Assert.Equal(JsonValueKind.Null, offered.GetProperty("status").ValueKind);
+        Assert.False(offered.GetProperty("mayEdit").GetBoolean());
+
         // At the top: refused on the field that chose it.
         using var top = await SendAsync(
             coordinator,
@@ -153,7 +159,43 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // A draft of their own department is offered: a section is built under its first page before it comes out.
         var mine = (await under.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64();
         var after = await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/pages", token);
-        Assert.Contains(after.EnumerateArray(), node => node.GetProperty("id").GetInt64() == mine);
+        var own = Assert.Single(after.EnumerateArray(), node => node.GetProperty("id").GetInt64() == mine);
+
+        // Their own page they may open, and they see its state.
+        Assert.True(own.GetProperty("mayEdit").GetBoolean());
+        Assert.Equal(nameof(PublishStatus.Draft), own.GetProperty("status").GetString());
+        Assert.Equal(2, own.GetProperty("depth").GetInt32());
+    }
+
+    [Fact]
+    public async Task APageOnlineForAnotherDepartmentOnlyIsNotInTheirTree()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(SuperadminVid, token);
+        await SeedUserAsync(EventsCoordinatorVid, token, position: "IT-EC");
+
+        // Published by the web team for the web team's staff alone: online, and still not the events coordinator's to read.
+        using var superadmin = _factory.CreateApiClient();
+        await _factory.SignInAsync(superadmin, SuperadminVid, token);
+        using var created = await SendAsync(
+            superadmin,
+            HttpMethod.Post,
+            ContentEndpoints.Pattern,
+            Payload($"{Stem()}-staffroom", parentId: null, visibility: Visibility.Department),
+            token);
+        Assert.True(created.StatusCode == HttpStatusCode.Created, await created.Content.ReadAsStringAsync(token));
+        var staffRoom = (await created.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64();
+        await PublishAsync(superadmin, staffRoom, token);
+
+        // The superadmin reads it in the tree, so it is a page online the tree has.
+        var all = await superadmin.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/pages", token);
+        Assert.Contains(all.EnumerateArray(), node => node.GetProperty("id").GetInt64() == staffRoom);
+
+        // The coordinator of another department does not: the tree is the site as they read it (the review of #550, item 2).
+        using var coordinator = _factory.CreateApiClient();
+        await _factory.SignInAsync(coordinator, EventsCoordinatorVid, token);
+        var theirs = await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/pages", token);
+        Assert.DoesNotContain(theirs.EnumerateArray(), node => node.GetProperty("id").GetInt64() == staffRoom);
     }
 
     [Fact]
@@ -271,12 +313,13 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
         string slug,
         long? parentId,
         Department department = Department.WD,
-        string? rowVersion = null) => new
+        string? rowVersion = null,
+        Visibility visibility = Visibility.Public) => new
         {
             kind = nameof(ContentKind.Page),
             slug,
             ownerDepartment = department.ToString(),
-            visibility = nameof(Visibility.Public),
+            visibility = visibility.ToString(),
             isTemplate = false,
             title = new Dictionary<string, string>(StringComparer.Ordinal) { ["it"] = "Pagina", ["en"] = "Page" },
             summary = (Dictionary<string, string>?)null,

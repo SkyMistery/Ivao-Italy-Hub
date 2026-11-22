@@ -11,6 +11,7 @@ import { MEDIA_EDIT, useUploadMedia } from '../media/mutations';
 import { mediaPickerQuery } from '../media/queries';
 
 import { ContentEditor } from './ContentEditor';
+import { parentChoices } from './pageTree';
 import { ReviewPanel } from './ReviewPanel';
 import type { ContentKindConfig } from './kinds';
 import { useCreateContent, useDeleteContent, usePublishContent, useUpdateContent } from './mutations';
@@ -50,6 +51,7 @@ export function ContentFormScreen({
   breadcrumbTo,
   note,
   startsAsTemplate = false,
+  newParentId,
   onCreated,
   onFinished,
 }: {
@@ -69,6 +71,8 @@ export function ContentFormScreen({
   note?: string;
   /** Passed through: a row created here is a template. See `ContentEditor.startsAsTemplate`. */
   startsAsTemplate?: boolean;
+  /** The page a new page starts under, chosen on the tree of the site with «New page here» (design 13 §3.2). */
+  newParentId?: number;
   onCreated: (id: number) => Promise<void>;
   onFinished: () => void;
 }) {
@@ -118,18 +122,19 @@ export function ContentFormScreen({
   // asked for on a page.
   const isDocument = config.kind === 'Document';
 
-  // Where a page may be put (note 2026-09-13-contenuti-centralizzati, 3.7): every page of the site,
-  // whoever wrote it, except itself and the pages under it, and none that is already at the third
-  // level. Labelled by address, because that is what is being chosen.
+  // Where a page may be put (note 2026-09-13-contenuti-centralizzati, 3.7): the tree of the site, except the page itself
+  // and the pages under it, and none already at the third level; the pages written in code shown and switched off
+  // (design 13 §3.2). Labelled by address, because that is what is being chosen.
   const isPage = config.kind === 'Page' && !startsAsTemplate && content?.isTemplate !== true;
   const tree = useQuery({ ...pageTreeQuery(), enabled: isPage });
-  const ownPath = content?.path;
-  const parents: ChoiceOption[] = (tree.data ?? [])
-    .filter((node) => node.depth < 3)
-    .filter(
-      (node) => ownPath === undefined || (node.path !== ownPath && !node.path.startsWith(`${ownPath}/`)),
-    )
-    .map((node) => ({ value: String(node.id), label: `/${node.path} — ${read(node.title) || node.path}` }));
+  const parents: ChoiceOption[] = parentChoices(
+    tree.data ?? [],
+    bootstrap.registries.screens,
+    read,
+    (key) => t(key),
+    t('content.tree.noPagesUnder'),
+    content?.path,
+  );
   // A page already at the top stays there without anybody's leave: only putting one there asks.
   const pageChoices = {
     parents,
@@ -223,6 +228,7 @@ export function ContentFormScreen({
           : {})}
         kind={config.kind}
         startsAsTemplate={startsAsTemplate}
+        {...(isPage && newParentId !== undefined ? { newParentId } : {})}
         categories={categories}
         successors={successorChoices}
         {...(isPage ? { pageChoices } : {})}

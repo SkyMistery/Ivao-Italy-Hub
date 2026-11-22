@@ -101,6 +101,8 @@ export function emptyContent(
   locales: readonly string[],
   kind: ContentKind = 'Page',
   isTemplate = false,
+  /** The page it starts under, for a page made from the tree of the site (design 13 §3.2). */
+  parentId?: number,
 ): ContentFormValues {
   return {
     kind,
@@ -110,7 +112,7 @@ export function emptyContent(
     // that only takes effect when somebody publishes.
     visibility: 'Staff',
     isTemplate,
-    parentId: '',
+    parentId: parentId === undefined ? '' : String(parentId),
     title: emptyLocalized(locales),
     summary: emptyLocalized(locales),
     seo: emptySeo(locales),

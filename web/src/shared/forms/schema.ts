@@ -229,6 +229,35 @@ interface FieldCommon {
 export interface ChoiceOption {
   value: string;
   label: string;
+  /**
+   * Shown and not choosable: a choice the person should see is there, and why it cannot be taken is in its label — a
+   * page of the application among the pages a page may sit under (design `13-design-struttura-del-sito.md` §3.2).
+   */
+  disabled?: boolean;
+  /**
+   * How many steps right it is drawn, under the choice before it: a page under a page in the tree of the site (design 13
+   * §3.2). Drawn as padding of the item, never as spaces in its label — those would be read aloud, would stand in front of
+   * what the typeahead matches and would show in the closed select (the review of #550, item 6).
+   */
+  level?: number;
+}
+
+/**
+ * The padding of a choice a `level` to the right (`ChoiceOption.level`): the item's own `pl-8` plus a step of 1rem a level,
+ * written out because Tailwind sees only whole class names. A level past the last is drawn at the last.
+ */
+const CHOICE_LEVELS = ['', 'pl-12', 'pl-16'] as const;
+
+/**
+ * A choice as an item of a select: what it says and whether it may be taken, and its level as padding. Every select that
+ * draws `ChoiceOption`s draws them through this, so that `level` never reaches the page as an attribute.
+ */
+export function choiceItem({
+  level,
+  ...choice
+}: ChoiceOption): Omit<ChoiceOption, 'level'> & { className?: string } {
+  const padding = level === undefined ? '' : CHOICE_LEVELS[Math.min(level, CHOICE_LEVELS.length - 1)]!;
+  return padding === '' ? choice : { ...choice, className: padding };
 }
 
 /**

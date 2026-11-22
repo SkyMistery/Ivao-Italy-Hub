@@ -5,10 +5,12 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Department } from '../../shared/api/bootstrap';
-import { NO_CHOICE, ProblemAlert, describeProblem } from '../../shared/forms';
+import { NO_CHOICE, ProblemAlert, choiceItem, describeProblem } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
+import { bootstrapQuery } from '../me/queries';
 
 import { useCreateFromTemplate } from './mutations';
+import { parentChoices } from './pageTree';
 import { pageTreeQuery, templatesQuery, type ContentKind } from './queries';
 
 /**
@@ -46,9 +48,14 @@ export function TemplatePicker({
   // Where the new page goes, for a page; a news item and a document have an address of their kind.
   const isPage = kind === 'Page';
   const tree = useQuery({ ...pageTreeQuery(), enabled: isPage });
-  const parents = (tree.data ?? [])
-    .filter((node) => node.depth < 3)
-    .map((node) => ({ value: String(node.id), label: `/${node.path} — ${read(node.title) || node.path}` }));
+  const { data: bootstrap } = useQuery(bootstrapQuery);
+  const parents = parentChoices(
+    tree.data ?? [],
+    bootstrap?.registries.screens ?? [],
+    read,
+    (key) => t(key),
+    t('content.tree.noPagesUnder'),
+  );
   const create = useCreateFromTemplate();
 
   const items = (templates.data?.items ?? []).map((template) => ({
@@ -111,7 +118,7 @@ export function TemplatePicker({
               placeholder={mayBeAtTheTop ? t('content.options.parentId.none') : t('content.chooseParent')}
               items={[
                 ...(mayBeAtTheTop ? [{ value: NO_CHOICE, label: t('content.options.parentId.none') }] : []),
-                ...parents,
+                ...parents.map(choiceItem),
               ]}
             />
           </div>
