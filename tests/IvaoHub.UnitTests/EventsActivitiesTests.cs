@@ -128,6 +128,26 @@ public sealed class EventsActivitiesTests
         Assert.Equal(["Simulator: 14/11/2026 10:00 – 10:30 UTC"], EventsMail.SeatLines([(first, activity)], "en", "en", catalog, DateOrder.DayMonthYear));
     }
 
+    [Fact]
+    public void TheMailWritesTheDayOfATurnsEndWhenItIsTheNextOne()
+    {
+        // #548: a turn past midnight UTC ended as a bare time, «23:30 – 00:30», with no sign of the next day; and a turn that ends at
+        // midnight exactly ends on the next day too, as the pages write it (intervalEnd, note 2026-11-18-la-fine-di-un-intervallo-nel-nucleo).
+        var lateEvening = new DateTime(2026, 11, 14, 23, 0, 0, DateTimeKind.Utc);
+        var activity = Activity(lateEvening, lateEvening.AddHours(2), 60);
+        var toMidnight = new EventActivitySeat { ActivityId = 7, StartsAtUtc = lateEvening };
+        var pastMidnight = new EventActivitySeat { ActivityId = 7, StartsAtUtc = lateEvening.AddMinutes(30) };
+
+        var catalog = Catalog();
+
+        Assert.Equal(
+            ["Simulator: 14/11/2026 23:00 – 15/11/2026 00:00 UTC", "Simulator: 14/11/2026 23:30 – 15/11/2026 00:30 UTC"],
+            EventsMail.SeatLines([(pastMidnight, activity), (toMidnight, activity)], "en", "en", catalog, DateOrder.DayMonthYear));
+        Assert.Equal(
+            ["Simulatore: 11/14/2026 23:30 – 11/15/2026 00:30 UTC"],
+            EventsMail.SeatLines([(pastMidnight, activity)], "it", "en", catalog, DateOrder.MonthDayYear));
+    }
+
     /// <summary>The language files of this repository, read the way the server reads them.</summary>
     private static LocaleCatalog Catalog()
     {
