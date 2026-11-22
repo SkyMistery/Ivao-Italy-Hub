@@ -3,9 +3,10 @@
 - **Data**: 22 novembre 2026
 - **Stato**: **decisa** per quello che è il §5.1 del design `13-design-struttura-del-sito.md`, approvato da Carmine in chat al master
   il 19 novembre 2026 («Sì, tutte e sette»; la risposta 5 è «pagine e schermate, ognuno quelle che può leggere»),
-  [riportato sulla #540](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/540#issuecomment-7011361289). Le scelte del §4 sono
-  della sessione e la PR le dice perché il revisore le veda; **la scelta 1 (`/contact`) è una «Proposta»**: è una domanda di
-  prodotto, portata al master per Carmine, e la nota registrerà la risposta con il link al suo commento.
+  [riportato sulla #540](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/540#issuecomment-7011361289). Le scelte da 2 a 9 del
+  §4 sono della sessione, e la PR le elenca perché il revisore le veda. **La scelta 1 (`/contact`) l'ha decisa il maintainer**:
+  «Sì, resta pubblico», in chat al master il 22 novembre 2026, cioè l'opzione (a)
+  ([riportato sulla #555](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/555#issuecomment-7087078607)).
 - **Chi**: una sessione di lavoro di Carmine (fase 4, PR 4.4, accanto alla 4.3)
 - **Classificazione** (`CLAUDE.md` §5): **(c)** come dice il design (§0: «il blocco della mappa del sito» è uno dei due pezzi nuovi
   del nucleo), con il design come nota della fase; **(b)** per il resto: un blocco registrato in due metà, un provider, la lettura
@@ -65,7 +66,7 @@ ognuno quello che può aprire.
 
 ## 4. Le scelte che il design non scriveva
 
-1. **`/contact` nella mappa di un visitatore** — ⚖️ **Proposta**, domanda a Carmine. La 4.1 ha lasciato `/contact` dichiarata
+1. **`/contact` nella mappa di un visitatore** — **decisa dal maintainer: (a)**. La 4.1 ha lasciato `/contact` dichiarata
    `Public` (nota `2026-11-19-le-schermate-del-sito-dichiarate-una-volta` §4, scelta 2, decisa da Carmine sulla
    [#546](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/546#issuecomment-7058790582)), anche se la rotta è sotto `_member` e
    chi non ha fatto l'accesso finisce al login. La mappa legge la dichiarazione e non ha eccezioni sue, quindi oggi un visitatore
@@ -76,6 +77,13 @@ ognuno quello che può aprire.
      (3.15) rifiuterebbe ogni pagina pubblica che porta a `/contact` — il seme `about` e il suo template hanno il pulsante
      «Scrivici». Una riga di `SiteDestinations.CoreScreens`, e una decisione sui link.
    - Mai un'eccezione nella mappa per `/contact`: sarebbe la seconda regola che la nota della 4.1 ha tolto.
+   - **La risposta di Carmine**: «Sì, resta pubblico», in chat al master il 22 novembre 2026
+     ([commento sulla #555](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/555#issuecomment-7087078607)). Quindi:
+     - `/contact` resta dichiarata `Public` in `SiteDestinations.CoreScreens`;
+     - la mappa la mostra anche a un visitatore, che seguendola trova la richiesta di accesso;
+     - le pagine pubbliche che portano a `/contact` continuano a passare il controllo dei link.
+
+     Il codice della PR non cambia.
 2. **La radice si chiama `href`** ed è il campo indirizzo della fase 3: `blockAddresses.test.ts` vuole che un campo indirizzo si
    chiami `href`, e così la pubblicazione lo controlla come ogni altro (deve arrivare, per i lettori della pagina: una mappa
    pubblica che parte da una pagina dello staff non esce). Il provider legge la pagina a quell'indirizzo e quelle sotto di lei, senza
@@ -113,4 +121,5 @@ ognuno quello che può aprire.
   nel piè di pagina; la pagina iniziale è una riga sola sulla mappa.
 - **Le note di rilascio della 0.27.0**: un blocco nuovo nella tavolozza, quindi i file «Scarica per Claude» presi prima vanno
   riscaricati.
-- **La risposta di Carmine su `/contact`** (§4, scelta 1), quando arriva, con il link al suo commento.
+- **§9.3**, con la nota della 4.1: `/contact` resta una schermata pubblica, e la mappa la mostra anche a un visitatore (§4,
+  scelta 1, decisa da Carmine sulla [#555](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/555#issuecomment-7087078607)).
