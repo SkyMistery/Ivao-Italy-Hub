@@ -1173,7 +1173,10 @@ il blocco risponde `signedIn: false`.
 ### 8.3 L'editor del tour
 
 > **Sostituita dal 31 ott 2026** da `11-design-pagine-dei-tour.md` §5 (#417, fase 6, piano 1.46): le schermate per creare un tour,
-> nel secondo passo del codice, dopo le pagine dei piloti.
+> nel secondo passo del codice, dopo le pagine dei piloti. **Nel codice dal 21 nov 2026** (#543 e #544, note `2026-11-19-i-passi-di-un-tour`
+> e `2026-11-19-l-anteprima-di-un-tour`, piano 1.57): `/staff/tours/{id}` è un percorso di sei passi (Tipo, Nome date e immagini,
+> Percorso, Regole, Briefing, Controllo) e «Segna pronto» sta nel Controllo, non nella barra; **l'elenco di otto schede qui sotto non vale
+> più**.
 
 - **`/staff/tours`**: tutti i tour passati, presenti e futuri (stato calcolato, tipo, date, nascosto, iscritti, in coda); filtro
   «template».
