@@ -18,7 +18,7 @@ import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { ApiError } from '../../../shared/api/problem';
 import { SchemaForm, describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
-import { useMoment } from '../../../shared/i18n/useMoment';
+import { intervalText, useMoment } from '../../../shared/i18n/useMoment';
 import { DataList, ListFilter, col, type ColumnSpec } from '../../../shared/list';
 import {
   ConfirmDialog,
@@ -80,7 +80,6 @@ import {
   isRefused,
   isWhole,
   sameDates,
-  spanText,
   warningSays,
   whatTheyMeet,
   type Met,
@@ -769,7 +768,7 @@ function WithdrawSlot({ training, slot }: { training: StaffTrainingDto; slot: St
       triggerText={t('training:staff.dates.withdraw.button')}
       triggerVariant="secondary"
       title={t('training:staff.dates.withdraw.title', {
-        when: spanText(slot.startsAtUtc, slot.endsAtUtc, moment),
+        when: intervalText(slot.startsAtUtc, slot.endsAtUtc, moment),
       })}
       description={t('training:staff.dates.withdraw.description')}
       confirmText={t('training:staff.dates.withdraw.button')}
@@ -817,12 +816,12 @@ function WarningList({ warnings }: { warnings: readonly DateWarning[] }) {
             ? t('training:staff.dates.warning.training', {
                 ladder: says.ladder === null ? '' : t(`training:kinds.${says.ladder}`),
                 what: says.what,
-                when: spanText(says.startsAtUtc, null, moment),
+                when: intervalText(says.startsAtUtc, null, moment),
               })
             : t('training:staff.dates.warning.calendar', {
                 kind: calendarKind(says.calendarKind),
                 what: says.what,
-                when: spanText(says.startsAtUtc, says.endsAtUtc, moment),
+                when: intervalText(says.startsAtUtc, says.endsAtUtc, moment),
               });
 
         return (
@@ -883,7 +882,7 @@ function MetNotice({
               <div key={index} className="flex flex-col gap-1">
                 <span className="font-semibold tabular-nums">
                   {t('training:time.utc', {
-                    when: spanText(date.startsAtUtc, date.endsAtUtc ?? null, moment),
+                    when: intervalText(date.startsAtUtc, date.endsAtUtc ?? null, moment),
                   })}
                 </span>
                 <WarningList warnings={warnings} />

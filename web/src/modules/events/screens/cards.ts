@@ -1,4 +1,5 @@
 import type { LocalizedString } from '../../../shared/api/bootstrap';
+import { intervalText, onSameDay, type MomentFormat } from '../../../shared/i18n/useMoment';
 import type { CalendarItem, CalendarKindColour } from '../../../shared/ui';
 
 /**
@@ -124,29 +125,9 @@ export function calendarItems(cards: readonly EventCard[]): CalendarItem[] {
 }
 
 /**
- * When an event runs, as one line: its start with its date, and its end — with its own date only when it falls on another day, so
- * that an evening reads «12 Oct 2026, 18:00 – 22:00». `format` is the hub's one way of writing an instant (`useMoment`), handed in
- * with the zone to read the days in: UTC when none.
- */
-export function spanText(
-  startsAt: string,
-  endsAt: string,
-  format: (value: unknown, options?: { timeZone?: string; time?: boolean; date?: boolean }) => string,
-  timeZone?: string,
-): string {
-  const zone = timeZone === undefined ? {} : { timeZone };
-  const sameDay = format(startsAt, { ...zone, time: false }) === format(endsAt, { ...zone, time: false });
-
-  return `${format(startsAt, zone)} – ${format(endsAt, sameDay ? { ...zone, date: false } : zone)}`;
-}
-
-/** The hub's one way of writing an instant (`useMoment`), as the helpers of this file take it. */
-type MomentFormat = Parameters<typeof spanText>[2];
-
-/**
  * When an event runs, as the head of its page says it (note 2026-10-11-la-testa-della-pagina-di-un-evento, dalberone's drawing):
- * «21 Nov 2026 · 17:00–22:00» in UTC; where the division lives, its times alone when they fall on that same day — «18:00–23:00» —,
- * otherwise its own day too. An event over midnight writes both its dates, as `spanText` does. No zone, no local part.
+ * «21 Nov 2026 · 17:00 – 22:00» in UTC; where the division lives, its times alone when they fall on that same day — «18:00 – 23:00» —,
+ * otherwise its own day too. An event over midnight writes both its dates, as the core's `intervalText` does. No zone, no local part.
  */
 export function headSpan(
   startsAt: string,
@@ -162,7 +143,7 @@ export function headSpan(
   const day = oneDay(startsAt, endsAt, format);
   const local =
     day !== null && day === oneDay(startsAt, endsAt, format, timeZone)
-      ? `${format(startsAt, { timeZone, date: false })}–${format(endsAt, { timeZone, date: false })}`
+      ? `${format(startsAt, { timeZone, date: false })} – ${format(endsAt, { timeZone, date: false })}`
       : compactSpan(startsAt, endsAt, format, timeZone);
 
   return { utc, local };
@@ -186,20 +167,19 @@ export function headMoment(
   return { utc, local: format(at, sameDay ? { timeZone, date: false } : { timeZone }) };
 }
 
-/** A span within one day as «21 Nov 2026 · 17:00–22:00»; one over midnight as `spanText` writes it. */
+/** A span within one day as «21 Nov 2026 · 17:00 – 22:00»; one over midnight as the core's `intervalText` writes it. */
 function compactSpan(startsAt: string, endsAt: string, format: MomentFormat, timeZone?: string): string {
   const zone = timeZone === undefined ? {} : { timeZone };
   const day = oneDay(startsAt, endsAt, format, timeZone);
 
   return day === null
-    ? spanText(startsAt, endsAt, format, timeZone)
-    : `${day} · ${format(startsAt, { ...zone, date: false })}–${format(endsAt, { ...zone, date: false })}`;
+    ? intervalText(startsAt, endsAt, format, timeZone)
+    : `${day} · ${format(startsAt, { ...zone, date: false })} – ${format(endsAt, { ...zone, date: false })}`;
 }
 
 /** The day a span begins and ends on, read in the zone asked (UTC when none); null when it runs over midnight. */
 function oneDay(startsAt: string, endsAt: string, format: MomentFormat, timeZone?: string): string | null {
   const zone = timeZone === undefined ? {} : { timeZone };
-  const day = format(startsAt, { ...zone, time: false });
 
-  return day === format(endsAt, { ...zone, time: false }) ? day : null;
+  return onSameDay(startsAt, endsAt, format, timeZone) ? format(startsAt, { ...zone, time: false }) : null;
 }

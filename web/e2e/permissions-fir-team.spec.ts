@@ -32,6 +32,7 @@ const administrator = {
       { name: 'Links.View', isGlobal: false },
       { name: 'Permissions.Manage', isGlobal: true },
     ],
+    screens: [],
   },
 };
 

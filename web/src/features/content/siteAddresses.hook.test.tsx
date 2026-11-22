@@ -8,7 +8,14 @@ import { api } from '../../shared/api/client';
 import { createTestI18n } from '../../test/harness';
 import { bootstrapQuery } from '../me/queries';
 
-import { SITE_SCREENS, useAddressesToLinkTo } from './siteAddresses';
+import { useAddressesToLinkTo } from './siteAddresses';
+
+/** The screens the bootstrap carries, which the server declares (design 13 §3.1). */
+const screens = [
+  { path: '/', titleKey: 'menu.screens./', visibility: 'Public' },
+  { path: '/tours', titleKey: 'flightops:public.title', visibility: 'Public' },
+];
+const SCREEN_PATHS = screens.map((screen) => screen.path);
 
 /**
  * Which reads the address field of a block makes: only for a block that has one, and only those the person
@@ -48,6 +55,7 @@ function mount(wanted: boolean, permissions: readonly string[]) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   client.setQueryData(bootstrapQuery.queryKey, {
     permissions: permissions.map((name) => ({ name, department: 'ED' })),
+    registries: { blocks: [], permissions: [], screens },
     // A fresh answer, so the bootstrap itself is not asked for again.
   } as never);
   client.setQueryDefaults(bootstrapQuery.queryKey, { staleTime: Infinity });
@@ -65,7 +73,7 @@ test('a block that leads somewhere offers the pages of the site, the screens and
   const { result } = mount(true, ['Content.Edit', 'Links.View']);
 
   await waitFor(() => expect(result.current.map((address) => address.path)).toContain('/about'));
-  expect(result.current.map((address) => address.path)).toEqual(['/about', ...SITE_SCREENS]);
+  expect(result.current.map((address) => address.path)).toEqual(['/about', ...SCREEN_PATHS]);
   expect(asked().sort()).toEqual(['/api/content/addresses', '/api/links']);
 });
 
@@ -81,7 +89,7 @@ test('a read the person may not make is not made, and the screens are still offe
 
   await new Promise((resolve) => setTimeout(resolve, 20));
   expect(asked()).toEqual([]);
-  expect(result.current.map((address) => address.path)).toEqual([...SITE_SCREENS]);
+  expect(result.current.map((address) => address.path)).toEqual([...SCREEN_PATHS]);
 });
 
 test('the list stays the same array until an answer changes it, so a schema is not made again at every drawing', async () => {

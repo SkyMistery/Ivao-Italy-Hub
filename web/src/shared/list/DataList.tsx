@@ -65,6 +65,7 @@ export function DataList<TRow, TKey extends readonly unknown[]>({
   emptyAction,
   emptyDescription,
   onEdit,
+  paged = true,
 }: {
   columns: readonly ColumnSpec<TRow>[];
   /** The page, as query options: the route loader has already put it in the cache. */
@@ -105,6 +106,13 @@ export function DataList<TRow, TKey extends readonly unknown[]>({
    * the reason is said out loud.
    */
   onEdit?: (row: TRow, field: string, value: unknown) => Promise<unknown>;
+  /**
+   * False for a list whose query answers **all** its rows in one page: the tree of the site, where a page cut away from
+   * its parent by a pager would be a tree nobody can read (design `13-design-struttura-del-sito.md` §3.2). There is then
+   * no search box and no pager — the browser holds everything there is — and the order is the query's. True, the
+   * default, is every other list: one page of the server's at a time.
+   */
+  paged?: boolean;
 }) {
   const { t } = useTranslation();
   const { data, isPending } = useQuery(query);
@@ -151,11 +159,13 @@ export function DataList<TRow, TKey extends readonly unknown[]>({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <SearchBox
-          initial={search.q ?? ''}
-          placeholder={t('list.search')}
-          onCommit={(q) => onSearchChange({ q: q === '' ? undefined : q, page: 1 })}
-        />
+        {paged ? (
+          <SearchBox
+            initial={search.q ?? ''}
+            placeholder={t('list.search')}
+            onCommit={(q) => onSearchChange({ q: q === '' ? undefined : q, page: 1 })}
+          />
+        ) : null}
         {toolbar}
       </div>
 
@@ -194,7 +204,9 @@ export function DataList<TRow, TKey extends readonly unknown[]>({
       {total === 0 ? null : (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Subtle>{t('list.total', { count: total })}</Subtle>
-          <Pages count={pageCount} current={search.page} onChange={(page) => onSearchChange({ page })} />
+          {paged ? (
+            <Pages count={pageCount} current={search.page} onChange={(page) => onSearchChange({ page })} />
+          ) : null}
         </div>
       )}
     </div>
@@ -288,6 +300,9 @@ function Pages({
   );
 }
 
+/** The steps of a row of a tree to the right, by level: classes Tailwind can see, not a width computed at run time. */
+const INDENTS = ['', 'pl-6', 'pl-12'] as const;
+
 function Cell<TRow>({
   column,
   row,
@@ -339,8 +354,17 @@ function Cell<TRow>({
   }
 
   switch (column.kind) {
-    case 'localized':
-      return <>{resolveLocalized(value as Record<string, string> | null, locale, defaultLocale)}</>;
+    case 'localized': {
+      const text = resolveLocalized(value as Record<string, string> | null, locale, defaultLocale);
+      if (column.indentBy === undefined) {
+        return <>{text}</>;
+      }
+
+      // The level of a row of a tree, as a step to the right: one of three, as deep as an address goes.
+      const level = (row as Record<string, unknown>)[column.indentBy];
+      const step = typeof level === 'number' ? Math.min(Math.max(level - 1, 0), INDENTS.length - 1) : 0;
+      return <span className={INDENTS[step]}>{text}</span>;
+    }
 
     case 'boolean':
       return <StatusBadge active={value === true} />;

@@ -3,15 +3,17 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { NO_CHOICE, ProblemAlert, describeProblem } from '../../shared/forms';
+import { NO_CHOICE, ProblemAlert, choiceItem, describeProblem } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { useMoment } from '../../shared/i18n/useMoment';
 import { ConfirmDialog, Notice, useNotice } from '../../shared/ui';
+import { bootstrapQuery } from '../me/queries';
 import { menuParentsQuery } from '../menu/queries';
 
 import { CHANGELOG_MAX, changeSummary } from './changeSummary';
 import { versionLine } from './claudeFile';
 import { useReviewContent } from './mutations';
+import { parentChoices } from './pageTree';
 import { contentReviewQuery, pageTreeQuery, type ContentDetailDto } from './queries';
 
 /** A translated label with nothing written yet, in every language of the division. */
@@ -51,6 +53,7 @@ export function ReviewPanel({
 }) {
   const { t, i18n } = useTranslation();
   const read = useLocalized();
+  const { data: bootstrap } = useQuery(bootstrapQuery);
   const moment = useMoment();
   const notice = useNotice();
 
@@ -305,17 +308,14 @@ export function ReviewPanel({
                   placeholder={t('content.options.parentId.none')}
                   items={[
                     { value: NO_CHOICE, label: t('content.options.parentId.none') },
-                    ...(tree.data ?? [])
-                      .filter(
-                        (node) =>
-                          node.depth < 3 &&
-                          node.id !== content.id &&
-                          !node.path.startsWith(`${content.path}/`),
-                      )
-                      .map((node) => ({
-                        value: String(node.id),
-                        label: `/${node.path} — ${read(node.title) || node.path}`,
-                      })),
+                    ...parentChoices(
+                      tree.data ?? [],
+                      bootstrap?.registries.screens ?? [],
+                      read,
+                      (key) => t(key),
+                      t('content.tree.noPagesUnder'),
+                      content.path,
+                    ).map(choiceItem),
                   ]}
                 />
               </div>

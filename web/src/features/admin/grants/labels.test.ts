@@ -14,7 +14,9 @@ import { grantSchema, STAFF_LEVELS } from './schema';
  * choice, so `pnpm i18n:check` cannot see them, and a missing one does not throw: i18next draws the key itself. The two selects
  * of a department offered `grants.options.department.FOD` that way to whoever opened the form.
  */
-const schema = grantSchema({ registries: { blocks: [], permissions: [] } } as unknown as Bootstrap);
+const schema = grantSchema({
+  registries: { blocks: [], permissions: [], screens: [] },
+} as unknown as Bootstrap);
 
 const drawn = readFields(schema).filter((node) => node.meta.hidden !== true);
 

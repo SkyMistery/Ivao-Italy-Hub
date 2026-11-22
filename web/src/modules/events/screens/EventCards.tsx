@@ -6,10 +6,10 @@ import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { bootstrapQuery } from '../../../features/me/queries';
 import { mediaFileUrl } from '../../../shared/api/mediaUrl';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
-import { useMoment } from '../../../shared/i18n/useMoment';
+import { intervalText, useMoment } from '../../../shared/i18n/useMoment';
 import { calendarKindColour } from '../../../shared/ui';
 
-import { STATE_COLOURS, eventHref, spanText, type EventAirport, type EventCard } from './cards';
+import { STATE_COLOURS, eventHref, type EventAirport, type EventCard } from './cards';
 
 /**
  * The cards of the events (design M4 §7.1, §7.3, E4): the banner, the state and the kind, the title, the summary, when, and the
@@ -113,11 +113,11 @@ export function EventWhen({
   return (
     <span className="flex flex-col leading-tight">
       <span className="font-semibold tabular-nums">
-        {t('calendar.utc', { at: spanText(startsAtUtc, endsAtUtc, moment) })}
+        {t('calendar.utc', { at: intervalText(startsAtUtc, endsAtUtc, moment) })}
       </span>
       {timezone === undefined ? null : (
         <Subtle className="tabular-nums">
-          {t('calendar.local', { at: spanText(startsAtUtc, endsAtUtc, moment, timezone) })}
+          {t('calendar.local', { at: intervalText(startsAtUtc, endsAtUtc, moment, timezone) })}
         </Subtle>
       )}
     </span>

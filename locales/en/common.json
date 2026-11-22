@@ -507,7 +507,9 @@
       "supersededById": "Replaced by",
       "showFooter": "Show the footer (version, date, publisher, print)",
       "parentId": "Under the page",
-      "collections": "Collections"
+      "collections": "Collections",
+      "path": "Address",
+      "source": "Kind of page"
     },
     "options": {
       "kind": {
@@ -535,6 +537,10 @@
       },
       "parentId": {
         "none": "At the top of the site"
+      },
+      "source": {
+        "Page": "Page",
+        "Screen": "Page of the application"
       }
     },
     "section": {
@@ -906,6 +912,16 @@
       },
       "none": "None",
       "saved": "Settings saved"
+    },
+    "view": {
+      "label": "View",
+      "tree": "Tree of the site",
+      "list": "List"
+    },
+    "tree": {
+      "newHere": "New page here",
+      "noPagesUnder": "a page of the application has no pages under it",
+      "screensAreInTheTree": "The pages written into the application, such as the calendar or the tours, are shown in the tree of the site."
     }
   },
   "templates": {

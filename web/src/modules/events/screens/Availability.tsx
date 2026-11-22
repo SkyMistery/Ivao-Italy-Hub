@@ -8,7 +8,7 @@ import { bootstrapQuery } from '../../../features/me/queries';
 import { loginHref } from '../../../shared/api/client';
 import { SchemaForm, describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
-import { useMoment } from '../../../shared/i18n/useMoment';
+import { intervalText, useMoment } from '../../../shared/i18n/useMoment';
 import { ConfirmDialog, Notice } from '../../../shared/ui';
 import {
   myAvailabilityQuery,
@@ -144,9 +144,7 @@ function Given({ event, availability }: { event: PublicEventDto; availability: M
           <span className="font-medium">{t('events:public.atc.yourWindows')}</span>
           <ul className="flex flex-col gap-1">
             {availability.windows.map((window) => (
-              <li key={window.fromUtc}>
-                {moment(window.fromUtc)} – {moment(window.toUtc)}
-              </li>
+              <li key={window.fromUtc}>{intervalText(window.fromUtc, window.toUtc, moment)}</li>
             ))}
           </ul>
           {availability.note === null ? null : <p>{availability.note}</p>}

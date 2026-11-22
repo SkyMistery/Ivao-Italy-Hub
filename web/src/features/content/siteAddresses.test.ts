@@ -4,7 +4,13 @@ import { expect, test } from 'vitest';
 import type { LinkPage } from '../links/queries';
 
 import type { ContentPage } from './queries';
-import { asSuggestions, pagesOfTheMenu, pagesOfTheSite, SITE_SCREENS, siteAddresses } from './siteAddresses';
+import { asSuggestions, pagesOfTheMenu, pagesOfTheSite, siteAddresses } from './siteAddresses';
+
+/** The screens as the bootstrap carries them: one of the core's and one of a module, which is for members. */
+const screens = [
+  { path: '/calendar', titleKey: 'menu.screens./calendar', visibility: 'Public' },
+  { path: '/tours', titleKey: 'flightops:public.title', visibility: 'Members' },
+] as const;
 
 /** The words of the screen, as their keys: what is tested is which key goes where, not a language. */
 const t = ((key: string, values?: Record<string, string>) =>
@@ -44,9 +50,16 @@ test('pages, then the screens of the application, then the links of the library'
     items: [{ id: 3, url: 'https://forum.example', title: { en: 'Forum' }, visibility: 'Members' }],
   } as unknown as LinkPage;
 
-  const list = siteAddresses(pagesOfTheMenu(pages([page({})])), links, t, read);
+  const list = siteAddresses(pagesOfTheMenu(pages([page({})])), links, t, read, screens);
 
-  expect(list.map((address) => address.kind)).toEqual(['page', ...SITE_SCREENS.map(() => 'screen'), 'link']);
+  expect(list.map((address) => address.kind)).toEqual(['page', 'screen', 'screen', 'link']);
+  // A screen is named by the key the server declared, and is for whom the server says.
+  expect(list[2]).toMatchObject({
+    path: '/tours',
+    label: 'flightops:public.title',
+    group: 'menu.screensGroup',
+    visibility: 'Members',
+  });
   expect(list[0]).toEqual({
     id: 1,
     path: '/about/team',
@@ -69,13 +82,20 @@ test('a draft says so, and a page never published is not published', () => {
     undefined,
     t,
     read,
+    screens,
   );
 
   expect(draft).toMatchObject({ label: 'menu.draftSuffix(Team)', published: false });
 });
 
 test('a published page being edited again is still an address a visitor can open, and not called a draft', () => {
-  const [edited] = siteAddresses(pagesOfTheMenu(pages([page({ status: 'Draft' })])), undefined, t, read);
+  const [edited] = siteAddresses(
+    pagesOfTheMenu(pages([page({ status: 'Draft' })])),
+    undefined,
+    t,
+    read,
+    screens,
+  );
 
   expect(edited).toMatchObject({ label: 'Team', published: true });
 });
@@ -86,13 +106,16 @@ test('a page with no title in the language on screen is named by its slug', () =
     undefined,
     t,
     read,
+    screens,
   );
 
   expect(untitled?.label).toBe('team');
 });
 
 test('the suggestions of a field are the path, the name and the group', () => {
-  const [first] = asSuggestions(siteAddresses(pagesOfTheMenu(pages([page({})])), undefined, t, read));
+  const [first] = asSuggestions(
+    siteAddresses(pagesOfTheMenu(pages([page({})])), undefined, t, read, screens),
+  );
 
   expect(first).toEqual({ value: '/about/team', label: 'Team', group: 'departments.Web' });
 });
@@ -120,6 +143,7 @@ test("the site's read gives news and documents too, at their own places, and nev
     undefined,
     t,
     read,
+    screens,
   );
 
   expect(list.slice(0, 2)).toEqual([

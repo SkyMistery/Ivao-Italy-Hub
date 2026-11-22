@@ -44,10 +44,13 @@ public sealed class TrainingMail(
     /// </summary>
     public static string Moment(DateTime utc, DateOrder order) => HubDates.Moment(utc, order);
 
-    /// <summary>A date proposed as a mail writes it: its day and hours, and the day of its end too when it is another.</summary>
+    /// <summary>
+    /// A date proposed as a mail writes it: its day and hours, and the day of its end too when it is another. The dash is spaced on one
+    /// day as on two, as the pages write it (Carmine on #542, note 2026-11-18-la-fine-di-un-intervallo-nel-nucleo).
+    /// </summary>
     public static string Span(DateTime startsAtUtc, DateTime endsAtUtc, DateOrder order) =>
         startsAtUtc.Date == endsAtUtc.Date
-            ? string.Create(CultureInfo.InvariantCulture, $"{Moment(startsAtUtc, order)}–{endsAtUtc:HH:mm}")
+            ? string.Create(CultureInfo.InvariantCulture, $"{Moment(startsAtUtc, order)} – {endsAtUtc:HH:mm}")
             : $"{Moment(startsAtUtc, order)} – {Moment(endsAtUtc, order)}";
 
     /// <summary>

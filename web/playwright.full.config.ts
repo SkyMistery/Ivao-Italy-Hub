@@ -33,10 +33,13 @@ export default defineConfig({
 
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 
+  // The whole snapshot of the reference data, once the server is up: its start downloads only the centres (issue #325).
+  globalSetup: './e2e/full/global-setup.ts',
+
   webServer: {
     command: 'node scripts/e2e-server.mjs',
     // `/health` and not the home page: it pings the database, so waiting on it means waiting for
-    // the migrations, the seed of the system templates and the reference data as well.
+    // the migrations, the seed of the system templates and the centres of the reference data as well.
     url: `${baseURL}/health`,
     reuseExistingServer: !process.env.CI,
     // Publishing builds the SPA and the .NET package first.
