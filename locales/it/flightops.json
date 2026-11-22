@@ -1157,7 +1157,7 @@
     "noFlights": "Nessun tuo volo con piano di volo fra questi aeroporti negli ultimi {{days}} giorni, non ancora in un altro report. Un volo appena atterrato può metterci qualche minuto ad arrivare nel tracker.",
     "noFlightsOpen": "Nessun tuo volo con piano di volo negli ultimi {{days}} giorni, non ancora in un altro report. Un volo appena atterrato può metterci qualche minuto ad arrivare nel tracker.",
     "noSecondFlight": "Nessun tuo volo da {{from}} a {{to}} nel tracker, non ancora in un altro report.",
-    "sessionTime": "{{from}} – {{to}} UTC",
+    "sessionTime": "{{when}} UTC",
     "diverted": "Il volo è finito in un altro aeroporto (deviazione)",
     "diversionFirst": "Scrivi l'aeroporto di deviazione: poi scegli il volo che da lì ha portato l'aereo a destinazione.",
     "details": "I dettagli",

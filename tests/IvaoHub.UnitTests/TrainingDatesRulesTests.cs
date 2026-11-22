@@ -296,4 +296,18 @@ public sealed class TrainingDatesRulesTests
     {
         public DateTime UtcNow => now;
     }
+
+    [Fact]
+    public void AMailWritesADateWithTheDashSpacedOnOneDayAsOnTwo()
+    {
+        // The pages write «03/10/2026 16:00 – 18:00» (note 2026-11-18-la-fine-di-un-intervallo-nel-nucleo): the mail of the same date
+        // says it alike, and a date past midnight carries the day of its end.
+        var start = new DateTime(2026, 10, 3, 16, 0, 0, DateTimeKind.Utc);
+
+        Assert.Equal("03/10/2026 16:00 – 18:00", TrainingMail.Span(start, start.AddHours(2), DateOrder.DayMonthYear));
+        Assert.Equal(
+            "03/10/2026 23:00 – 04/10/2026 01:00",
+            TrainingMail.Span(start.AddHours(7), start.AddHours(9), DateOrder.DayMonthYear));
+        Assert.Equal("10/03/2026 16:00 – 18:00", TrainingMail.Span(start, start.AddHours(2), DateOrder.MonthDayYear));
+    }
 }
