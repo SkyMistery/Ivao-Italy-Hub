@@ -21,6 +21,8 @@ namespace IvaoHub.IntegrationTests;
 /// file and footer are read from the published version, and an edit of the row changes none of them until
 /// somebody publishes; visibility, slug and parent of a row that is online are changed only by whoever may
 /// publish it — and approve it, for a page — and new readers go through the checks of publication.
+/// <para>And the slug of a page, a news item or a document, once the row exists, only by whoever may approve it, draft
+/// or online (design <c>13-design-struttura-del-sito.md</c> §4.1).</para>
 /// </summary>
 [Collection(MariaDbCollection.Name)]
 public sealed class PublishedFieldsTests(MariaDbFixture mariaDb) : IAsyncLifetime
@@ -166,6 +168,63 @@ public sealed class PublishedFieldsTests(MariaDbFixture mariaDb) : IAsyncLifetim
         }
 
         await EditAsync(director, id, fields with { Slug = Slug() }, token);
+    }
+
+    [Theory]
+    [InlineData(ContentKind.Page)]
+    [InlineData(ContentKind.News)]
+    [InlineData(ContentKind.Document)]
+    public async Task TheSlugIsBornWithTheRowAndChangedOnlyByWhoeverMayApprove(ContentKind kind)
+    {
+        // Design 13 §4.1, answers 1 and 2 of Carmine (19 November 2026): the slug is written once, when the row is created,
+        // and from then on only by whoever holds Content.Approve — on a draft too, and on a news item or a document too.
+        var token = TestContext.Current.CancellationToken;
+        var (coordinator, _, director) = await PeopleAsync(token);
+
+        var fields = Fields(kind, Slug(), "Bozza", collection: null, coverMediaId: null, fileMediaId: null, showFooter: true) with
+        {
+            ParentId = kind == ContentKind.Page ? _shelf : null,
+        };
+        var id = await CreateAsync(coordinator, fields, token);
+
+        // The coordinator writes the rest of the draft, and places it…
+        await EditAsync(coordinator, id, fields with { Summary = "Riscritto", Visibility = Visibility.Members }, token);
+
+        // …but does not give it another slug, never published as it is.
+        using (var renamed = await TryEditAsync(coordinator, id, fields with { Slug = Slug() }, token))
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, renamed.StatusCode);
+            Assert.Equal("errors.content.position.needsApproval", await FirstErrorAsync(renamed, "slug", token));
+        }
+
+        // Whoever approves corrects it.
+        var corrected = fields with { Slug = Slug() };
+        await EditAsync(director, id, corrected, token);
+        var row = await director.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/{id}", token);
+        Assert.Equal(corrected.Slug, row.GetProperty("slug").GetString());
+    }
+
+    [Fact]
+    public async Task ANewsItemOnlineIsMovedByWhoeverPublishesItButRenamedOnlyByWhoeverApproves()
+    {
+        // A news item does not go through approval: the coordinator who publishes it changes who reads it. Its slug still
+        // asks for the approver (design 13 §4.1, answer 2).
+        var token = TestContext.Current.CancellationToken;
+        var (coordinator, _, director) = await PeopleAsync(token);
+
+        var fields = Fields(ContentKind.News, Slug(), "Online", Key(), coverMediaId: null, fileMediaId: null, showFooter: true);
+        var id = await CreateAsync(coordinator, fields, token);
+        await PublishAsync(coordinator, id, token);
+
+        await EditAsync(coordinator, id, fields with { Visibility = Visibility.Members }, token);
+
+        using (var renamed = await TryEditAsync(coordinator, id, fields with { Visibility = Visibility.Members, Slug = Slug() }, token))
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, renamed.StatusCode);
+            Assert.Equal("errors.content.position.needsApproval", await FirstErrorAsync(renamed, "slug", token));
+        }
+
+        await EditAsync(director, id, fields with { Visibility = Visibility.Members, Slug = Slug() }, token);
     }
 
     [Fact]

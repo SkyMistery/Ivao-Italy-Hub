@@ -102,7 +102,7 @@
       },
       "position": {
         "needsPublish": "This page is online: who reads it and where it is are changed by whoever may publish it.",
-        "needsApproval": "This page is online and goes through approval: who reads it and where it is are changed by whoever may approve it.",
+        "needsApproval": "This is changed by whoever may approve: the address always, even on a draft, and who reads it and where it is once it is online and goes through approval.",
         "picturesHidden": "A picture of the page online is not visible to these readers. Make it visible in the media library, or change it and publish again.",
         "capturesNarrower": "The page online carries data captured for fewer readers. Publish it again, so that it is captured for these.",
         "blockAudience": "The page online carries a block for fewer readers. Take it out and publish again, then change who reads it."

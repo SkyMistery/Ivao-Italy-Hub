@@ -412,8 +412,14 @@ public static class ContentEndpoints
     /// as it would become. The approver who corrects an address while approving does it in the review, not here.
     /// <para>And new readers — another visibility, another department — go through the checks of
     /// publication on what is online (<see cref="ContentPublishService.NewReadersProblemsAsync"/>).</para>
-    /// <para>A row with nothing online is a draft, and anybody who may edit it places it: publication is the
-    /// step that asks.</para>
+    /// <para>A row with nothing online is a draft, and anybody who may edit it places it — under a page, within the rules of
+    /// <see cref="ContentAddresses"/> —: publication is the step that asks.</para>
+    /// <para>Except for its slug. A page, a news item or a document is given its slug once, when it is created, from its
+    /// title; from then on the slug is changed only by whoever holds <see cref="CorePermissions.ContentApprove"/> on the
+    /// row, draft or online, whether its kind goes through approval or not, with the same refusal
+    /// (design <c>13-design-struttura-del-sito.md</c> §4.1, answers 1 and 2 of Carmine, 19 November 2026). Changing the
+    /// title never moves a page: an address that followed it would break the links written to it before it was even out.
+    /// A template has no address on the site, and its slug stays its writer's.</para>
     /// </summary>
     private static async Task<IReadOnlyDictionary<string, string[]>?> PositionNotTheirsAsync(
         Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<ContentEntry> entry,
@@ -421,12 +427,20 @@ public static class ContentEndpoints
         ClaimsPrincipal user,
         CancellationToken cancellationToken)
     {
+        var content = entry.Entity;
+        var authorization = services.GetRequiredService<IAuthorizationService>();
+        var slugChanged = !string.Equals(entry.Property(row => row.Slug).OriginalValue, content.Slug, StringComparison.Ordinal);
+
         if (entry.Property(row => row.PublishedVersionId).OriginalValue is null)
         {
-            return null;
+            return slugChanged && await SlugNotTheirsAsync(content, authorization, user)
+                ? new Dictionary<string, string[]>(StringComparer.Ordinal)
+                {
+                    ["slug"] = ["errors.content.position.needsApproval"],
+                }
+                : null;
         }
 
-        var content = entry.Entity;
         var moved = new List<string>();
 
         if (entry.Property(row => row.Visibility).OriginalValue != content.Visibility)
@@ -434,7 +448,7 @@ public static class ContentEndpoints
             moved.Add("visibility");
         }
 
-        if (!string.Equals(entry.Property(row => row.Slug).OriginalValue, content.Slug, StringComparison.Ordinal))
+        if (slugChanged)
         {
             moved.Add("slug");
         }
@@ -446,7 +460,6 @@ public static class ContentEndpoints
 
         if (moved.Count > 0)
         {
-            var authorization = services.GetRequiredService<IAuthorizationService>();
             var refusal = !(await authorization.AuthorizeAsync(user, content, CorePermissions.ContentPublish)).Succeeded
                 ? "errors.content.position.needsPublish"
                 : services.GetRequiredService<ContentReviewService>().RequiresApproval(content)
@@ -460,6 +473,16 @@ public static class ContentEndpoints
             }
         }
 
+        // Online and of a kind that is not approved — a news item, a document —: who may publish it moves it, but its slug
+        // still asks for the approver.
+        if (slugChanged && await SlugNotTheirsAsync(content, authorization, user))
+        {
+            return new Dictionary<string, string[]>(StringComparer.Ordinal)
+            {
+                ["slug"] = ["errors.content.position.needsApproval"],
+            };
+        }
+
         var publishedVisibility = entry.Property(row => row.Visibility).OriginalValue;
         var publishedDepartment = entry.Property(row => row.OwnerDepartment).OriginalValue;
 
@@ -468,6 +491,16 @@ public static class ContentEndpoints
             : await services.GetRequiredService<ContentPublishService>()
                 .NewReadersProblemsAsync(content, publishedVisibility, publishedDepartment, cancellationToken);
     }
+
+    /// <summary>
+    /// Whether a changed slug is not this writer's to change (design <c>13-design-struttura-del-sito.md</c> §4.1): a page, a
+    /// news item or a document — never a template, which has no address on the site — without
+    /// <see cref="CorePermissions.ContentApprove"/> on the row, asked of the one authorization handler.
+    /// </summary>
+    private static async Task<bool> SlugNotTheirsAsync(ContentEntry content, IAuthorizationService authorization, ClaimsPrincipal user) =>
+        !content.IsTemplate
+        && content.Kind is ContentKind.Page or ContentKind.News or ContentKind.Document
+        && !(await authorization.AuthorizeAsync(user, content, CorePermissions.ContentApprove)).Succeeded;
 
     /// <summary>
     /// <c>filter[usesMedia]=42</c>: the contents that show a file. Named here because the client
