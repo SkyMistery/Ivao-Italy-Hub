@@ -73,7 +73,7 @@ const bootstrap = (signedIn: boolean): Bootstrap => ({
   division,
   modules: [],
   navigation: { public: [], footer: [], staff: [] },
-  registries: { blocks: [], permissions: [] },
+  registries: { blocks: [], permissions: [], screens: [] },
   calendarKinds: [],
   version: '0.0.0-test',
   commit: null,

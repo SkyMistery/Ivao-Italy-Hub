@@ -27,6 +27,17 @@ namespace IvaoHub.Core.Modules;
 public sealed record NavItemDescriptor(string Key, string Path, string? Permission = null, bool Unscoped = false);
 
 /// <summary>
+/// A page of the site that is written in code and not in the content: a screen of the core (<c>/calendar</c>) or of a module
+/// (<c>/tours</c>). It is declared once, on the server, and <c>/api/me</c> carries it to the browser, which shows it in the tree
+/// of the site, marked and read-only, and offers it wherever an address of the site is chosen (design
+/// <c>13-design-struttura-del-sito.md</c> §3.1).
+/// </summary>
+/// <param name="Path">Its whole address, with the leading slash; one segment for a module's landing page.</param>
+/// <param name="TitleKey">The translation key of its name, the one the screen's own title uses (<c>flightops:public.title</c>).</param>
+/// <param name="Visibility">Who it is for. A screen anybody may be sent to is <see cref="Division.Visibility.Public"/>.</param>
+public sealed record SiteScreen(string Path, string TitleKey, Division.Visibility Visibility = Division.Visibility.Public);
+
+/// <summary>
 /// What a module is, and the whole of what the core knows about one (design M0 section 6.1).
 /// <para>A module is <b>not</b> a plugin loaded at runtime: it is added to the monorepo and the
 /// application is recompiled. The boundary is drawn as if it were one anyway, at no cost, so that
@@ -86,6 +97,14 @@ public interface IModule
     /// two. Without it the first page somebody named "tours" would simply never be reachable.</para>
     /// </summary>
     IReadOnlyList<string> ReservedSegments { get; }
+
+    /// <summary>
+    /// The public pages of the module that the site shows among its own: the landing page a visitor reaches from the menu
+    /// (<c>/tours</c>), never a page of one row (<c>/tours/{slug}</c>), a page of the member alone (<c>/tours/mine</c>) or the
+    /// back office. They join the core's in <see cref="SiteDestinations.Screens"/> (design <c>13-design-struttura-del-sito.md</c>
+    /// §3.1). Each one's first segment is one of <see cref="ReservedSegments"/>.
+    /// </summary>
+    IReadOnlyList<SiteScreen> SiteScreens { get; }
 
     /// <summary>
     /// The preferences its members may keep, each named after the module (<c>flightops.…</c>). The core
@@ -150,6 +169,8 @@ public abstract class ModuleBase : IModule
     public virtual IReadOnlyList<string> SpaFallbackExclusions => [];
 
     public virtual IReadOnlyList<string> ReservedSegments => [];
+
+    public virtual IReadOnlyList<SiteScreen> SiteScreens => [];
 
     public virtual IReadOnlyList<PreferenceDescriptor> Preferences => [];
 

@@ -79,6 +79,8 @@ public sealed class FlightOpsModule : ModuleBase
     /// <summary>The public pages of the tours (T10): <c>/tours</c> and <c>/tours/{slug}</c>, so no page may be «tours».</summary>
     public override IReadOnlyList<string> ReservedSegments => ["tours"];
 
+    public override IReadOnlyList<SiteScreen> SiteScreens => [new("/tours", "flightops:public.title")];
+
     /// <summary>How the validator orders the queue (§4.1), kept on their user so they find it on any computer (T13).</summary>
     public override IReadOnlyList<PreferenceDescriptor> Preferences =>
     [

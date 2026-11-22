@@ -87,6 +87,8 @@ public sealed class TrainingModule : ModuleBase
     /// <summary>The pages of the training, the public ones and the member's, live under <c>/training</c>, so no page may be «training».</summary>
     public override IReadOnlyList<string> ReservedSegments => ["training"];
 
+    public override IReadOnlyList<SiteScreen> SiteScreens => [new("/training", "training:public.title")];
+
     /// <summary>The mails of the training (design M3 §5.2): the request received first (A6a), the others with their phases.</summary>
     public override IReadOnlyList<string> NotificationTypes => TrainingNotifications.All;
 

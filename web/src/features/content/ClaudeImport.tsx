@@ -169,7 +169,7 @@ export function ClaudeImport({
         dirty: isDirty(),
         holds,
         registered: registry.blocks,
-        addresses: knownAddresses(rows),
+        addresses: knownAddresses(rows, bootstrap?.registries.screens ?? []),
       });
 
       if (answer.outcome === 'refused') {

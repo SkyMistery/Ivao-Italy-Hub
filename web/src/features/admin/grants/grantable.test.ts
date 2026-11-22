@@ -10,7 +10,7 @@ import { grantSchema } from './schema';
  * by the server, and a select that offered it would be offering a refusal.
  */
 function bootstrapWith(permissions: Bootstrap['registries']['permissions']): Bootstrap {
-  return { registries: { blocks: [], permissions } } as unknown as Bootstrap;
+  return { registries: { blocks: [], permissions, screens: [] } } as unknown as Bootstrap;
 }
 
 function offered(bootstrap: Bootstrap): string[] {

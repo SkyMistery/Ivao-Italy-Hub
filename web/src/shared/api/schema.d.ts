@@ -4916,6 +4916,7 @@ export interface components {
         BootstrapRegistries: {
             blocks: components["schemas"]["BootstrapBlock"][];
             permissions: components["schemas"]["BootstrapPermissionName"][];
+            screens: components["schemas"]["BootstrapScreen"][];
         };
         /**
          * @description The bootstrap payload. Menu entries are translation keys, never text: the server does not know
@@ -4931,6 +4932,16 @@ export interface components {
             calendarKinds: components["schemas"]["BootstrapCalendarKind"][];
             version: string;
             commit: null | string;
+        };
+        /**
+         * @description One page of the site written in code (SiteScreen): where it is, the key of its name and who it is for. The
+         *     browser shows these in the tree of the site and offers them wherever an address of the site is chosen (design 13 §3.1).
+         *     Not sensitive: the list is in the source of every fork, minus the modules this division switched off.
+         */
+        BootstrapScreen: {
+            path: string;
+            titleKey: string;
+            visibility: components["schemas"]["Visibility"];
         };
         BootstrapUser: {
             /** Format: int32 */
