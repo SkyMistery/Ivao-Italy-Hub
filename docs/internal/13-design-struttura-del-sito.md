@@ -3,7 +3,9 @@
 **Data:** 18 novembre 2026, fase di test, fase 4 della nota `2026-10-22-il-piano-dopo-la-prova-dello-staff` (§4.C e §5 riga 4).
 **Stato:** **approvato.** Le sette domande del §8 **le ha decise Carmine in chat al master, 19 novembre 2026**, ognuna con l'opzione
 raccomandata (§9, [il commento che le riporta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/540#issuecomment-7011361289)).
-Il codice comincia nell'ordine del §7, una sessione per pezzo; la 4.1 parte in coda dopo questo documento.
+Il codice comincia nell'ordine del §7, una sessione per pezzo; la 4.1 parte in coda dopo questo documento. **Al 22 novembre 2026**
+(piano 1.57) sono unite la 4.1 (#546, nota `2026-11-19-le-schermate-del-sito-dichiarate-una-volta`) e la 4.2 (#550, nota
+`2026-11-19-l-albero-del-sito`); restano la 4.3, la 4.4 e la 4.5.
 **Classificazione** (`CLAUDE.md` §5): **(c)** per due pezzi nuovi del nucleo — le schermate dell'applicazione dichiarate una volta
 (§3.1) e il blocco della mappa del sito (§5.1) —; **(b)** per il resto, che estende meccanismi che ci sono: gli indirizzi di
 `ContentAddresses`, la lettura delle pagine `GET /api/content/pages`, il form generato, il seme dei contenuti, le impostazioni dei
@@ -115,7 +117,9 @@ Letto nel codice di `main` (0.26.0, `1a174116`, piano 1.56). ⚠️ **Gran parte
 
 - **La vista «Albero»** di `/staff/content`, per le pagine: la stessa lista generica, ordinata per **percorso** (la colonna indicizzata
   `StoredPath`), con il titolo rientrato secondo la profondità e una colonna **«Indirizzo»** con il percorso intero al posto dello
-  slug. Con il filtro `kind = Page` è la vista **predefinita** (scelta mia: chi cerca una pagina la cerca dov'è); un interruttore torna
+  slug. ~~Con il filtro `kind = Page` è la vista **predefinita**~~ **Senza un dipartimento nell'indirizzo** è la vista **predefinita**
+  (scelta mia: chi cerca una pagina la cerca dov'è; la riga corretta da Carmine il 21 nov 2026, nota `2026-11-19-l-albero-del-sito` §4
+  scelta 1: l'albero non filtra per dipartimento, e la voce di un dipartimento tiene il suo elenco); un interruttore torna
   all'elenco piatto, paginato e filtrabile come oggi. Le news e i documenti non hanno albero: stanno sotto `/news` e `/documents`.
 - **La lettura** è `GET /api/content/pages`, che già dà le pagine giuste a chi chiede (§1) e la profondità: cresce di quello che una
   riga dell'albero mostra (stato, dipartimento, visibilità). Senza pagine, come gli indirizzi del sito: una divisione ha qualche
@@ -230,8 +234,9 @@ Letto nel codice di `main` (0.26.0, `1a174116`, piano 1.56). ⚠️ **Gran parte
 
 ## 7. L'ordine delle PR
 
-Una PR per riga, ognuna con la sua versione (`Directory.Build.props`); tutte del nucleo, quindi ognuna PR sua, con il rimando a
-questo documento come nota.
+Una PR per riga, ~~ognuna con la sua versione (`Directory.Build.props`)~~ **tutte sulla stessa MINOR** finché non è consegnata, come
+dice il piano 1.53: la 0.27.0, aperta una volta dal master (#551, piano 1.57), e nessuna di queste PR tocca `Directory.Build.props`;
+tutte del nucleo, quindi ognuna PR sua, con il rimando a questo documento come nota.
 
 | PR | Che cosa | File principali | Dopo |
 |---|---|---|---|

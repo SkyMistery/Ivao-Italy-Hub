@@ -131,6 +131,14 @@ passo 2. L'anteprima sta nel Controllo, sotto «Segna pronto»: la testata e le 
 Il modello, le API del back office, le regole del server, i blocchi del CMS (`flightops.tourCards` disegna le card del §3 e le segue).
 Nessun componente nuovo: i passi del §5 sono le `Tabs` di Atmosphere con il numero davanti, la striscia del §4 è `StatTile`.
 
+**Un'eccezione, dal 21 nov 2026** (piano 1.57): le API del back office hanno **una lettura in più, l'anteprima**
+(`GET /api/flightops/tours/{id}/preview`, #544, nota `2026-11-19-l-anteprima-di-un-tour`), decisa da Carmine il 19 novembre 2026, «Sì,
+l'endpoint» (https://github.com/SkyMistery/Ivao-Italy-Hub/pull/544#issuecomment-7014155806), perché il §5 la richiede e l'alternativa era
+copiare `PublicTours.ReadAsync` nel browser; nel conteggio degli endpoint scritti a mano (piano §16 punto 6) sta nella famiglia dei tour,
+accanto a `ready-problems`. **I passi** (#543, nota `2026-11-19-i-passi-di-un-tour`) restano senza componenti nuovi: le `Tabs` con il
+numero e, sul passo che ha una voce di «che cosa manca», un'icona di `lucide-react` (`CircleAlert`) con il suo testo per i lettori di
+schermo.
+
 ## 7. Le domande per Carmine ⚖️
 
 1. **L'archivio dei tour chiusi** nell'elenco: (a) sì, una scheda «Archivio» — **raccomandata**; (b) no, i chiusi restano fuori.
