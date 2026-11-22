@@ -125,6 +125,7 @@ export function ContentEditor({
   categories,
   successors = [],
   pageChoices,
+  maySetSlug = true,
   department,
   locales,
   division,
@@ -159,6 +160,11 @@ export function ContentEditor({
   successors?: readonly ChoiceOption[];
   /** Where a page may be put, and whether at the top (note 2026-09-13-contenuti-centralizzati). */
   pageChoices?: PageChoices;
+  /**
+   * Whether this member writes the slug (design 13 §4.1): whoever holds `Content.Approve`, on a page, a news item or a
+   * document. Anybody else is not shown the field: the slug is born from the title and stays.
+   */
+  maySetSlug?: boolean;
   department: Department;
   locales: readonly string[];
   /** The two facts the `seo` field needs: which language is the fallback, and where the division is. */
@@ -481,7 +487,7 @@ export function ContentEditor({
         key={formStart?.generation ?? 0}
         id={METADATA_FORM}
         actionsElsewhere
-        schema={contentMetadataSchema(kind, categories, documentChoices, pageChoices)}
+        schema={contentMetadataSchema(kind, categories, documentChoices, pageChoices, maySetSlug)}
         defaults={
           formStart?.values ??
           (content === null
@@ -540,6 +546,12 @@ export function ContentEditor({
             metadata.parentId === undefined || metadata.parentId === '' ? null : Number(metadata.parentId)
           }
           id={content?.id ?? null}
+          slugIsTheirs={maySetSlug}
+          // A new row whose proposed address is taken, for whoever cannot write the slug: the free one is taken with a
+          // press, and the form starts again with it — the way an import hands the form its fields.
+          {...(!maySetSlug && content === null
+            ? { onUseSuggestion: (slug: string) => takeFields({ ...metadata, slug }) }
+            : {})}
         />
       )}
       {content === null || content.isTemplate ? null : (

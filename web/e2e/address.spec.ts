@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { stubTheAddressOfAPage, stubTheApiAsStaff, stubThePublishedPage } from './fixtures';
 import { englishCommon } from './locales';
@@ -76,9 +76,79 @@ test('the editor of a page says where it will be, and a coordinator is asked to 
   );
   await page.getByRole('option', { name: '/about/team — Team' }).click();
 
-  await page.getByLabel(englishCommon.content.fields.slug, { exact: true }).fill('section-page');
+  // The address is born from the title (design 13 §4.1): a coordinator, who may not approve, is not shown the slug.
+  const asked = slugsAskedFor(page);
+  await expect(page.getByLabel(englishCommon.content.fields.slug, { exact: true })).toHaveCount(0);
+  await writeTheTitle(page, 'Section page');
 
   const where = page.getByRole('status', { name: englishCommon.content.address.label });
   await expect(where).toContainText('/about/section-page');
   await expect(where).toContainText(englishCommon.content.address.state.Free);
+  await expect.poll(() => asked.at(-1)).toBe('section-page');
 });
+
+test('a coordinator whose title makes a taken address is offered the free one, and takes it with a press', async ({
+  page,
+}) => {
+  await stubTheApiAsStaff(page);
+  await stubTheAddressOfAPage(page);
+
+  // After the fixture's own answer, so that it wins (Playwright matches the last route first): the address of the title
+  // is taken, and the one the server proposes is free.
+  await page.route(
+    (url) => url.pathname.endsWith('/api/content/address'),
+    (route) => {
+      const slug = new URL(route.request().url()).searchParams.get('slug');
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          slug === 'section-page'
+            ? { path: '/about/section-page', state: 'Taken', suggestion: 'section-page-2' }
+            : { path: `/about/${slug ?? ''}`, state: 'Free', suggestion: null },
+        ),
+      });
+    },
+  );
+
+  await page.goto('/staff/content/new?kind=Page&department=ED');
+  await page.getByLabel(englishCommon.content.fields.parentId, { exact: true }).click();
+  await page.getByRole('option', { name: '/about/team — Team' }).click();
+  await writeTheTitle(page, 'Section page');
+
+  const where = page.getByRole('status', { name: englishCommon.content.address.label });
+  await expect(where).toContainText(englishCommon.content.address.takenNew);
+
+  await page
+    .getByRole('button', {
+      name: englishCommon.content.address.useSuggestion.replace('{{suggestion}}', 'section-page-2'),
+    })
+    .click();
+
+  await expect(where).toContainText('/about/section-page-2');
+  await expect(where).toContainText(englishCommon.content.address.state.Free);
+});
+
+/** The English title of the form, written in its own tab. */
+async function writeTheTitle(page: Page, title: string): Promise<void> {
+  const field = page
+    .locator('#content-metadata fieldset')
+    .filter({ hasText: englishCommon.content.fields.title });
+  const english = field.getByRole('tab', { name: 'English' });
+  if ((await english.count()) > 0) {
+    await english.click();
+  }
+  await page.locator('[id="title.en"]').fill(title);
+}
+
+/** The slugs the form asks the server about, in order: what the address preview is composed from. */
+function slugsAskedFor(page: Page): string[] {
+  const asked: string[] = [];
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.pathname.endsWith('/api/content/address')) {
+      asked.push(url.searchParams.get('slug') ?? '');
+    }
+  });
+  return asked;
+}

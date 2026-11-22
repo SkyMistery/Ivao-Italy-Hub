@@ -176,6 +176,12 @@ test('a press right after the last keystroke stores the draft with that keystrok
 }) => {
   // The draft the press stores, as the server is sent it (decisions/2026-11-08-l-ultima-battuta.md). Before, the press
   // came inside the pause of the live form and stored nothing: 40 times out of 40, the press 35–56 ms after the keystroke.
+  // The keystroke is in the slug, a one-line field of the row, so this member approves: since design 13 §4.1 the slug of
+  // a page is drawn only for whoever may approve it.
+  await stubTheApiAsStaff(page, {
+    ...staffBootstrap,
+    permissions: [...staffBootstrap.permissions, { name: 'Content.Approve', department: 'ED' }],
+  });
   const stored: string[] = [];
   await page.route('**/api/content/7', (route) => {
     const request = route.request();
