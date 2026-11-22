@@ -916,31 +916,21 @@ public static class ContentEndpoints
         return target is null ? TypedResults.NotFound() : TypedResults.Ok(new PublicPageDto(null, target.Url));
     }
 
-    private static async Task<IReadOnlyList<ContentSiteAddressDto>> SiteAddressesAsync(HubDbContext database, HttpContext http)
-    {
-        // `database.Contents`, never the back office's source: the query filter answers with what the site shows whoever
-        // asks (`VisibilityQueryFilter`) — their visibility, and rows with a published version.
-        var rows = await database.Contents
-            .AsNoTracking()
-            .Where(row => !row.IsTemplate
-                && (row.Kind == ContentKind.Page || row.Kind == ContentKind.News || row.Kind == ContentKind.Document))
-            .Select(row => new { row.Id, row.Kind, row.Slug, row.ParentPath, row.Title, row.OwnerDepartment, row.Visibility })
-            .ToListAsync(http.RequestAborted);
+    /// <summary>The kinds of content that have an address of their own on the site.</summary>
+    private static readonly ContentKind[] AddressedKinds = [ContentKind.Page, ContentKind.News, ContentKind.Document];
 
-        return
+    private static async Task<IReadOnlyList<ContentSiteAddressDto>> SiteAddressesAsync(HubDbContext database, HttpContext http) =>
+        // The one read of what the site shows whoever asks, the map of the site's too (design 13 §5.1).
         [
-            .. rows
-                .Select(row => new ContentSiteAddressDto(
-                    row.Id,
-                    row.Kind,
-                    ContentEntry.UrlOf(row.Kind, row.Slug, row.ParentPath, row.OwnerDepartment),
-                    row.Title,
-                    row.OwnerDepartment,
-                    row.Visibility))
-                .OrderBy(address => address.Kind)
-                .ThenBy(address => address.Url, StringComparer.Ordinal),
+            .. (await SiteContents.ReadAsync(database, AddressedKinds, http.RequestAborted))
+                .Select(content => new ContentSiteAddressDto(
+                    content.Id,
+                    content.Kind,
+                    content.Url,
+                    content.Title,
+                    content.OwnerDepartment,
+                    content.Visibility)),
         ];
-    }
 
     private static async Task<IReadOnlyList<ContentPageNodeDto>> PageTreeAsync(
         HubDbContext database,
