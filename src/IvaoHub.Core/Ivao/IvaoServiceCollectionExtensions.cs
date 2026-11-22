@@ -50,6 +50,7 @@ public static class IvaoServiceCollectionExtensions
             provider.GetRequiredService<IOptions<DivisionOptions>>().Value.PreferredAtcRatings));
         services.AddSingleton<IValidateOptions<DivisionOptions>, PreferredAtcRatingsValidator>();
         services.AddScoped<RefDataSyncJob>();
+        services.AddScoped<FirstReferenceSync>();
 
         // The token of the application, on its own client so a slow token endpoint cannot exhaust
         // the connections of the data calls.

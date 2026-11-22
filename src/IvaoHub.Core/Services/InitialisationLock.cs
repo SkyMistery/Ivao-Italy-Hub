@@ -16,7 +16,8 @@ namespace IvaoHub.Core.Services;
 /// <para>The server does not isolate databases and a lock's name is the server's: the name carries the database, so two
 /// installations on the same server never wait for each other.</para>
 /// <para>A lock not taken is never a failed start: <see cref="Held"/> is false, the start initialises without it, as
-/// every start did before, and says so.</para>
+/// every start did before, and says so. The first reference synchronisation takes the same lock (<c>FirstReferenceSync</c>,
+/// note 2026-11-18-il-primo-allineamento-sotto-blocco) with a wait of its own, and its warnings name it.</para>
 /// </remarks>
 public sealed class InitialisationLock : IAsyncDisposable
 {
@@ -35,13 +36,18 @@ public sealed class InitialisationLock : IAsyncDisposable
     /// </summary>
     public static readonly TimeSpan DefaultWait = TimeSpan.FromSeconds(30);
 
+    /// <summary>What a start runs under the lock, in its warnings, when the caller does not name it.</summary>
+    public const string Initialisation = "the initialisation";
+
     private readonly DatabaseLock _lock;
     private readonly ILogger _logger;
+    private readonly string _work;
 
-    private InitialisationLock(DatabaseLock held, ILogger logger)
+    private InitialisationLock(DatabaseLock held, ILogger logger, string work)
     {
         _lock = held;
         _logger = logger;
+        _work = work;
         Report = new InitialisationLockReport(held.Held, held.Waited, held.Refusal);
     }
 
@@ -58,31 +64,38 @@ public sealed class InitialisationLock : IAsyncDisposable
 
     /// <summary>
     /// Waits up to <paramref name="wait"/> for the lock of the database <paramref name="connectionString"/> names. It
-    /// never throws but for a start that is being stopped: whatever goes wrong is a lock not held.
+    /// never throws but for a start that is being stopped: whatever goes wrong is a lock not held. <paramref name="work"/>
+    /// names what the start runs under it, for its warnings: the initialisation, or the first reference synchronisation.
     /// </summary>
     public static async Task<InitialisationLock> TakeAsync(
         string? connectionString,
         TimeSpan wait,
         ILogger logger,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string work = Initialisation)
     {
         ArgumentNullException.ThrowIfNull(logger);
+        ArgumentException.ThrowIfNullOrWhiteSpace(work);
 
         var held = await DatabaseLock.TakeAsync(connectionString, NameFor, wait, cancellationToken);
         if (held.Failure is not null)
         {
             logger.LogWarning(
                 held.Failure,
-                "The initialisation lock could not be asked for ({Reason}): this start initialises without it.",
-                held.Failure.GetBaseException().Message);
+                "The initialisation lock could not be asked for ({Reason}): this start runs {Work} without it.",
+                held.Failure.GetBaseException().Message,
+                work);
         }
         else if (!held.Held)
         {
             logger.LogWarning(
-                "The initialisation lock {Name} was not taken ({Refusal}): this start initialises without it.", held.Name, held.Refusal);
+                "The initialisation lock {Name} was not taken ({Refusal}): this start runs {Work} without it.",
+                held.Name,
+                held.Refusal,
+                work);
         }
 
-        return new InitialisationLock(held, logger);
+        return new InitialisationLock(held, logger, work);
     }
 
     /// <summary>Releases the lock and closes its connection. Never throws: the closed connection releases it anyway.</summary>
@@ -99,8 +112,9 @@ public sealed class InitialisationLock : IAsyncDisposable
             // The connection fell during the initialisation, and the lock with it: another start may have run beside this one.
             _logger.LogWarning(
                 failure,
-                "The initialisation lock {Name} was no longer held when the initialisation ended: its connection was lost on the way, and another start may have initialised at the same time.",
-                _lock.Name);
+                "The initialisation lock {Name} was no longer held when {Work} ended: its connection was lost on the way, and another start may have run it at the same time.",
+                _lock.Name,
+                _work);
         }
     }
 }

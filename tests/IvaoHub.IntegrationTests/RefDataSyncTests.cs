@@ -43,7 +43,9 @@ public sealed class RefDataSyncTests(MariaDbFixture mariaDb) : IAsyncLifetime
     {
         var token = TestContext.Current.CancellationToken;
 
-        // The host already synchronised on start up, because the tables were empty.
+        // The host's start downloads only the centres (issue #325, item 7): the whole snapshot is the job's.
+        await SyncAsync(token);
+
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
 
