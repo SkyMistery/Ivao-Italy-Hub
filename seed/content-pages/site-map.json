@@ -1,0 +1,122 @@
+{
+  "slug": "site-map",
+  "kind": "Page",
+  "template": "section-page",
+  "visibility": "Public",
+  "title": {
+    "$t": "seed.pages.siteMap.title"
+  },
+  "summary": {
+    "$t": "seed.pages.siteMap.summary"
+  },
+  "menu": {
+    "scope": "Footer",
+    "sort": 90
+  },
+  "body": {
+    "schemaVersion": 1,
+    "sections": [
+      {
+        "id": "s_hero",
+        "key": "hero",
+        "title": {
+          "$t": "seed.pages.siteMap.hero.section"
+        },
+        "layout": "stacked",
+        "background": "muted",
+        "padding": "lg",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_site_map_hero",
+            "type": "hero",
+            "version": 1,
+            "props": {
+              "title": {
+                "$t": "seed.pages.siteMap.hero.heading"
+              },
+              "text": {
+                "$t": "seed.pages.siteMap.hero.text"
+              },
+              "align": "left",
+              "tone": "muted"
+            }
+          }
+        ]
+      },
+      {
+        "id": "s_body",
+        "key": "body",
+        "title": {
+          "$t": "seed.pages.siteMap.body.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_site_map_body_text",
+            "type": "text",
+            "version": 1,
+            "props": {
+              "markdown": {
+                "$t": "seed.pages.siteMap.body.text"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "s_map",
+        "title": {
+          "$t": "seed.pages.siteMap.map.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_site_map",
+            "type": "siteMap",
+            "version": 1,
+            "props": {}
+          }
+        ]
+      },
+      {
+        "id": "s_links",
+        "key": "links",
+        "title": {
+          "$t": "seed.pages.siteMap.links.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_site_map_links_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.siteMap.links.heading"
+              }
+            }
+          },
+          {
+            "id": "b_site_map_links_list",
+            "type": "linkList",
+            "version": 1,
+            "props": {
+              "limit": 10
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

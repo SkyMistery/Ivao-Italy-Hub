@@ -175,6 +175,26 @@
           "cta": "Scrivici"
         }
       },
+      "siteMap": {
+        "title": "Mappa del sito",
+        "summary": "Tutte le pagine del sito, ognuna sotto la pagina in cui sta.",
+        "hero": {
+          "section": "Apertura",
+          "heading": "Mappa del sito",
+          "text": "Le pagine di questo sito, ognuna sotto la pagina in cui sta. Chi ha fatto l’accesso vede anche quelle riservate a lui."
+        },
+        "body": {
+          "section": "Corpo",
+          "text": "Le notizie e i documenti non sono qui uno per uno: li trovi nelle loro pagine, [Notizie](/news) e [Documenti](/documents)."
+        },
+        "map": {
+          "section": "Mappa"
+        },
+        "links": {
+          "section": "Link",
+          "heading": "Altri indirizzi utili"
+        }
+      },
       "dashboard": {
         "title": "Dashboard di dipartimento",
         "summary": "Quello che questo dipartimento vede aprendo il back office."
