@@ -126,7 +126,7 @@ export function calendarItems(cards: readonly EventCard[]): CalendarItem[] {
 
 /**
  * When an event runs, as the head of its page says it (note 2026-10-11-la-testa-della-pagina-di-un-evento, dalberone's drawing):
- * «21 Nov 2026 · 17:00–22:00» in UTC; where the division lives, its times alone when they fall on that same day — «18:00–23:00» —,
+ * «21 Nov 2026 · 17:00 – 22:00» in UTC; where the division lives, its times alone when they fall on that same day — «18:00 – 23:00» —,
  * otherwise its own day too. An event over midnight writes both its dates, as the core's `intervalText` does. No zone, no local part.
  */
 export function headSpan(
@@ -143,7 +143,7 @@ export function headSpan(
   const day = oneDay(startsAt, endsAt, format);
   const local =
     day !== null && day === oneDay(startsAt, endsAt, format, timeZone)
-      ? `${format(startsAt, { timeZone, date: false })}–${format(endsAt, { timeZone, date: false })}`
+      ? `${format(startsAt, { timeZone, date: false })} – ${format(endsAt, { timeZone, date: false })}`
       : compactSpan(startsAt, endsAt, format, timeZone);
 
   return { utc, local };
@@ -167,14 +167,14 @@ export function headMoment(
   return { utc, local: format(at, sameDay ? { timeZone, date: false } : { timeZone }) };
 }
 
-/** A span within one day as «21 Nov 2026 · 17:00–22:00»; one over midnight as the core's `intervalText` writes it. */
+/** A span within one day as «21 Nov 2026 · 17:00 – 22:00»; one over midnight as the core's `intervalText` writes it. */
 function compactSpan(startsAt: string, endsAt: string, format: MomentFormat, timeZone?: string): string {
   const zone = timeZone === undefined ? {} : { timeZone };
   const day = oneDay(startsAt, endsAt, format, timeZone);
 
   return day === null
     ? intervalText(startsAt, endsAt, format, timeZone)
-    : `${day} · ${format(startsAt, { ...zone, date: false })}–${format(endsAt, { ...zone, date: false })}`;
+    : `${day} · ${format(startsAt, { ...zone, date: false })} – ${format(endsAt, { ...zone, date: false })}`;
 }
 
 /** The day a span begins and ends on, read in the zone asked (UTC when none); null when it runs over midnight. */

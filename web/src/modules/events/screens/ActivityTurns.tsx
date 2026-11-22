@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
-import { intervalEnd, useMoment } from '../../../shared/i18n/useMoment';
+import { intervalText, useMoment } from '../../../shared/i18n/useMoment';
 import { Notice } from '../../../shared/ui';
 import {
   useGiveSeatBack,
@@ -116,8 +116,7 @@ function Activity({
                 <tr key={turn.startsAtUtc} className="border-b align-middle last:border-0">
                   <td className="py-2 pr-3">
                     {t('events:public.activities.hours', {
-                      from: moment(turn.startsAtUtc),
-                      to: intervalEnd(turn.startsAtUtc, turn.endsAtUtc, moment),
+                      when: intervalText(turn.startsAtUtc, turn.endsAtUtc, moment),
                     })}
                   </td>
                   <td className="py-2 pr-3">
@@ -185,8 +184,7 @@ export function RegistrationSeats({ registration }: { registration: MyRegistrati
               {seat.place === null ? null : ` · ${read(seat.place)}`}
               {' — '}
               {t('events:public.activities.hours', {
-                from: moment(seat.startsAtUtc),
-                to: intervalEnd(seat.startsAtUtc, seat.endsAtUtc, moment),
+                when: intervalText(seat.startsAtUtc, seat.endsAtUtc, moment),
               })}
             </span>
             {registration.withdrawable ? (

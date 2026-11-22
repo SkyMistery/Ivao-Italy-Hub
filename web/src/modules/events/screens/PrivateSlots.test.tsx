@@ -105,7 +105,7 @@ function ReadPage() {
 /** Opens the hour of the arrivals at 17:00 and waits for its form. */
 async function openArrivals(user: ReturnType<typeof userEvent.setup>) {
   const arrivals = await screen.findByRole('table', { name: englishEvents.public.arrivals });
-  await user.click(within(arrivals).getByRole('button', { name: '17:00–18:00' }));
+  await user.click(within(arrivals).getByRole('button', { name: '17:00 – 18:00' }));
   return screen.findByRole('dialog');
 }
 
@@ -126,8 +126,8 @@ describe('the private slots on the page of an event', () => {
     const arrivals = await screen.findByRole('table', { name: englishEvents.public.arrivals });
     const rows = within(arrivals).getAllByRole('row').slice(1);
     expect(rows.map((row) => row.textContent)).toEqual([
-      `17:00–18:001 of 2${englishEvents.public.free}`,
-      `18:00–19:000 of 1${words.full}`,
+      `17:00 – 18:001 of 2${englishEvents.public.free}`,
+      `18:00 – 19:000 of 1${words.full}`,
     ]);
 
     // The departures first, as for the public slots; the hour where the reader holds one says so.
@@ -324,7 +324,7 @@ describe('the private slots on the page of an event', () => {
     await draw(<PrivateSlots event={event()} viewer={member} />);
 
     const arrivals = await screen.findByRole('table', { name: englishEvents.public.arrivals });
-    await user.click(within(arrivals).getByRole('button', { name: '18:00–19:00' }));
+    await user.click(within(arrivals).getByRole('button', { name: '18:00 – 19:00' }));
     const dialog = await screen.findByRole('dialog');
 
     expect(within(dialog).getByText(words.dialog.noneFree)).toBeInTheDocument();
@@ -343,6 +343,6 @@ test('an hour that ends past midnight says the day it ends (#333, item 6)', asyn
 
   const arrivals = await screen.findByRole('table', { name: englishEvents.public.arrivals });
   expect(
-    within(arrivals).getByRole('button', { name: `23:00–${formatMoment('en', '2099-11-22T00:00:00Z')}` }),
+    within(arrivals).getByRole('button', { name: `23:00 – ${formatMoment('en', '2099-11-22T00:00:00Z')}` }),
   ).toBeInTheDocument();
 });
