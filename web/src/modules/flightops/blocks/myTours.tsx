@@ -56,6 +56,12 @@ export function MyToursBlock({ data }: BlockComponentProps) {
                   to: report.arrivalIcao,
                 })}
               </RouterAnchor>
+              {/* What to correct, said by the validator (issue #387): the mail is not the only place to read it. */}
+              {report.noteToPilot === null || report.noteToPilot.trim() === '' ? null : (
+                <p className="text-muted-foreground text-sm whitespace-pre-line">
+                  {t('flightops:blocks.myTours.note', { note: report.noteToPilot })}
+                </p>
+              )}
             </li>
           ))}
           {(mine.answered ?? []).map((thread) => (

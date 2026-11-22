@@ -63,6 +63,7 @@ import { isDecided, mapLeg, reportActions } from './reporting';
 import { REPORT_STATUS_COLOURS } from './reviewing';
 import { TourCards, type TourCard } from './TourCards';
 import { TourHead } from './TourFace';
+import { ValidatorNote } from './ValidatorNote';
 import { cardKinds, myCards, narrowCards, tabCards } from './tourListing';
 import { formatMinutes, legGroups, nextLeg, openTab, pageTabs, ruleGroups, simbriefUrl } from './tourPage';
 
@@ -951,6 +952,7 @@ function MyReports({ tour, reports }: { tour: PublicTourDto; reports: readonly P
                     {t('flightops:public.disputableUntil', { date: moment(report.disputableUntil) })}
                   </span>
                 )}
+                <ValidatorNote report={report} />
               </div>
 
               <div className="flex flex-wrap gap-2">

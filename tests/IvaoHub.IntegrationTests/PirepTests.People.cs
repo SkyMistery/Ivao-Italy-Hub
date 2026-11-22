@@ -463,12 +463,27 @@ public sealed partial class PirepTests
         mine = await OkAsync(await pilot.GetAsync(MyToursEndpoints.Pattern, token), token);
         var toFix = Assert.Single(mine.GetProperty("toModify").EnumerateArray(), entry => entry.GetProperty("pirepId").GetInt64() == second);
         Assert.Equal(started.GetProperty("slug").GetString(), toFix.GetProperty("slug").GetString());
+        // With what to correct: the pilot reads the note on the site too, not only in the mail (issue #387).
+        Assert.Equal("fo-test the STAR", toFix.GetProperty("noteToPilot").GetString());
 
         // The block says the same, to the same pilot.
         var block = await OkAsync(await pilot.GetAsync($"/api/blocks/data/{MyToursProvider.BlockType}", token), token);
         Assert.True(block.GetProperty("signedIn").GetBoolean());
         Assert.Contains(block.GetProperty("tours").EnumerateArray(), entry => entry.GetProperty("tourId").GetInt64() == tourId);
         Assert.Contains(block.GetProperty("toModify").EnumerateArray(), entry => entry.GetProperty("pirepId").GetInt64() == second);
+
+        // The note stays with its pilot: another pilot's endpoint and block list neither the report nor the validator's words.
+        using (var other = await SignedInAsync(OtherPilotVid, token))
+        {
+            var theirs = await OkAsync(await other.GetAsync(MyToursEndpoints.Pattern, token), token);
+            Assert.DoesNotContain(theirs.GetProperty("toModify").EnumerateArray(), entry => entry.GetProperty("pirepId").GetInt64() == second);
+            Assert.DoesNotContain("fo-test the STAR", theirs.GetRawText(), StringComparison.Ordinal);
+
+            var theirBlock = await OkAsync(await other.GetAsync($"/api/blocks/data/{MyToursProvider.BlockType}", token), token);
+            Assert.True(theirBlock.GetProperty("signedIn").GetBoolean());
+            Assert.DoesNotContain(theirBlock.GetProperty("toModify").EnumerateArray(), entry => entry.GetProperty("pirepId").GetInt64() == second);
+            Assert.DoesNotContain("fo-test the STAR", theirBlock.GetRawText(), StringComparison.Ordinal);
+        }
 
         // Hidden: gone from the list, still in the record.
         var accepted = mine.GetProperty("summary").GetProperty("legsAccepted").GetInt32();

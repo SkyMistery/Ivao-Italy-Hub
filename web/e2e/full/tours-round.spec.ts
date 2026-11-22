@@ -61,6 +61,7 @@ const words = JSON.parse(
     sendReport: string;
     disputeAction: string;
     disputed: string;
+    validatorNote: string;
     fields: { text: string };
     reportStatus: { Queued: string };
     dispute: { Upheld: string };
@@ -362,6 +363,10 @@ test('a tour from a template, its legs imported, flown, checked, validated, disp
 
     // ---------------------------------------------------------------- disputed by the pilot, upheld by the assistant
     await pilot.goto(`/tours/${slug}?tab=reports`);
+    // What the validator said, on the site and not only in the mail (issue #387): the note and the rule broken.
+    const note = pilot.getByRole('alert').filter({ hasText: words.public.validatorNote });
+    await expect(note).toContainText('Hold short next time.');
+    await expect(note).toContainText(ruleCode);
     await pilot.getByRole('button', { name: words.public.disputeAction, exact: true }).click();
     const dialog = pilot.getByRole('alertdialog');
     await dialog

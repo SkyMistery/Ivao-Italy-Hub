@@ -10167,7 +10167,10 @@ export interface components {
          * @enum {unknown}
          */
         ReportState: "Submitted" | "Accepted" | "Rejected";
-        /** @description A report the validator sent back «to modify», with the address of the form that corrects it. */
+        /**
+         * @description A report the validator sent back «to modify», with the address of the form that corrects it and what to correct: the note
+         *     to the pilot, which «to modify» always has (issue #387). Only ever the reader's own report, like the rest of this answer.
+         */
         ReportToFixDto: {
             /** Format: int64 */
             pirepId: number;
@@ -10179,6 +10182,7 @@ export interface components {
             arrivalIcao: string;
             /** Format: date-time */
             takeoffAt: string;
+            noteToPilot: null | string;
         };
         /**
          * @description What the check found of a report's items (§5.3): every item found, some, none, or a source that did not answer for some item — never a
