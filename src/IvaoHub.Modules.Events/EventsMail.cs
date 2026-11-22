@@ -219,10 +219,10 @@ public sealed class EventsMail(
 
     /// <summary>
     /// One shift as a mail writes it: the callsign and its hours, in UTC — the sentence around it says so —, the day of its end only when it
-    /// is not the day it starts.
+    /// is not the day it starts, as the core's <see cref="HubDates.Interval"/> writes it.
     /// </summary>
     public static string Shift(string callsign, DateTime fromUtc, DateTime toUtc, DateOrder order) =>
-        $"{callsign} {Moment(fromUtc, order)} – {(toUtc.Date == fromUtc.Date ? toUtc.ToString("HH:mm", CultureInfo.InvariantCulture) : Moment(toUtc, order))}";
+        $"{callsign} {HubDates.Interval(fromUtc, toUtc, order)}";
 
     /// <summary>
     /// A controller's shifts of a roster (§4.4, E12): at its publication, every shift of theirs not told yet in one mail; after it, a shift
