@@ -44,5 +44,6 @@ export {
 } from './envelope';
 export { carriesOldSize, sizeOf, sizedAt, snapped } from './size';
 export { CORE_BLOCK_TYPES } from './core';
+export { HOME_SLUG } from './siteMap';
 export { startsWithPageTitle } from './envelope';
 export { coreBlocks } from './registry';

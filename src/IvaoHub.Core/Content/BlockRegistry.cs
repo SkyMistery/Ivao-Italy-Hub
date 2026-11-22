@@ -197,6 +197,12 @@ public static class CoreBlocks
     public const string DocumentList = "documentList";
     public const string StaffList = "staffList";
 
+    /// <summary>
+    /// The map of the site (design <c>13-design-struttura-del-sito.md</c> §5.1): the pages and the screens whoever is
+    /// reading may open, each under the page it sits under.
+    /// </summary>
+    public const string SiteMap = "siteMap";
+
     // The blocks of the personal dashboards (note 2026-09-13-le-dashboard-a-tutto-schermo §3.5).
     public const string Welcome = "welcome";
     public const string MyDepartments = "myDepartments";
@@ -243,6 +249,12 @@ public static class CoreBlocks
         new BlockDescriptor(NewsList, Version: 1, BlockKind.Data),
         new BlockDescriptor(DocumentList, Version: 1, BlockKind.Data),
         new BlockDescriptor(StaffList, Version: 1, BlockKind.Data),
+
+        // The map of the site is about whoever reads it, and always live (design 13 §5.1): captured, it would keep the pages
+        // whoever pressed publish could read — the staff's among them — on a page for everybody, and would go stale with the
+        // first page that came out after it. A visitor's map is every visitor's, so it may wait a few minutes in the cache in
+        // front of the hub; a signed-in reader's is never shared.
+        new BlockDescriptor(SiteMap, Version: 1, BlockKind.Data, AlwaysLive: true, SharedFor: SiteMapProvider.SharedFor),
 
         // The personal dashboards. The greeting and the departments are drawn from what the browser
         // already knows of whoever is looking, so they are content; what waits for them is answered

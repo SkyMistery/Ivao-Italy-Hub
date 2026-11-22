@@ -48,8 +48,9 @@ test('the gallery shows the whole set of blocks the milestone declares', () => {
   // cards of the tours with it (T10), the queue of the validators (T13b) and what else waits for
   // their staff (T14b), and the pilot's own tours (T15b); the training brought four (M3, A10b), the
   // events the list of them (M4, E4), a pilot's bookings (E6b), the coverage of the rosters (E12) and
-  // the queue of their staff (E13b) — losing one has to be something CI says out loud.
-  expect(registry.blocks).toHaveLength(46);
+  // the queue of their staff (E13b); phase 4 the map of the site (design 13 §5.1) — losing one has to be something CI
+  // says out loud.
+  expect(registry.blocks).toHaveLength(47);
 });
 
 test('a block registers example props that its own schema accepts', () => {

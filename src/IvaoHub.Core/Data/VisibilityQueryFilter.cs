@@ -146,3 +146,28 @@ public interface IVisibilityScope
     /// <summary>The same departments as a <see cref="DepartmentMask"/>, for rows in the care of several.</summary>
     int VisibleDepartmentMask { get; }
 }
+
+/// <summary>
+/// The rule of <see cref="VisibilityQueryFilter"/> for something that is not a row and belongs to no department: a screen of
+/// the site (<c>SiteScreen</c>), which the map of the site shows to whoever may open it (design
+/// <c>13-design-struttura-del-sito.md</c> §5.1). Next to the filter so that whoever changes one sees the other.
+/// </summary>
+public static class VisibilityScopeRules
+{
+    /// <summary>
+    /// Whether whoever runs the queries of <paramref name="scope"/> reads what is visible to <paramref name="visibility"/>,
+    /// with no department to compare: <see cref="Visibility.Department"/> is then only for whoever sees every department.
+    /// </summary>
+    public static bool Reads(this IVisibilityScope scope, Visibility visibility)
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+
+        return scope.SeesEveryDepartment || visibility switch
+        {
+            Visibility.Public => true,
+            Visibility.Members => scope.SeesMemberRows,
+            Visibility.Staff => scope.SeesStaffRows,
+            _ => false,
+        };
+    }
+}

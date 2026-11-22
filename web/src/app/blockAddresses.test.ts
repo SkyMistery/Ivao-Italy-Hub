@@ -34,5 +34,5 @@ test('the blocks that lead somewhere are the ones the design names', () => {
     .map((block) => block.type)
     .sort();
 
-  expect(leading).toEqual(['buttonGroup', 'cardGrid', 'cta', 'hero', 'logoGrid']);
+  expect(leading).toEqual(['buttonGroup', 'cardGrid', 'cta', 'hero', 'logoGrid', 'siteMap']);
 });

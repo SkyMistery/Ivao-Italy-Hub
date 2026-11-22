@@ -34,6 +34,7 @@ public static class ContentServiceCollectionExtensions
         services.AddScoped<IDataBlockProvider, NewsListProvider>();
         services.AddScoped<IDataBlockProvider, DocumentListProvider>();
         services.AddScoped<IDataBlockProvider, StaffListProvider>();
+        services.AddScoped<IDataBlockProvider, SiteMapProvider>();
         services.AddScoped<IDataBlockProvider, MyWorkProvider>();
         services.TryAddScoped<DataBlockProviders>();
 

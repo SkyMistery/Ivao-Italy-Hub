@@ -624,6 +624,87 @@ public sealed class DocumentListProvider(HubDbContext database) : ContentListPro
 }
 
 /// <summary>
+/// The map of the site (design <c>13-design-struttura-del-sito.md</c> §5.1, answer 5 of the maintainer): the pages online
+/// and the screens of the application that <b>whoever is reading</b> may open — a visitor the public ones, a member those
+/// of the members too, the staff theirs. No news item and no document: the screens <c>/news</c> and <c>/documents</c> are
+/// where those are.
+/// <para>The pages come from <see cref="SiteContents"/>, the one read of what the site shows whoever asks, which the
+/// addresses offered to a writer use too; the screens from <see cref="SiteDestinations.Screens"/>, the core's and those of
+/// the enabled modules, each with the visibility it declares. The answer is flat and in the order of the address: the
+/// browser nests each entry under the page it sits under and sorts sisters by their title in the language on screen,
+/// which only the browser knows.</para>
+/// <para><c>href</c>, chosen with the address field, is where a map of one section starts: the page at that address and the
+/// pages under it, and no screen (a screen has no pages under it, answer 4). None, or <c>/</c>, is the whole site; an
+/// address that is not of this site is no root, and narrows to nothing rather than widening to everything.</para>
+/// <para>⚠️ Always live (<c>AlwaysLive</c> on the descriptor), so publication never asks: should it ever, the answer is
+/// nothing, because a capture would be the map of whoever pressed publish, on a page everybody reads.</para>
+/// </summary>
+public sealed class SiteMapProvider(HubDbContext database, SiteDestinations destinations) : IDataBlockProvider
+{
+    /// <summary>How long the cache in front of the hub may keep a visitor's map: a page that comes out shows within it.</summary>
+    public static readonly TimeSpan SharedFor = TimeSpan.FromMinutes(5);
+
+    private static readonly ContentKind[] Pages = [ContentKind.Page];
+
+    public string Key => CoreBlocks.SiteMap;
+
+    public async Task<JsonNode> ResolveAsync(
+        JsonNode? props,
+        DataBlockContext context,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        if (context.Page is not null)
+        {
+            return DataBlockScope.Nothing("items");
+        }
+
+        var asked = BlockProps.Text(props, "href");
+        var root = asked is null ? "/" : SiteDestinations.OnThisSite(asked);
+        if (root is null)
+        {
+            return DataBlockScope.Nothing("items");
+        }
+
+        var pages = await SiteContents.ReadAsync(database, Pages, cancellationToken);
+
+        var items = new JsonArray();
+        foreach (var page in pages.Where(page => Under(page.Url, root)))
+        {
+            items.Add(new JsonObject
+            {
+                ["path"] = page.Url,
+                ["title"] = BlockProps.Translated(page.Title),
+                ["titleKey"] = null,
+            });
+        }
+
+        if (root == "/")
+        {
+            // The context answers for whoever runs the query, as its query filter does: the same reader, asked once more.
+            foreach (var screen in destinations.Screens.Where(screen => database.Reads(screen.Visibility)))
+            {
+                items.Add(new JsonObject
+                {
+                    ["path"] = screen.Path,
+                    ["title"] = null,
+                    ["titleKey"] = screen.TitleKey,
+                });
+            }
+        }
+
+        return new JsonObject { ["items"] = items };
+    }
+
+    /// <summary>Whether an address is the root or under it. The stored path compares without case, as the database does.</summary>
+    private static bool Under(string path, string root) =>
+        root == "/"
+        || string.Equals(path, root, StringComparison.OrdinalIgnoreCase)
+        || path.StartsWith(root + "/", StringComparison.OrdinalIgnoreCase);
+}
+
+/// <summary>
 /// The staff of the division, which is <b>whoever has signed in at least once</b>: there is no
 /// endpoint anywhere that lists the roster of a division, and that is the data there is rather
 /// than a limitation to work around (plan section 16.13). A page says so in a line of its own
