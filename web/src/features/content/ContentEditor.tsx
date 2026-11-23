@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { frameAddress, readBody, type Body } from '../../blocks';
 import type { Department } from '../../shared/api/bootstrap';
 import { ApiError } from '../../shared/api/problem';
-import { SchemaForm, type ChoiceOption } from '../../shared/forms';
+import { SchemaForm, cannotProposeASlug, type ChoiceOption } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { useMoment } from '../../shared/i18n/useMoment';
 import type { MediaLibraryQuery } from '../../shared/ui';
@@ -481,13 +481,22 @@ export function ContentEditor({
                 time: moment(autosave.savedAt.toISOString(), { date: false, timeZone: division.timezone }),
               });
 
+  // A title that gives no slug — another script, only emoji or punctuation — opens the field of the slug to whoever writes
+  // a new row, who would otherwise be refused an address they cannot see (the maintainer's answer on #554, point 1). Once
+  // open it stays open: a field that vanished when the title turned Latin would hide the slug written in it.
+  const [slugOpened, setSlugOpened] = useState(false);
+  if (!slugOpened && content === null && cannotProposeASlug(metadata.title, division.defaultLocale)) {
+    setSlugOpened(true);
+  }
+  const slugDrawn = maySetSlug || slugOpened;
+
   const pageProperties = (
     <>
       <SchemaForm
         key={formStart?.generation ?? 0}
         id={METADATA_FORM}
         actionsElsewhere
-        schema={contentMetadataSchema(kind, categories, documentChoices, pageChoices, maySetSlug)}
+        schema={contentMetadataSchema(kind, categories, documentChoices, pageChoices, slugDrawn)}
         defaults={
           formStart?.values ??
           (content === null
@@ -546,10 +555,10 @@ export function ContentEditor({
             metadata.parentId === undefined || metadata.parentId === '' ? null : Number(metadata.parentId)
           }
           id={content?.id ?? null}
-          slugIsTheirs={maySetSlug}
+          slugIsTheirs={slugDrawn}
           // A new row whose proposed address is taken, for whoever cannot write the slug: the free one is taken with a
           // press, and the form starts again with it — the way an import hands the form its fields.
-          {...(!maySetSlug && content === null
+          {...(!slugDrawn && content === null
             ? { onUseSuggestion: (slug: string) => takeFields({ ...metadata, slug }) }
             : {})}
         />

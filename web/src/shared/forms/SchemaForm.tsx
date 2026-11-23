@@ -55,7 +55,7 @@ import {
   withUnwrittenBlanks,
   type FieldNode,
 } from './schema';
-import { slugify } from './slug';
+import { readSource, slugify } from './slug';
 import { Suggest } from './Suggest';
 import { useProblemDetails } from './useProblemDetails';
 
@@ -677,37 +677,6 @@ function useProposedSlugs<TValues extends Record<string, unknown>>(
       }
     }
   }, [fields, values, defaultLocale, form]);
-}
-
-/**
- * The text a proposal reads. A translated source is read in the default language of the division,
- * which is the language the address is published in; the first language that has anything written
- * in it stands in while that one is still empty, so a title written in Italian first still proposes
- * something rather than nothing.
- */
-function readSource(value: unknown, defaultLocale: string | undefined): string {
-  if (typeof value === 'string') {
-    return value;
-  }
-
-  if (typeof value !== 'object' || value === null) {
-    return '';
-  }
-
-  const translations = value as Record<string, unknown>;
-  const preferred = defaultLocale === undefined ? undefined : translations[defaultLocale];
-
-  if (typeof preferred === 'string' && preferred.trim() !== '') {
-    return preferred;
-  }
-
-  for (const written of Object.values(translations)) {
-    if (typeof written === 'string' && written.trim() !== '') {
-      return written;
-    }
-  }
-
-  return '';
 }
 
 /**
