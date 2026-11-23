@@ -52,7 +52,9 @@ test('the rows a tour keeps from the kind it had before are read off the problem
 test('a change of kind names the rows it would leave behind', () => {
   expect(partsLeftBy('Sequential', 'Open')).toEqual(['legs']);
   expect(partsLeftBy('Free', 'Container')).toEqual(['legs']);
-  expect(partsLeftBy('Hub', 'Open')).toEqual(['legs', 'hubs']);
+  // Hubs on a kind without legs are not a problem of "ready" (`TourShape` stops at the legs): not said.
+  expect(partsLeftBy('Hub', 'Open')).toEqual(['legs']);
+  expect(partsLeftBy('Hub', 'Container')).toEqual(['legs']);
   expect(partsLeftBy('Hub', 'Sequential')).toEqual(['hubs']);
   expect(partsLeftBy('Sequential', 'Distance')).toEqual([]);
   expect(partsLeftBy('Open', 'Free')).toEqual([]);

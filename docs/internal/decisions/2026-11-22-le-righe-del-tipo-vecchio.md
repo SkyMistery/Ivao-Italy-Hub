@@ -37,7 +37,10 @@ Le leg no: `WritableTourAsync` rifiutava anche `remove` e `removal` su un tipo s
   «Regole» disegna i vincoli rimasti nello stesso modo (`TourConstraints` con `leftover`). Ogni parte ha sopra una riga (`Notice`) che dice
   perché è lì.
 - **Il passo 1** avvisa, prima del salvataggio, quali righe resterebbero se il tour ne ha (`partsLeftBy`): le leg verso un tipo senza leg,
-  hub e rotazioni lasciando un tour a hub. È solo un avviso: non legge le righe e non blocca niente. I vincoli non ci sono, perché il
+  hub e rotazioni lasciando un tour a hub per un altro tipo **con** leg. ⚠️ Su un tipo senza leg (`Open`, `Container`) `TourShape` nomina
+  le leg e si ferma lì: hub e rotazioni rimasti non sono un problema di «pronto», quindi l'editor non li mostra e il passo 1 non li nomina.
+  Restano nel database senza effetto, e tornano un problema se il tour riprende un tipo con leg. La prima corsa della CI l'ha trovato
+  (la spec si aspettava `kindHasNoHubs` su un `Open`); cambiare `TourShape` sarebbe una regola nuova, fuori da questa decisione. È solo un avviso: non legge le righe e non blocca niente. I vincoli non ci sono, perché il
   server rifiuta già un `Open` con vincoli che cambia tipo (`openHasConstraints`, design M2 §2.6.1). Per la stessa ragione oggi un tour
   arriva a vincoli rimasti solo per strade diverse dall'editor, ma la riga li tratta comunque come le altre parti.
 - **Il salvataggio del tour non cambia**, il design 11 §5 nemmeno: le righe stanno nel passo che già le elencava.
@@ -57,7 +60,8 @@ staccarle dalla rotazione senza perderle non è possibile dall'editor. Non era n
   server. Rimettendo la barra e «Aggiungi dopo» senza la condizione, il test diventa rosso.
 - `tourSteps.test.ts` (vitest): `leftoverParts` e `partsLeftBy`.
 - `e2e/full/tours-leftover.spec.ts` (server vero): un tour a hub con un hub e due leg diventa `Open` dal passo 1, con l'avviso; il
-  Controllo porta a «Percorso»; lì niente «Aggiungi» né «Nuovo hub»; le leg rimosse, l'hub eliminato, «pronto» non le nomina più.
+  Controllo nomina le leg (non l'hub) e porta a «Percorso»; lì niente «Aggiungi», le leg rimosse, «pronto» non le nomina più. Poi il tour
+  diventa `Sequential`: il Controllo nomina l'hub, «Percorso» lo mostra senza «Nuovo hub», l'hub si elimina e «pronto» non lo nomina più.
 
 ## Da portare nel piano
 

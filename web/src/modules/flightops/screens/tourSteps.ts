@@ -69,14 +69,18 @@ export function leftoverParts(problems: readonly (readonly [string, readonly str
 }
 
 /**
- * The parts a change of kind would leave over, if the tour has any: legs going to a kind without legs, hubs leaving a hub
- * tour. Constraints are not among them: the server refuses an Open tour with constraints a new kind
+ * The parts a change of kind would leave over, if the tour has any — the ones "ready" will name, so the ones the editor
+ * will show: legs going to a kind without legs, hubs leaving a hub tour for another kind with legs. On a kind without
+ * legs `TourShape` names the legs and stops there: hubs left on an Open tour or a container are not a problem of "ready",
+ * and are not said. Constraints are not among them either: the server refuses an Open tour with constraints a new kind
  * (`openHasConstraints`).
  */
 export function partsLeftBy(from: TourKind, to: TourKind): LeftoverPart[] {
+  const toHasLegs = !KINDS_WITHOUT_LEGS.includes(to);
+
   return [
-    ...(!KINDS_WITHOUT_LEGS.includes(from) && KINDS_WITHOUT_LEGS.includes(to) ? (['legs'] as const) : []),
-    ...(from === 'Hub' && to !== 'Hub' ? (['hubs'] as const) : []),
+    ...(!KINDS_WITHOUT_LEGS.includes(from) && !toHasLegs ? (['legs'] as const) : []),
+    ...(from === 'Hub' && to !== 'Hub' && toHasLegs ? (['hubs'] as const) : []),
   ];
 }
 

@@ -19,9 +19,13 @@ import {
 
 /**
  * #549, through the real screens: a draft hub tour with a hub and two legs becomes Open. Step 1 says, before the save,
- * that the rows stay; the check names them with the way to the route; there they are read-only — no new leg, no new hub
- * — each with its "remove" or "delete", the line that says why next to them; once they are gone, "ready" no longer names
- * them. The server's half (a leg removed on an Open tour, every other write refused) is `OpenTourTests`.
+ * that the legs stay; the check names them with the way to the route; there they are read-only — no new leg — each with
+ * its "remove", the line that says why next to them; once they are gone, "ready" no longer names them. Then the tour
+ * becomes Sequential, and its hub is the row left over: read-only, no new hub, deleted from the route.
+ *
+ * ⚠️ On Open the hub is not a problem of "ready": `TourShape` names a kind without legs' legs and stops there, so hubs are
+ * only said — and shown — on a kind with legs. The first run of this spec expected them on Open, and CI said otherwise.
+ * The server's half (a leg removed on an Open tour, every other write refused) is `OpenTourTests`.
  */
 
 const words = JSON.parse(
@@ -29,7 +33,7 @@ const words = JSON.parse(
 ) as {
   tours: {
     fields: { title: string; summary: string; kind: string };
-    options: { kind: { Hub: string; Open: string } };
+    options: { kind: { Hub: string; Open: string; Sequential: string } };
     steps: {
       next: string;
       route: string;
@@ -97,20 +101,20 @@ test('the rows a new kind does not use are shown where "ready" sends, and delete
   await addLeg(context, tourId, benchAirports.milan, benchAirports.rome);
 
   // ---------------------------------------------------------------- Open, said before the save
+  const leaves = (kind: string) =>
+    words.tours.steps.kindLeaves.split('{{parts}}')[0]!.replace('{{kind}}', kind);
   await page.goto(`/staff/tours/${tourId}?tab=kind`);
   await choose(page, words.tours.fields.kind, words.tours.options.kind.Open);
-  const leaves = words.tours.steps.kindLeaves
-    .split('{{parts}}')[0]!
-    .replace('{{kind}}', words.tours.options.kind.Open);
-  await expect(page.getByText(leaves)).toBeVisible();
+  await expect(page.getByText(leaves(words.tours.options.kind.Open))).toBeVisible();
   await whileWaitingFor(page, 'PUT', `/api/flightops/tours/${tourId}`, async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
 
-  // ---------------------------------------------------------------- the check names them, and leads to the route
+  // ---------------------------------------------------------------- the check names the legs, and leads to the route
   await page.getByRole('tab', { name: words.tours.steps.check }).click();
   await expect(page.getByText(words.errors.kindHasNoLegs)).toBeVisible();
-  await expect(page.getByText(words.errors.kindHasNoHubs)).toBeVisible();
+  // Not the hub: on a kind without legs, "ready" stops at the legs.
+  await expect(page.getByText(words.errors.kindHasNoHubs)).toHaveCount(0);
   await page
     .getByRole('link', { name: words.tours.steps.goTo.replace('{{step}}', words.tours.steps.route) })
     .first()
@@ -119,12 +123,9 @@ test('the rows a new kind does not use are shown where "ready" sends, and delete
 
   // Read-only, with the line that says why: nothing new is offered.
   await expect(page.getByText(words.tours.steps.leftoverLegs)).toBeVisible();
-  await expect(page.getByText(words.tours.steps.leftoverHubs)).toBeVisible();
   await expect(page.getByRole('button', { name: words.legs.actions.add, exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: words.legs.actions.import })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: words.hubs.create })).toHaveCount(0);
 
-  // ---------------------------------------------------------------- the legs removed, then the hub deleted
   for (let left = 2; left > 0; left--) {
     await expect(page.getByRole('button', { name: words.legs.actions.remove })).toHaveCount(left);
     await page.getByRole('button', { name: words.legs.actions.remove }).first().click();
@@ -134,6 +135,28 @@ test('the rows a new kind does not use are shown where "ready" sends, and delete
       await dialog.getByRole('button', { name: englishCommon.common.delete }).click();
     });
   }
+
+  await page.getByRole('tab', { name: words.tours.steps.check }).click();
+  await expect(page.getByText(words.errors.kindHasNoLegs)).toHaveCount(0);
+
+  // ---------------------------------------------------------------- Sequential: now the hub is the row left over
+  await page.goto(`/staff/tours/${tourId}?tab=kind`);
+  await choose(page, words.tours.fields.kind, words.tours.options.kind.Sequential);
+  // From Open nothing is left by the change itself: the hub was there already.
+  await expect(page.getByText(leaves(words.tours.options.kind.Sequential))).toHaveCount(0);
+  await whileWaitingFor(page, 'PUT', `/api/flightops/tours/${tourId}`, async () => {
+    await page.getByRole('button', { name: englishCommon.common.save }).click();
+  });
+
+  await page.getByRole('tab', { name: words.tours.steps.check }).click();
+  await expect(page.getByText(words.errors.kindHasNoHubs)).toBeVisible();
+  await page
+    .getByRole('link', { name: words.tours.steps.goTo.replace('{{step}}', words.tours.steps.route) })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/tab=route/);
+  await expect(page.getByText(words.tours.steps.leftoverHubs)).toBeVisible();
+  await expect(page.getByRole('link', { name: words.hubs.create })).toHaveCount(0);
 
   await page
     .getByRole('row')
