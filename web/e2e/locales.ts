@@ -259,6 +259,7 @@ interface CommonStrings {
       readonly captions: { readonly divisionAtc: string; readonly divisionPilots: string };
     };
     readonly staffList: { readonly rosterNote: string };
+    readonly siteMap: { readonly empty: string };
     readonly myWork: {
       readonly sentBack: string;
       readonly titles: { readonly drafts: string };

@@ -12,6 +12,14 @@ import { englishCommon } from './locales';
 const SLUG = 'site-map';
 const words = englishCommon.blocks.siteMap;
 
+// The name of a screen, read from its key as the block reads it. A record answers `string | undefined`, so it is checked
+// once here: a spec asserting on `undefined` asserts on nothing.
+const calendar = englishCommon.menu.screens['/calendar'] ?? '';
+
+test('the name of the calendar screen is in the English words', () => {
+  expect(calendar).not.toBe('');
+});
+
 const body = {
   schemaVersion: 1,
   sections: [
@@ -56,7 +64,7 @@ test('the map nests each page under its mother, with the front page first', asyn
 
   // The front page is one line, under its row's title, at `/`; the screen of the same page is not drawn twice.
   const top = map.locator(':scope > ul > li > a');
-  await expect(top).toHaveText(['Welcome', 'About', englishCommon.menu.screens['/calendar']]);
+  await expect(top).toHaveText(['Welcome', 'About', calendar]);
   await expect(top.first()).toHaveAttribute('href', '/');
 
   // Sisters in the order of their titles, inside the line of their mother.
@@ -84,7 +92,7 @@ test('the gallery mounts the block from its example', async ({ page }) => {
   const section = page.locator('[data-ui-kit="siteMap"]');
   await section.scrollIntoViewIfNeeded();
   await expect(section.getByRole('link', { name: 'The staff' })).toHaveAttribute('href', '/about/team');
-  await expect(section.getByRole('link', { name: englishCommon.menu.screens['/calendar'] })).toBeVisible();
+  await expect(section.getByRole('link', { name: calendar })).toBeVisible();
 
   await section.screenshot({ path: test.info().outputPath('site-map-gallery.png') });
 });
