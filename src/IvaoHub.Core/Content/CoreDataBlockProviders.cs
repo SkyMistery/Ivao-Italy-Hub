@@ -4,6 +4,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -683,7 +684,7 @@ public sealed class SiteMapProvider(HubDbContext database, SiteDestinations dest
         if (root == "/")
         {
             // The context answers for whoever runs the query, as its query filter does: the same reader, asked once more.
-            foreach (var screen in destinations.Screens.Where(screen => database.Reads(screen.Visibility)))
+            foreach (var screen in OpenTo(destinations.Screens, database))
             {
                 items.Add(new JsonObject
                 {
@@ -695,6 +696,18 @@ public sealed class SiteMapProvider(HubDbContext database, SiteDestinations dest
         }
 
         return new JsonObject { ["items"] = items };
+    }
+
+    /// <summary>
+    /// The screens <paramref name="reader"/> may open, each by the visibility it declares (<see cref="SiteScreen.Visibility"/>).
+    /// Every screen declared today is public, so this is the line only a test with a narrower one can see.
+    /// </summary>
+    public static IEnumerable<SiteScreen> OpenTo(IEnumerable<SiteScreen> screens, IVisibilityScope reader)
+    {
+        ArgumentNullException.ThrowIfNull(screens);
+        ArgumentNullException.ThrowIfNull(reader);
+
+        return screens.Where(screen => reader.Reads(screen.Visibility));
     }
 
     /// <summary>Whether an address is the root or under it. The stored path compares without case, as the database does.</summary>
