@@ -22,6 +22,12 @@ il posto e non l'indirizzo, e che «news e documenti non scelgono»; la riga non
   esiste già, uno slug diverso da quello salvato chiede **`Content.Approve` sulla riga**, all'handler unico; **anche su una bozza
   mai pubblicata** e anche dove il tipo non si approva (news e documenti). Il rifiuto è la chiave di sempre,
   `errors.content.position.needsApproval`, sul campo `slug`. La creazione non cambia: lo slug arriva con la riga.
+  ⚠️ Il tipo e «modello sì o no» si giudicano **sulla riga com'era e com'è dopo il salvataggio**: `kind` e `isTemplate` viaggiano
+  nel corpo del PUT, e giudicati solo sulla riga nuova una bozza diventava modello (o dashboard) con lo slug nuovo e poi di nuovo
+  pagina con lo slug fermo (rilievo 1 della revisione della #554; `HasAnAddress`).
+- **La proposta si taglia a 160 caratteri**, la lunghezza della colonna (`ContentWriteDtoValidator.MaxSlugLength`): un titolo
+  lunghissimo darebbe uno slug che il server rifiuta su un campo che chi scrive non vede. È un'annotazione nuova del form generato,
+  `slugMaxLength`, accanto a `slugPrefix`; `slugify` taglia e non lascia un trattino in fondo (rilievo 2).
 - **Il browser**: lo schema dei metadati prende `maySetSlug` (`features/content/schema.ts`) e, quando è falso, il campo `slug`
   è `hidden`: **non si disegna ma c'è**, e `slugFrom: 'title'` continua a proporlo dal titolo nella lingua principale della
   divisione finché la riga è nuova (la proposta legge i valori del form, non il campo a schermo). `ContentFormScreen` lo calcola:
@@ -52,6 +58,10 @@ il posto e non l'indirizzo, e che «news e documenti non scelgono»; la riga non
    pulsante **«Usa `x-2`»**, che rimette il form con quello slug (come un'importazione gli dà i suoi campi: `takeFields`). Su una
    riga **che esiste** (una bozza spostata sotto una madre dove quello slug c'è già) dice che l'indirizzo lo cambia chi approva:
    un'altra madre, o chiederlo a lui. Il pulsante è un `Button` di Atmosphere dentro `AddressPreview`, nessun componente nuovo.
+   ⚠️ **Dopo «Usa `x-2`» lo slug non segue più il titolo** (rilievo 3 della revisione della #554): il form ripartito conta `x-2`
+   come scritto a mano (`useProposedSlugs`), e cambiare ancora il titolo prima del primo salvataggio lascia `x-2`. Non si rompe
+   niente, perché l'anteprima dice l'indirizzo vero; ma è un'eccezione a «segue il titolo finché non salva». Si lascia così finché
+   Carmine non ha deciso questa scelta.
 4. ⚖️ **«Nuovo da template» chiede ancora lo slug a mano** (`TemplatePicker`), a chiunque crei, perché lì un titolo da cui
    proporlo non c'è: la pagina nasce con il titolo del modello. La regola del server la rispetta (è la creazione), ma è un posto
    dove chi non approva sceglie lo slug. **Domanda per Carmine**: (a) **lasciarlo così** in questa PR — raccomandata: la pagina
@@ -64,7 +74,10 @@ il posto e non l'indirizzo, e che «news e documenti non scelgono»; la riga non
 
 - **Nuovi**, `PublishedFieldsTests`: `TheSlugIsBornWithTheRowAndChangedOnlyByWhoeverMayApprove` (pagina, news e documento in
   bozza: il coordinatore scrive il resto e la mette fra i membri, lo slug no; il direttore lo corregge) e
-  `ANewsItemOnlineIsMovedByWhoeverPublishesItButRenamedOnlyByWhoeverApproves` (scelta 2). L'e2e `address.spec.ts` «a coordinator
+  `ANewsItemOnlineIsMovedByWhoeverPublishesItButRenamedOnlyByWhoeverApproves` (scelta 2), e
+  `TheSlugIsNotRenamedOnTheWayThroughATemplateOrADashboard` (rilievo 1: i due PUT, modello e dashboard, con lo slug nuovo).
+  `extensions.test.tsx` «a proposal is cut where the column ends…» e «a hidden address still proposes itself…», e
+  `features/content/schema.test.ts` (rilievo 2: il taglio, e i 160 dei tre tipi). L'e2e `address.spec.ts` «a coordinator
   whose title makes a taken address…» (scelta 3).
 - **Cambiati** (regola 3 di `CLAUDE.md` §0, uno per uno; nessun test d'integrazione esistente cambiava lo slug di una bozza come
   utente senza `Content.Approve`):
@@ -83,6 +96,6 @@ il posto e non l'indirizzo, e che «news e documenti non scelgono»; la riga non
 - **§9.3**, la riga di `decisions/2026-10-21-i-campi-fuori-dalla-versione.md` letta nel piano: su una riga online lo slug chiede
   anche `Content.Approve` dove il tipo non si approva (news, documenti), dopo il controllo di `Content.Publish` (§4, scelta 2).
 - **`decisions/2026-09-13-contenuti-centralizzati.md` §3.7**, letta nel piano: «news e documenti non scelgono» è nel codice.
-- **§16.6** (il form generato): un campo `slugFrom` nascosto propone lo stesso; l'anteprima dell'indirizzo offre lo slug libero a
-  chi non scrive lo slug (§4, scelta 3).
+- **§16.6** (il form generato): un campo `slugFrom` nascosto propone lo stesso; `slugMaxLength` taglia la proposta alla lunghezza
+  della colonna; l'anteprima dell'indirizzo offre lo slug libero a chi non scrive lo slug (§4, scelta 3).
 - La risposta di Carmine alla domanda del §4, scelta 4, quando c'è.
