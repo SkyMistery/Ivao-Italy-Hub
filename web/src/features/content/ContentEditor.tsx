@@ -699,7 +699,7 @@ export function ContentEditor({
                       suggested.current = '';
                       setPublishRequest({ changelog: '' });
                     } catch {
-                      // Refused: the screen has said so, and the draft is where it was.
+                      // Refused: the screen has said why, in the server's words (#539), and the draft is where it was.
                     }
                   })();
                 }}
