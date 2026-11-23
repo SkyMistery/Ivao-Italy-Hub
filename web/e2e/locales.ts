@@ -118,6 +118,7 @@ interface CommonStrings {
     readonly fields: {
       readonly template: string;
       readonly slug: string;
+      readonly title: string;
       readonly visibility: string;
       readonly pinned: string;
       readonly parentId: string;
@@ -161,6 +162,8 @@ interface CommonStrings {
     readonly address: {
       readonly label: string;
       readonly state: { readonly Free: string };
+      readonly takenNew: string;
+      readonly useSuggestion: string;
     };
     readonly options: {
       readonly parentId: { readonly none: string };

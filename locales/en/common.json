@@ -769,7 +769,10 @@
         "TooDeep": "This would be a fourth level. A page goes three levels deep at most, counting the pages under it.",
         "InvalidParent": "A page cannot go under this one.",
         "TopLevelNotAllowed": "Only the director and the web team put a page at the top of the site. Choose a page to put it under."
-      }
+      },
+      "takenNew": "Another page already has the address this title makes. Change the title, or take the free one.",
+      "takenFixed": "Another page already has this address here. The address is changed by whoever approves: choose another parent page, or ask them.",
+      "useSuggestion": "Use {{suggestion}}"
     },
     "review": {
       "title": "Approval",

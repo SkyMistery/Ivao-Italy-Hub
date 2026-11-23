@@ -769,7 +769,10 @@
         "TooDeep": "Sarebbe un quarto livello. Una pagina scende al massimo di tre livelli, contando quelle sotto di lei.",
         "InvalidParent": "Una pagina non può stare sotto questa.",
         "TopLevelNotAllowed": "Solo il direttore e il team web mettono una pagina in cima al sito. Scegli la pagina sotto cui metterla."
-      }
+      },
+      "takenNew": "Un'altra pagina ha già l'indirizzo che nasce da questo titolo. Cambia il titolo, oppure prendi quello libero.",
+      "takenFixed": "Un'altra pagina ha già questo indirizzo qui. L'indirizzo lo cambia chi approva: scegli un'altra pagina madre, oppure chiedilo a chi approva.",
+      "useSuggestion": "Usa {{suggestion}}"
     },
     "review": {
       "title": "Approvazione",

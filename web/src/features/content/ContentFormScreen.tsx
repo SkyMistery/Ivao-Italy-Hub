@@ -163,6 +163,13 @@ export function ContentFormScreen({
   // kind the division lists, never a template. Whoever may approve publishes it directly; anybody else
   // marks it ready, and a row already waiting is published by being approved, not past its review.
   const mayApprove = holdsPermission(bootstrap, CONTENT_APPROVE, department);
+
+  // Who writes the slug (design 13 §4.1, answers 1 and 2 of Carmine): of a page, a news item or a document, only whoever
+  // may approve; anybody else has it born from the title. The server refuses a changed one anyway
+  // (`errors.content.position.needsApproval`). A template and a dashboard keep theirs: neither is an address of the site.
+  const addressed = config.kind !== 'Dashboard' && !startsAsTemplate && content?.isTemplate !== true;
+  const maySetSlug = !addressed || mayApprove;
+
   const reviewed =
     !isNew &&
     content !== null &&
@@ -232,6 +239,7 @@ export function ContentFormScreen({
         categories={categories}
         successors={successorChoices}
         {...(isPage ? { pageChoices } : {})}
+        maySetSlug={maySetSlug}
         department={department}
         locales={locales}
         division={{

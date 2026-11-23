@@ -22,10 +22,16 @@ namespace IvaoHub.Core.Content;
 
 /// <summary>What "new from template" needs to know that the template does not say.</summary>
 /// <param name="OwnerDepartment">The department the page belongs to.</param>
-/// <param name="Slug">The last segment of its address.</param>
+/// <param name="Slug">The last segment of its address: born from <paramref name="Title"/> in the browser, and written by
+/// hand only by whoever holds <c>Content.Approve</c> (design 13 §4.1, the maintainer's answer on #554).</param>
 /// <param name="ParentId">The page it sits under; null at the top of the site (note
 /// 2026-09-13-contenuti-centralizzati, 3.7).</param>
-public sealed record ContentFromTemplateRequest(Department OwnerDepartment, string Slug, long? ParentId = null);
+/// <param name="Title">The title of the new row, which its slug is born from; null keeps the template's.</param>
+public sealed record ContentFromTemplateRequest(
+    Department OwnerDepartment,
+    string Slug,
+    long? ParentId = null,
+    Localized<string>? Title = null);
 
 /// <summary>
 /// What a visitor asking for an address is given: the page that has it, or — when a published page
@@ -412,8 +418,14 @@ public static class ContentEndpoints
     /// as it would become. The approver who corrects an address while approving does it in the review, not here.
     /// <para>And new readers — another visibility, another department — go through the checks of
     /// publication on what is online (<see cref="ContentPublishService.NewReadersProblemsAsync"/>).</para>
-    /// <para>A row with nothing online is a draft, and anybody who may edit it places it: publication is the
-    /// step that asks.</para>
+    /// <para>A row with nothing online is a draft, and anybody who may edit it places it — under a page, within the rules of
+    /// <see cref="ContentAddresses"/> —: publication is the step that asks.</para>
+    /// <para>Except for its slug. A page, a news item or a document is given its slug once, when it is created, from its
+    /// title; from then on the slug is changed only by whoever holds <see cref="CorePermissions.ContentApprove"/> on the
+    /// row, draft or online, whether its kind goes through approval or not, with the same refusal
+    /// (design <c>13-design-struttura-del-sito.md</c> §4.1, answers 1 and 2 of Carmine, 19 November 2026). Changing the
+    /// title never moves a page: an address that followed it would break the links written to it before it was even out.
+    /// A template has no address on the site, and its slug stays its writer's.</para>
     /// </summary>
     private static async Task<IReadOnlyDictionary<string, string[]>?> PositionNotTheirsAsync(
         Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<ContentEntry> entry,
@@ -421,12 +433,20 @@ public static class ContentEndpoints
         ClaimsPrincipal user,
         CancellationToken cancellationToken)
     {
+        var content = entry.Entity;
+        var authorization = services.GetRequiredService<IAuthorizationService>();
+        var slugChanged = !string.Equals(entry.Property(row => row.Slug).OriginalValue, content.Slug, StringComparison.Ordinal);
+
         if (entry.Property(row => row.PublishedVersionId).OriginalValue is null)
         {
-            return null;
+            return slugChanged && await SlugNotTheirsAsync(entry, authorization, user)
+                ? new Dictionary<string, string[]>(StringComparer.Ordinal)
+                {
+                    ["slug"] = ["errors.content.position.needsApproval"],
+                }
+                : null;
         }
 
-        var content = entry.Entity;
         var moved = new List<string>();
 
         if (entry.Property(row => row.Visibility).OriginalValue != content.Visibility)
@@ -434,7 +454,7 @@ public static class ContentEndpoints
             moved.Add("visibility");
         }
 
-        if (!string.Equals(entry.Property(row => row.Slug).OriginalValue, content.Slug, StringComparison.Ordinal))
+        if (slugChanged)
         {
             moved.Add("slug");
         }
@@ -446,7 +466,6 @@ public static class ContentEndpoints
 
         if (moved.Count > 0)
         {
-            var authorization = services.GetRequiredService<IAuthorizationService>();
             var refusal = !(await authorization.AuthorizeAsync(user, content, CorePermissions.ContentPublish)).Succeeded
                 ? "errors.content.position.needsPublish"
                 : services.GetRequiredService<ContentReviewService>().RequiresApproval(content)
@@ -460,6 +479,16 @@ public static class ContentEndpoints
             }
         }
 
+        // Online and of a kind that is not approved — a news item, a document —: who may publish it moves it, but its slug
+        // still asks for the approver.
+        if (slugChanged && await SlugNotTheirsAsync(entry, authorization, user))
+        {
+            return new Dictionary<string, string[]>(StringComparer.Ordinal)
+            {
+                ["slug"] = ["errors.content.position.needsApproval"],
+            };
+        }
+
         var publishedVisibility = entry.Property(row => row.Visibility).OriginalValue;
         var publishedDepartment = entry.Property(row => row.OwnerDepartment).OriginalValue;
 
@@ -468,6 +497,27 @@ public static class ContentEndpoints
             : await services.GetRequiredService<ContentPublishService>()
                 .NewReadersProblemsAsync(content, publishedVisibility, publishedDepartment, cancellationToken);
     }
+
+    /// <summary>
+    /// Whether a changed slug is not this writer's to change (design <c>13-design-struttura-del-sito.md</c> §4.1): a page, a
+    /// news item or a document — never a template, which has no address on the site — without
+    /// <see cref="CorePermissions.ContentApprove"/> on the row, asked of the one authorization handler.
+    /// <para>⚠️ A page, a news item or a document <b>as stored or as the save leaves it</b>: <c>kind</c> and <c>isTemplate</c>
+    /// travel in the payload, and only the browser hides them. Judged on the row as the save leaves it alone, a writer would
+    /// make it a template — or a dashboard — with the new slug, and then a page again with the slug unchanged (the review
+    /// of #554, finding 1).</para>
+    /// </summary>
+    private static async Task<bool> SlugNotTheirsAsync(
+        Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<ContentEntry> entry,
+        IAuthorizationService authorization,
+        ClaimsPrincipal user) =>
+        (HasAnAddress(entry.Property(row => row.Kind).OriginalValue, entry.Property(row => row.IsTemplate).OriginalValue)
+            || HasAnAddress(entry.Entity.Kind, entry.Entity.IsTemplate))
+        && !(await authorization.AuthorizeAsync(user, entry.Entity, CorePermissions.ContentApprove)).Succeeded;
+
+    /// <summary>Whether a row of this kind has an address on the site that its slug makes: a page, a news item or a document, never a template.</summary>
+    private static bool HasAnAddress(ContentKind kind, bool isTemplate) =>
+        !isTemplate && kind is ContentKind.Page or ContentKind.News or ContentKind.Document;
 
     /// <summary>
     /// <c>filter[usesMedia]=42</c>: the contents that show a file. Named here because the client
@@ -519,7 +569,9 @@ public static class ContentEndpoints
             request.OwnerDepartment,
             Visibility.Staff,
             IsTemplate: false,
-            template.Title,
+            // The title the writer gave the new row, which its slug was born from (design 13 §4.1); the template's when
+            // none was given.
+            request.Title ?? template.Title,
             template.Summary,
             template.Seo,
             body,

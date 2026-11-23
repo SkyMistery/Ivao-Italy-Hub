@@ -5,18 +5,31 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Department } from '../../shared/api/bootstrap';
-import { NO_CHOICE, ProblemAlert, choiceItem, describeProblem } from '../../shared/forms';
+import {
+  NO_CHOICE,
+  ProblemAlert,
+  cannotProposeASlug,
+  choiceItem,
+  describeProblem,
+  slugify,
+} from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { bootstrapQuery } from '../me/queries';
 
 import { useCreateFromTemplate } from './mutations';
 import { parentChoices } from './pageTree';
 import { pageTreeQuery, templatesQuery, type ContentKind } from './queries';
+import { CONTENT_SLUG_MAX_LENGTH } from './schema';
 
 /**
  * "New from template". The copy is made by the server — new identifiers for every section and
- * block, the keys only a template may carry left behind — so this is a template, a slug and a
+ * block, the keys only a template may carry left behind — so this is a template, a title and a
  * button, and no client side copying at all (design M0 §5.6).
+ *
+ * The address is born from the title, as in the form of a row (design 13 §4.1; the maintainer's answer on #554, point 3):
+ * the title of the new row is asked here, in the division's main language, and its slug comes from it. The field of the
+ * slug is drawn to whoever may approve, who writes it as elsewhere, and to anybody whose title gives no slug (point 1).
+ * An approver may leave the title empty: the row then keeps the template's.
  *
  * A division with no templates seeded sees nothing here rather than an empty select: there is
  * nothing to choose, and saying so with an empty control would only invite a click.
@@ -25,6 +38,7 @@ export function TemplatePicker({
   department,
   kind,
   mayBeAtTheTop,
+  maySetSlug,
   onCreated,
 }: {
   department: Department;
@@ -35,13 +49,17 @@ export function TemplatePicker({
    * 3.7). When it may not, the page it makes has to be put under one, and the button waits for it.
    */
   mayBeAtTheTop: boolean;
+  /** Whether this member writes the slug: whoever holds `Content.Approve` (design 13 §4.1). */
+  maySetSlug: boolean;
   onCreated: (id: number) => void;
 }) {
   const { t, i18n } = useTranslation();
   const read = useLocalized();
 
   const [templateId, setTemplateId] = useState<string>('');
-  const [slug, setSlug] = useState('');
+  const [title, setTitle] = useState('');
+  // What was typed in the field of the slug; null while it follows the title, as `slugFrom` does in a form.
+  const [typedSlug, setTypedSlug] = useState<string | null>(null);
   const [parentId, setParentId] = useState<string>('');
 
   const templates = useQuery(templatesQuery(kind));
@@ -58,6 +76,16 @@ export function TemplatePicker({
   );
   const create = useCreateFromTemplate();
 
+  const defaultLocale = bootstrap?.division.defaultLocale;
+  const slug = (typedSlug ?? slugify(title, CONTENT_SLUG_MAX_LENGTH)).trim();
+
+  // Opened by a title that gives no slug, and open from then on, as in the editor.
+  const [slugOpened, setSlugOpened] = useState(false);
+  if (!slugOpened && cannotProposeASlug(title, defaultLocale)) {
+    setSlugOpened(true);
+  }
+  const slugDrawn = maySetSlug || slugOpened;
+
   const items = (templates.data?.items ?? []).map((template) => ({
     value: String(template.id),
     label: read(template.title) || template.slug,
@@ -72,8 +100,10 @@ export function TemplatePicker({
       {
         templateId: Number(templateId),
         ownerDepartment: department,
-        slug: slug.trim(),
+        slug,
         parentId: isPage && parentId !== '' ? Number(parentId) : null,
+        // In the division's main language, the one the address is published in; the others are written in the editor.
+        title: title.trim() === '' || defaultLocale === undefined ? null : { [defaultLocale]: title.trim() },
       },
       { onSuccess: (content) => onCreated(content.id) },
     );
@@ -125,20 +155,27 @@ export function TemplatePicker({
         ) : null}
 
         <div className="flex min-w-56 flex-col gap-1">
-          <Label htmlFor="newSlug">{t('content.fields.slug')}</Label>
-          <Input
-            id="newSlug"
-            value={slug}
-            onChange={(event) => setSlug(event.target.value)}
-            placeholder={t('content.slugPlaceholder')}
-          />
+          <Label htmlFor="newTitle">{t('content.fields.title')}</Label>
+          <Input id="newTitle" value={title} onChange={(event) => setTitle(event.target.value)} />
         </div>
+
+        {slugDrawn ? (
+          <div className="flex min-w-56 flex-col gap-1">
+            <Label htmlFor="newSlug">{t('content.fields.slug')}</Label>
+            <Input
+              id="newSlug"
+              value={typedSlug ?? slug}
+              onChange={(event) => setTypedSlug(event.target.value)}
+              placeholder={t('content.slugPlaceholder')}
+            />
+          </div>
+        ) : null}
 
         <Button
           type="button"
           disabled={
             templateId === '' ||
-            slug.trim() === '' ||
+            slug === '' ||
             (isPage && !mayBeAtTheTop && parentId === '') ||
             create.isPending
           }

@@ -5479,7 +5479,10 @@ export interface components {
         ContentFromTemplateRequest: {
             /** @description The department the page belongs to. */
             ownerDepartment: components["schemas"]["Department"];
-            /** @description The last segment of its address. */
+            /**
+             * @description The last segment of its address: born from Title in the browser, and written by
+             *                 hand only by whoever holds `Content.Approve` (design 13 §4.1, the maintainer's answer on #554).
+             */
             slug: string;
             /**
              * Format: int64
@@ -5487,6 +5490,10 @@ export interface components {
              *                 2026-09-13-contenuti-centralizzati, 3.7).
              */
             parentId?: null | number;
+            /** @description The title of the new row, which its slug is born from; null keeps the template's. */
+            title?: {
+                [key: string]: string;
+            };
         };
         /**
          * @description What an editorial row is. One table for all three (plan section 9.3).
