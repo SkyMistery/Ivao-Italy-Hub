@@ -637,8 +637,9 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
 
   // --- Data --------------------------------------------------------------------------------------
   //
-  // Seven blocks that draw what the hub knows rather than what an editor typed — the map of the site, of phase 4, is the
-  // seventh (design 13 §5.1). Each one has an
+  // Seven blocks here, of the nine data blocks of the core: `linkList` sits with the content blocks above and `myWork`
+  // with the personal dashboards below. They draw what the hub knows rather than what an editor typed — the map of the
+  // site, of phase 4, is the last of this group (design 13 §5.1). Each one has an
   // `IDataBlockProvider` registered for the same type on the server — the fifth thing a block costs
   // (design M1 §1.3) — and an `exampleData`, because the gallery is a page about the components and
   // must not show whatever this installation happens to hold today, or nothing at all on a fresh one.

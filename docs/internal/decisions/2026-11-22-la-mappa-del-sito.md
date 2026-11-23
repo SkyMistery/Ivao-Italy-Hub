@@ -48,7 +48,11 @@ ognuno quello che può aprire.
 - **I test.** `SiteMapBlockTests` (integrazione: un visitatore, un membro e il superadmin ricevono ognuno le sue pagine; una bozza
   non c'è; il titolo è quello online e non quello della bozza; la mappa di una sezione non ha schermate; l'intero sito ha le sei
   schermate del nucleo, `/contact` compresa; un indirizzo di fuori non è una radice; la risposta di un visitatore porta
-  `s-maxage`, quella di un membro no; una cattura risponde niente). `siteMap.test.ts` (l'annidamento, la pagina iniziale, la madre
+  `s-maxage`, quella di un membro no; una cattura risponde niente). `VisibilityScopeRulesTests` (unitario, rilievo 4 della
+  revisione della #555): `Reads` risponde come il filtro compilato dal modello, per ogni visibilità e per un visitatore, un
+  membro, lo staff di un dipartimento e chi li vede tutti; e `SiteMapProvider.OpenTo` lascia fuori una schermata dei membri o
+  dello staff a chi non la può aprire. Le due prove inverse (togliere il `Where` di `OpenTo`, far rispondere `Reads` sì ai
+  membri per tutti) lo fanno diventare rosso. `siteMap.test.ts` (l'annidamento, la pagina iniziale, la madre
   che il lettore non vede, l'ordine per lingua). L'e2e smoke `site-map.spec.ts` (la pagina e la galleria `/staff/admin/ui-kit`). I
   conteggi scritti a mano crescono di uno: `uiKit.test.ts` (47), `blocks.test.tsx` (nove blocchi di dati del nucleo),
   `DataBlockEndToEndTests` (22), e `blockAddresses.test.ts` aggiunge `siteMap` ai blocchi che portano da qualche parte.
@@ -110,6 +114,20 @@ ognuno quello che può aprire.
    della #493).
 9. **Senza pagine**, come la lettura degli indirizzi: è il sito che il lettore può già aprire pagina per pagina, e una divisione ha
    qualche centinaio di pagine.
+
+## 5. Un limite che resta
+
+⚠️ **La mappa di una sezione resta vuota se la sua pagina di partenza si sposta** (rilievo 5 della revisione della #555).
+- La pubblicazione accetta un `href` che porta a un indirizzo lasciato da una pagina spostata, perché quell'indirizzo arriva
+  ancora (`SiteDestinations.AddLeftBehindAsync`).
+- Il provider, invece, confronta la radice solo con gli indirizzi di oggi (`SiteMapProvider.Under`): dopo lo spostamento non
+  trova niente e dice «Non c'è ancora nessuna pagina da mostrare».
+- Il rimedio è scegliere di nuovo la pagina nel campo «Comincia dalla pagina»: l'editor offre gli indirizzi di oggi.
+- Seguire il vecchio indirizzo vorrebbe dire una terza lettura delle pagine spostate, accanto a quelle di `ReadPublicPageAsync` e di
+  `AddLeftBehindAsync`. Se serve, è prima da fare una lettura sola di «dove è andata la pagina che stava qui», poi la mappa la
+  usa: non una copia in più.
+
+Tutto il sito, cioè una mappa senza `href`, non ha questo limite.
 
 ## Da portare nel piano
 
