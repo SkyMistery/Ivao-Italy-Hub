@@ -45,13 +45,11 @@ public sealed class TrainingMail(
     public static string Moment(DateTime utc, DateOrder order) => HubDates.Moment(utc, order);
 
     /// <summary>
-    /// A date proposed as a mail writes it: its day and hours, and the day of its end too when it is another. The dash is spaced on one
-    /// day as on two, as the pages write it (Carmine on #542, note 2026-11-18-la-fine-di-un-intervallo-nel-nucleo).
+    /// A date proposed as a mail writes it: its day and hours, and the day of its end too when it is another — the core's
+    /// <see cref="HubDates.Interval"/>, with the dash spaced on one day as on two, as the pages write it (Carmine on #542, note
+    /// 2026-11-22-l-intervallo-di-una-mail-nel-nucleo).
     /// </summary>
-    public static string Span(DateTime startsAtUtc, DateTime endsAtUtc, DateOrder order) =>
-        startsAtUtc.Date == endsAtUtc.Date
-            ? string.Create(CultureInfo.InvariantCulture, $"{Moment(startsAtUtc, order)} – {endsAtUtc:HH:mm}")
-            : $"{Moment(startsAtUtc, order)} – {Moment(endsAtUtc, order)}";
+    public static string Span(DateTime startsAtUtc, DateTime endsAtUtc, DateOrder order) => HubDates.Interval(startsAtUtc, endsAtUtc, order);
 
     /// <summary>
     /// Queues a mail of <paramref name="type"/> to <paramref name="vid"/> about <paramref name="training"/>, pointing at

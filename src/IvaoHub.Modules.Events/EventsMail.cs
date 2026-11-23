@@ -172,8 +172,9 @@ public sealed class EventsMail(
 
     /// <summary>
     /// The turns a member holds, one line each, by their start, in this language: the shape of the line — and the word for the zone — are
-    /// the language file's (the review of #271, point 7), the activity, its place and the two times fill it. What the mail of a
-    /// registration says; the pages write their own words from the seats, in the language on screen.
+    /// the language file's (the review of #271, point 7), the activity, its place and the turn's interval fill it — the core's
+    /// <see cref="HubDates.Interval"/>, the day of its end when it is the next one (#548). What the mail of a registration says; the pages
+    /// write their own words from the seats, in the language on screen.
     /// </summary>
     public static IReadOnlyList<string> SeatLines(
         IReadOnlyList<(EventActivitySeat Seat, EventActivity Activity)> seats,
@@ -197,10 +198,9 @@ public sealed class EventsMail(
                     return shape
                         .Replace("{{activity}}", entry.Activity.Name.Resolve(locale, fallback) ?? string.Empty, StringComparison.Ordinal)
                         .Replace("{{place}}", place ?? string.Empty, StringComparison.Ordinal)
-                        .Replace("{{from}}", Moment(entry.Seat.StartsAtUtc, order), StringComparison.Ordinal)
                         .Replace(
-                            "{{to}}",
-                            entry.Seat.StartsAtUtc.AddMinutes(entry.Activity.SlotMinutes).ToString("HH:mm", CultureInfo.InvariantCulture),
+                            "{{when}}",
+                            HubDates.Interval(entry.Seat.StartsAtUtc, entry.Seat.StartsAtUtc.AddMinutes(entry.Activity.SlotMinutes), order),
                             StringComparison.Ordinal);
                 }),
         ];
@@ -219,10 +219,10 @@ public sealed class EventsMail(
 
     /// <summary>
     /// One shift as a mail writes it: the callsign and its hours, in UTC — the sentence around it says so —, the day of its end only when it
-    /// is not the day it starts.
+    /// is not the day it starts, as the core's <see cref="HubDates.Interval"/> writes it.
     /// </summary>
     public static string Shift(string callsign, DateTime fromUtc, DateTime toUtc, DateOrder order) =>
-        $"{callsign} {Moment(fromUtc, order)} – {(toUtc.Date == fromUtc.Date ? toUtc.ToString("HH:mm", CultureInfo.InvariantCulture) : Moment(toUtc, order))}";
+        $"{callsign} {HubDates.Interval(fromUtc, toUtc, order)}";
 
     /// <summary>
     /// A controller's shifts of a roster (§4.4, E12): at its publication, every shift of theirs not told yet in one mail; after it, a shift

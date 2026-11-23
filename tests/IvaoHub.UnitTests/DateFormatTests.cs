@@ -52,6 +52,35 @@ public sealed class DateFormatTests
         Assert.Equal(DateOrder.DayMonthYear, (Division() with { DateFormat = format! }).ResolveDateOrder());
     }
 
+    [Theory]
+    // On the day it starts: its end is a time alone.
+    [InlineData("2026-11-21T17:00:00", "2026-11-21T22:00:00", "21/11/2026 17:00 – 22:00")]
+    // Past midnight: its end carries its day.
+    [InlineData("2026-11-21T23:30:00", "2026-11-22T00:30:00", "21/11/2026 23:30 – 22/11/2026 00:30")]
+    // At midnight exactly: the next day, with its date, as the browser's intervalEnd writes it.
+    [InlineData("2026-11-21T23:00:00", "2026-11-22T00:00:00", "21/11/2026 23:00 – 22/11/2026 00:00")]
+    // The night the clocks go back in Europe, and the one they go forward: UTC knows no change of hour, one day stays one day.
+    [InlineData("2026-10-25T00:30:00", "2026-10-25T03:30:00", "25/10/2026 00:30 – 03:30")]
+    [InlineData("2026-03-29T00:30:00", "2026-03-29T03:30:00", "29/03/2026 00:30 – 03:30")]
+    public void AnIntervalWritesItsStartWholeAndItsEndAfterASpacedDash(string from, string to, string expected)
+    {
+        // The server's twin of the browser's intervalText (note 2026-11-22-l-intervallo-di-una-mail-nel-nucleo).
+        Assert.Equal(expected, HubDates.Interval(Utc(from), Utc(to), DateOrder.DayMonthYear));
+    }
+
+    [Fact]
+    public void AnIntervalWritesBothDaysInTheDivisionsOrder()
+    {
+        var from = Utc("2026-11-21T23:30:00");
+
+        Assert.Equal("11/21/2026 23:30 – 11/22/2026 00:30", HubDates.Interval(from, from.AddHours(1), DateOrder.MonthDayYear));
+        Assert.Equal("2026/11/21 23:30 – 2026/11/22 00:30", HubDates.Interval(from, from.AddHours(1), DateOrder.YearMonthDay));
+        Assert.Equal("2026/11/21 23:30 – 23:45", HubDates.Interval(from, from.AddMinutes(15), DateOrder.YearMonthDay));
+    }
+
+    private static DateTime Utc(string moment) =>
+        DateTime.SpecifyKind(DateTime.Parse(moment, System.Globalization.CultureInfo.InvariantCulture), DateTimeKind.Utc);
+
     /// <summary>A division the validator accepts, with nothing said about dates.</summary>
     private static DivisionOptions Division() => new()
     {
