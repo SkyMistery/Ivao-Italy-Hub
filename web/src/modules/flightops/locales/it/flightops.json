@@ -54,7 +54,16 @@
       "goTo": "Vai a «{{step}}»",
       "preview": "La pagina, come la vedranno i piloti",
       "previewLead": "Disegnata dal tour come è salvato adesso, prima del rilascio. La parte di ogni pilota — il suo progresso, i suoi rapporti — qui non c'è.",
-      "previewNeeds": "La pagina ha bisogno di un indirizzo e delle due date, che si scrivono al passo 2."
+      "previewNeeds": "La pagina ha bisogno di un indirizzo e delle due date, che si scrivono al passo 2.",
+      "leftoverLegs": "Un tour di questo tipo non ha leg. Queste restano dal tipo che aveva prima, e il tour non si segna pronto finché non sono eliminate.",
+      "leftoverHubs": "Solo un tour a hub ha hub e rotazioni. Questi restano dal tipo che aveva prima: elimina prima le leg di una rotazione, poi la rotazione, poi il suo hub.",
+      "leftoverConstraints": "Solo un tour Open ha filtri e regole di sequenza. Questi restano dal tipo che aveva prima, e il tour non si segna pronto finché non sono eliminati.",
+      "kindLeaves": "Un tour «{{kind}}» non usa {{parts}}. Se questo tour ne ha, restano dopo il salvataggio: eliminali al passo «Percorso» prima di segnarlo pronto.",
+      "leftoverNames": {
+        "legs": "le leg",
+        "hubs": "gli hub con le loro rotazioni",
+        "constraints": "i filtri e le regole di sequenza"
+      }
     },
     "kindHelp": {
       "Sequential": "Le leg si volano nel loro ordine, una dopo l'altra.",

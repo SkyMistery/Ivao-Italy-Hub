@@ -46,7 +46,17 @@ import { keepingCurrent, useStaff, useTypeSuggestions } from './hooks';
 import { TourRulesTab } from './rules';
 import { TourPreview } from './TourPreview';
 import { TourCallsignsTab, TourConstraints, TourHubsTab, TourOpenGoal, TourSubtoursTab } from './shape';
-import { neighbours, openStep, routeParts, stepOfProblem, stepsToFix, tourSteps } from './tourSteps';
+import {
+  leftoverParts,
+  neighbours,
+  openStep,
+  partsLeftBy,
+  routeParts,
+  stepOfProblem,
+  stepsToFix,
+  tourSteps,
+  type LeftoverPart,
+} from './tourSteps';
 import { TEMPLATES, TOURS } from './tours';
 
 /**
@@ -349,6 +359,37 @@ function KindSentences({ kinds, chosen }: { kinds: readonly TourKind[]; chosen: 
 }
 
 /**
+ * What a change of kind leaves behind, said before the save and only said (#549): the rows the new kind does not use
+ * stay, and are deleted at the step that lists them. Nothing is checked here: the server's "ready" names them after.
+ */
+function KindLeaves({ tour, chosen }: { tour: TourDetailDto | null; chosen: TourKind }) {
+  const { t, i18n } = useTranslation();
+
+  if (tour === null || chosen === tour.kind) {
+    return null;
+  }
+
+  const parts = partsLeftBy(tour.kind, chosen);
+  if (parts.length === 0) {
+    return null;
+  }
+
+  const names = new Intl.ListFormat(i18n.language, { type: 'conjunction' }).format(
+    parts.map((part) => t(`flightops:tours.steps.leftoverNames.${part}`)),
+  );
+
+  return (
+    <Notice
+      tone="info"
+      title={t('flightops:tours.steps.kindLeaves', {
+        kind: t(`flightops:tours.options.kind.${chosen}`),
+        parts: names,
+      })}
+    />
+  );
+}
+
+/**
  * The first step: the kind. On a new tour it is chosen and carried to the next step in the address — nothing is saved
  * yet; on one that exists it is saved with the tour, until the public sees it and it no longer changes (§1.2.1).
  */
@@ -392,6 +433,7 @@ function KindStep({
         />
       )}
       {locked ? <Notice tone="info" title={t('flightops:tours.steps.kindLocked')} /> : null}
+      <KindLeaves tour={tour} chosen={chosen} />
       <KindSentences kinds={kinds} chosen={locked ? initial : chosen} />
       {refusal === null ? null : <Notice tone="error" title={refusal} />}
       {locked || !editable ? null : tour === null ? (
@@ -430,13 +472,17 @@ function StepSection({ title, children }: { title?: string; children: ReactNode 
   );
 }
 
-/** The route of a tour, by its kind: the hubs and their rotations, the legs, the subtours, or the goal of an Open tour. */
-function RouteStep({ tour }: { tour: TourDetailDto }) {
+/**
+ * The route of a tour, by its kind: the hubs and their rotations, the legs, the subtours, or the goal of an Open tour.
+ * Under it, what the tour keeps from a kind it no longer has — legs, hubs and rotations — with the line that says why,
+ * only to be deleted (#549): "Go to the step" of their problem leads here.
+ */
+function RouteStep({ tour, leftover }: { tour: TourDetailDto; leftover: readonly LeftoverPart[] }) {
   const { t } = useTranslation();
   const writes = useWrites(tour);
   const parts = routeParts(tour);
 
-  if (parts.length === 0) {
+  if (parts.length === 0 && leftover.length === 0) {
     return <Notice tone="info" title={t('flightops:tours.steps.noRoute')} />;
   }
 
@@ -457,12 +503,35 @@ function RouteStep({ tour }: { tour: TourDetailDto }) {
           <TourOpenGoal key={part} tour={tour} editable={writes.shape} />
         ),
       )}
+      {leftover.includes('legs') ? (
+        <StepSection title={t('flightops:tours.steps.legs')}>
+          <Notice tone="warning" title={t('flightops:tours.steps.leftoverLegs')} />
+          <LegGrid tour={tour} editable={writes.tour} leftover />
+        </StepSection>
+      ) : null}
+      {leftover.includes('hubs') ? (
+        <div className="flex flex-col gap-2">
+          <Notice tone="warning" title={t('flightops:tours.steps.leftoverHubs')} />
+          <TourHubsTab tour={tour} editable={writes.tour} leftover />
+        </div>
+      ) : null}
     </div>
   );
 }
 
-/** The rules of a tour: how it is flown and the rules it is validated with, its callsign constraints, an Open one's filters. */
-function RulesStep({ tour, conditions }: { tour: TourDetailDto; conditions: ReactNode }) {
+/**
+ * The rules of a tour: how it is flown and the rules it is validated with, its callsign constraints, an Open one's
+ * filters — and the filters a tour keeps after it stopped being Open, only to be deleted (#549).
+ */
+function RulesStep({
+  tour,
+  conditions,
+  leftover,
+}: {
+  tour: TourDetailDto;
+  conditions: ReactNode;
+  leftover: readonly LeftoverPart[];
+}) {
   const { t } = useTranslation();
   const writes = useWrites(tour);
 
@@ -472,7 +541,14 @@ function RulesStep({ tour, conditions }: { tour: TourDetailDto; conditions: Reac
       <StepSection title={t('flightops:tours.steps.callsigns')}>
         <TourCallsignsTab tour={tour} editable={writes.shape} />
       </StepSection>
-      {tour.kind === 'Open' ? <TourConstraints tour={tour} editable={writes.shape} /> : null}
+      {tour.kind === 'Open' ? (
+        <TourConstraints tour={tour} editable={writes.shape} />
+      ) : leftover.includes('constraints') ? (
+        <div className="flex flex-col gap-2">
+          <Notice tone="warning" title={t('flightops:tours.steps.leftoverConstraints')} />
+          <TourConstraints tour={tour} editable={writes.shape} leftover />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -653,6 +729,7 @@ export function TourEditor() {
   const steps = tourSteps({ kind, isTemplate });
   const step = openStep({ asked: search.tab, steps, isNew, kindChosen: askedKind !== undefined });
   const problems: Problems = Object.entries(ready?.errors ?? {});
+  const leftover = leftoverParts(problems);
   const localized = ready?.localized ?? {};
   const toFix = stepsToFix(
     problems.map(([field]) => field),
@@ -775,9 +852,9 @@ export function TourEditor() {
 
     switch (at) {
       case 'route':
-        return <RouteStep tour={tour} />;
+        return <RouteStep tour={tour} leftover={leftover} />;
       case 'rules':
-        return <RulesStep tour={tour} conditions={tourForm('rules')} />;
+        return <RulesStep tour={tour} conditions={tourForm('rules')} leftover={leftover} />;
       case 'briefing':
         return <TourBriefing tour={tour} />;
       case 'check':

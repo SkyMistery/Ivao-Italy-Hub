@@ -3,8 +3,10 @@ import { expect, test } from 'vitest';
 import { tourEditorSearchSchema } from '../schemas';
 
 import {
+  leftoverParts,
   neighbours,
   openStep,
+  partsLeftBy,
   routeParts,
   stepOfField,
   stepOfProblem,
@@ -29,6 +31,31 @@ test('a tour has the six steps in the order it is written, a template no check a
     'rules',
     'briefing',
   ]);
+});
+
+test('the rows a tour keeps from the kind it had before are read off the problems of "ready" (#549)', () => {
+  expect(
+    leftoverParts([
+      ['legs', ['flightops:errors.kindHasNoLegs']],
+      ['hubs', ['flightops:errors.kindHasNoHubs']],
+      ['openGoal', ['errors.required']],
+    ]),
+  ).toEqual(['legs', 'hubs']);
+  expect(leftoverParts([['constraints', ['flightops:errors.kindHasNoConstraints']]])).toEqual([
+    'constraints',
+  ]);
+  // Legs missing are not legs left over, and a problem of one leg is not of the legs as a whole.
+  expect(leftoverParts([['legs', ['flightops:errors.noLegs']]])).toEqual([]);
+  expect(leftoverParts([['legs.2', ['flightops:errors.kindHasNoLegs']]])).toEqual([]);
+});
+
+test('a change of kind names the rows it would leave behind', () => {
+  expect(partsLeftBy('Sequential', 'Open')).toEqual(['legs']);
+  expect(partsLeftBy('Free', 'Container')).toEqual(['legs']);
+  expect(partsLeftBy('Hub', 'Open')).toEqual(['legs', 'hubs']);
+  expect(partsLeftBy('Hub', 'Sequential')).toEqual(['hubs']);
+  expect(partsLeftBy('Sequential', 'Distance')).toEqual([]);
+  expect(partsLeftBy('Open', 'Free')).toEqual([]);
 });
 
 test('the route holds the legs, the hubs, the subtours or the goal, by kind', () => {

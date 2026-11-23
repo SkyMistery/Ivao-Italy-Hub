@@ -518,7 +518,19 @@ function RestoreLeg({
   );
 }
 
-export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boolean }) {
+export function LegGrid({
+  tour,
+  editable,
+  leftover = false,
+}: {
+  tour: TourDetailDto;
+  editable: boolean;
+  /**
+   * The legs a tour keeps from a kind it no longer has (#549): read-only, each with "remove" and nothing else — the
+   * server refuses every other write of a leg on a kind without legs.
+   */
+  leftover?: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const grid = useQuery(tourLegsQuery(tour.id)).data;
   const change = useLegChange(tour.id);
@@ -646,7 +658,7 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
             ? null
             : ` · ${t('flightops:legs.totalTime', { time: minutes(grid.totalEstimatedMinutes) })}`}
         </Subtle>
-        {editable ? (
+        {editable && !leftover ? (
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
@@ -668,7 +680,10 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
       {refusal === null ? null : <Notice tone="error" title={refusal} />}
 
       {rows.length === 0 ? (
-        <Notice tone="info" title={t('flightops:legs.empty')} />
+        // A kind without legs is asked for none: once the last one left over is gone, there is nothing to say.
+        leftover ? null : (
+          <Notice tone="info" title={t('flightops:legs.empty')} />
+        )
       ) : (
         <div className="overflow-x-auto">
           <TableRoot>
@@ -695,7 +710,7 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
               {rows.map(({ draft, leg }) => {
                 const cellErrors = errors[draft.key] ?? {};
                 const retired = leg !== undefined && leg.retiredAt !== null;
-                const locked = !editable || busy || retired;
+                const locked = !editable || leftover || busy || retired;
                 const dirty = leg === undefined || sameAs(draft, leg) === false;
                 const needsReason = leg?.hasReports === true && dirty;
 
@@ -849,7 +864,7 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
                                 </Button>
                               </>
                             ) : null}
-                            {leg === undefined || retired ? null : (
+                            {leg === undefined || retired || leftover ? null : (
                               <DropdownMenu
                                 trigger={
                                   <Button type="button" size="sm" variant="ghost" disabled={busy}>
@@ -892,7 +907,7 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
                                 ]}
                               />
                             )}
-                            {leg === undefined ? null : retired ? (
+                            {leg === undefined || (retired && leftover) ? null : retired ? (
                               <RestoreLeg
                                 leg={leg}
                                 disabled={busy}
