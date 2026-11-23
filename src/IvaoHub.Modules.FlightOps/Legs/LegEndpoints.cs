@@ -197,7 +197,7 @@ public static class LegEndpoints
     /// <summary>What removing the leg will do, asked before the editor confirms: decided here, never by the editor (§1.4.1).</summary>
     private static async Task<IResult> RemovalAsync(long tourId, long legId, LegRequest request, HttpContext http)
     {
-        var (tour, refusal) = await request.WritableTourAsync(tourId, http);
+        var (tour, refusal) = await request.WritableTourAsync(tourId, http, removing: true);
         if (tour is null)
         {
             return refusal!;
@@ -222,7 +222,7 @@ public static class LegEndpoints
     /// </summary>
     private static async Task<IResult> RemoveAsync(long tourId, long legId, LegReasonRequest body, LegRequest request, HttpContext http)
     {
-        var (tour, refusal) = await request.WritableTourAsync(tourId, http);
+        var (tour, refusal) = await request.WritableTourAsync(tourId, http, removing: true);
         if (tour is null)
         {
             return refusal!;
@@ -688,8 +688,13 @@ public sealed class LegRequest(
         return (tour, null);
     }
 
-    /// <summary>The tour, writable, and of a kind that has legs.</summary>
-    public async Task<(Tour? Tour, IResult? Refusal)> WritableTourAsync(long tourId, HttpContext http)
+    /// <summary>
+    /// The tour, writable, and of a kind that has legs. <paramref name="removing"/> lets a leg go from a tour of a kind
+    /// without legs too: a tour whose kind changed after its legs were written keeps them, and they stand between it and
+    /// "ready" (<c>kindHasNoLegs</c>) until they are removed (#549, note 2026-11-22-le-righe-del-tipo-vecchio). Creating,
+    /// editing, restoring and importing stay refused.
+    /// </summary>
+    public async Task<(Tour? Tour, IResult? Refusal)> WritableTourAsync(long tourId, HttpContext http, bool removing = false)
     {
         var (tour, refusal) = await TourAsync(tourId, TourPermissions.Edit, http);
         if (tour is null)
@@ -707,7 +712,7 @@ public sealed class LegRequest(
             return (null, Refused("tourId", TourState.PurgedKey));
         }
 
-        return TourShape.HasLegs(tour.Kind) ? (tour, null) : (null, Refused("tourId", "flightops:errors.kindHasNoLegs"));
+        return removing || TourShape.HasLegs(tour.Kind) ? (tour, null) : (null, Refused("tourId", "flightops:errors.kindHasNoLegs"));
     }
 
     public async Task<IResult?> InvalidAsync<TPayload>(TPayload payload, HttpContext http)

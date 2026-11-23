@@ -215,6 +215,68 @@ public sealed class OpenTourTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(JsonValueKind.Null, other.GetProperty("openGoalParameters").ValueKind);
     }
 
+    [Fact]
+    public async Task TheLegsOfATourThatBecameOpenAreRemovedAndNeverWritten()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var advisor = await SignedInAsync(_factory, AdvisorVid, token);
+
+        // A draft with two legs whose kind changes to Open keeps them, and they stand between it and "ready" (#549).
+        var tour = await CreatedTourAsync(advisor, TourKind.Sequential, token);
+        var tourId = Id(tour);
+        await AddLegAsync(advisor, tourId, token, Rome, Milan);
+        await AddLegAsync(advisor, tourId, token, Milan, Rome);
+        tour = await OkAsync(await advisor.PutAsJsonAsync(TourUri(tourId), Payload(tour) with { Kind = TourKind.Open }, token), token);
+        Assert.Contains("flightops:errors.kindHasNoLegs", Keys(await ReadyProblemsAsync(advisor, tourId, token), "legs"));
+
+        var legs = LegsUri(tourId);
+        var rows = (await OkAsync(await advisor.GetAsync(legs, token), token)).GetProperty("legs").EnumerateArray().ToList();
+        Assert.Equal(2, rows.Count);
+        var first = rows[0];
+
+        // Writing one is still refused: a new one, a change, a file.
+        using (var created = await advisor.PostAsJsonAsync(legs, Leg(Rome, Milan), token))
+        {
+            await AssertRefusedAsync(created, "tourId", "flightops:errors.kindHasNoLegs", token);
+        }
+
+        using (var updated = await advisor.PutAsJsonAsync(
+            $"{legs}/{Id(first)}",
+            Leg(Rome, London) with { RowVersion = first.GetProperty("rowVersion").GetDateTime() },
+            token))
+        {
+            await AssertRefusedAsync(updated, "tourId", "flightops:errors.kindHasNoLegs", token);
+        }
+
+        var file = new[] { new { departureIcao = Rome, arrivalIcao = Milan, flightNumbers = Array.Empty<string>(), aircraftTypes = Array.Empty<string>() } };
+        using (var previewed = await advisor.PostAsJsonAsync($"{legs}/import/preview", new { rows = file, mode = "Replace" }, token))
+        {
+            await AssertRefusedAsync(previewed, "tourId", "flightops:errors.kindHasNoLegs", token);
+        }
+
+        using (var imported = await advisor.PostAsJsonAsync($"{legs}/import", new { rows = file, mode = "Replace", fingerprint = "x" }, token))
+        {
+            await AssertRefusedAsync(imported, "tourId", "flightops:errors.kindHasNoLegs", token);
+        }
+
+        // Removing them is not: no report points at them, so they are deleted, and "ready" no longer names the legs.
+        var removal = await OkAsync(await advisor.GetAsync($"{legs}/{Id(first)}/removal", token), token);
+        Assert.Equal("Delete", removal.GetProperty("outcome").GetString());
+
+        foreach (var row in rows)
+        {
+            var current = (await OkAsync(await advisor.GetAsync(legs, token), token)).GetProperty("legs").EnumerateArray()
+                .Single(leg => Id(leg) == Id(row));
+            await OkAsync(await advisor.PostAsJsonAsync(
+                $"{legs}/{Id(row)}/remove",
+                new { reason = (string?)null, rowVersion = current.GetProperty("rowVersion").GetDateTime() },
+                token), token);
+        }
+
+        Assert.Empty((await OkAsync(await advisor.GetAsync(legs, token), token)).GetProperty("legs").EnumerateArray());
+        Assert.Empty(Keys(await ReadyProblemsAsync(advisor, tourId, token), "legs"));
+    }
+
     private static TourConstraintWriteDto Constraint(long tourId, TourConstraintKind kind, string parameters) =>
         new(tourId, kind, Parameters(parameters), default);
 
