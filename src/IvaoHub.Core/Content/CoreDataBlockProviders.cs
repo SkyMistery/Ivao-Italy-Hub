@@ -642,9 +642,6 @@ public sealed class DocumentListProvider(HubDbContext database) : ContentListPro
 /// </summary>
 public sealed class SiteMapProvider(HubDbContext database, SiteDestinations destinations) : IDataBlockProvider
 {
-    /// <summary>How long the cache in front of the hub may keep a visitor's map: a page that comes out shows within it.</summary>
-    public static readonly TimeSpan SharedFor = TimeSpan.FromMinutes(5);
-
     private static readonly ContentKind[] Pages = [ContentKind.Page];
 
     public string Key => CoreBlocks.SiteMap;

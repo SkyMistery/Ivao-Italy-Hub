@@ -252,9 +252,9 @@ public static class CoreBlocks
 
         // The map of the site is about whoever reads it, and always live (design 13 §5.1): captured, it would keep the pages
         // whoever pressed publish could read — the staff's among them — on a page for everybody, and would go stale with the
-        // first page that came out after it. A visitor's map is every visitor's, so it may wait a few minutes in the cache in
-        // front of the hub; a signed-in reader's is never shared.
-        new BlockDescriptor(SiteMap, Version: 1, BlockKind.Data, AlwaysLive: true, SharedFor: SiteMapProvider.SharedFor),
+        // first page that came out after it. And never `SharedFor`: every reader asks the same address, and a shared cache
+        // keyed without the cookies would answer a member with a visitor's map (the maintainer on #555, finding 3).
+        new BlockDescriptor(SiteMap, Version: 1, BlockKind.Data, AlwaysLive: true),
 
         // The personal dashboards. The greeting and the departments are drawn from what the browser
         // already knows of whoever is looking, so they are content; what waits for them is answered

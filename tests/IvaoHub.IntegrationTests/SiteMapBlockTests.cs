@@ -17,8 +17,8 @@ namespace IvaoHub.IntegrationTests;
 
 /// <summary>
 /// The map of the site (design <c>13-design-struttura-del-sito.md</c> §5.1): the block answers <b>whoever is reading</b> — the
-/// pages online and the screens they may open —, is never captured, and a visitor's answer may wait in the cache in front of
-/// the hub while a member's may not. VIDs 787001–787002; the pages are the web team's, under a shelf of this class, and the
+/// pages online and the screens they may open —, is never captured, and no answer of it is kept by a shared cache, not even a
+/// visitor's. VIDs 787001–787002; the pages are the web team's, under a shelf of this class, and the
 /// map is asked from that shelf, because the database is shared with every other class.
 /// </summary>
 [Collection(MariaDbCollection.Name)]
@@ -71,11 +71,10 @@ public sealed class SiteMapBlockTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // A map of one section has no screens: a screen has no pages under it (answer 4 of the maintainer).
         Assert.All(seen, path => Assert.StartsWith($"/{ShelfSlug}/", path, StringComparison.Ordinal));
 
-        // A visitor's map is every visitor's: the cache in front of the hub may keep it a few minutes.
-        Assert.Contains(
-            $"s-maxage={(int)SiteMapProvider.SharedFor.TotalSeconds}",
-            anonymous.Headers.CacheControl?.ToString() ?? string.Empty,
-            StringComparison.Ordinal);
+        // Not even a visitor's map is kept by a shared cache: every reader asks the same address, and a cache keyed without
+        // the cookies would answer a member with it (the maintainer on #555, finding 3).
+        Assert.DoesNotContain("s-maxage", anonymous.Headers.CacheControl?.ToString() ?? string.Empty, StringComparison.Ordinal);
+        Assert.True(anonymous.Headers.CacheControl?.NoStore, "The anonymous answer of the map is not no-store.");
 
         using var member = await SignedInAsync(MemberVid, token);
         using var signedIn = await member.GetAsync(BlockDataUri(root), token);
@@ -149,6 +148,9 @@ public sealed class SiteMapBlockTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.NotNull(descriptor);
         Assert.True(descriptor.AlwaysLive);
         Assert.Equal(Visibility.Public, descriptor.Audience);
+
+        // An answer that depends on the reader is never shared (the maintainer on #555, finding 3).
+        Assert.Null(descriptor.SharedFor);
 
         // And asked for a capture all the same, it answers nothing rather than the map of whoever pressed publish.
         var provider = providers.For(descriptor)!;
