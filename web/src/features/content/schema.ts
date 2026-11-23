@@ -47,6 +47,12 @@ export interface PageChoices {
 
 const NO_PAGE_CHOICES: PageChoices = { parents: [], mayBeAtTheTop: true };
 
+/**
+ * The longest slug of a content row: `ContentWriteDtoValidator.MaxSlugLength` on the server, and the column's own
+ * `HasMaxLength(160)`. Only where the proposal is cut; the server still refuses a longer one typed by hand.
+ */
+export const CONTENT_SLUG_MAX_LENGTH = 160;
+
 export function contentMetadataSchema(
   kind: ContentKind,
   categories: readonly ChoiceOption[] = [],
@@ -69,7 +75,8 @@ export function contentMetadataSchema(
     // demo of M1). An existing row never moves: it already carries an address, so the proposal
     // stands aside from the first render — and an address outlives the page that has it. Hidden, it is
     // still proposed: the proposal reads the form's values, not the field on screen.
-    slug: z.string().meta({ slugFrom: 'title', hidden: !maySetSlug }),
+    // Cut at the column's length, `ContentWriteDtoValidator.MaxSlugLength` (the review of #554, finding 2).
+    slug: z.string().meta({ slugFrom: 'title', slugMaxLength: CONTENT_SLUG_MAX_LENGTH, hidden: !maySetSlug }),
     ownerDepartment: z.enum(DEPARTMENTS).meta({ hidden: true }),
     visibility: z.enum(['Public', 'Members', 'Staff', 'Department']),
     // Set once, by the template picker or by nobody. A checkbox here would let a page promote

@@ -666,7 +666,7 @@ function useProposedSlugs<TValues extends Record<string, unknown>>(
         continue;
       }
 
-      const proposal = slugify(readSource(values[source], defaultLocale));
+      const proposal = slugify(readSource(values[source], defaultLocale), field.meta.slugMaxLength);
       // A path keeps its prefix only once there is something to prefix: an address that showed its
       // leading slash before the title had a letter in it would be a field that fills itself with
       // punctuation.

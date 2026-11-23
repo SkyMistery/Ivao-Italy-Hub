@@ -8,20 +8,22 @@
  *
  * It is a **proposal** and not a validation: nothing here refuses anything, the server does that
  * and answers, and what it answers reaches the field through `useProblemDetails` like every other
- * refusal (design M0 §7.5). So the length limit of the column is deliberately not repeated here —
- * a rule written twice is a rule that changes in one place.
+ * refusal (design M0 §7.5). The length limit of the column is not a rule of this function: it is handed
+ * in by the field that knows it (`slugMaxLength`), because since design 13 §4.1 a slug may be proposed in
+ * a field the writer cannot see, and a proposal too long would then be a refusal nobody can answer.
  *
  * Accents are folded rather than dropped: "Città" gives `citta`, which is what somebody typing the
  * address by hand would write, while dropping the letter would give `citt`.
  */
-export function slugify(title: string): string {
-  return (
-    title
-      .normalize('NFD')
-      // Everything Unicode files as a combining mark: the accents that NFD has just separated.
-      .replace(/\p{Mn}/gu, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-  );
+export function slugify(title: string, maxLength?: number): string {
+  const slug = title
+    .normalize('NFD')
+    // Everything Unicode files as a combining mark: the accents that NFD has just separated.
+    .replace(/\p{Mn}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  // Cut where the column ends, and never on a dash: `a-b-` is not an address the server takes.
+  return maxLength === undefined ? slug : slug.slice(0, maxLength).replace(/-+$/, '');
 }

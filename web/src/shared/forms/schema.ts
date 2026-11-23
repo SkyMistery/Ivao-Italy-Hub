@@ -180,6 +180,12 @@ export interface FieldMeta {
    */
   slugPrefix?: string;
   /**
+   * Where the proposal is cut, for a field whose column has a limit and that may be **hidden**: a writer who cannot see
+   * the slug could never shorten a title that proposes one too long (design 13 §4.1, the review of #554, finding 2).
+   * The number is the server's, named where it is written.
+   */
+  slugMaxLength?: number;
+  /**
    * An array of values out of `choices`, drawn as one checkbox each rather than as a repeatable
    * list. It is the difference between "pick several of a closed set" and "write as many of these
    * as you like": the first has an answer that fits on the screen, and a list of selects for it is
