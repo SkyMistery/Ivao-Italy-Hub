@@ -517,7 +517,7 @@ public static class ContentEndpoints
 
     /// <summary>Whether a row of this kind has an address on the site that its slug makes: a page, a news item or a document, never a template.</summary>
     private static bool HasAnAddress(ContentKind kind, bool isTemplate) =>
-        !isTemplate && kind is ContentKind.Page or ContentKind.News or ContentKind.Document;
+        !isTemplate && AddressedKinds.Contains(kind);
 
     /// <summary>
     /// <c>filter[usesMedia]=42</c>: the contents that show a file. Named here because the client
@@ -968,7 +968,10 @@ public static class ContentEndpoints
         return target is null ? TypedResults.NotFound() : TypedResults.Ok(new PublicPageDto(null, target.Url));
     }
 
-    /// <summary>The kinds of content that have an address of their own on the site.</summary>
+    /// <summary>
+    /// The kinds of content that have an address of their own on the site: the read of the addresses offered to a writer, and
+    /// the rows whose slug only the approver changes (<see cref="HasAnAddress"/>).
+    /// </summary>
     private static readonly ContentKind[] AddressedKinds = [ContentKind.Page, ContentKind.News, ContentKind.Document];
 
     private static async Task<IReadOnlyList<ContentSiteAddressDto>> SiteAddressesAsync(HubDbContext database, HttpContext http) =>
