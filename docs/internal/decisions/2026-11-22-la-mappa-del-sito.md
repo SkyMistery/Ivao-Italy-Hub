@@ -3,10 +3,14 @@
 - **Data**: 22 novembre 2026
 - **Stato**: **decisa** per quello che è il §5.1 del design `13-design-struttura-del-sito.md`, approvato da Carmine in chat al master
   il 19 novembre 2026 («Sì, tutte e sette»; la risposta 5 è «pagine e schermate, ognuno quelle che può leggere»),
-  [riportato sulla #540](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/540#issuecomment-7011361289). Le scelte da 2 a 9 del
-  §4 sono della sessione, e la PR le elenca perché il revisore le veda. **La scelta 1 (`/contact`) l'ha decisa il maintainer**:
-  «Sì, resta pubblico», in chat al master il 22 novembre 2026, cioè l'opzione (a)
-  ([riportato sulla #555](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/555#issuecomment-7087078607)).
+  [riportato sulla #540](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/540#issuecomment-7011361289). Del §4 le hanno
+  decise il maintainer e la sessione così:
+  - **la scelta 1** (`/contact`) l'ha decisa il maintainer: «Sì, resta pubblico», in chat al master il 22 novembre 2026, cioè
+    l'opzione (a) ([riportato sulla #555](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/555#issuecomment-7087078607));
+  - **le scelte 4, 5 (la voce nel piè di pagina) e 6** (`SharedFor`) le ha decise il maintainer dopo la revisione della #555: «Sì,
+    tutte e tre», in chat al master il 23 novembre 2026 ([riportato sulla #555](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/555#issuecomment-7112191216));
+  - le scelte 2, 3, 5 (le sezioni del seme), 7, 8 e 9 sono della sessione, tecniche o al seguito del design: la PR le elenca perché
+    il revisore le veda.
 - **Chi**: una sessione di lavoro di Carmine (fase 4, PR 4.4, accanto alla 4.3)
 - **Classificazione** (`CLAUDE.md` §5): **(c)** come dice il design (§0: «il blocco della mappa del sito» è uno dei due pezzi nuovi
   del nucleo), con il design come nota della fase; **(b)** per il resto: un blocco registrato in due metà, un provider, la lettura
@@ -22,7 +26,7 @@ ognuno quello che può aprire.
 ## 2. Che cosa si fa
 
 - **Il blocco di dati `siteMap`, del nucleo, in due metà.** In C# (`CoreBlocks.SiteMap`, `BlockRegistry.cs`) il tipo, `Data`,
-  **`AlwaysLive`**, `Audience` `Public` (quella di default) e **`SharedFor` cinque minuti** (`SiteMapProvider.SharedFor`). In
+  **`AlwaysLive`**, `Audience` `Public` (quella di default) e **nessun `SharedFor`** (§4, scelta 6). In
   TypeScript (`web/src/blocks/`) lo schema `siteMapSchema` (un titolo tradotto facoltativo e `href`, la pagina da cui partire), il
   componente `SiteMapBlock`, l'icona `ListTree` di `lucide-react`, nel cassetto «Dati».
 - **Il provider `SiteMapProvider`** (`CoreDataBlockProviders.cs`) risponde a chi legge: le pagine online che il filtro di
@@ -47,8 +51,8 @@ ognuno quello che può aprire.
 - **Le parole** in `locales/{it,en}/common.json`: `blocks.siteMap.*` (nome, descrizione, vuoto, campi, suggerimento).
 - **I test.** `SiteMapBlockTests` (integrazione: un visitatore, un membro e il superadmin ricevono ognuno le sue pagine; una bozza
   non c'è; il titolo è quello online e non quello della bozza; la mappa di una sezione non ha schermate; l'intero sito ha le sei
-  schermate del nucleo, `/contact` compresa; un indirizzo di fuori non è una radice; la risposta di un visitatore porta
-  `s-maxage`, quella di un membro no; una cattura risponde niente). `VisibilityScopeRulesTests` (unitario, rilievo 4 della
+  schermate del nucleo, `/contact` compresa; un indirizzo di fuori non è una radice; nessuna risposta porta
+  `s-maxage`, nemmeno quella di un visitatore, e il descrittore non ha `SharedFor`; una cattura risponde niente). `VisibilityScopeRulesTests` (unitario, rilievo 4 della
   revisione della #555): `Reads` risponde come il filtro compilato dal modello, per ogni visibilità e per un visitatore, un
   membro, lo staff di un dipartimento e chi li vede tutti; e `SiteMapProvider.OpenTo` lascia fuori una schermata dei membri o
   dello staff a chi non la può aprire. Le due prove inverse (togliere il `Where` di `OpenTo`, far rispondere `Reads` sì ai
@@ -60,6 +64,9 @@ ognuno quello che può aprire.
 ## 3. Che cosa cambia per chi usa l'hub
 
 - Una pagina nuova, **«Mappa del sito»** a `/site-map`, con una voce nel piè di pagina; il WD la modifica come ogni altra.
+  ⚠️ **È la prima voce del piè di pagina che arriva da un seme**: ogni installazione la prende al primo avvio dopo il rilascio,
+  quella di prova e la produzione comprese, accanto alle colonne che il WD ha già scritto. Va detto nelle note di rilascio della
+  0.27.0 (§4, scelta 5).
 - Nella tavolozza dell'editor, cassetto «Dati», il blocco **«Mappa del sito»**: tutto il sito, o una sezione (il campo «Comincia
   dalla pagina»).
 - ⚠️ **Le istruzioni per Claude cambiano** (design §7): un blocco nuovo nella tavolozza cambia l'impronta `rules` dell'intestazione
@@ -99,13 +106,21 @@ ognuno quello che può aprire.
    importerebbe sé stesso.
 4. **Una pagina la cui madre il lettore non vede** (una pagina pubblica sotto una dei membri, letta da un visitatore) sta sotto la
    pagina più vicina sopra di lei che vede, o in cima: sulla mappa, non persa con la madre. L'albero della 4.2 la rientra sotto
-   nessuna riga; qui un elenco annidato non lo può fare.
+   nessuna riga; qui un elenco annidato non lo può fare. **Decisa dal maintainer**: «Sì, tutte e tre», 23 novembre 2026
+   ([commento sulla #555](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/555#issuecomment-7112191216)).
 5. **Il seme ha anche le sezioni `body` e `links`** del template `section-page`: senza, `seeds.test.ts` dice che l'editor le
    offrirebbe come «aggiunte nel template». In `body` un paragrafo rimanda a `/news` e `/documents`; `links` è quella del template.
-   **La voce nel piè di pagina** (`Footer`, `sort` 90) è mia: una mappa a cui nessun link porta non la trova nessuno. Il design non
-   la chiedeva; il WD la sposta o la toglie dal menu come ogni altra.
-6. **`SharedFor` cinque minuti**: la risposta di un visitatore è uguale per ogni visitatore, e una pagina pubblicata compare sulla
-   sua mappa entro cinque minuti. Quella di chi ha fatto l'accesso non è mai condivisa (la regola di `SharedFor`).
+   **La voce nel piè di pagina** (`Footer`, `sort` 90): una mappa a cui nessun link porta non la trova nessuno. Il design non la
+   chiedeva; il WD la sposta o la toglie dal menu come ogni altra. **Decisa dal maintainer: resta** («Sì, tutte e tre», 23 novembre
+   2026, [commento sulla #555](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/555#issuecomment-7112191216)). È la prima voce `Footer` di un seme, quindi ogni installazione la prende al primo avvio,
+   quella di prova e la produzione comprese: va nelle note di rilascio della 0.27.0.
+6. **Nessun `SharedFor`.** La PR lo aveva a cinque minuti, come chiedeva il design (§5.1, «`SharedFor` qualche minuto»). Il
+   rilievo 3 della revisione della #555 ha mostrato il guaio. La risposta della mappa dipende da chi legge, ma ogni lettore chiede lo
+   stesso indirizzo. La regola di Cloudflare in `docs/DEPLOYING.md` costruisce la chiave senza i cookie: se un operatore la
+   estendesse a `siteMap`, un membro riceverebbe per cinque minuti la mappa di un visitatore. **Decisa dal maintainer: si toglie**
+   («Sì, tutte e tre», 23 novembre 2026, [commento sulla #555](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/555#issuecomment-7112191216)). Il blocco resta `AlwaysLive`, e `docs/DEPLOYING.md` dice
+   che un blocco la cui risposta dipende da chi legge non entra mai in quella regola. **Sostituisce** «`SharedFor` qualche minuto»
+   del design 13 §5.1.
 7. **Una cattura risponde niente.** `AlwaysLive` fa sì che la pubblicazione non la chieda mai; se un giorno la chiedesse, una mappa
    vuota è meglio di quella di chi ha premuto «Pubblica» su una pagina che legge chiunque.
 8. **Il titolo è quello della versione online, anche per `GET /api/content/addresses`.** Prima quella lettura dava il titolo della
@@ -136,8 +151,13 @@ Tutto il sito, cioè una mappa senza `href`, non ha questo limite.
   gli indirizzi e per la mappa, con il titolo della versione online; la regola di visibilità per una schermata accanto al filtro
   (`VisibilityScopeRules.Reads`).
 - **§9.3** (il modello dei contenuti), con il design della fase 4: la pagina `/site-map` è un seme del WD, pubblica, con una voce
-  nel piè di pagina; la pagina iniziale è una riga sola sulla mappa.
-- **Le note di rilascio della 0.27.0**: un blocco nuovo nella tavolozza, quindi i file «Scarica per Claude» presi prima vanno
-  riscaricati.
+  nel piè di pagina; la pagina iniziale è una riga sola sulla mappa; una pagina la cui madre il lettore non vede sta sotto la pagina
+  più vicina che vede (§4, scelta 4, decisa da Carmine).
+- **Il design 13 §5.1**: «`SharedFor` qualche minuto» diventa «nessun `SharedFor`: la risposta dipende da chi legge» (§4,
+  scelta 6, decisa da Carmine sulla [#555](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/555#issuecomment-7112191216)).
+- **Le note di rilascio della 0.27.0**, due righe:
+  - un blocco nuovo nella tavolozza, quindi i file «Scarica per Claude» presi prima vanno riscaricati;
+  - ogni installazione riceve al primo avvio la pagina `/site-map` e la sua voce nel piè di pagina (la prima voce `Footer` di un
+    seme), che il WD sposta o toglie come ogni altra.
 - **§9.3**, con la nota della 4.1: `/contact` resta una schermata pubblica, e la mappa la mostra anche a un visitatore (§4,
   scelta 1, decisa da Carmine sulla [#555](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/555#issuecomment-7087078607)).
