@@ -433,7 +433,7 @@ public static class ContentEndpoints
 
         if (entry.Property(row => row.PublishedVersionId).OriginalValue is null)
         {
-            return slugChanged && await SlugNotTheirsAsync(content, authorization, user)
+            return slugChanged && await SlugNotTheirsAsync(entry, authorization, user)
                 ? new Dictionary<string, string[]>(StringComparer.Ordinal)
                 {
                     ["slug"] = ["errors.content.position.needsApproval"],
@@ -475,7 +475,7 @@ public static class ContentEndpoints
 
         // Online and of a kind that is not approved — a news item, a document —: who may publish it moves it, but its slug
         // still asks for the approver.
-        if (slugChanged && await SlugNotTheirsAsync(content, authorization, user))
+        if (slugChanged && await SlugNotTheirsAsync(entry, authorization, user))
         {
             return new Dictionary<string, string[]>(StringComparer.Ordinal)
             {
@@ -496,11 +496,22 @@ public static class ContentEndpoints
     /// Whether a changed slug is not this writer's to change (design <c>13-design-struttura-del-sito.md</c> §4.1): a page, a
     /// news item or a document — never a template, which has no address on the site — without
     /// <see cref="CorePermissions.ContentApprove"/> on the row, asked of the one authorization handler.
+    /// <para>⚠️ A page, a news item or a document <b>as stored or as the save leaves it</b>: <c>kind</c> and <c>isTemplate</c>
+    /// travel in the payload, and only the browser hides them. Judged on the row as the save leaves it alone, a writer would
+    /// make it a template — or a dashboard — with the new slug, and then a page again with the slug unchanged (the review
+    /// of #554, finding 1).</para>
     /// </summary>
-    private static async Task<bool> SlugNotTheirsAsync(ContentEntry content, IAuthorizationService authorization, ClaimsPrincipal user) =>
-        !content.IsTemplate
-        && content.Kind is ContentKind.Page or ContentKind.News or ContentKind.Document
-        && !(await authorization.AuthorizeAsync(user, content, CorePermissions.ContentApprove)).Succeeded;
+    private static async Task<bool> SlugNotTheirsAsync(
+        Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<ContentEntry> entry,
+        IAuthorizationService authorization,
+        ClaimsPrincipal user) =>
+        (HasAnAddress(entry.Property(row => row.Kind).OriginalValue, entry.Property(row => row.IsTemplate).OriginalValue)
+            || HasAnAddress(entry.Entity.Kind, entry.Entity.IsTemplate))
+        && !(await authorization.AuthorizeAsync(user, entry.Entity, CorePermissions.ContentApprove)).Succeeded;
+
+    /// <summary>Whether a row of this kind has an address on the site that its slug makes: a page, a news item or a document, never a template.</summary>
+    private static bool HasAnAddress(ContentKind kind, bool isTemplate) =>
+        !isTemplate && kind is ContentKind.Page or ContentKind.News or ContentKind.Document;
 
     /// <summary>
     /// <c>filter[usesMedia]=42</c>: the contents that show a file. Named here because the client

@@ -205,6 +205,36 @@ public sealed class PublishedFieldsTests(MariaDbFixture mariaDb) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task TheSlugIsNotRenamedOnTheWayThroughATemplateOrADashboard()
+    {
+        // The review of #554, finding 1: kind and isTemplate travel in the payload. A coordinator holds
+        // Content.ManageTemplates, so a draft made a template with a new slug, and a page again with the slug unchanged,
+        // would have an address its writer may not give it. The row as stored is judged too.
+        var token = TestContext.Current.CancellationToken;
+        var (coordinator, _, _) = await PeopleAsync(token);
+
+        var slug = Slug();
+        var fields = Fields(ContentKind.News, slug, "Bozza", collection: null, coverMediaId: null, fileMediaId: null, showFooter: true);
+        var id = await CreateAsync(coordinator, fields, token);
+
+        using (var template = await TryEditAsync(coordinator, id, fields with { IsTemplate = true, Slug = Slug() }, token))
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, template.StatusCode);
+            Assert.Equal("errors.content.position.needsApproval", await FirstErrorAsync(template, "slug", token));
+        }
+
+        using (var dashboard = await TryEditAsync(coordinator, id, fields with { Kind = ContentKind.Dashboard, Slug = Slug() }, token))
+        {
+            Assert.NotEqual(HttpStatusCode.OK, dashboard.StatusCode);
+        }
+
+        var row = await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/{id}", token);
+        Assert.Equal(slug, row.GetProperty("slug").GetString());
+        Assert.False(row.GetProperty("isTemplate").GetBoolean());
+        Assert.Equal(nameof(ContentKind.News), row.GetProperty("kind").GetString());
+    }
+
+    [Fact]
     public async Task ANewsItemOnlineIsMovedByWhoeverPublishesItButRenamedOnlyByWhoeverApproves()
     {
         // A news item does not go through approval: the coordinator who publishes it changes who reads it. Its slug still
@@ -296,7 +326,8 @@ public sealed class PublishedFieldsTests(MariaDbFixture mariaDb) : IAsyncLifetim
         long? FileMediaId,
         bool ShowFooter,
         JsonNode Body,
-        long? ParentId = null);
+        long? ParentId = null,
+        bool IsTemplate = false);
 
     private static RowFields Fields(
         ContentKind kind,
@@ -314,7 +345,7 @@ public sealed class PublishedFieldsTests(MariaDbFixture mariaDb) : IAsyncLifetim
         slug = fields.Slug,
         ownerDepartment = nameof(Department.ED),
         visibility = fields.Visibility.ToString(),
-        isTemplate = false,
+        isTemplate = fields.IsTemplate,
         title = new Dictionary<string, string> { ["it"] = "Campi pubblicati", ["en"] = "Published fields" },
         summary = fields.Summary is null ? null : new Dictionary<string, string> { ["it"] = fields.Summary, ["en"] = fields.Summary },
         seo = fields.Summary is null
