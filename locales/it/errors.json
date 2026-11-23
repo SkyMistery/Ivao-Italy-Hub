@@ -102,7 +102,7 @@
       },
       "position": {
         "needsPublish": "Questa pagina è online: chi la legge e dove sta li cambia chi può pubblicarla.",
-        "needsApproval": "Questa pagina è online e passa dall'approvazione: chi la legge e dove sta li cambia chi può approvarla.",
+        "needsApproval": "Questo lo cambia chi può approvare: l'indirizzo sempre, anche in bozza, e chi la legge e dove sta quando è online e passa dall'approvazione.",
         "picturesHidden": "Un'immagine della pagina online non è visibile a questi lettori. Rendila visibile nella libreria, oppure cambiala e pubblica di nuovo.",
         "capturesNarrower": "La pagina online porta dati catturati per meno lettori. Pubblicala di nuovo, così si catturano per questi.",
         "blockAudience": "La pagina online porta un blocco per meno lettori. Toglilo e pubblica di nuovo, poi cambia chi la legge."

@@ -257,6 +257,7 @@ export function ContentListScreen({
             department={target}
             kind={rowKind}
             mayBeAtTheTop={holdsPermission(bootstrap, CONTENT_APPROVE, target)}
+            maySetSlug={holdsPermission(bootstrap, CONTENT_APPROVE, target)}
             onCreated={onCreatedFromTemplate}
           />
         )}

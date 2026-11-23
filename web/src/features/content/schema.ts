@@ -47,11 +47,24 @@ export interface PageChoices {
 
 const NO_PAGE_CHOICES: PageChoices = { parents: [], mayBeAtTheTop: true };
 
+/**
+ * The longest slug of a content row: `ContentWriteDtoValidator.MaxSlugLength` on the server, and the column's own
+ * `HasMaxLength(160)`. Only where the proposal is cut; the server still refuses a longer one typed by hand.
+ */
+export const CONTENT_SLUG_MAX_LENGTH = 160;
+
 export function contentMetadataSchema(
   kind: ContentKind,
   categories: readonly ChoiceOption[] = [],
   document: DocumentChoices = NO_DOCUMENT_CHOICES,
   page: PageChoices = NO_PAGE_CHOICES,
+  /**
+   * Whether the slug is drawn (design 13 §4.1, answers 1 and 2 of Carmine): for a page, a news item or a document only
+   * to whoever holds `Content.Approve`, who alone changes it once the row exists. Anybody else never sees it: it is
+   * proposed from the title while the row is new, carried hidden, and stays as it was born. A template and a dashboard
+   * keep it drawn: neither has an address on the site that a slug makes.
+   */
+  maySetSlug = true,
 ) {
   const common = {
     // Fixed by the list this row was opened from, exactly as the department is: `/staff/x/news`
@@ -60,8 +73,10 @@ export function contentMetadataSchema(
     kind: z.enum(['Page', 'News', 'Document', 'Dashboard']).meta({ hidden: true }),
     // Proposed from the title while nobody writes it by hand (design M0 §7.5, asked for after the
     // demo of M1). An existing row never moves: it already carries an address, so the proposal
-    // stands aside from the first render — and an address outlives the page that has it.
-    slug: z.string().meta({ slugFrom: 'title' }),
+    // stands aside from the first render — and an address outlives the page that has it. Hidden, it is
+    // still proposed: the proposal reads the form's values, not the field on screen.
+    // Cut at the column's length, `ContentWriteDtoValidator.MaxSlugLength` (the review of #554, finding 2).
+    slug: z.string().meta({ slugFrom: 'title', slugMaxLength: CONTENT_SLUG_MAX_LENGTH, hidden: !maySetSlug }),
     ownerDepartment: z.enum(DEPARTMENTS).meta({ hidden: true }),
     visibility: z.enum(['Public', 'Members', 'Staff', 'Department']),
     // Set once, by the template picker or by nobody. A checkbox here would let a page promote

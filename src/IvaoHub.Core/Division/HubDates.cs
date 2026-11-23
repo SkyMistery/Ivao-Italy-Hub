@@ -55,4 +55,17 @@ public static class HubDates
     /// <summary>A moment, its day and its time: <c>31/10/2026 14:05</c>. The zone is the caller's to say, next to it.</summary>
     public static string Moment(DateTime moment, DateOrder order) =>
         string.Create(CultureInfo.InvariantCulture, $"{Day(moment, order)} {moment:HH:mm}");
+
+    /// <summary>
+    /// An interval as text writes it: its start whole, a spaced dash, and its end — the time alone when it ends on the day it starts,
+    /// its day with it when it does not, midnight exactly included —: <c>21/11/2026 17:00 – 22:00</c>,
+    /// <c>21/11/2026 23:30 – 22/11/2026 00:30</c>. The days are compared as the moments are written, so in UTC for a mail; the zone is
+    /// the caller's to say, next to it. The server's twin of <c>intervalText</c> in <c>web/src/shared/i18n/useMoment.ts</c>, and the one
+    /// copy of what the mails of the events and of the training wrote each on their own (note
+    /// 2026-11-22-l-intervallo-di-una-mail-nel-nucleo); the dash is spaced everywhere (Carmine on #542).
+    /// </summary>
+    public static string Interval(DateTime from, DateTime to, DateOrder order) =>
+        from.Date == to.Date
+            ? string.Create(CultureInfo.InvariantCulture, $"{Moment(from, order)} – {to:HH:mm}")
+            : $"{Moment(from, order)} – {Moment(to, order)}";
 }

@@ -603,6 +603,51 @@ test('a field that is a path proposes one, slash and all', async () => {
   expect(screen.getByLabelText('Address')).toHaveValue('/about-us');
 });
 
+test('a proposal is cut where the column ends, never on a dash', async () => {
+  const user = userEvent.setup();
+
+  const shortSchema = z.object({
+    title: localized(),
+    slug: z.string().meta({ slugFrom: 'title', slugMaxLength: 10 }),
+  });
+
+  render(shortSchema, { title: { en: '', it: '' }, slug: '' }, { labels: slugLabels, division: DIVISION });
+
+  // `the-rules-of-the-site` cut at ten is `the-rules-`, which ends on a dash the server refuses: the dash goes too
+  // (the review of #554, finding 2).
+  await user.type(titleBox(), 'The rules of the site');
+  expect(addressBox()).toHaveValue('the-rules');
+});
+
+test('a hidden address still proposes itself, cut, and is sent', async () => {
+  const user = userEvent.setup();
+  const onSubmit = vi.fn<(values: { title: Record<string, string>; slug: string }) => Promise<void>>(() =>
+    Promise.resolve(),
+  );
+
+  // Design 13 §4.1: whoever may not change a slug does not see it, and it is born from the title all the same. A title
+  // too long for the column would otherwise be a refusal on a field nobody can see.
+  const hiddenSchema = z.object({
+    title: localized(),
+    slug: z.string().meta({ slugFrom: 'title', slugMaxLength: 12, hidden: true }),
+  });
+
+  render(
+    hiddenSchema,
+    { title: { en: '', it: '' }, slug: '' },
+    { labels: slugLabels, division: DIVISION, onSubmit },
+  );
+
+  expect(screen.queryByLabelText('Address')).not.toBeInTheDocument();
+  await user.type(titleBox(), 'The rules of the site');
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  await waitFor(() => {
+    expect(onSubmit).toHaveBeenCalled();
+  });
+  expect(onSubmit.mock.calls[0]?.[0].slug).toBe('the-rules-of');
+});
+
 // ---- 8. a field that offers without demanding -------------------------------------------------
 
 const suggestSchema = z.object({

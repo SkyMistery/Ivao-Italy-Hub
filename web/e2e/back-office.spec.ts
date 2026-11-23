@@ -363,8 +363,10 @@ test('new news reaches the editor, and it is the editor of a news item', async (
   // The metadata form is there — the half that was missing the day no form in the hub was
   // reachable — and it carries the field only a news item has, which is what says the `kind`
   // reached the schema rather than the screen simply being the page editor under another address.
-  await expect(page.getByLabel(englishCommon.content.fields.slug)).toBeVisible();
   await expect(page.getByLabel(englishCommon.content.fields.pinned)).toBeVisible();
+  // And not the slug: a news item's address is born from its title, and the coordinator of the fixture does not approve
+  // (design 13 §4.1, answer 2).
+  await expect(page.getByLabel(englishCommon.content.fields.slug)).toHaveCount(0);
 });
 
 test('the documents list says which rows have a file, and which do not', async ({ page }) => {

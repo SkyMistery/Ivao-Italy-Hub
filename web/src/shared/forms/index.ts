@@ -3,6 +3,7 @@ export type { CalendarSource, FormCalendar } from './busy';
 export { LocaleFields } from './LocaleFields';
 export { LocaleTabs } from './LocaleTabs';
 export { ProblemAlert } from './ProblemAlert';
+export { cannotProposeASlug, slugify } from './slug';
 export { useProblemDetails, describeProblem, languageNames, type ProblemState } from './useProblemDetails';
 export {
   localized,

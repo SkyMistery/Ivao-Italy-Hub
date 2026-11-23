@@ -21,6 +21,8 @@ namespace IvaoHub.IntegrationTests;
 /// file and footer are read from the published version, and an edit of the row changes none of them until
 /// somebody publishes; visibility, slug and parent of a row that is online are changed only by whoever may
 /// publish it — and approve it, for a page — and new readers go through the checks of publication.
+/// <para>And the slug of a page, a news item or a document, once the row exists, only by whoever may approve it, draft
+/// or online (design <c>13-design-struttura-del-sito.md</c> §4.1).</para>
 /// </summary>
 [Collection(MariaDbCollection.Name)]
 public sealed class PublishedFieldsTests(MariaDbFixture mariaDb) : IAsyncLifetime
@@ -168,6 +170,143 @@ public sealed class PublishedFieldsTests(MariaDbFixture mariaDb) : IAsyncLifetim
         await EditAsync(director, id, fields with { Slug = Slug() }, token);
     }
 
+    [Theory]
+    [InlineData(ContentKind.Page)]
+    [InlineData(ContentKind.News)]
+    [InlineData(ContentKind.Document)]
+    public async Task TheSlugIsBornWithTheRowAndChangedOnlyByWhoeverMayApprove(ContentKind kind)
+    {
+        // Design 13 §4.1, answers 1 and 2 of Carmine (19 November 2026): the slug is written once, when the row is created,
+        // and from then on only by whoever holds Content.Approve — on a draft too, and on a news item or a document too.
+        var token = TestContext.Current.CancellationToken;
+        var (coordinator, _, director) = await PeopleAsync(token);
+
+        var fields = Fields(kind, Slug(), "Bozza", collection: null, coverMediaId: null, fileMediaId: null, showFooter: true) with
+        {
+            ParentId = kind == ContentKind.Page ? _shelf : null,
+        };
+        var id = await CreateAsync(coordinator, fields, token);
+
+        // The coordinator writes the rest of the draft, and places it…
+        await EditAsync(coordinator, id, fields with { Summary = "Riscritto", Visibility = Visibility.Members }, token);
+
+        // …but does not give it another slug, never published as it is.
+        using (var renamed = await TryEditAsync(coordinator, id, fields with { Slug = Slug() }, token))
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, renamed.StatusCode);
+            Assert.Equal("errors.content.position.needsApproval", await FirstErrorAsync(renamed, "slug", token));
+        }
+
+        // Whoever approves corrects it.
+        var corrected = fields with { Slug = Slug() };
+        await EditAsync(director, id, corrected, token);
+        var row = await director.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/{id}", token);
+        Assert.Equal(corrected.Slug, row.GetProperty("slug").GetString());
+    }
+
+    [Fact]
+    public async Task TheSlugIsNotRenamedOnTheWayThroughATemplateOrADashboard()
+    {
+        // The review of #554, finding 1: kind and isTemplate travel in the payload. A coordinator holds
+        // Content.ManageTemplates, so a draft made a template with a new slug, and a page again with the slug unchanged,
+        // would have an address its writer may not give it. The row as stored is judged too.
+        var token = TestContext.Current.CancellationToken;
+        var (coordinator, _, _) = await PeopleAsync(token);
+
+        var slug = Slug();
+        var fields = Fields(ContentKind.News, slug, "Bozza", collection: null, coverMediaId: null, fileMediaId: null, showFooter: true);
+        var id = await CreateAsync(coordinator, fields, token);
+
+        using (var template = await TryEditAsync(coordinator, id, fields with { IsTemplate = true, Slug = Slug() }, token))
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, template.StatusCode);
+            Assert.Equal("errors.content.position.needsApproval", await FirstErrorAsync(template, "slug", token));
+        }
+
+        using (var dashboard = await TryEditAsync(coordinator, id, fields with { Kind = ContentKind.Dashboard, Slug = Slug() }, token))
+        {
+            Assert.NotEqual(HttpStatusCode.OK, dashboard.StatusCode);
+        }
+
+        var row = await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/{id}", token);
+        Assert.Equal(slug, row.GetProperty("slug").GetString());
+        Assert.False(row.GetProperty("isTemplate").GetBoolean());
+        Assert.Equal(nameof(ContentKind.News), row.GetProperty("kind").GetString());
+    }
+
+    [Fact]
+    public async Task APageFromATemplateIsBornWithTheTitleItsSlugCameFrom()
+    {
+        // The maintainer's answer on #554, point 3: «new from a template» asks the title of the new row, and its slug is
+        // born from it in the browser. The row carries that title, not the template's; without one it keeps the template's.
+        var token = TestContext.Current.CancellationToken;
+        var (coordinator, _, _) = await PeopleAsync(token);
+
+        long templateId;
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            templateId = await database.Contents
+                .IgnoreQueryFilters()
+                .Where(row => row.IsTemplate && row.Kind == ContentKind.Page && row.Slug == "section-page")
+                .Select(row => row.Id)
+                .FirstAsync(token);
+        }
+
+        var slug = Slug();
+        using var created = await SendAsync(
+            coordinator,
+            HttpMethod.Post,
+            $"{ContentEndpoints.Pattern}/from-template/{templateId}",
+            new
+            {
+                ownerDepartment = nameof(Department.ED),
+                slug,
+                parentId = _shelf,
+                title = new Dictionary<string, string> { ["it"] = "Le regole del sito" },
+            },
+            token);
+        Assert.True(created.StatusCode == HttpStatusCode.Created, await created.Content.ReadAsStringAsync(token));
+
+        var row = await created.Content.ReadFromJsonAsync<JsonElement>(token);
+        Assert.Equal(slug, row.GetProperty("slug").GetString());
+        Assert.Equal("Le regole del sito", row.GetProperty("title").GetProperty("it").GetString());
+
+        // No title: the template's, as before.
+        using var plain = await SendAsync(
+            coordinator,
+            HttpMethod.Post,
+            $"{ContentEndpoints.Pattern}/from-template/{templateId}",
+            new { ownerDepartment = nameof(Department.ED), slug = Slug(), parentId = _shelf },
+            token);
+        Assert.True(plain.StatusCode == HttpStatusCode.Created, await plain.Content.ReadAsStringAsync(token));
+        var copied = await plain.Content.ReadFromJsonAsync<JsonElement>(token);
+        Assert.NotEqual("Le regole del sito", copied.GetProperty("title").GetProperty("it").GetString());
+    }
+
+    [Fact]
+    public async Task ANewsItemOnlineIsMovedByWhoeverPublishesItButRenamedOnlyByWhoeverApproves()
+    {
+        // A news item does not go through approval: the coordinator who publishes it changes who reads it. Its slug still
+        // asks for the approver (design 13 §4.1, answer 2).
+        var token = TestContext.Current.CancellationToken;
+        var (coordinator, _, director) = await PeopleAsync(token);
+
+        var fields = Fields(ContentKind.News, Slug(), "Online", Key(), coverMediaId: null, fileMediaId: null, showFooter: true);
+        var id = await CreateAsync(coordinator, fields, token);
+        await PublishAsync(coordinator, id, token);
+
+        await EditAsync(coordinator, id, fields with { Visibility = Visibility.Members }, token);
+
+        using (var renamed = await TryEditAsync(coordinator, id, fields with { Visibility = Visibility.Members, Slug = Slug() }, token))
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, renamed.StatusCode);
+            Assert.Equal("errors.content.position.needsApproval", await FirstErrorAsync(renamed, "slug", token));
+        }
+
+        await EditAsync(director, id, fields with { Visibility = Visibility.Members, Slug = Slug() }, token);
+    }
+
     [Fact]
     public async Task NewReadersGoThroughTheChecksOfPublication()
     {
@@ -237,7 +376,8 @@ public sealed class PublishedFieldsTests(MariaDbFixture mariaDb) : IAsyncLifetim
         long? FileMediaId,
         bool ShowFooter,
         JsonNode Body,
-        long? ParentId = null);
+        long? ParentId = null,
+        bool IsTemplate = false);
 
     private static RowFields Fields(
         ContentKind kind,
@@ -255,7 +395,7 @@ public sealed class PublishedFieldsTests(MariaDbFixture mariaDb) : IAsyncLifetim
         slug = fields.Slug,
         ownerDepartment = nameof(Department.ED),
         visibility = fields.Visibility.ToString(),
-        isTemplate = false,
+        isTemplate = fields.IsTemplate,
         title = new Dictionary<string, string> { ["it"] = "Campi pubblicati", ["en"] = "Published fields" },
         summary = fields.Summary is null ? null : new Dictionary<string, string> { ["it"] = fields.Summary, ["en"] = fields.Summary },
         seo = fields.Summary is null

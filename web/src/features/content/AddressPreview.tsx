@@ -1,3 +1,4 @@
+import { Button } from '@ivao/atmosphere-react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
@@ -23,12 +24,20 @@ export function AddressPreview({
   slug,
   parentId,
   id,
+  slugIsTheirs = true,
+  onUseSuggestion,
 }: {
   kind: ContentKind;
   department: Department;
   slug: string;
   parentId: number | null;
   id: number | null;
+  /**
+   * Whether whoever writes may change the slug (design 13 §4.1). When they may not, a taken address is not answered with
+   * a slug to type: a new row is offered the free one (`onUseSuggestion`), a row that exists is told who changes it.
+   */
+  slugIsTheirs?: boolean;
+  onUseSuggestion?: ((slug: string) => void) | undefined;
 }) {
   const { t } = useTranslation();
 
@@ -47,12 +56,26 @@ export function AddressPreview({
   const { path, state, suggestion } = address.data;
   const shown = `${PREFIX[kind] ?? ''}${path}`;
 
+  // Taken, for whoever may not write the slug: the free one is theirs to take only while the row is new.
+  const fixed = state === 'Taken' && !slugIsTheirs;
+  const offered = fixed && onUseSuggestion !== undefined && suggestion !== null && suggestion !== undefined;
+  const said = !fixed
+    ? t(`content.address.state.${state}`, { suggestion: suggestion ?? '' })
+    : offered
+      ? t('content.address.takenNew')
+      : t('content.address.takenFixed');
+
   return (
-    <p role="status" aria-label={t('content.address.label')} className="flex flex-col gap-0.5 text-sm">
-      <span className="text-foreground font-mono break-all">{shown}</span>
-      <span className={state === 'Free' ? 'text-muted-foreground' : 'text-destructive'}>
-        {t(`content.address.state.${state}`, { suggestion: suggestion ?? '' })}
-      </span>
-    </p>
+    <div className="flex flex-col items-start gap-1">
+      <p role="status" aria-label={t('content.address.label')} className="flex flex-col gap-0.5 text-sm">
+        <span className="text-foreground font-mono break-all">{shown}</span>
+        <span className={state === 'Free' ? 'text-muted-foreground' : 'text-destructive'}>{said}</span>
+      </p>
+      {offered ? (
+        <Button type="button" size="sm" variant="outline" onClick={() => onUseSuggestion(suggestion)}>
+          {t('content.address.useSuggestion', { suggestion })}
+        </Button>
+      ) : null}
+    </div>
   );
 }

@@ -327,11 +327,18 @@ export function useCreateFromTemplate() {
       slug: string;
       /** The page it sits under; null at the top of the site. */
       parentId: number | null;
+      /** The title of the new row, which its slug was born from (design 13 §4.1); null keeps the template's. */
+      title: Record<string, string> | null;
     }): Promise<ContentDetailDto> =>
       unwrap(
         await api.POST('/api/content/from-template/{templateId}', {
           params: { path: { templateId: request.templateId } },
-          body: { ownerDepartment: request.ownerDepartment, slug: request.slug, parentId: request.parentId },
+          body: {
+            ownerDepartment: request.ownerDepartment,
+            slug: request.slug,
+            parentId: request.parentId,
+            ...(request.title === null ? {} : { title: request.title }),
+          },
         }),
       ),
     onSuccess: async () => {
