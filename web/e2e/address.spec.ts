@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { stubTheAddressOfAPage, stubTheApiAsStaff, stubThePublishedPage } from './fixtures';
+import { staffBootstrap, stubTheAddressOfAPage, stubTheApiAsStaff, stubThePublishedPage } from './fixtures';
 import { englishCommon } from './locales';
 
 /**
@@ -129,15 +129,122 @@ test('a coordinator whose title makes a taken address is offered the free one, a
   await expect(where).toContainText(englishCommon.content.address.state.Free);
 });
 
-/** The English title of the form, written in its own tab. */
+test('a title that gives no slug opens the field of the slug to a coordinator, who writes the address', async ({
+  page,
+}) => {
+  // The maintainer's answer on #554, point 1: a title in another script proposes nothing, and a field nobody can see
+  // would be a refusal nobody can answer.
+  await stubTheApiAsStaff(page);
+  await stubTheAddressOfAPage(page);
+  const asked = slugsAskedFor(page);
+
+  await page.goto('/staff/content/new?kind=Page&department=ED');
+  await page.getByLabel(englishCommon.content.fields.parentId, { exact: true }).click();
+  await page.getByRole('option', { name: '/about/team — Team' }).click();
+
+  const slug = page.getByLabel(englishCommon.content.fields.slug, { exact: true });
+  await expect(slug).toHaveCount(0);
+
+  await writeTheTitle(page, 'Правила сайта');
+  await expect(slug).toBeVisible();
+
+  await slug.fill('site-rules');
+  await expect.poll(() => asked.at(-1)).toBe('site-rules');
+
+  // Open it stays: a Latin title written after does not hide the address typed in it.
+  await writeTheTitle(page, 'Site rules');
+  await expect(slug).toHaveValue('site-rules');
+});
+
+test('new from a template: a coordinator writes the title, and the slug is born from it', async ({
+  page,
+}) => {
+  // The maintainer's answer on #554, point 3: «new from a template» follows design 13 §4.1 like the form.
+  await stubTheApiAsStaff(page);
+  await stubTheAddressOfAPage(page);
+  const sent = bodiesSentFromATemplate(page);
+
+  await page.goto('/staff/content?kind=Page&department=ED');
+  await chooseInThePicker(page, '#templateId', 'Section page');
+  await chooseInThePicker(page, '#newParent', '/about/team — Team');
+
+  await expect(page.locator('#newSlug')).toHaveCount(0);
+  await page.locator('#newTitle').fill('Our team, in 2027!');
+  await page.getByRole('button', { name: englishCommon.content.create, exact: true }).click();
+
+  await expect.poll(() => sent.length).toBe(1);
+  expect(sent[0]).toMatchObject({
+    slug: 'our-team-in-2027',
+    title: { en: 'Our team, in 2027!' },
+    parentId: 2,
+  });
+});
+
+test('new from a template: a title that gives no slug opens the field there too', async ({ page }) => {
+  await stubTheApiAsStaff(page);
+  await stubTheAddressOfAPage(page);
+  const sent = bodiesSentFromATemplate(page);
+
+  await page.goto('/staff/content?kind=Page&department=ED');
+  await chooseInThePicker(page, '#templateId', 'Section page');
+  await chooseInThePicker(page, '#newParent', '/about/team — Team');
+
+  await page.locator('#newTitle').fill('Правила');
+  await expect(page.locator('#newSlug')).toBeVisible();
+  await expect(page.getByRole('button', { name: englishCommon.content.create, exact: true })).toBeDisabled();
+
+  await page.locator('#newSlug').fill('rules');
+  await page.getByRole('button', { name: englishCommon.content.create, exact: true }).click();
+
+  await expect.poll(() => sent.length).toBe(1);
+  expect(sent[0]).toMatchObject({ slug: 'rules', title: { en: 'Правила' } });
+});
+
+test('new from a template: whoever approves keeps the field, proposed from the title', async ({ page }) => {
+  await stubTheApiAsStaff(page, {
+    ...staffBootstrap,
+    permissions: [...staffBootstrap.permissions, { name: 'Content.Approve', department: 'ED' }],
+  });
+  await stubTheAddressOfAPage(page);
+
+  await page.goto('/staff/content?kind=Page&department=ED');
+  await chooseInThePicker(page, '#templateId', 'Section page');
+  await page.locator('#newTitle').fill('Our team');
+
+  await expect(page.locator('#newSlug')).toHaveValue('our-team');
+  await page.locator('#newSlug').fill('team');
+  await page.locator('#newTitle').fill('Our whole team');
+  await expect(page.locator('#newSlug')).toHaveValue('team');
+});
+
+/** A select of the template picker, opened by its control and answered by the option's name. */
+async function chooseInThePicker(page: Page, control: string, option: string): Promise<void> {
+  await page.locator(control).click();
+  await page.getByRole('option', { name: option, exact: true }).click();
+}
+
+/**
+ * What «new from a template» sends, refused by the bench so that nothing navigates: the body is what this test is about,
+ * and the refusal is the picker's own to say.
+ */
+function bodiesSentFromATemplate(page: Page): unknown[] {
+  const sent: unknown[] = [];
+  void page.route('**/api/content/from-template/*', (route) => {
+    sent.push(route.request().postDataJSON());
+    return route.fulfill({
+      status: 400,
+      contentType: 'application/problem+json',
+      body: JSON.stringify({ status: 400, title: 'Refused', errors: {} }),
+    });
+  });
+  return sent;
+}
+
+/**
+ * The English title of the form. English is the fixture division's main language, so its tab is the one open: no click,
+ * which would have to tell the title's tabs from those of the sharing title below it.
+ */
 async function writeTheTitle(page: Page, title: string): Promise<void> {
-  const field = page
-    .locator('#content-metadata fieldset')
-    .filter({ hasText: englishCommon.content.fields.title });
-  const english = field.getByRole('tab', { name: 'English' });
-  if ((await english.count()) > 0) {
-    await english.click();
-  }
   await page.locator('[id="title.en"]').fill(title);
 }
 

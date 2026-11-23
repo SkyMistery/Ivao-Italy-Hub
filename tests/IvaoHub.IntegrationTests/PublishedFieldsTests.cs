@@ -235,6 +235,56 @@ public sealed class PublishedFieldsTests(MariaDbFixture mariaDb) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task APageFromATemplateIsBornWithTheTitleItsSlugCameFrom()
+    {
+        // The maintainer's answer on #554, point 3: «new from a template» asks the title of the new row, and its slug is
+        // born from it in the browser. The row carries that title, not the template's; without one it keeps the template's.
+        var token = TestContext.Current.CancellationToken;
+        var (coordinator, _, _) = await PeopleAsync(token);
+
+        long templateId;
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            templateId = await database.Contents
+                .IgnoreQueryFilters()
+                .Where(row => row.IsTemplate && row.Kind == ContentKind.Page && row.Slug == "section-page")
+                .Select(row => row.Id)
+                .FirstAsync(token);
+        }
+
+        var slug = Slug();
+        using var created = await SendAsync(
+            coordinator,
+            HttpMethod.Post,
+            $"{ContentEndpoints.Pattern}/from-template/{templateId}",
+            new
+            {
+                ownerDepartment = nameof(Department.ED),
+                slug,
+                parentId = _shelf,
+                title = new Dictionary<string, string> { ["it"] = "Le regole del sito" },
+            },
+            token);
+        Assert.True(created.StatusCode == HttpStatusCode.Created, await created.Content.ReadAsStringAsync(token));
+
+        var row = await created.Content.ReadFromJsonAsync<JsonElement>(token);
+        Assert.Equal(slug, row.GetProperty("slug").GetString());
+        Assert.Equal("Le regole del sito", row.GetProperty("title").GetProperty("it").GetString());
+
+        // No title: the template's, as before.
+        using var plain = await SendAsync(
+            coordinator,
+            HttpMethod.Post,
+            $"{ContentEndpoints.Pattern}/from-template/{templateId}",
+            new { ownerDepartment = nameof(Department.ED), slug = Slug(), parentId = _shelf },
+            token);
+        Assert.True(plain.StatusCode == HttpStatusCode.Created, await plain.Content.ReadAsStringAsync(token));
+        var copied = await plain.Content.ReadFromJsonAsync<JsonElement>(token);
+        Assert.NotEqual("Le regole del sito", copied.GetProperty("title").GetProperty("it").GetString());
+    }
+
+    [Fact]
     public async Task ANewsItemOnlineIsMovedByWhoeverPublishesItButRenamedOnlyByWhoeverApproves()
     {
         // A news item does not go through approval: the coordinator who publishes it changes who reads it. Its slug still

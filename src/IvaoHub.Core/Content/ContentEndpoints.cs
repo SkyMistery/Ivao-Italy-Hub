@@ -22,10 +22,16 @@ namespace IvaoHub.Core.Content;
 
 /// <summary>What "new from template" needs to know that the template does not say.</summary>
 /// <param name="OwnerDepartment">The department the page belongs to.</param>
-/// <param name="Slug">The last segment of its address.</param>
+/// <param name="Slug">The last segment of its address: born from <paramref name="Title"/> in the browser, and written by
+/// hand only by whoever holds <c>Content.Approve</c> (design 13 §4.1, the maintainer's answer on #554).</param>
 /// <param name="ParentId">The page it sits under; null at the top of the site (note
 /// 2026-09-13-contenuti-centralizzati, 3.7).</param>
-public sealed record ContentFromTemplateRequest(Department OwnerDepartment, string Slug, long? ParentId = null);
+/// <param name="Title">The title of the new row, which its slug is born from; null keeps the template's.</param>
+public sealed record ContentFromTemplateRequest(
+    Department OwnerDepartment,
+    string Slug,
+    long? ParentId = null,
+    Localized<string>? Title = null);
 
 /// <summary>
 /// What a visitor asking for an address is given: the page that has it, or — when a published page
@@ -563,7 +569,9 @@ public static class ContentEndpoints
             request.OwnerDepartment,
             Visibility.Staff,
             IsTemplate: false,
-            template.Title,
+            // The title the writer gave the new row, which its slug was born from (design 13 §4.1); the template's when
+            // none was given.
+            request.Title ?? template.Title,
             template.Summary,
             template.Seo,
             body,
