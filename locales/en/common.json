@@ -644,7 +644,6 @@
         "stopped": "Somebody else saved this page while you were editing it. Reload to see their version; what you changed since is not saved.",
         "leave": "Leave this page? The changes since the last save will be lost."
       },
-      "publishRefused": "This page cannot be published yet",
       "publishDialog": {
         "title": "Publish this version?",
         "description": "What is on screen is saved first, then shown to its readers. A line about what changed stays with the version, for the staff.",

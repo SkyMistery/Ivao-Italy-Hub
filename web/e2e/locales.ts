@@ -150,6 +150,7 @@ interface CommonStrings {
     };
     readonly guide: { readonly link: string; readonly hint: string };
     readonly review: {
+      readonly title: string;
       readonly ready: string;
       readonly readyDialog: { readonly confirm: string };
       readonly note: string;

@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import { expect, test, type Page } from '@playwright/test';
 
 import { oneTemplate, staffBootstrap, stubTheAddressOfAPage, stubTheApiAsStaff } from './fixtures';
@@ -270,4 +273,68 @@ test('a parent put back to nothing says so, can be chosen again, and what is app
         menu: expect.objectContaining({ parentId: 3 }),
       }),
     ]);
+});
+
+/**
+ * A step of the review the server refuses (#539): the dialog closes and the panel that opened it says why, in the server's
+ * own words (`ProblemAlert`), beside the buttons — not behind a dialog left open. Marking ready and approving run the same
+ * checks as publishing, so a Video from a host the hub does not frame stops both.
+ */
+test.describe('a step of the review the server refuses is said in the panel', () => {
+  const notFramed: string = (
+    JSON.parse(
+      readFileSync(fileURLToPath(new URL('../../locales/en/errors.json', import.meta.url)), 'utf8'),
+    ) as {
+      errors: { content: { addressNotFramed: string } };
+    }
+  ).errors.content.addressNotFramed;
+
+  async function refuseTheReview(page: Page) {
+    await page.route('**/api/content/20/review', async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.fallback();
+        return;
+      }
+      await route.fulfill({
+        status: 400,
+        contentType: 'application/problem+json',
+        body: JSON.stringify({
+          status: 400,
+          errors: { 'body.sections[0].blocks[0].props.url': ['errors.content.addressNotFramed'] },
+        }),
+      });
+    });
+  }
+
+  test('marking ready', async ({ page }) => {
+    await stubTheApiAsStaff(page);
+    await stubThePage(page, aPage, []);
+    await refuseTheReview(page);
+    await page.goto('/staff/content/20');
+
+    await page.getByRole('button', { name: review.ready }).click();
+    const dialog = page.getByRole('alertdialog');
+    await dialog.getByRole('button', { name: review.readyDialog.confirm }).click();
+
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByRole('alert').filter({ hasText: notFramed })).toBeVisible();
+    // Not marked: the button is still there.
+    await expect(page.getByRole('button', { name: review.ready })).toBeVisible();
+  });
+
+  test('approving', async ({ page }) => {
+    await stubTheApiAsStaff(page, approverBootstrap);
+    await stubThePage(page, { ...aPage, status: 'Ready' }, []);
+    await refuseTheReview(page);
+    await page.goto('/staff/content/20');
+
+    await page.getByRole('button', { name: review.approve, exact: true }).click();
+    const dialog = page.getByRole('alertdialog');
+    await dialog.getByRole('button', { name: review.approveDialog.confirm }).click();
+
+    await expect(dialog).toHaveCount(0);
+    await expect(
+      page.getByRole('region', { name: review.title }).getByRole('alert').filter({ hasText: notFramed }),
+    ).toBeVisible();
+  });
 });
