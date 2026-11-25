@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
@@ -16,8 +17,10 @@ namespace IvaoHub.IntegrationTests;
 /// <summary>
 /// The settings of the content, `/api/content/settings` (<c>decisions/2026-11-04-la-pagina-dello-stile.md</c>): the page of
 /// the division's style, written by whoever cures the templates and read, **with their own visibility**, by whoever
-/// downloads the instructions for Claude. VIDs 784001–784004; the pages are written under a shelf of their own.
-/// <para>⚠️ The key is one row of the whole division, so every test sets the value it then asks about.</para>
+/// downloads the instructions for Claude; and the page of the guide «How to make a page», by the same rule, which the seed
+/// makes and chooses (design 13 §5.2, <c>decisions/2026-11-25-la-guida-per-chi-scrive.md</c>). VIDs 784001–784004; the
+/// pages are written under a shelf of their own.
+/// <para>⚠️ The keys are rows of the whole division, so every test sets the value it then asks about.</para>
 /// </summary>
 [Collection(MariaDbCollection.Name)]
 public sealed class ContentSettingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
@@ -167,6 +170,90 @@ public sealed class ContentSettingsTests(MariaDbFixture mariaDb) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task TheGuideIsChosenByTheSameRuleAndReadByWhoeverWrites()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var superadmin = await SignedInAsync(SuperadminVid, token);
+        var (id, path) = await PublishedPageAsync(superadmin, Visibility.Staff, token);
+        var (narrow, _) = await PublishedPageAsync(superadmin, Visibility.Department, token);
+
+        // A page of one department is refused for the guide too, on the guide's own field.
+        using (var refused = await PutBothAsync(superadmin, null, narrow, token))
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+            var problem = await refused.Content.ReadFromJsonAsync<JsonElement>(token);
+            Assert.Contains(
+                ContentSettingsEndpoints.GuidePageTooNarrowKey,
+                problem.GetProperty("errors").GetProperty("guidePageId").EnumerateArray().Select(each => each.GetString()));
+        }
+
+        using (var saved = await PutBothAsync(superadmin, null, id, token))
+        {
+            Assert.True(saved.StatusCode == HttpStatusCode.OK, await saved.Content.ReadAsStringAsync(token));
+        }
+
+        // A coordinator of another department, who opens the form of a page of theirs.
+        using var coordinator = await SignedInAsync(EventsCoordinatorVid, token);
+        var read = await coordinator.GetFromJsonAsync<JsonElement>(ContentSettingsEndpoints.Pattern, token);
+
+        Assert.Equal(id, read.GetProperty("guidePageId").GetInt64());
+        Assert.Equal(path, read.GetProperty("guidePagePath").GetString());
+        // Two settings, not one: the guide chosen leaves the style as the body said, none.
+        Assert.Equal(JsonValueKind.Null, read.GetProperty("stylePageId").ValueKind);
+    }
+
+    [Fact]
+    public async Task TheSeedMakesTheGuideForTheStaffAndChoosesItOnlyWhenNobodyChoseAnother()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var superadmin = await SignedInAsync(SuperadminVid, token);
+
+        // An installation before this release: no guide, no key that says it was seeded, no choice.
+        await DeleteTheGuideAsync(superadmin, token);
+        await ForgetAsync(token, ContentSeeder.PageSettingPrefix + GuideSlug, ContentSettingsEndpoints.GuidePageKey);
+
+        await SeedAsync(token);
+
+        var guide = await SeededGuideAsync(token);
+        Assert.NotNull(guide);
+        Assert.Equal(ContentSeeder.Owner, guide.OwnerDepartment);
+        Assert.Equal(Visibility.Staff, guide.Visibility);
+        Assert.NotNull(guide.PublishedVersionId);
+
+        using var coordinator = await SignedInAsync(EventsCoordinatorVid, token);
+        var read = await coordinator.GetFromJsonAsync<JsonElement>(ContentSettingsEndpoints.Pattern, token);
+        Assert.Equal(guide.Id, read.GetProperty("guidePageId").GetInt64());
+        Assert.Equal($"/{GuideSlug}", read.GetProperty("guidePagePath").GetString());
+
+        // The guide is the staff's: the public read does not give it to a member.
+        using var member = await SignedInAsync(MemberVid, token);
+        using (var page = await member.GetAsync(new Uri($"/api/content/public/page?path={GuideSlug}", UriKind.Relative), token))
+        {
+            Assert.NotEqual(HttpStatusCode.OK, page.StatusCode);
+        }
+
+        // Somebody chose another page: a later seed of the guide makes the page and leaves the choice theirs.
+        var (other, _) = await PublishedPageAsync(superadmin, Visibility.Staff, token);
+        using (var chosen = await PutBothAsync(superadmin, null, other, token))
+        {
+            Assert.Equal(HttpStatusCode.OK, chosen.StatusCode);
+        }
+
+        await DeleteTheGuideAsync(superadmin, token);
+        await ForgetAsync(token, ContentSeeder.PageSettingPrefix + GuideSlug);
+        await SeedAsync(token);
+
+        var again = await SeededGuideAsync(token);
+        Assert.NotNull(again);
+        read = await coordinator.GetFromJsonAsync<JsonElement>(ContentSettingsEndpoints.Pattern, token);
+        Assert.Equal(other, read.GetProperty("guidePageId").GetInt64());
+
+        // Left as a fresh installation leaves it, for whatever runs next on the same database.
+        using var restored = await PutBothAsync(superadmin, null, again.Id, token);
+        Assert.Equal(HttpStatusCode.OK, restored.StatusCode);
+    }
+
+    [Fact]
     public async Task AMemberWithoutTheStaffsPermissionsNeitherReadsNorWrites()
     {
         var token = TestContext.Current.CancellationToken;
@@ -192,6 +279,67 @@ public sealed class ContentSettingsTests(MariaDbFixture mariaDb) : IAsyncLifetim
 
     private static async Task<HttpResponseMessage> PutAsync(HttpClient client, long? id, CancellationToken cancellationToken) =>
         await SendAsync(client, HttpMethod.Put, ContentSettingsEndpoints.Pattern, new { stylePageId = id }, cancellationToken);
+
+    /// <summary>The whole of the settings, as the panel sends them.</summary>
+    private static async Task<HttpResponseMessage> PutBothAsync(
+        HttpClient client,
+        long? style,
+        long? guide,
+        CancellationToken cancellationToken) =>
+        await SendAsync(
+            client,
+            HttpMethod.Put,
+            ContentSettingsEndpoints.Pattern,
+            new { stylePageId = style, guidePageId = guide },
+            cancellationToken);
+
+    /// <summary>The address of the seeded guide, <c>seed/content-pages/how-to-make-a-page.json</c>.</summary>
+    private const string GuideSlug = "how-to-make-a-page";
+
+    private async Task<ContentEntry?> SeededGuideAsync(CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+        return await CrudSource.BackOffice<ContentEntry>(database)
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                row => !row.IsTemplate && row.Kind == ContentKind.Page && row.ParentPath == null && row.Slug == GuideSlug,
+                cancellationToken);
+    }
+
+    /// <summary>The guide taken away the way the back office takes a page away, so that its address is free again.</summary>
+    private async Task DeleteTheGuideAsync(HttpClient superadmin, CancellationToken cancellationToken)
+    {
+        if (await SeededGuideAsync(cancellationToken) is not { } guide)
+        {
+            return;
+        }
+
+        using var deleted = await SendAsync(
+            superadmin,
+            HttpMethod.Delete,
+            $"{ContentEndpoints.Pattern}/{guide.Id}",
+            null,
+            cancellationToken);
+        Assert.True(deleted.StatusCode == HttpStatusCode.NoContent, await deleted.Content.ReadAsStringAsync(cancellationToken));
+    }
+
+    private async Task ForgetAsync(CancellationToken cancellationToken, params string[] keys)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+        database.DivisionSettings.RemoveRange(
+            await database.DivisionSettings.Where(row => keys.Contains(row.Key)).ToListAsync(cancellationToken));
+        await database.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedAsync(CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<ContentSeeder>().SeedAsync(cancellationToken);
+    }
 
     /// <summary>A page of the web team under this class's shelf, published by the superadmin.</summary>
     private async Task<(long Id, string Path)> PublishedPageAsync(
@@ -249,11 +397,15 @@ public sealed class ContentSettingsTests(MariaDbFixture mariaDb) : IAsyncLifetim
         HttpClient client,
         HttpMethod method,
         string path,
-        object payload,
+        object? payload,
         CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
-        request.Content = JsonContent.Create(payload, payload.GetType());
+        if (payload is not null)
+        {
+            request.Content = JsonContent.Create(payload, payload.GetType());
+        }
+
         request.Headers.Add("X-Requested-With", "hub");
         return await client.SendAsync(request, cancellationToken);
     }

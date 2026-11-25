@@ -195,6 +195,50 @@
           "heading": "Altri indirizzi utili"
         }
       },
+      "howTo": {
+        "title": "Come si fa una pagina",
+        "summary": "Per lo staff: dove va una pagina, come nasce il suo indirizzo, chi la approva e quale blocco usare per che cosa.",
+        "hero": {
+          "section": "Apertura",
+          "heading": "Come si fa una pagina",
+          "text": "Dove mettere una pagina, come nasce il suo indirizzo, chi la approva e quali blocchi usare. Questa guida è una pagina come le altre: il team web la tiene aggiornata quando l’editor cambia."
+        },
+        "body": {
+          "section": "Corpo",
+          "where": {
+            "heading": "Dove va una pagina",
+            "text": "Le pagine del sito stanno in un albero: ognuna sta sotto un’altra, fino a tre livelli (per esempio `/chi-siamo/staff/regole`). L’albero si vede in [Contenuti](/staff/content), nella vista **Albero del sito**.\n\n- Per partire dal posto giusto, premi **Nuova pagina qui** sulla riga della pagina madre: il form si apre con la madre già scelta. Oppure premi **Nuova pagina** e scegli la madre nel campo **Sotto la pagina**.\n- **In cima al sito** mettono una pagina solo la direzione e il team web, cioè chi può approvare le pagine. Gli altri scelgono sempre una madre.\n- Le pagine dell’applicazione (il calendario, le news, la ricerca, le pagine dei moduli) compaiono nell’albero segnate e senza azioni: sotto di loro non va nessuna pagina, e nel campo **Sotto la pagina** sono spente.\n- Alcune parole sono dell’applicazione e non possono essere il primo pezzo di un indirizzo (`news`, `documents`, `calendar`, `staff`…): l’anteprima dell’indirizzo lo dice prima che tu salvi.\n- Una pagina che ha pagine sotto di sé non si cancella: prima si spostano o si cancellano quelle.\n- Una pagina già online la sposta solo chi può approvarla. Le sue figlie vanno con lei, e chi arriva dal vecchio indirizzo viene portato al nuovo."
+          },
+          "address": {
+            "heading": "L’indirizzo nasce dal titolo",
+            "text": "Chi scrive non sceglie l’indirizzo: sotto il titolo e la madre il form mostra **Dove sarà**, l’indirizzo che nasce dal titolo nella lingua principale della divisione, senza accenti e con i trattini al posto degli spazi.\n\n- L’indirizzo si fissa al primo **Salva bozza**. Dopo, cambiare il titolo non sposta la pagina: i link scritti in altre pagine restano buoni.\n- Se l’indirizzo è già preso, l’anteprima lo dice: cambia il titolo, oppure premi **Usa …** per prendere quello libero che ti propone.\n- Se il titolo non dà un indirizzo (un altro alfabeto, solo simboli), compare il campo **Indirizzo** e lo scrivi tu.\n- Dopo la creazione l’indirizzo lo cambia solo chi approva le pagine, anche in bozza: se è sbagliato lo corregge lui, dal form o quando approva. Vale lo stesso per le news e i documenti."
+          },
+          "review": {
+            "heading": "Dalla bozza al sito",
+            "text": "Una pagina nasce **bozza**, e il sito non la mostra. La prima volta si preme **Salva bozza**; dopo, la bozza si salva da sola a ogni pausa di qualche secondo. **Apri l’anteprima** la mostra in una scheda nuova com’è adesso.\n\n- Chi non approva non ha **Pubblica**: preme **Segna pronta**, scrive se vuole una nota per chi approva e può proporre una voce di menu. La pagina passa **In attesa di approvazione** e nessuno la può cambiare; **Ritira dall’approvazione** la riporta indietro.\n- **Segna pronta** fa gli stessi controlli della pubblicazione: una lingua da completare, una foto da scegliere, un link che non porta da nessuna parte o che porta dove i lettori della pagina non possono andare. Finché manca qualcosa, la pagina non parte.\n- Chi approva (la direzione e il team web) riceve un avviso. Con **Approva** corregge, se serve, l’indirizzo, la madre e la voce di menu, e la pagina va online subito. Con **Rimanda indietro** scrive una nota: la pagina torna bozza e chi l’ha segnata pronta riceve la nota.\n- Dopo la pubblicazione si lavora ancora sulla bozza: il sito mostra la versione pubblicata finché qualcuno non ripubblica. Il pannello **Versioni** dice chi ha pubblicato che cosa e quando.\n- Le news e i documenti non passano dall’approvazione: li pubblicano il coordinatore e l’assistente del dipartimento."
+          },
+          "sections": {
+            "heading": "Sezioni e righe",
+            "text": "Una pagina è fatta di **sezioni**, una sotto l’altra. Lo sfondo, lo spazio intorno e la larghezza sono della sezione, mai del blocco: otto sfondi (fra cui **Immagine**, che vuole una foto), quattro spaziature e quattro larghezze, da **Stretta** a **Tutta la pagina**. Il nome della sezione lo vede solo chi scrive.\n\n- La **Disposizione** divide la sezione in colonne: uno sotto l’altro, due colonne uguali, stretta e larga, larga e stretta, tre colonne uguali. Ogni blocco sta in una colonna.\n- Una **riga** è una sezione dentro la sezione (**Aggiungi riga**), con le sue colonne: serve quando una parte della sezione va divisa in un altro modo. Nasce senza sfondo e senza spaziatura, perché li prende dalla sezione.\n- Un blocco non contiene altri blocchi: per mettere due cose una accanto all’altra si usano le colonne.\n- Una pagina fatta da un template ne eredita le sezioni. Una sezione **Fissata dal template** non cambia struttura, ma i suoi blocchi si modificano uno alla volta; alcune sezioni accettano solo certi blocchi."
+          },
+          "blocks": {
+            "heading": "Quale blocco per che cosa",
+            "text": "La tavolozza **Componenti** dell’editor raggruppa i blocchi in cinque cassetti: prima scegli una sezione, poi il blocco da aggiungerle. Un blocco per meno lettori di quelli della pagina è spento.\n\n**Contenuto.** Le parole e le immagini della pagina. **Titolo** e **Testo** per quasi tutto, **Riquadro** per un avviso che deve saltare all’occhio, **Elenco di link** per i link della libreria. **Testata** per l’apertura, **Immagine**, e **Video** e **Pagina incorporata** da un indirizzo che l’hub sa incorporare. **Passi** per una procedura in ordine, **Tabella** per i dati da confrontare.\n\n**Impaginazione.** Più cose dello stesso tipo in fila: **Schede**, **Icone**, **Galleria**, **Loghi**. E i contenitori che aprono un pezzo alla volta: le schede a linguette e **Domande e risposte**.\n\n**Interattivi.** **Citazione** per la voce di qualcuno, **Pulsanti** per portare chi legge da un’altra parte.\n\n**Struttura.** **Spazio** e **Separatore**, quando fra due blocchi serve più aria o una linea.\n\n**Dati.** I blocchi che si riempiono da soli con i dati dell’hub: **Numeri**, **In diretta sulla rete**, **Calendario**, **News**, **Documenti**, **Staff**, **Mappa del sito**, quelli dei moduli abilitati, e quelli per chi guarda (**Saluto**, **I miei dipartimenti**, **Cose da fare**), che hanno senso sulle dashboard.\n\nOgni blocco, con un esempio, è nella [Galleria dei componenti](/staff/admin/ui-kit), per chi ha l’accesso all’amministrazione."
+          },
+          "media": {
+            "heading": "Le foto e la libreria",
+            "text": "Le foto non si caricano dentro la pagina: stanno nella [Libreria media](/staff/media) del dipartimento, e un blocco le sceglie da lì (**Apri la libreria media**). Chi può caricare file lo fa anche dal selettore, con **Carica un file**.\n\n- Il testo alternativo è del file, non del blocco: si scrive una volta nella libreria e vale ovunque la foto compare. Il selettore segnala i file che non ce l’hanno ancora.\n- Un file appena caricato lo vede solo lo staff: per metterlo su una pagina pubblica va reso pubblico nella libreria, altrimenti la pubblicazione lo rifiuta.\n- Una foto lasciata da scegliere (un’immagine, una galleria, i loghi, lo sfondo **Immagine**) ferma la pubblicazione finché non la scegli.\n- Un file che una pagina pubblicata mostra non si cancella: si archivia."
+          },
+          "claude": {
+            "heading": "Scrivere con Claude",
+            "text": "Una pagina, una news o un documento già salvati si possono scrivere con Claude, dalla barra dell’editor.\n\n- **Scarica per Claude** salva la bozza e scarica un file con le istruzioni: le regole della pagina e del suo template, i blocchi che può usare, gli indirizzi del sito che puoi leggere, la bozza com’è adesso e, se la divisione l’ha scelta, la pagina dello stile. Dai il file a Claude insieme a quello che vuoi ottenere.\n- **Importa da Claude** prende il file che Claude ti restituisce e lo mette nella bozza, salvata subito: non pubblica niente, e **Annulla** lo toglie. Le foto da scegliere, i valori da completare e i link da controllare li elenca l’editor, e li finisci tu.\n- L’import rifiuta il file di un’altra pagina, un file fatto su una bozza diversa da quella di adesso e un file scaricato prima che cambiassero le regole della pagina (un blocco nuovo nella tavolozza, il template, le lingue, chi la legge). In quel caso scarica di nuovo le istruzioni."
+          }
+        },
+        "links": {
+          "section": "Link",
+          "heading": "Altri indirizzi utili"
+        }
+      },
       "dashboard": {
         "title": "Dashboard di dipartimento",
         "summary": "Quello che questo dipartimento vede aprendo il back office."
