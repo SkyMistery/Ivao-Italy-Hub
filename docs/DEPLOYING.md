@@ -223,6 +223,10 @@ Nothing else changes: the hub decides what may be kept. A signed-in reader's ans
 so a cached answer is always the anonymous one, which is the same for everybody. An installation without Cloudflare
 needs nothing: the header only speaks to a shared cache.
 
+⚠️ **Never add to this rule a block whose answer depends on who reads it**, such as `siteMap` (the map of the site, the
+pages each reader may open) or `myWork`. The cache key leaves the cookies out, so a member would be answered with a
+visitor's copy.
+
 To check from outside, ask twice within the minute (`e30` is `{}`, the empty question, base64url) and read two headers:
 `cf-cache-status` says `MISS`, then `HIT`, and `Cache-Control` says `public, max-age=0, s-maxage=60`.
 

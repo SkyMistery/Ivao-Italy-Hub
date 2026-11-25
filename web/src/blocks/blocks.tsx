@@ -34,6 +34,7 @@ import { bootstrapQuery } from '../features/me/queries';
 import type { LocalizedString } from '../shared/api/bootstrap';
 import { useMediaFileUrl } from '../shared/api/mediaUrl';
 import { ICONS } from '../shared/icons';
+import { usePreviewLocale } from '../shared/i18n/previewLocale';
 import { useLocalized } from '../shared/i18n/useLocalized';
 import { useMoment } from '../shared/i18n/useMoment';
 import type { BlockComponentProps } from '../shared/modules';
@@ -59,6 +60,7 @@ import {
   STATION_KINDS,
   TABLE_ROW_STYLES,
 } from './schemas';
+import { siteMapTree, type SiteMapData, type SiteMapNode } from './siteMap';
 
 /**
  * How the blocks of the core are drawn (design M0 §5.4, design M1 §1). All but one draw what an
@@ -1929,5 +1931,58 @@ export function StaffListBlock({ props, data }: BlockComponentProps) {
       ))}
       <p className="text-muted-foreground text-xs">{t('blocks.staffList.rosterNote')}</p>
     </div>
+  );
+}
+
+// ---- siteMap (data) --------------------------------------------------------------------------
+
+/** One level of the map: a list inside the line of its mother, in the style of a list of the prose. */
+function SiteMapBranch({ nodes }: { nodes: readonly SiteMapNode[] }) {
+  return (
+    <ul className="list-disc pl-6">
+      {nodes.map((node) => (
+        <li key={node.href}>
+          <a href={node.href} className="text-primary underline underline-offset-2">
+            {node.name}
+          </a>
+          {node.children.length === 0 ? null : <SiteMapBranch nodes={node.children} />}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * The map of the site (design 13 §5.1): the answer of `SiteMapProvider`, which is what whoever is reading may open, nested
+ * under the pages it sits under. A screen is named by its key, a page by its title, both in the language on screen.
+ */
+export function SiteMapBlock({ props, data }: BlockComponentProps) {
+  const { t, i18n } = useTranslation();
+  const read = useLocalized();
+  const locale = usePreviewLocale() ?? i18n.language;
+  const items = (data as SiteMapData | null | undefined)?.items;
+  const title = read(text(props, 'title'));
+  const heading = title === '' ? null : <H2>{title}</H2>;
+
+  if (items === undefined || items.length === 0) {
+    return (
+      <div className="flex flex-col gap-3">
+        {heading}
+        <NoRows pending={items === undefined} empty={t('blocks.siteMap.empty')} />
+      </div>
+    );
+  }
+
+  const tree = siteMapTree(
+    items,
+    (entry) => (entry.titleKey ? t(entry.titleKey) : read(entry.title)),
+    locale,
+  );
+
+  return (
+    <nav className="flex flex-col gap-3" aria-label={title === '' ? t('blocks.siteMap.label') : title}>
+      {heading}
+      <SiteMapBranch nodes={tree} />
+    </nav>
   );
 }

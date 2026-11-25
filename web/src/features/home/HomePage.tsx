@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import {
   ContentRenderer,
   EmbeddingContext,
+  HOME_SLUG,
   readBody,
   startsWithPageTitle,
   usePublishedEmbedding,
@@ -21,10 +22,10 @@ import { publicContentQuery } from '../content/queries';
  * The row is seeded on the first start, with filler prose that names no division in particular, and
  * whoever runs the site replaces it from the back office.
  *
- * ⚠️ The address `/` is a route of the application and `home` is an ordinary slug, so the two never
- * collide: `/{slug}` serves every other page and this one is reached by the shorter address.
+ * ⚠️ The address `/` is a route of the application and `home` is an ordinary slug (`HOME_SLUG`, in the blocks, whose
+ * map of the site draws the two as one line), so the two never collide: `/{slug}` serves every other page and this one is
+ * reached by the shorter address.
  */
-export const HOME_SLUG = 'home';
 
 export function HomePage() {
   const { t } = useTranslation();

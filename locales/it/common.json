@@ -1690,6 +1690,18 @@
         }
       }
     },
+    "siteMap": {
+      "label": "Mappa del sito",
+      "about": "Le pagine del sito e le schermate dell’applicazione, ognuna sotto la pagina in cui sta. Ognuno vede quelle che può aprire: un visitatore le pagine pubbliche, un membro anche quelle dei membri, lo staff anche le sue.",
+      "empty": "Non c’è ancora nessuna pagina da mostrare.",
+      "fields": {
+        "title": "Titolo",
+        "href": "Comincia dalla pagina"
+      },
+      "hints": {
+        "href": "Vuoto: tutto il sito. Una pagina: quella pagina e le pagine sotto di lei."
+      }
+    },
     "welcome": {
       "label": "Saluto",
       "about": "Un saluto per nome a chi guarda la dashboard, con un messaggio sotto.",

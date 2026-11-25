@@ -434,8 +434,8 @@ describe('data', () => {
     const data = coreBlocks.filter((block) => block.kind === 'Data');
 
     // Not a tautology and not a small number: `registry.test.ts` already refuses a data block with
-    // no `exampleData`, so this is eight blocks mounting eight answers (D3 added `myWork`).
-    expect(data).toHaveLength(8);
+    // no `exampleData`, so this is nine blocks mounting nine answers (D3 added `myWork`, phase 4 `siteMap`).
+    expect(data).toHaveLength(9);
 
     for (const block of data) {
       const Component = block.component;

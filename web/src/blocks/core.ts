@@ -10,6 +10,7 @@ import {
   Heading,
   Image,
   ListTodo,
+  ListTree,
   Images,
   Info,
   LayoutGrid,
@@ -60,6 +61,7 @@ import {
   LogoGridBlock,
   NetworkStatsBlock,
   NewsListBlock,
+  SiteMapBlock,
   SpacerBlock,
   StaffListBlock,
   StatsBlock,
@@ -96,6 +98,7 @@ import {
   myWorkSchema,
   networkStatsSchema,
   newsListSchema,
+  siteMapSchema,
   spacerSchema,
   staffListSchema,
   statsSchema,
@@ -151,6 +154,7 @@ export const CORE_BLOCK_TYPES = {
   newsList: 'newsList',
   documentList: 'documentList',
   staffList: 'staffList',
+  siteMap: 'siteMap',
   frequencyTable: 'frequencyTable',
   coordination: 'coordination',
   welcome: 'welcome',
@@ -633,7 +637,9 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
 
   // --- Data --------------------------------------------------------------------------------------
   //
-  // Six blocks that draw what the hub knows rather than what an editor typed. Each one has an
+  // Seven blocks here, of the nine data blocks of the core: `linkList` sits with the content blocks above and `myWork`
+  // with the personal dashboards below. They draw what the hub knows rather than what an editor typed — the map of the
+  // site, of phase 4, is the last of this group (design 13 §5.1). Each one has an
   // `IDataBlockProvider` registered for the same type on the server — the fifth thing a block costs
   // (design M1 §1.3) — and an `exampleData`, because the gallery is a page about the components and
   // must not show whatever this installation happens to hold today, or nothing at all on a fresh one.
@@ -788,6 +794,29 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     editorLabelKey: 'blocks.staffList.label',
     group: 'data',
     icon: Users,
+  },
+  {
+    type: CORE_BLOCK_TYPES.siteMap,
+    version: 1,
+    kind: 'Data',
+    // About whoever reads it, so never captured (design 13 §5.1): frozen, it would keep the pages whoever pressed publish
+    // could read — the staff's among them — on a page for everybody.
+    alwaysLive: true,
+    schema: siteMapSchema,
+    component: SiteMapBlock,
+    example: { title: { en: 'Site map', it: 'Mappa del sito' } },
+    exampleData: {
+      items: [
+        { path: '/', title: null, titleKey: 'menu.screens./' },
+        { path: '/about', title: { en: 'About', it: 'Chi siamo' }, titleKey: null },
+        { path: '/about/team', title: { en: 'The staff', it: 'Lo staff' }, titleKey: null },
+        { path: '/calendar', title: null, titleKey: 'menu.screens./calendar' },
+        { path: '/news', title: null, titleKey: 'menu.screens./news' },
+      ],
+    },
+    editorLabelKey: 'blocks.siteMap.label',
+    group: 'data',
+    icon: ListTree,
   },
 
   // --- The operational document (G14) ----------------------------------------------------------
