@@ -47,6 +47,43 @@ export function routeParts({
   ];
 }
 
+/**
+ * The rows a tour keeps from a kind it no longer has (#549, note 2026-11-22-le-righe-del-tipo-vecchio): legs on an Open
+ * tour or a container, hubs and rotations on a tour that is no longer a hub one, constraints on one that is no longer
+ * Open. The tour's save keeps them; they stand between it and "ready" until they are deleted.
+ */
+export type LeftoverPart = 'legs' | 'hubs' | 'constraints';
+
+/** The problem of "ready" that says a part is left over, as `TourShape` files it: its field, and its key. */
+const LEFTOVER_PROBLEMS: readonly (readonly [LeftoverPart, string])[] = [
+  ['legs', 'flightops:errors.kindHasNoLegs'],
+  ['hubs', 'flightops:errors.kindHasNoHubs'],
+  ['constraints', 'flightops:errors.kindHasNoConstraints'],
+];
+
+/** The parts left over, read off the server's problems of "ready": the editor draws them only to be deleted. */
+export function leftoverParts(problems: readonly (readonly [string, readonly string[]])[]): LeftoverPart[] {
+  return LEFTOVER_PROBLEMS.filter(([part, key]) =>
+    problems.some(([field, keys]) => field === part && keys.includes(key)),
+  ).map(([part]) => part);
+}
+
+/**
+ * The parts a change of kind would leave over, if the tour has any — the ones "ready" will name, so the ones the editor
+ * will show: legs going to a kind without legs, hubs leaving a hub tour for another kind with legs. On a kind without
+ * legs `TourShape` names the legs and stops there: hubs left on an Open tour or a container are not a problem of "ready",
+ * and are not said. Constraints are not among them either: the server refuses an Open tour with constraints a new kind
+ * (`openHasConstraints`).
+ */
+export function partsLeftBy(from: TourKind, to: TourKind): LeftoverPart[] {
+  const toHasLegs = !KINDS_WITHOUT_LEGS.includes(to);
+
+  return [
+    ...(!KINDS_WITHOUT_LEGS.includes(from) && !toHasLegs ? (['legs'] as const) : []),
+    ...(from === 'Hub' && to !== 'Hub' && toHasLegs ? (['hubs'] as const) : []),
+  ];
+}
+
 /** The first part of a problem's field: `legs.3` is about the legs, `briefing.sections[0]…` about the briefing. */
 function head(field: string): string {
   return field.split(/[.[]/)[0] ?? field;

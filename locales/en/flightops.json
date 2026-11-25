@@ -55,7 +55,16 @@
       "goTo": "Go to “{{step}}”",
       "preview": "The page, as pilots will see it",
       "previewLead": "Drawn from the tour as it is saved now, before its release. The part of each pilot — their progress, their reports — is not here.",
-      "previewNeeds": "The page needs an address and both dates, written at step 2."
+      "previewNeeds": "The page needs an address and both dates, written at step 2.",
+      "leftoverLegs": "A tour of this kind has no legs. These are left from the kind it had before, and the tour cannot be marked ready until they are deleted.",
+      "leftoverHubs": "Only a hub tour has hubs and rotations. These are left from the kind it had before: delete the legs of a rotation first, then the rotation, then its hub.",
+      "leftoverConstraints": "Only an Open tour has filters and sequence rules. These are left from the kind it had before, and the tour cannot be marked ready until they are deleted.",
+      "kindLeaves": "A tour of kind “{{kind}}” does not use {{parts}}. If this tour has any, they stay after the save: delete them at the step “Route” before marking it ready.",
+      "leftoverNames": {
+        "legs": "legs",
+        "hubs": "hubs with their rotations",
+        "constraints": "filters and sequence rules"
+      }
     },
     "kindHelp": {
       "Sequential": "The legs are flown in their order, one after the other.",

@@ -83,7 +83,7 @@ beforeEach(() => {
   });
 });
 
-function draw(drawn: TourDetailDto = tour) {
+function draw(drawn: TourDetailDto = tour, { leftover = false }: { leftover?: boolean } = {}) {
   const i18n = i18next.createInstance();
   void i18n.use(initReactI18next).init({
     lng: 'en',
@@ -102,7 +102,7 @@ function draw(drawn: TourDetailDto = tour) {
   render(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={client}>
-        <LegGrid tour={drawn} editable />
+        <LegGrid tour={drawn} editable leftover={leftover} />
       </QueryClientProvider>
     </I18nextProvider>,
   );
@@ -299,6 +299,46 @@ test('a leg with reports is retired with a reason, after the server said it woul
   expect(await screen.findByText(legs.state.retired)).toBeVisible();
   expect(screen.getByText('Airport closed')).toBeVisible();
   expect(screen.getByRole('button', { name: legs.actions.restore })).toBeVisible();
+});
+
+test('a leg a tour keeps from the kind it had before is read-only, and removed (#549)', async () => {
+  const user = userEvent.setup();
+  api.get.mockImplementation((path: string) =>
+    Promise.resolve(
+      path === '/api/flightops/tours/{tourId}/legs'
+        ? ok(grid(leg(11, 1, 'AAAA', 'BBBB')))
+        : path === '/api/flightops/tours/{tourId}/legs/{legId}/removal'
+          ? ok({ outcome: 'Delete', numbers: [1] })
+          : ok([]),
+    ),
+  );
+  draw({ ...tour, kind: 'Open' }, { leftover: true });
+
+  // Nothing is written on a kind without legs: no new leg, no file, no leg after it, no cell to change.
+  const first = await row('1');
+  expect(first.getByRole('combobox', { name: legs.fields.departureIcao })).toBeDisabled();
+  expect(first.queryByRole('button', { name: legs.actions.addAfter })).toBeNull();
+  expect(screen.queryByRole('button', { name: legs.actions.add })).toBeNull();
+  expect(screen.queryByRole('button', { name: legs.actions.import })).toBeNull();
+
+  // Only "remove", which the server lets through.
+  await user.click(first.getByRole('button', { name: legs.actions.remove }));
+  const dialog = await screen.findByRole('alertdialog');
+  expect(await within(dialog).findByText(legs.remove.Delete)).toBeVisible();
+  api.post.mockResolvedValue(ok(grid()));
+  await user.click(within(dialog).getByRole('button', { name: englishCommon.common.delete }));
+
+  await waitFor(() =>
+    expect(api.post).toHaveBeenCalledWith('/api/flightops/tours/{tourId}/legs/{legId}/remove', {
+      params: { path: { tourId: 5, legId: 11 } },
+      body: { reason: null, rowVersion: '2026-09-18T10:00:01Z' },
+    }),
+  );
+  // Gone, and no invitation to add the first one: this kind has none.
+  await waitFor(() =>
+    expect(screen.queryByRole('row', { name: legs.row.replace('{{number}}', '1') })).toBeNull(),
+  );
+  expect(screen.queryByText(legs.empty)).toBeNull();
 });
 
 test('a leg with reports asks why it changes, and a refusal lands under its cell', async () => {

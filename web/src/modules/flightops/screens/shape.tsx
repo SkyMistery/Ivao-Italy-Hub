@@ -5,7 +5,7 @@ import { useId, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
-import { SchemaForm, type ChoiceOption } from '../../../shared/forms';
+import { SchemaForm, describeProblem, type ChoiceOption } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import {
   DataList,
@@ -153,8 +153,65 @@ export function TabList<TRow extends { id: number }, TKey extends readonly unkno
   );
 }
 
-/** Hubs and rotations of a hub tour (design M2 §1.3). */
-export function TourHubsTab({ tour, editable }: { tour: TourDetailDto; editable: boolean }) {
+/**
+ * The rows a tour keeps from a kind it no longer has (#549, note 2026-11-22-le-righe-del-tipo-vecchio): the same list,
+ * with no "new" and, on each row, "delete" in place of "edit" — the server refuses to write them on this kind, and lets
+ * them go. Its refusal (a hub with rotations, a rotation with legs) is said above the list.
+ */
+function LeftoverList<TRow extends { id: number }, TKey extends readonly unknown[]>({
+  resource,
+  tourId,
+  columns,
+  query,
+  labels,
+}: {
+  resource: 'hubs' | 'rotations' | 'tour-constraints';
+  tourId: number;
+  columns: readonly ColumnSpec<TRow>[];
+  query: (search: ListSearch) => UseQueryOptions<Page<TRow>, Error, Page<TRow>, TKey>;
+  labels: string;
+}) {
+  const { t, i18n } = useTranslation();
+  const remove = useDeleteShapeRow(resource, tourId);
+  const refusal = describeProblem(remove.error, t, i18n.language);
+
+  return (
+    <>
+      {refusal === null ? null : <Notice tone="error" title={refusal} />}
+      <TabList
+        columns={columns}
+        query={query}
+        labels={labels}
+        edit={null}
+        create={null}
+        actions={(row) => (
+          <ConfirmDialog
+            triggerText={t('common.delete')}
+            title={t(`${labels}.delete.title`)}
+            description={t(`${labels}.delete.description`)}
+            confirmText={t('common.delete')}
+            disabled={remove.isPending}
+            onConfirm={() => remove.mutate(row.id)}
+          />
+        )}
+      />
+    </>
+  );
+}
+
+/**
+ * Hubs and rotations of a hub tour (design M2 §1.3); with `leftover`, those a tour keeps after its kind stopped being
+ * a hub one, to be deleted (#549).
+ */
+export function TourHubsTab({
+  tour,
+  editable,
+  leftover = false,
+}: {
+  tour: TourDetailDto;
+  editable: boolean;
+  leftover?: boolean;
+}) {
   const { t } = useTranslation();
   const base = `${TOURS}/${tour.id}`;
 
@@ -162,29 +219,51 @@ export function TourHubsTab({ tour, editable }: { tour: TourDetailDto; editable:
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-2">
         <h3 className="text-lg font-semibold">{t('flightops:hubs.title')}</h3>
-        <TabList
-          columns={hubColumns}
-          query={(search) => hubsQuery(tour.id, search)}
-          labels="flightops:hubs"
-          edit={editable ? (row) => `${base}/hubs/${row.id}` : null}
-          create={
-            editable ? <NewButton href={`${base}/hubs/new`} label={t('flightops:hubs.create')} /> : null
-          }
-        />
+        {leftover && editable ? (
+          <LeftoverList
+            resource="hubs"
+            tourId={tour.id}
+            columns={hubColumns}
+            query={(search) => hubsQuery(tour.id, search)}
+            labels="flightops:hubs"
+          />
+        ) : (
+          <TabList
+            columns={hubColumns}
+            query={(search) => hubsQuery(tour.id, search)}
+            labels="flightops:hubs"
+            edit={editable && !leftover ? (row) => `${base}/hubs/${row.id}` : null}
+            create={
+              editable && !leftover ? (
+                <NewButton href={`${base}/hubs/new`} label={t('flightops:hubs.create')} />
+              ) : null
+            }
+          />
+        )}
       </section>
       <section className="flex flex-col gap-2">
         <h3 className="text-lg font-semibold">{t('flightops:rotations.title')}</h3>
-        <TabList
-          columns={rotationColumns}
-          query={(search) => rotationsQuery(tour.id, search)}
-          labels="flightops:rotations"
-          edit={editable ? (row) => `${base}/rotations/${row.id}` : null}
-          create={
-            editable ? (
-              <NewButton href={`${base}/rotations/new`} label={t('flightops:rotations.create')} />
-            ) : null
-          }
-        />
+        {leftover && editable ? (
+          <LeftoverList
+            resource="rotations"
+            tourId={tour.id}
+            columns={rotationColumns}
+            query={(search) => rotationsQuery(tour.id, search)}
+            labels="flightops:rotations"
+          />
+        ) : (
+          <TabList
+            columns={rotationColumns}
+            query={(search) => rotationsQuery(tour.id, search)}
+            labels="flightops:rotations"
+            edit={editable && !leftover ? (row) => `${base}/rotations/${row.id}` : null}
+            create={
+              editable && !leftover ? (
+                <NewButton href={`${base}/rotations/new`} label={t('flightops:rotations.create')} />
+              ) : null
+            }
+          />
+        )}
       </section>
     </div>
   );
@@ -244,9 +323,18 @@ export function TourOpenGoal({ tour, editable }: { tour: TourDetailDto; editable
 
 /**
  * The filters and sequence rules of an Open tour (design M2 §2.6.1), rows of their own: rules of how it is flown, so in
- * the editor's step of the rules (design 11 §5).
+ * the editor's step of the rules (design 11 §5). With `leftover`, those a tour keeps after it stopped being Open, to be
+ * deleted (#549).
  */
-export function TourConstraints({ tour, editable }: { tour: TourDetailDto; editable: boolean }) {
+export function TourConstraints({
+  tour,
+  editable,
+  leftover = false,
+}: {
+  tour: TourDetailDto;
+  editable: boolean;
+  leftover?: boolean;
+}) {
   const { t } = useTranslation();
   const base = `${TOURS}/${tour.id}`;
   const heading = useId();
@@ -258,17 +346,27 @@ export function TourConstraints({ tour, editable }: { tour: TourDetailDto; edita
         {t('flightops:constraints.title')}
       </h3>
       <p className="text-sm">{t('flightops:constraints.description')}</p>
-      <TabList
-        columns={constraintColumns}
-        query={(search) => constraintsQuery(tour.id, search)}
-        labels="flightops:constraints"
-        edit={editable ? (row) => `${base}/constraints/${row.id}` : null}
-        create={
-          editable ? (
-            <NewButton href={`${base}/constraints/new`} label={t('flightops:constraints.create')} />
-          ) : null
-        }
-      />
+      {leftover && editable ? (
+        <LeftoverList
+          resource="tour-constraints"
+          tourId={tour.id}
+          columns={constraintColumns}
+          query={(search) => constraintsQuery(tour.id, search)}
+          labels="flightops:constraints"
+        />
+      ) : (
+        <TabList
+          columns={constraintColumns}
+          query={(search) => constraintsQuery(tour.id, search)}
+          labels="flightops:constraints"
+          edit={editable && !leftover ? (row) => `${base}/constraints/${row.id}` : null}
+          create={
+            editable && !leftover ? (
+              <NewButton href={`${base}/constraints/new`} label={t('flightops:constraints.create')} />
+            ) : null
+          }
+        />
+      )}
     </section>
   );
 }
