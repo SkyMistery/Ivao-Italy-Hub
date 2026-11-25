@@ -206,6 +206,10 @@ public static class ContentSettingsEndpoints
     /// <summary>
     /// The address of the page chosen for a setting, or a refusal: a page — not a template, not a news item — that whoever
     /// chooses can read online, and not one of a single department, because whoever reads it may be of any.
+    /// <para>⚠️ Only a **new** choice is judged. The panel sends both settings on every save, and a page chosen earlier may
+    /// since have been deleted, taken offline or narrowed (the seeded guide is the WD's to do that with): judged again, it
+    /// would refuse the save of the other setting on a field nobody touched (review of #558, finding 1). What is stored is
+    /// left as it is, and its address is answered the way the read answers it, null when it cannot be opened.</para>
     /// </summary>
     private static async Task<string?> CheckedPathAsync(
         HubDbContext database,
@@ -220,6 +224,11 @@ public static class ContentSettingsEndpoints
         }
 
         var page = await ReadablePageAsync(database, id.Value, cancellationToken);
+        if (await StoredAsync(database, setting.Key, cancellationToken) == id)
+        {
+            return page?.Url;
+        }
+
         if (page is null)
         {
             refusals.Add(setting.Field, setting.NotFoundKey);

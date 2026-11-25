@@ -203,6 +203,62 @@ public sealed class ContentSettingsTests(MariaDbFixture mariaDb) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task AGuideNarrowedOrDeletedSinceItWasChosenDoesNotStopTheSaveOfTheStyle()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var superadmin = await SignedInAsync(SuperadminVid, token);
+        var (style, stylePath) = await PublishedPageAsync(superadmin, Visibility.Staff, token);
+        var (narrowed, _) = await PublishedPageAsync(superadmin, Visibility.Staff, token);
+        var (deleted, _) = await PublishedPageAsync(superadmin, Visibility.Staff, token);
+
+        // Chosen, then narrowed to one department behind the setting's back.
+        using (var chosen = await PutBothAsync(superadmin, null, narrowed, token))
+        {
+            Assert.Equal(HttpStatusCode.OK, chosen.StatusCode);
+        }
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            var row = await database.Contents.IgnoreQueryFilters().SingleAsync(each => each.Id == narrowed, token);
+            row.Visibility = Visibility.Department;
+            await database.SaveChangesAsync(token);
+        }
+
+        // The panel sends both settings: the style is saved, and the guide nobody touched is left as it was.
+        using (var saved = await PutBothAsync(superadmin, style, narrowed, token))
+        {
+            Assert.True(saved.StatusCode == HttpStatusCode.OK, await saved.Content.ReadAsStringAsync(token));
+        }
+
+        using var coordinator = await SignedInAsync(EventsCoordinatorVid, token);
+        var read = await coordinator.GetFromJsonAsync<JsonElement>(ContentSettingsEndpoints.Pattern, token);
+        Assert.Equal(stylePath, read.GetProperty("stylePagePath").GetString());
+        Assert.Equal(narrowed, read.GetProperty("guidePageId").GetInt64());
+        Assert.Equal(JsonValueKind.Null, read.GetProperty("guidePagePath").ValueKind);
+
+        // The same with a guide that is no longer there at all.
+        using (var chosen = await PutBothAsync(superadmin, style, deleted, token))
+        {
+            Assert.Equal(HttpStatusCode.OK, chosen.StatusCode);
+        }
+
+        using (var gone = await SendAsync(superadmin, HttpMethod.Delete, $"{ContentEndpoints.Pattern}/{deleted}", null, token))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, gone.StatusCode);
+        }
+
+        using (var saved = await PutBothAsync(superadmin, null, deleted, token))
+        {
+            Assert.True(saved.StatusCode == HttpStatusCode.OK, await saved.Content.ReadAsStringAsync(token));
+        }
+
+        // A new choice is judged as ever: the narrowed page, chosen afresh for the style, is refused.
+        using var refused = await PutBothAsync(superadmin, narrowed, deleted, token);
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+    }
+
+    [Fact]
     public async Task TheSeedMakesTheGuideForTheStaffAndChoosesItOnlyWhenNobodyChoseAnother()
     {
         var token = TestContext.Current.CancellationToken;
