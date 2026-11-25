@@ -72,6 +72,13 @@ Il testo racconta il codice di oggi, letto nel codice e non solo nelle note (le 
 
 La galleria e la mappa del sito della 4.4 sono nominate; la guida non elenca a mano gli indirizzi della divisione.
 
+Dopo la revisione della #558 (rilievo 2) il testo dice anche: il «Disegno interattivo» e il permesso che chiede; la «Tabella delle
+frequenze» fra i dati; che chi approva sceglie l'indirizzo già alla creazione e che «Nuova da un template» chiede il titolo; che la
+foto si sceglie dall'elenco dei «File di questo dipartimento» nel pannello del blocco, e «Apri la libreria media» porta alla libreria;
+che «Rimanda indietro» rende bozza solo una pagina mai pubblicata (`ContentReviewService.BackToDraftAsync`); che il salvataggio da
+solo parte dopo circa dieci secondi (`AUTOSAVE_DELAY`). Ogni parola in grassetto è stata ricontrollata con uno script contro i file
+di lingua del nucleo e dei moduli: tutte ci sono, tranne «sezioni», che è una parola del testo e non un'etichetta.
+
 ## 3. Che cosa cambia per chi usa l'hub
 
 - Ogni installazione riceve al primo avvio dopo il rilascio la pagina **`/how-to-make-a-page`**, dello staff, scelta come guida se
@@ -85,9 +92,15 @@ La galleria e la mappa del sito della 4.4 sono nominate; la guida non elenca a m
 1. **Il `PUT` salva le impostazioni intere**: un campo nullo toglie la scelta, come un campo svuotato di un form. Il pannello manda
    sempre tutti e due. Un'alternativa era «un campo assente lascia com'è», che in C# vuol dire distinguere assente da nullo su ogni
    campo: più codice per un solo chiamante, il pannello. ⚠️ Chi chiama il `PUT` a mano con il solo `stylePageId` toglie la guida (lo
-   fanno i test di `ContentSettingsTests` che c'erano, e il test nuovo del seme si rimette in pari da solo).
-2. **Una riga cambia solo se il valore cambia**: il pannello salva tutte e due le impostazioni, e quella lasciata com'era non scrive
-   chi l'ha cambiata né lascia una riga nell'audit.
+   fanno i test di `ContentSettingsTests` che c'erano, e il test nuovo del seme si rimette in pari da solo). ⚠️ Vale anche per un
+   browser con il bundle di prima del rilascio ancora in cache: il suo pannello manda solo `stylePageId`, e il primo salvataggio
+   toglie la guida seminata. Va nelle note di rilascio (sotto, «Da portare nel piano»).
+2. **Una riga cambia solo se il valore cambia, e si giudica solo una scelta nuova** (la seconda metà dal rilievo 1 della revisione
+   della #558). Il pannello salva tutte e due le impostazioni: quella lasciata com'era non scrive chi l'ha cambiata né lascia una riga
+   nell'audit, e **non si ricontrolla**. Una pagina scelta prima può essere stata cancellata, tolta dal sito o ristretta a un
+   dipartimento (la guida seminata è del WD, che ne fa quello che vuole): ricontrollata, rifiuterebbe il salvataggio dell'altra
+   impostazione su un campo che nessuno ha toccato. Resta com'è, e il suo indirizzo si risponde come lo risponde la lettura, nullo se
+   non si apre.
 3. **Il seme dice quale impostazione sceglie** (`"setting"` nel file), invece di un nome di pagina scritto nel seeder. Il seeder
    accetta solo le chiavi di `ContentSettingsEndpoints.PageKeys` (lo stile e la guida) e su un seme per dipartimento non sceglie
    niente; una chiave diversa la dice nel log e la salta.
@@ -96,7 +109,10 @@ La galleria e la mappa del sito della 4.4 sono nominate; la guida non elenca a m
    mano a `/how-to-make-a-page` prima del rilascio non è scelta per nessuno (la regola dei semi, `IsWrittenByHandAsync`).
 5. **Il link sta in `ContentFormScreen` e non in `ContentEditor`.** Il design nomina tutti e due; il form «Nuova pagina» e l'editor
    sono lo stesso schermo (`id = new` o un numero), e le azioni in testa (`PageShell.actions`) li coprono insieme. Vale per ogni tipo
-   che quello schermo apre: la guida parla anche dei blocchi e delle foto, che news, documenti e dashboard usano.
+   che quello schermo apre: la guida parla anche dei blocchi e delle foto, che news, documenti e dashboard usano. **Il posto nella
+   testata è fisso, prima della barra dell'editor** (rilievo 4 della revisione della #558): la barra arriva nella stessa fessura
+   delle azioni (`PageActions`), e un link che arrivava dopo cadeva prima o dopo di lei secondo chi rispondeva per primo. Il link sta
+   in un contenitore che c'è dal primo disegno (`contents`, che non disegna una scatola e senza link non lascia uno spazio).
 6. **La sezione del testo è larga «Stretta»** (`narrow`), per righe di prosa che si leggono; il template ha `default`, e
    `templateDiff` non confronta la larghezza (lo tiene `seeds.test.ts`).
 7. **Le parole della guida dicono «la direzione e il team web»** per chi approva, come già dice l'errore
@@ -105,7 +121,10 @@ La galleria e la mappa del sito della 4.4 sono nominate; la guida non elenca a m
 ## 5. I test
 
 - **Nuovi**: `ContentSettingsTests.TheGuideIsChosenByTheSameRuleAndReadByWhoeverWrites` (un coordinatore di un altro dipartimento
-  legge la guida scelta; una pagina di un dipartimento è rifiutata sul campo `guidePageId`; la guida non tocca lo stile) e
+  legge la guida scelta; una pagina di un dipartimento è rifiutata sul campo `guidePageId`; la guida non tocca lo stile),
+  `AGuideNarrowedOrDeletedSinceItWasChosenDoesNotStopTheSaveOfTheStyle` (§4, scelta 2: con la guida ristretta a un dipartimento,
+  poi con una guida cancellata, il salvataggio dello stile passa e la scelta della guida resta; la stessa pagina ristretta, scelta di
+  nuovo per lo stile, è rifiutata) e
   `TheSeedMakesTheGuideForTheStaffAndChoosesItOnlyWhenNobodyChoseAnother` (cancellata la guida e dimenticate le chiavi, il seme la
   rifà del WD, `Staff`, pubblicata, e la sceglie; un membro non la legge; con un'altra pagina già scelta il seme rifà la guida e lascia
   la scelta; alla fine la rimette come una installazione nuova, per chi viene dopo nello stesso database). L'e2e
@@ -130,7 +149,7 @@ scendono di tre livelli «per il server», mentre il server ne accetta quattro e
 
 - **§16** (meccanismi generici), le impostazioni dei contenuti: una seconda chiave, `content.guidePage`, con la stessa regola della
   pagina dello stile (una pagina pubblicata che tutto lo staff legge, riletta con i diritti di chi chiede); il `PUT` salva le
-  impostazioni intere (§4, scelta 1); un seme di pagina può scegliere la pagina che crea per una di queste impostazioni (`"setting"`),
+  impostazioni intere (§4, scelta 1) e giudica solo una scelta nuova (§4, scelta 2); un seme di pagina può scegliere la pagina che crea per una di queste impostazioni (`"setting"`),
   solo se nessuno ne ha scelta un'altra (§4, scelte 3 e 4).
 - **§16.6**: nessun endpoint in più; i due verbi di `/api/content/settings` crescono di un campo.
 - **§9.3** (il modello dei contenuti), con il design della fase 4: la guida «Come si fa una pagina» è un seme del WD, dello staff, in
@@ -138,4 +157,8 @@ scendono di tre livelli «per il server», mentre il server ne accetta quattro e
 - **Le note di rilascio della 0.27.0**, una riga: ogni installazione riceve al primo avvio la pagina dello staff
   `/how-to-make-a-page`, scelta come guida nelle impostazioni dei contenuti se nessuno ne ha scelta un'altra; il WD la riscrive come
   ogni altra pagina, e la tiene in pari quando l'editor cambia.
+- **Le note di rilascio della 0.27.0**, una seconda riga: il salvataggio delle impostazioni dei contenuti ora le sostituisce tutte e
+  due insieme (§4, scelta 1). Un browser con il bundle di prima ancora in cache manda solo la pagina dello stile e toglierebbe la
+  guida: dopo l'aggiornamento chi cambia le impostazioni ricarica la pagina prima di salvare, e se la guida è sparita la sceglie di
+  nuovo in «Impostazioni».
 - **Il design 13 §7**: la fase 4 è chiusa con la 4.5.
