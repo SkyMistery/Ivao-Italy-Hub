@@ -523,6 +523,19 @@ export const staffListSchema = z.object({
   layout: z.enum(LIST_LAYOUTS).default('cards'),
 });
 
+/**
+ * The map of the site (design `13-design-struttura-del-sito.md` §5.1): the pages and the screens whoever is reading may
+ * open, each under the page it sits under. Always live, and nothing of it is typed but a heading and where it starts.
+ *
+ * `href` is the page the map starts from, so that a section of the site can have a map of its own, chosen with the address
+ * field like any other address (phase 3 §4.5) and checked like any other at publication: it has to arrive, for the readers
+ * of the page. Left empty, the map is of the whole site.
+ */
+export const siteMapSchema = z.object({
+  title: localized().optional(),
+  href: z.string().optional().meta({ address: true }),
+});
+
 // --- the blocks of the personal dashboards (D3) ------------------------------------------------
 //
 // Each draws what belongs to whoever is looking (note 2026-09-13-le-dashboard-a-tutto-schermo §3.5).

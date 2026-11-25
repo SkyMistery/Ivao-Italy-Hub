@@ -1689,6 +1689,18 @@
         }
       }
     },
+    "siteMap": {
+      "label": "Site map",
+      "about": "The pages of the site and the screens of the application, each under the page it sits under. Everyone sees the ones they may open: a visitor the public pages, a member the members’ pages too, the staff theirs as well.",
+      "empty": "There is no page to show yet.",
+      "fields": {
+        "title": "Title",
+        "href": "Start from the page"
+      },
+      "hints": {
+        "href": "Empty: the whole site. A page: that page and the pages under it."
+      }
+    },
     "welcome": {
       "label": "Greeting",
       "about": "A greeting by name for whoever looks at the dashboard, with a message under it.",

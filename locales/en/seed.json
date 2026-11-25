@@ -175,6 +175,26 @@
           "cta": "Write to us"
         }
       },
+      "siteMap": {
+        "title": "Site map",
+        "summary": "Every page of the site, each under the page it sits under.",
+        "hero": {
+          "section": "Opening",
+          "heading": "Site map",
+          "text": "The pages of this site, each under the page it sits under. Whoever has signed in sees the ones kept for them too."
+        },
+        "body": {
+          "section": "Body",
+          "text": "News and documents are not listed here one by one: they have pages of their own, [News](/news) and [Documents](/documents)."
+        },
+        "map": {
+          "section": "Map"
+        },
+        "links": {
+          "section": "Links",
+          "heading": "Other useful addresses"
+        }
+      },
       "dashboard": {
         "title": "Department dashboard",
         "summary": "What this department sees when it opens the back office."
