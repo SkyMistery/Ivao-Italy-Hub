@@ -644,7 +644,6 @@
         "stopped": "Qualcun altro ha salvato questa pagina mentre la modificavi. Ricarica per vedere la sua versione; quello che hai cambiato da allora non è salvato.",
         "leave": "Lasciare questa pagina? Le modifiche dall'ultimo salvataggio andranno perse."
       },
-      "publishRefused": "Questa pagina non si può ancora pubblicare",
       "publishDialog": {
         "title": "Pubblicare questa versione?",
         "description": "Prima si salva ciò che è sullo schermo, poi lo vedono i lettori. Una riga su che cosa è cambiato resta con la versione, per lo staff.",

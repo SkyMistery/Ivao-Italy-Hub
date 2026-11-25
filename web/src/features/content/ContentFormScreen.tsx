@@ -322,12 +322,11 @@ export function ContentFormScreen({
                   // The row as published: the editor's draft moves on with it.
                   return published;
                 } catch (error) {
-                  // The reason stays in `PublishProblems`, which names the block and the language.
-                  // This only says that the click was answered, and answered no: the list of
-                  // reasons is above the form and may well be off the screen.
-                  notice({ tone: 'error', title: t('content.editor.publishRefused') });
-                  // The reason is the list above the form, and it is the same list: ask for it
-                  // again rather than reading the refusal, so there is one answer and not two.
+                  // The dialog has closed, and the list above the form may well be off the screen: the
+                  // refusal is said where the writer is looking, in the server's own words, as every
+                  // write without a form of its own says it (#539). The list stays the place that names
+                  // the block and the language, and it is asked again so that it shows what was refused.
+                  refused(error);
                   askAgain();
                   throw error;
                 }

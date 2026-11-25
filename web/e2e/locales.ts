@@ -149,6 +149,7 @@ interface CommonStrings {
       readonly saved: string;
     };
     readonly review: {
+      readonly title: string;
       readonly ready: string;
       readonly readyDialog: { readonly confirm: string };
       readonly note: string;
