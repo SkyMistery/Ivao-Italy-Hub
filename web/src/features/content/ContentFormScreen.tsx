@@ -208,7 +208,11 @@ export function ContentFormScreen({
     <PageShell
       title={title}
       {...(shownNote === undefined ? {} : { note: shownNote })}
-      {...(guide === null ? {} : { actions: <GuideLink path={guide} /> })}
+      // ⚠️ The wrapper is there from the first render, even before the settings answer: the editor sends its toolbar into
+      // the same slot of the header (`PageActions`), and a link arriving later would land after it or before it depending
+      // on which came first (review of #558, finding 4). With the wrapper first, the link is always first. `contents`
+      // draws no box, so an empty wrapper leaves no gap.
+      actions={<span className="contents">{guide === null ? null : <GuideLink path={guide} />}</span>}
       breadcrumb={[
         { label: department },
         // The department goes in for the one kind whose title is the department's name — the
