@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 
 import { readBody } from '../../blocks';
 
-import { NO_STYLE_PAGE, styleText, toSettingsForm } from './contentSettings';
+import { NO_PAGE, styleText, toSettingsForm } from './contentSettings';
 
 /** The page of the style as text (decisions/2026-11-04-la-pagina-dello-stile.md §2): the words, in one language. */
 
@@ -65,6 +65,16 @@ test('an empty page is no style', () => {
 });
 
 test('the form says "none" when no page is chosen, and the page otherwise', () => {
-  expect(toSettingsForm({ stylePageId: null, stylePagePath: null })).toEqual({ stylePageId: NO_STYLE_PAGE });
-  expect(toSettingsForm({ stylePageId: 12, stylePagePath: '/style' })).toEqual({ stylePageId: '12' });
+  const none = { stylePageId: null, stylePagePath: null, guidePageId: null, guidePagePath: null };
+
+  expect(toSettingsForm(none)).toEqual({ stylePageId: NO_PAGE, guidePageId: NO_PAGE });
+  expect(toSettingsForm({ ...none, stylePageId: 12, stylePagePath: '/style' })).toEqual({
+    stylePageId: '12',
+    guidePageId: NO_PAGE,
+  });
+  // The guide is a setting of its own: chosen without the style, and read as its own field.
+  expect(toSettingsForm({ ...none, guidePageId: 7, guidePagePath: '/how-to-make-a-page' })).toEqual({
+    stylePageId: NO_PAGE,
+    guidePageId: '7',
+  });
 });

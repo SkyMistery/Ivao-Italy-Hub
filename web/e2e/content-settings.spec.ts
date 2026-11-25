@@ -5,8 +5,9 @@ import { englishCommon } from './locales';
 
 /**
  * «Settings» on the screen of the content (decisions/2026-11-04-la-pagina-dello-stile.md): the page of the division's
- * style, chosen by whoever cures the templates and reaches every department, from the published pages the whole staff
- * reads. What is sent is checked here; what the server refuses, by `ContentSettingsTests`.
+ * style and the page of the guide «How to make a page» (design 13 §5.2), chosen by whoever cures the templates and reaches
+ * every department, from the published pages the whole staff reads. What is sent is checked here; what the server
+ * refuses, by `ContentSettingsTests`. The link to the guide on the form of a row is at the end.
  */
 
 const settings = englishCommon.content.settings;
@@ -94,7 +95,101 @@ test('whoever cures the templates chooses the page of the style among the ones t
   await page.getByRole('option', { name: /about\/style/ }).click();
   await page.getByRole('dialog').getByRole('button', { name: englishCommon.common.save }).click();
 
-  await expect.poll(() => sent).toEqual([{ stylePageId: 9 }]);
+  // The whole of the settings: the guide, left on none, is said as none.
+  await expect.poll(() => sent).toEqual([{ stylePageId: 9, guidePageId: null }]);
+});
+
+test('the page of the guide is a select of its own, and choosing it leaves the style as it was', async ({
+  page,
+}) => {
+  await stubTheApiAsStaff(page, curator);
+  await page.route('**/api/content/addresses', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(addresses) }),
+  );
+
+  const sent: unknown[] = [];
+  await page.route('**/api/content/settings', async (route) => {
+    if (route.request().method() === 'PUT') {
+      sent.push(route.request().postDataJSON());
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          stylePageId: 9,
+          stylePagePath: '/about/style',
+          guidePageId: 9,
+          guidePagePath: '/about/style',
+        }),
+      });
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        stylePageId: 9,
+        stylePagePath: '/about/style',
+        guidePageId: null,
+        guidePagePath: null,
+      }),
+    });
+  });
+
+  await page.goto('/staff/content?kind=Page');
+  await page.getByRole('button', { name: settings.open }).click();
+
+  const field = page.getByRole('combobox', { name: settings.fields.guidePageId });
+  await expect(field).toBeVisible();
+  await field.click();
+
+  // The same pages as for the style: the one of a department and a news item are not offered.
+  await expect(page.getByRole('option', { name: /team-only/ })).toHaveCount(0);
+  await expect(page.getByRole('option', { name: /news\/launch/ })).toHaveCount(0);
+
+  await page.getByRole('option', { name: /about\/style/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: englishCommon.common.save }).click();
+
+  await expect.poll(() => sent).toEqual([{ stylePageId: 9, guidePageId: 9 }]);
+});
+
+test('the form of a page links to the guide when whoever writes can open it, in a tab of its own', async ({
+  page,
+}) => {
+  await stubTheApiAsStaff(page);
+  await page.route('**/api/content/settings', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        stylePageId: null,
+        stylePagePath: null,
+        guidePageId: 4,
+        guidePagePath: '/how-to-make-a-page',
+      }),
+    }),
+  );
+
+  await page.goto('/staff/content/new?kind=Page&department=ED');
+
+  const link = page.getByRole('link', { name: englishCommon.content.guide.link });
+  await expect(link).toHaveAttribute('href', '/how-to-make-a-page');
+  await expect(link).toHaveAttribute('target', '_blank');
+});
+
+test('without a guide that whoever writes can open, the form draws no link', async ({ page }) => {
+  await stubTheApiAsStaff(page);
+  await page.route('**/api/content/settings', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      // Chosen, but not a page this reader can open: the server leaves the address out.
+      body: JSON.stringify({ stylePageId: null, stylePagePath: null, guidePageId: 4, guidePagePath: null }),
+    }),
+  );
+
+  await page.goto('/staff/content/new?kind=Page&department=ED');
+
+  await expect(page.getByLabel(englishCommon.content.fields.parentId, { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: englishCommon.content.guide.link })).toHaveCount(0);
 });
 
 test('whoever does not cure the templates has no settings', async ({ page }) => {

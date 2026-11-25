@@ -144,10 +144,11 @@ interface CommonStrings {
     readonly settings: {
       readonly open: string;
       readonly title: string;
-      readonly fields: { readonly stylePageId: string };
+      readonly fields: { readonly stylePageId: string; readonly guidePageId: string };
       readonly none: string;
       readonly saved: string;
     };
+    readonly guide: { readonly link: string; readonly hint: string };
     readonly review: {
       readonly ready: string;
       readonly readyDialog: { readonly confirm: string };
