@@ -254,6 +254,13 @@ Nell'**import** (§8.4) la modalità «sostituisci» applica le stesse regole: e
 ritira quelle con PIREP, mostrando la differenza prima di applicare. In tutte e due le modalità una leg ritirata che il file
 nomina **torna nel tour**, con il motivo dell'import e non in un tour in chiusura o chiuso (Carmine, 22 settembre 2026, T8).
 
+**Dal 25 nov 2026** (#556, issue #549, nota `2026-11-22-le-righe-del-tipo-vecchio`, piano 1.58; deciso da Carmine il 22 novembre 2026,
+«A, eliminare», https://github.com/SkyMistery/Ivao-Italy-Hub/issues/549#issuecomment-7086892248): **la rimozione di una leg passa anche
+su un tour `Open` o `Container`**, per le leg rimaste da un tipo di prima (`WritableTourAsync(…, removing: true)` lascia passare
+`GET legs/{id}/removal` e `POST legs/{id}/remove`), con le regole di sempre di questa tabella: cancellata senza PIREP, ritirata con un
+motivo altrimenti; una leg ritirata non conta per «pronto» (`TourShape`). **Ogni altra scrittura di una leg** su quei tipi — creare,
+modificare, ripristinare, importare — **resta rifiutata** con `kindHasNoLegs` (§2.6, §2.7).
+
 ### 1.5 Aerei, prestazioni e tempo stimato
 
 - **I tipi di aereo vengono da IVAO** (estensione del nucleo n.11): una tabella di riferimento del nucleo
@@ -555,7 +562,10 @@ vuole, e senza non si completa.
 - **`Distance`**: leg pubblicate, volabili libere (risposta 12). **Finito**: somma delle GCD delle leg accettate
   `≥ required_nm`. Il controllo di pubblicazione verifica che tutte insieme ci arrivino.
 - **`Open`** (proposta del 15 settembre, §2.6.1): **nessuna leg pubblicata**; ognuno vola quello che vuole dentro le
-  regole del tour. Il PIREP non ha `leg_id`: porta partenza e arrivo del volo.
+  regole del tour. Il PIREP non ha `leg_id`: porta partenza e arrivo del volo. **Le leg rimaste da un tipo di prima** (un tour in
+  bozza che diventa `Open`) **si possono solo togliere** (dal 25 nov 2026, #556, issue #549, deciso da Carmine,
+  https://github.com/SkyMistery/Ivao-Italy-Hub/issues/549#issuecomment-7086892248): la rimozione passa (§1.4.1), ogni altra scrittura
+  di una leg resta `kindHasNoLegs`.
 
 In tutti e due si conta **la GCD**, mai la distanza volata, e **non si vola due volte la stessa rotta**. **A→B e B→A
 sono rotte diverse** (Carmine, 15 settembre).
@@ -625,7 +635,9 @@ all'obiettivo e ai vincoli «al completamento».
 
 ### 2.7 `Container` — con sottotour
 
-- Nessuna leg; sottotour di un livello. Il pilota si iscrive e vola i sottotour.
+- Nessuna leg; sottotour di un livello. Il pilota si iscrive e vola i sottotour. **Le leg rimaste da un tipo di prima** si possono
+  solo togliere, come su un `Open` (§2.6, §1.4.1; dal 25 nov 2026, #556, issue #549, deciso da Carmine,
+  https://github.com/SkyMistery/Ivao-Italy-Hub/issues/549#issuecomment-7086892248).
 - **Un sottotour eredita** aerei, vincoli sul callsign e regole del tour dal padre **se non ne ha di suoi** (risposta 13); per il
   callsign: gli `Allow` del livello più vicino, i `Deny` di tutti (§1.6).
 - **Un sottotour ha le sue date, dentro il periodo del padre; quelle che non ha sono del padre**, ognuna da sola, e lo seguono quando

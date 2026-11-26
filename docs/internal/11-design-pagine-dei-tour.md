@@ -126,6 +126,21 @@ pagina, composto dallo stesso codice (`PublicTours.ComposeAsync`); una bozza sen
 passo 2. L'anteprima sta nel Controllo, sotto «Segna pronto»: la testata e le schede di un visitatore, con i pezzi di `screens/public.tsx`
 (esportati, non cambiati); niente di un pilota.
 
+**Com'è andata con le righe del tipo di prima** (#556, la #549, nata dalla revisione del master della #543; nota
+`2026-11-22-le-righe-del-tipo-vecchio`, decisa da Carmine il 22 novembre 2026, «A, eliminare»
+(https://github.com/SkyMistery/Ivao-Italy-Hub/issues/549#issuecomment-7086892248); piano 1.58): un tour in bozza che cambia tipo tiene le
+righe del tipo di prima, e «pronto» le nomina (`kindHasNoLegs`, `kindHasNoHubs`, `kindHasNoConstraints`). Ora **si vedono nel passo
+dove porta la loro voce** di «che cosa manca», sotto le parti del tipo, **in sola lettura con «elimina»** e una riga (`Notice`) che dice
+perché sono lì: le leg rimaste in «Percorso» (`LegGrid` con `leftover`: celle bloccate, solo «Rimuovi», niente «Aggiungi», file né
+«Aggiungi dopo»), hub e rotazioni rimasti in «Percorso» (`TourHubsTab` con `leftover`: la lista generata senza «Nuovo» e con «Elimina»
+confermato), i vincoli rimasti in «Regole» (`TourConstraints` con `leftover`). Quali righe restano lo dice il server, non il browser
+(`leftoverParts`, `screens/tourSteps.ts`, dai campi e dalle chiavi di `ready-problems`). **Il passo 1 avvisa** prima del salvataggio
+quali righe resterebbero (`partsLeftBy`): è solo un avviso, non legge le righe e non blocca niente. ⚠️ Su un tipo senza leg (`Open`,
+`Container`) `TourShape` nomina le leg e si ferma lì: hub e rotazioni rimasti restano nel database senza effetto, e tornano un problema
+se il tour riprende un tipo con leg. Il salvataggio del tour non cambia, e i passi nemmeno: le righe stanno nel passo che già le
+elencava. Resta fuori: da un tour a hub verso un altro tipo con leg, le leg di una rotazione restano nella griglia normale con
+`legHubOnly`, e staccarle dalla rotazione senza perderle non si può dall'editor.
+
 ## 6. Che cosa non cambia
 
 Il modello, le API del back office, le regole del server, i blocchi del CMS (`flightops.tourCards` disegna le card del §3 e le segue).
