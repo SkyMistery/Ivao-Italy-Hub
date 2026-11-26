@@ -195,6 +195,50 @@
           "heading": "Other useful addresses"
         }
       },
+      "howTo": {
+        "title": "How to make a page",
+        "summary": "For the staff: where a page goes, how its address is born, who approves it and which block to use for what.",
+        "hero": {
+          "section": "Opening",
+          "heading": "How to make a page",
+          "text": "Where to put a page, how its address is born, who approves it and which blocks to use. This guide is a page like the others: the web team keeps it up to date when the editor changes."
+        },
+        "body": {
+          "section": "Body",
+          "where": {
+            "heading": "Where a page goes",
+            "text": "The pages of the site sit in a tree: each one under another, three levels deep at most (for instance `/about/staff/rules`). The tree is in [Content](/staff/content), in the view **Tree of the site**.\n\n- To start from the right place, press **New page here** on the row of the parent page: the form opens with the parent already chosen. Or press **New page** and choose the parent in the field **Under the page**.\n- Only the direction and the web team, that is whoever may approve pages, put a page **At the top of the site**. Everybody else always chooses a parent.\n- The pages of the application (the calendar, the news, the search, the pages of the modules) are in the tree, marked and with no actions: no page goes under them, and in the field **Under the page** they are switched off.\n- Some words belong to the application and cannot be the first piece of an address (`news`, `documents`, `calendar`, `staff`…): the preview of the address says so before you save.\n- A page that has pages under it is not deleted: those are moved or deleted first.\n- A page already online is moved only by whoever may approve it. The pages under it go with it, and whoever arrives at the old address is taken to the new one."
+          },
+          "address": {
+            "heading": "The address is born from the title",
+            "text": "Whoever writes does not choose the address, unless they may approve pages: under the title and the parent the form shows **Where it will be**, the address born from the title in the main language of the division, without accents and with dashes for spaces.\n\n- **New from a template** asks for the title of the new page, and the address is born from it the same way.\n- Whoever approves pages sees the field **Address** from the start, and chooses it themselves.\n- The address is fixed at the first **Save draft**. After that, changing the title does not move the page: the links written in other pages keep working.\n- If the address is taken, the preview says so: change the title, or press **Use …** to take the free one it offers.\n- If the title gives no address (another alphabet, symbols only), the field **Address** appears and you write it yourself.\n- Once the page exists, its address is changed only by whoever approves pages, even on a draft: if it is wrong, they correct it, in the form or when they approve. The same holds for news and documents."
+          },
+          "review": {
+            "heading": "From the draft to the site",
+            "text": "A page is born a **draft**, and the site does not show it. The first time you press **Save draft**; after that the draft saves itself after a pause of about ten seconds. **Open the preview** shows it in a new tab as it is now.\n\n- Whoever does not approve has no **Publish**: they press **Mark ready**, write a note for whoever approves if they want, and may propose a menu entry. The page is then **Waiting for approval** and nobody can change it; **Withdraw from approval** takes it back.\n- **Mark ready** runs the checks of publication: a language to complete, a picture to choose, a link that leads nowhere or that leads where the readers of the page cannot go. While something is missing, the page does not go.\n- Whoever approves (the direction and the web team) is told. With **Approve** they correct, if needed, the address, the parent and the menu entry, and the page goes online at once. With **Send back** they write a note, which reaches whoever marked it ready: a page never published is a draft again, a page already online stays online as it was, and the draft goes back to whoever writes it.\n- After publication the work goes on in the draft: the site shows the published version until somebody publishes again. The panel **Versions** says who published what, and when.\n- News and documents are not approved: the coordinator and the assistant of the department publish them."
+          },
+          "sections": {
+            "heading": "Sections and rows",
+            "text": "A page is made of **sections**, one under the other. The background, the space around and the width belong to the section, never to the block: eight backgrounds (**Picture** among them, which wants a picture), four spacings and four widths, from **Narrow** to **Full width**. The name of a section is seen only by whoever writes.\n\n- The **Layout** divides the section into columns: one under the other, two equal columns, narrow then wide, wide then narrow, three equal columns. Each block sits in one column.\n- A **row** is a section inside the section (**Add row**), with columns of its own: it is for a part of the section that is divided another way. It is born with no background and no spacing, because it takes them from the section.\n- A block does not contain other blocks: to put two things side by side, use the columns.\n- A page made from a template inherits its sections. A section **Fixed by the template** keeps its structure, but its blocks are edited one at a time; some sections take only some blocks."
+          },
+          "blocks": {
+            "heading": "Which block for what",
+            "text": "The palette **Components** of the editor groups the blocks in five drawers: choose a section first, then the block to add to it. A block for fewer readers than the page's is switched off.\n\n**Content.** The words and pictures of the page. **Heading** and **Text** for almost everything, **Callout** for a notice that must stand out, **Link list** for the links of the library. **Hero** for the opening, **Picture**, and **Video** and **Embedded page** from an address the hub knows how to embed. **Interactive drawing** is a drawing written in code: the palette offers it only to whoever may put code in a page (the direction, the web team and whoever is given it). **Steps** for a procedure in order, **Table** for figures to compare.\n\n**Layout.** Several things of the same kind in a row: **Cards**, **Icons**, **Gallery**, **Logos**. And the containers that open one piece at a time: **Tabs** and **Questions and answers**.\n\n**Interactive.** **Quotation** for somebody's own words, **Buttons** to take the reader somewhere else.\n\n**Structure.** **Space** and **Divider**, when two blocks need more air or a line between them.\n\n**Data.** The blocks that fill themselves with the hub's data: **Figures**, **Live on the network**, **Calendar**, **News**, **Documents**, **Staff**, **Site map**, **Frequency table**, those of the enabled modules, and those for whoever is looking (**Greeting**, **My departments**, **What waits for me**), which make sense on the dashboards.\n\nEvery block, with an example, is in the [Component gallery](/staff/admin/ui-kit), for whoever has access to the administration."
+          },
+          "media": {
+            "heading": "Pictures and the library",
+            "text": "Pictures are not uploaded into the page: they live in the [Media library](/staff/media) of the department. The panel of a block that wants a picture lists the **Files of this department**: you choose it there, search it by name, and if you may upload files you add one with **Upload a file**. **Open the media library** leads to the page of the library.\n\n- The alternative text belongs to the file, not to the block: it is written once in the library and holds wherever the picture appears. The picker points out the files that do not have it yet.\n- A file just uploaded is seen by the staff only: to put it on a public page, make it public in the library, or publication refuses it.\n- A picture left to choose (a picture, a gallery, the logos, the background **Picture**) stops publication until you choose it.\n- A file a published page shows is not deleted: it is archived."
+          },
+          "claude": {
+            "heading": "Writing with Claude",
+            "text": "A page, a news item or a document already saved can be written with Claude, from the toolbar of the editor.\n\n- **Download for Claude** saves the draft and downloads a file of instructions: the rules of the page and of its template, the blocks it may use, the addresses of the site you can read, the draft as it is now and, if the division chose one, the page of the style. Give the file to Claude with what you want done.\n- **Import from Claude** takes the file Claude gives back and puts it in the draft, saved at once: it publishes nothing, and **Undo** takes it away. The pictures to choose, the values to complete and the links to check are listed by the editor, and you finish them.\n- The import refuses the file of another page, a file made on a draft other than the one there now, and a file downloaded before the rules of the page changed (a new block in the palette, the template, the languages, who reads it). Then download the instructions again."
+          }
+        },
+        "links": {
+          "section": "Links",
+          "heading": "Other useful addresses"
+        }
+      },
       "dashboard": {
         "title": "Department dashboard",
         "summary": "What this department sees when it opens the back office."

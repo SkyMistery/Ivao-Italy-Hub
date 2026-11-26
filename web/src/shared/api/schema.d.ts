@@ -5648,11 +5648,11 @@ export interface components {
              */
             rowVersion?: null | string;
         };
-        /** @description What the settings of the content say: the page of the staff that describes how the division writes. */
+        /** @description What the settings of the content say: the two pages of the staff the editor names. */
         ContentSettingsDto: {
             /**
              * Format: int64
-             * @description The page chosen, or null when none is.
+             * @description The page of the style chosen, or null when none is.
              */
             stylePageId: null | number;
             /**
@@ -5660,11 +5660,26 @@ export interface components {
              *     that the instructions for Claude leave the style out rather than promise a page their reader will never open.
              */
             stylePagePath: null | string;
+            /**
+             * Format: int64
+             * @description The page of the guide «How to make a page» chosen, or null when none is.
+             */
+            guidePageId: null | number;
+            /**
+             * @description Its address, read the same way: null when whoever asks cannot open it, so that the editor draws no link to a page
+             *     they would not reach.
+             */
+            guidePagePath: null | string;
         };
-        /** @description What the settings panel saves. Null takes the choice away. */
+        /**
+         * @description What the settings panel saves, the whole of it: a setting the body leaves null is taken away, like a field of a form
+         *     that is emptied.
+         */
         ContentSettingsWriteDto: {
             /** Format: int64 */
             stylePageId: null | number;
+            /** Format: int64 */
+            guidePageId: null | number;
         };
         /**
          * @description One address of the site that whoever asks can read online: a page, a news item or a document, with where it is, what it is

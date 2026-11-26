@@ -111,7 +111,9 @@
       "collectionInvalid": "Una raccolta si indica con la sua chiave: lettere minuscole, cifre e trattini.",
       "settings": {
         "stylePageNotFound": "Scegli una pagina pubblicata che puoi leggere.",
-        "stylePageTooNarrow": "Questa pagina la legge un solo dipartimento: chi scarica le istruzioni deve poterla leggere, scegline una per tutto lo staff."
+        "stylePageTooNarrow": "Questa pagina la legge un solo dipartimento: chi scarica le istruzioni deve poterla leggere, scegline una per tutto lo staff.",
+        "guidePageNotFound": "Scegli una pagina pubblicata che puoi leggere.",
+        "guidePageTooNarrow": "Questa pagina la legge un solo dipartimento: la guida la apre chi scrive in ogni dipartimento, scegline una per tutto lo staff."
       }
     },
     "maintenance": {

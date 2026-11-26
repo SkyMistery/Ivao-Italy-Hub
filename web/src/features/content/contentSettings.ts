@@ -8,8 +8,9 @@ import type { ChoiceOption } from '../../shared/forms';
 
 /**
  * The settings of the content (`decisions/2026-11-04-la-pagina-dello-stile.md`, decided by Carmine in chat to the master,
- * 4 November 2026): one key per setting in `hub_division_settings`, read and written at `/api/content/settings`. One today,
- * the page of the division's style that the instructions «Download for Claude» end with.
+ * 4 November 2026): one key per setting in `hub_division_settings`, read and written at `/api/content/settings`. Two today,
+ * each a page of the staff: the page of the division's style that the instructions «Download for Claude» end with, and the
+ * guide «How to make a page» that the form of a row links to (design 13 §5.2, `decisions/2026-11-25-la-guida-per-chi-scrive.md`).
  */
 
 export type ContentSettingsDto = components['schemas']['ContentSettingsDto'];
@@ -17,28 +18,35 @@ export type ContentSettingsDto = components['schemas']['ContentSettingsDto'];
 const settingsKey = ['content-settings'] as const;
 
 /**
- * What the settings say, **for whoever asks**: the path of the page of the style is there only when they can read it
- * online, so a reader who cannot is handed instructions without it rather than a page they will never open.
+ * What the settings say, **for whoever asks**: the path of each page is there only when they can read it online, so a
+ * reader who cannot is handed instructions without the style, and a form without the link to the guide, rather than a
+ * page they will never open.
  */
 export const contentSettingsQuery = queryOptions({
   queryKey: settingsKey,
   queryFn: async (): Promise<ContentSettingsDto> => unwrap(await api.GET('/api/content/settings')),
 });
 
-/** The value of the select that means "no page". A select of Radix takes no empty value. */
-export const NO_STYLE_PAGE = 'none';
+/** The value of a select that means "no page". A select of Radix takes no empty value. */
+export const NO_PAGE = 'none';
 
-/** The form of the settings panel: one select, the published pages the whole staff reads, or none. */
+/** The form of the settings panel: two selects of the same choices, the published pages the whole staff reads, or none. */
 export function contentSettingsSchema(pages: readonly ChoiceOption[], none: string) {
+  const choices = [{ value: NO_PAGE, label: none }, ...pages];
+
   return z.object({
-    stylePageId: z.string().meta({ choices: [{ value: NO_STYLE_PAGE, label: none }, ...pages] }),
+    stylePageId: z.string().meta({ choices }),
+    guidePageId: z.string().meta({ choices }),
   });
 }
 
 export type ContentSettingsFormValues = z.output<ReturnType<typeof contentSettingsSchema>>;
 
+const toField = (id: number | null | undefined) => (id == null ? NO_PAGE : String(id));
+const fromField = (value: string) => (value === NO_PAGE ? null : Number(value));
+
 export function toSettingsForm(settings: ContentSettingsDto | undefined): ContentSettingsFormValues {
-  return { stylePageId: settings?.stylePageId == null ? NO_STYLE_PAGE : String(settings.stylePageId) };
+  return { stylePageId: toField(settings?.stylePageId), guidePageId: toField(settings?.guidePageId) };
 }
 
 export function useSaveContentSettings() {
@@ -48,7 +56,8 @@ export function useSaveContentSettings() {
     mutationFn: async (values: ContentSettingsFormValues): Promise<ContentSettingsDto> =>
       unwrap(
         await api.PUT('/api/content/settings', {
-          body: { stylePageId: values.stylePageId === NO_STYLE_PAGE ? null : Number(values.stylePageId) },
+          // The whole of the settings: a select left on "none" takes its page away.
+          body: { stylePageId: fromField(values.stylePageId), guidePageId: fromField(values.guidePageId) },
         }),
       ),
     onSuccess: (settings) => {

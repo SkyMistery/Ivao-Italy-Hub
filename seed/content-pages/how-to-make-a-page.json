@@ -1,0 +1,238 @@
+{
+  "slug": "how-to-make-a-page",
+  "kind": "Page",
+  "template": "section-page",
+  "visibility": "Staff",
+  "setting": "content.guidePage",
+  "title": {
+    "$t": "seed.pages.howTo.title"
+  },
+  "summary": {
+    "$t": "seed.pages.howTo.summary"
+  },
+  "body": {
+    "schemaVersion": 1,
+    "sections": [
+      {
+        "id": "s_hero",
+        "key": "hero",
+        "title": {
+          "$t": "seed.pages.howTo.hero.section"
+        },
+        "layout": "stacked",
+        "background": "muted",
+        "padding": "lg",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_how_to_hero",
+            "type": "hero",
+            "version": 1,
+            "props": {
+              "title": {
+                "$t": "seed.pages.howTo.hero.heading"
+              },
+              "text": {
+                "$t": "seed.pages.howTo.hero.text"
+              },
+              "align": "left",
+              "tone": "muted"
+            }
+          }
+        ]
+      },
+      {
+        "id": "s_body",
+        "key": "body",
+        "title": {
+          "$t": "seed.pages.howTo.body.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "narrow",
+        "blocks": [
+          {
+            "id": "b_how_to_where_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.howTo.body.where.heading"
+              }
+            }
+          },
+          {
+            "id": "b_how_to_where_text",
+            "type": "text",
+            "version": 1,
+            "props": {
+              "markdown": {
+                "$t": "seed.pages.howTo.body.where.text"
+              }
+            }
+          },
+          {
+            "id": "b_how_to_address_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.howTo.body.address.heading"
+              }
+            }
+          },
+          {
+            "id": "b_how_to_address_text",
+            "type": "text",
+            "version": 1,
+            "props": {
+              "markdown": {
+                "$t": "seed.pages.howTo.body.address.text"
+              }
+            }
+          },
+          {
+            "id": "b_how_to_review_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.howTo.body.review.heading"
+              }
+            }
+          },
+          {
+            "id": "b_how_to_review_text",
+            "type": "text",
+            "version": 1,
+            "props": {
+              "markdown": {
+                "$t": "seed.pages.howTo.body.review.text"
+              }
+            }
+          },
+          {
+            "id": "b_how_to_sections_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.howTo.body.sections.heading"
+              }
+            }
+          },
+          {
+            "id": "b_how_to_sections_text",
+            "type": "text",
+            "version": 1,
+            "props": {
+              "markdown": {
+                "$t": "seed.pages.howTo.body.sections.text"
+              }
+            }
+          },
+          {
+            "id": "b_how_to_blocks_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.howTo.body.blocks.heading"
+              }
+            }
+          },
+          {
+            "id": "b_how_to_blocks_text",
+            "type": "text",
+            "version": 1,
+            "props": {
+              "markdown": {
+                "$t": "seed.pages.howTo.body.blocks.text"
+              }
+            }
+          },
+          {
+            "id": "b_how_to_media_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.howTo.body.media.heading"
+              }
+            }
+          },
+          {
+            "id": "b_how_to_media_text",
+            "type": "text",
+            "version": 1,
+            "props": {
+              "markdown": {
+                "$t": "seed.pages.howTo.body.media.text"
+              }
+            }
+          },
+          {
+            "id": "b_how_to_claude_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.howTo.body.claude.heading"
+              }
+            }
+          },
+          {
+            "id": "b_how_to_claude_text",
+            "type": "text",
+            "version": 1,
+            "props": {
+              "markdown": {
+                "$t": "seed.pages.howTo.body.claude.text"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "s_links",
+        "key": "links",
+        "title": {
+          "$t": "seed.pages.howTo.links.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_how_to_links_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.howTo.links.heading"
+              }
+            }
+          },
+          {
+            "id": "b_how_to_links_list",
+            "type": "linkList",
+            "version": 1,
+            "props": {
+              "limit": 10
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

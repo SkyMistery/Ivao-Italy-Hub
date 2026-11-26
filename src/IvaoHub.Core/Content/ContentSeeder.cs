@@ -336,10 +336,13 @@ public sealed class ContentSeeder(
                     continue;
                 }
 
-                seeded.Add(await SeedOnePageAsync(seed, template, slug, department, cancellationToken));
+                var page = await SeedOnePageAsync(seed, template, slug, department, cancellationToken);
+                seeded.Add(page);
                 Remember(key);
 
                 logger.LogInformation("Seeded the {Kind} {Slug}.", seed.Kind, slug);
+
+                await ChooseAsync(seed, page, cancellationToken);
             }
         }
 
@@ -431,6 +434,42 @@ public sealed class ContentSeeder(
         await database.SaveChangesAsync(cancellationToken);
 
         return page;
+    }
+
+    /// <summary>
+    /// The setting of the content a seeded page is made for, when its file names one (<c>"setting"</c>): the guide «How to
+    /// make a page» is the page of <c>content.guidePage</c> (design <c>13-design-struttura-del-sito.md</c> §5.2). Chosen only
+    /// when nobody has chosen another, and only on the start that makes the page: a page written by hand at that address
+    /// is not chosen for anybody, and a choice somebody takes away later stays taken away.
+    /// </summary>
+    private async Task ChooseAsync(ContentPageSeed seed, ContentEntry page, CancellationToken cancellationToken)
+    {
+        if (seed.Setting is not { } setting)
+        {
+            return;
+        }
+
+        if (seed.PerDepartment || !ContentSettingsEndpoints.PageKeys.Contains(setting, StringComparer.Ordinal))
+        {
+            logger.LogWarning(
+                "The content page seed {Slug} names the setting {Setting}, which is not a page of one row to choose.",
+                seed.Slug,
+                setting);
+            return;
+        }
+
+        if (await ContentSettingsEndpoints.ChooseIfNoneAsync(database, setting, page.Id, clock, cancellationToken))
+        {
+            logger.LogInformation("Chose the {Kind} {Slug} for the setting {Setting}.", seed.Kind, page.Slug, setting);
+        }
+        else
+        {
+            logger.LogInformation(
+                "The setting {Setting} had already been chosen, and is left as it is for the {Kind} {Slug}.",
+                setting,
+                seed.Kind,
+                page.Slug);
+        }
     }
 
     /// <summary>
@@ -589,6 +628,8 @@ public sealed class ContentSeeder(
     /// One page file. <paramref name="PerDepartment"/> turns it into one row per department, which
     /// is what a dashboard is; <paramref name="Body"/> absent means "the template's body", which is
     /// how a dashboard says that its shape is the template's and not a second copy of it.
+    /// <paramref name="Setting"/> is the setting of the content the page is chosen for when it is made
+    /// (<see cref="ChooseAsync"/>), one of <see cref="ContentSettingsEndpoints.PageKeys"/>.
     /// </summary>
     private sealed record ContentPageSeed(
         string Slug,
@@ -599,7 +640,8 @@ public sealed class ContentSeeder(
         ContentPageMenuSeed? Menu,
         JsonNode Title,
         JsonNode? Summary,
-        JsonNode? Body);
+        JsonNode? Body,
+        string? Setting);
 
     /// <summary>
     /// Where a seeded page sits in the menu of the site, when it sits in one at all.

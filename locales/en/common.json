@@ -907,13 +907,19 @@
       "title": "Settings of the content",
       "description": "They hold for the whole division.",
       "fields": {
-        "stylePageId": "Page of the division’s style"
+        "stylePageId": "Page of the division’s style",
+        "guidePageId": "Page of the guide «How to make a page»"
       },
       "hints": {
-        "stylePageId": "A published page that describes how the division writes: it goes at the end of the instructions «Download for Claude». The whole staff must be able to read it."
+        "stylePageId": "A published page that describes how the division writes: it goes at the end of the instructions «Download for Claude». The whole staff must be able to read it.",
+        "guidePageId": "A published page that explains how a page is made: the form of every page, news item and document links to it. The whole staff must be able to read it."
       },
       "none": "None",
       "saved": "Settings saved"
+    },
+    "guide": {
+      "link": "How to make a page",
+      "hint": "The guide for whoever writes, in a tab of its own"
     },
     "view": {
       "label": "View",

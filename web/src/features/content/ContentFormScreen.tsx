@@ -1,4 +1,6 @@
+import { Button } from '@ivao/atmosphere-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { BookOpen } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { holdsPermission, type Bootstrap, type Department } from '../../shared/api/bootstrap';
@@ -11,6 +13,7 @@ import { MEDIA_EDIT, useUploadMedia } from '../media/mutations';
 import { mediaPickerQuery } from '../media/queries';
 
 import { ContentEditor } from './ContentEditor';
+import { contentSettingsQuery } from './contentSettings';
 import { parentChoices } from './pageTree';
 import { ReviewPanel } from './ReviewPanel';
 import type { ContentKindConfig } from './kinds';
@@ -196,10 +199,20 @@ export function ContentFormScreen({
 
   const title = isNew ? t(`${config.titles}.create`) : t(`${config.titles}.edit`);
 
+  // The guide «How to make a page» (design 13 §5.2): the page the settings of the content name, when whoever writes can
+  // open it — the server gives its address only then. Drawn on every form of a row, the new one and the one already there.
+  const settings = useQuery(contentSettingsQuery);
+  const guide = settings.data?.guidePagePath ?? null;
+
   return (
     <PageShell
       title={title}
       {...(shownNote === undefined ? {} : { note: shownNote })}
+      // ⚠️ The wrapper is there from the first render, even before the settings answer: the editor sends its toolbar into
+      // the same slot of the header (`PageActions`), and a link arriving later would land after it or before it depending
+      // on which came first (review of #558, finding 4). With the wrapper first, the link is always first. `contents`
+      // draws no box, so an empty wrapper leaves no gap.
+      actions={<span className="contents">{guide === null ? null : <GuideLink path={guide} />}</span>}
       breadcrumb={[
         { label: department },
         // The department goes in for the one kind whose title is the department's name — the
@@ -347,5 +360,19 @@ export function ContentFormScreen({
         }
       />
     </PageShell>
+  );
+}
+
+/** The link to the guide, in a tab of its own: leaving the editor for the guide would leave the draft too. */
+function GuideLink({ path }: { path: string }) {
+  const { t } = useTranslation();
+
+  return (
+    <Button asChild variant="ghost">
+      <a href={path} target="_blank" rel="noopener" title={t('content.guide.hint')}>
+        <BookOpen aria-hidden className="mr-2 size-4" />
+        {t('content.guide.link')}
+      </a>
+    </Button>
   );
 }

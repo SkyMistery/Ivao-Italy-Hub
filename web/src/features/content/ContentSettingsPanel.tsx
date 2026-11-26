@@ -19,12 +19,13 @@ import { siteAddressesQuery } from './queries';
 /**
  * «Settings» on the screen of the content (`decisions/2026-11-04-la-pagina-dello-stile.md`): the settings that hold for the
  * whole division, for whoever holds `Content.ManageTemplates` and reaches every department (Carmine, 4 November 2026,
- * «Solo chi ha tutti»). One today — the page of the
- * division's style, which the instructions «Download for Claude» end with.
+ * «Solo chi ha tutti»). Two today — the page of the division's style, which the instructions «Download for Claude» end
+ * with, and the page of the guide «How to make a page», which the form of a row links to (design 13 §5.2).
  *
  * A `Dialog` of the closed list with the generated form, like «New collection». The pages offered are the published pages
- * the whole staff reads: a page of one department is refused by the server too (`errors.content.settings.stylePageTooNarrow`),
- * because whoever downloads may be of another one.
+ * the whole staff reads, the same for both: a page of one department is refused by the server too
+ * (`errors.content.settings.stylePageTooNarrow`, `…guidePageTooNarrow`), because whoever downloads or writes may be of
+ * another one.
  */
 export function ContentSettingsPanel({
   locales,

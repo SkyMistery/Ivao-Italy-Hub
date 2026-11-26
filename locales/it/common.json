@@ -907,13 +907,19 @@
       "title": "Impostazioni dei contenuti",
       "description": "Valgono per tutta la divisione.",
       "fields": {
-        "stylePageId": "Pagina dello stile della divisione"
+        "stylePageId": "Pagina dello stile della divisione",
+        "guidePageId": "Pagina della guida «Come si fa una pagina»"
       },
       "hints": {
-        "stylePageId": "Una pagina pubblicata che descrive come scrive la divisione: va in coda alle istruzioni «Scarica per Claude». Deve poterla leggere tutto lo staff."
+        "stylePageId": "Una pagina pubblicata che descrive come scrive la divisione: va in coda alle istruzioni «Scarica per Claude». Deve poterla leggere tutto lo staff.",
+        "guidePageId": "Una pagina pubblicata che spiega come si fa una pagina: il form di ogni pagina, news e documento porta lì. Deve poterla leggere tutto lo staff."
       },
       "none": "Nessuna",
       "saved": "Impostazioni salvate"
+    },
+    "guide": {
+      "link": "Come si fa una pagina",
+      "hint": "La guida per chi scrive, in una scheda nuova"
     },
     "view": {
       "label": "Vista",
