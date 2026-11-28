@@ -103,6 +103,9 @@ export function AirportForm() {
   const back = `${EVENTS}/${eventId}?tab=airports`;
   const title = t(id === null ? 'events:airports.create' : 'events:airports.edit');
   const refusal = describeProblem(remove.error, t, i18n.language);
+  // «Save» and «Delete» are the server's answer on the event (`actions`, #444): an airport is judged on its event's care and scope as the
+  // event is now, so the event's answer is the airport's — and a new airport's.
+  const editable = event.actions.canEdit;
 
   return (
     <PageShell
@@ -114,7 +117,7 @@ export function AirportForm() {
         { label: title },
       ]}
       actions={
-        airport === null ? undefined : (
+        airport === null || !editable ? undefined : (
           <ConfirmDialog
             triggerText={t('common.delete')}
             title={t('events:airports.delete.title')}
@@ -138,10 +141,15 @@ export function AirportForm() {
           }
           locales={bootstrap.division.locales}
           labels="events:airports"
-          onSubmit={async (values) => {
-            await save.mutateAsync(values);
-            void navigate({ href: back });
-          }}
+          // Read, and never sent, by whoever does not write the event: no «Save».
+          onSubmit={
+            editable
+              ? async (values) => {
+                  await save.mutateAsync(values);
+                  void navigate({ href: back });
+                }
+              : undefined
+          }
           submitLabel={t('common.save')}
           secondaryAction={
             <Button asChild variant="ghost">

@@ -106,6 +106,9 @@ export function RouteForm() {
   const back = `${EVENTS}/${eventId}?tab=routes`;
   const title = t(id === null ? 'events:routes.create' : 'events:routes.edit');
   const refusal = describeProblem(remove.error, t, i18n.language);
+  // «Save» and «Delete» are the server's answer on the event (`actions`, #444): a route is judged on its event's care and scope as the
+  // event is now, so the event's answer is the route's — and a new route's.
+  const editable = event.actions.canWriteRoutes;
 
   return (
     <PageShell
@@ -117,7 +120,7 @@ export function RouteForm() {
         { label: title },
       ]}
       actions={
-        route === null ? undefined : (
+        route === null || !editable ? undefined : (
           <ConfirmDialog
             triggerText={t('common.delete')}
             title={t('events:routes.delete.title')}
@@ -136,10 +139,15 @@ export function RouteForm() {
           defaults={route === null ? emptyRoute(eventId, locales) : routeToFormValues(route, locales)}
           locales={locales}
           labels="events:routes"
-          onSubmit={async (values) => {
-            await save.mutateAsync(values);
-            void navigate({ href: back });
-          }}
+          // Read, and never sent, by whoever does not write the routes of the event: no «Save».
+          onSubmit={
+            editable
+              ? async (values) => {
+                  await save.mutateAsync(values);
+                  void navigate({ href: back });
+                }
+              : undefined
+          }
           submitLabel={t('common.save')}
           secondaryAction={
             <Button asChild variant="ghost">
