@@ -5,7 +5,9 @@
 raccomandata (§9, [il commento che le riporta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/540#issuecomment-7011361289)).
 Il codice comincia nell'ordine del §7, una sessione per pezzo; la 4.1 parte in coda dopo questo documento. **Al 22 novembre 2026**
 (piano 1.57) sono unite la 4.1 (#546, nota `2026-11-19-le-schermate-del-sito-dichiarate-una-volta`) e la 4.2 (#550, nota
-`2026-11-19-l-albero-del-sito`); restano la 4.3, la 4.4 e la 4.5.
+`2026-11-19-l-albero-del-sito`); ~~restano la 4.3, la 4.4 e la 4.5~~. **Al 26 novembre 2026** (piano 1.58) **sono unite tutte e cinque,
+e la fase 4 è chiusa**: anche la 4.3 (#554, nota `2026-11-22-l-indirizzo-che-nasce-dal-titolo`), la 4.4 (#555, nota
+`2026-11-22-la-mappa-del-sito`) e la 4.5 (#558, nota `2026-11-25-la-guida-per-chi-scrive`).
 **Classificazione** (`CLAUDE.md` §5): **(c)** per due pezzi nuovi del nucleo — le schermate dell'applicazione dichiarate una volta
 (§3.1) e il blocco della mappa del sito (§5.1) —; **(b)** per il resto, che estende meccanismi che ci sono: gli indirizzi di
 `ContentAddresses`, la lettura delle pagine `GET /api/content/pages`, il form generato, il seme dei contenuti, le impostazioni dei
@@ -187,8 +189,11 @@ Letto nel codice di `main` (0.26.0, `1a174116`, piano 1.56). ⚠️ **Gran parte
   e — peggio — fotograferebbe le pagine che vede **chi pubblica**, cioè anche quelle dello staff, su una pagina pubblica. Live, il
   provider risponde a **chi legge**: `database.Contents` con il filtro di visibilità del sito (solo pagine con una versione pubblicata
   che quel lettore può leggere), più le schermate del §3.1 che quel lettore può aprire. Un visitatore vede le pagine pubbliche, un
-  membro anche quelle dei membri, lo staff anche le sue. `Audience` `Public`; `SharedFor` qualche minuto per chi non ha fatto
-  l'accesso, come gli altri blocchi che lo dichiarano.
+  membro anche quelle dei membri, lo staff anche le sue. `Audience` `Public`; ~~`SharedFor` qualche minuto per chi non ha fatto
+  l'accesso, come gli altri blocchi che lo dichiarano~~ **nessun `SharedFor`: la risposta dipende da chi legge**, e ogni lettore chiede
+  lo stesso indirizzo, quindi una regola della cache costruita senza i cookie darebbe a un membro la mappa di un visitatore (nota
+  `2026-11-22-la-mappa-del-sito` §4 scelta 6, decisa da Carmine il 23 novembre 2026 sulla
+  [#555](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/555#issuecomment-7112191216), piano 1.58).
 - **Che cosa disegna**: un elenco annidato (non un componente nuovo: `ul` dentro `ul`, lo stile della prosa), una voce per pagina con
   il titolo nella lingua sullo schermo, rientrata sotto la madre; le sorelle in ordine di titolo. `props`: un titolo facoltativo
   tradotto e, facoltativa, **la radice** (una pagina da cui partire, scelta con il campo indirizzo della fase 3), così una sezione del
@@ -236,7 +241,8 @@ Letto nel codice di `main` (0.26.0, `1a174116`, piano 1.56). ⚠️ **Gran parte
 
 Una PR per riga, ~~ognuna con la sua versione (`Directory.Build.props`)~~ **tutte sulla stessa MINOR** finché non è consegnata, come
 dice il piano 1.53: la 0.27.0, aperta una volta dal master (#551, piano 1.57), e nessuna di queste PR tocca `Directory.Build.props`;
-tutte del nucleo, quindi ognuna PR sua, con il rimando a questo documento come nota.
+tutte del nucleo, quindi ognuna PR sua, con il rimando a questo documento come nota. **La fase 4 è chiusa con la 4.5** (#558, 26
+novembre 2026, piano 1.58): 4.1 #546, 4.2 #550, 4.3 #554, 4.4 #555, 4.5 #558.
 
 | PR | Che cosa | File principali | Dopo |
 |---|---|---|---|
