@@ -593,7 +593,7 @@
         "allowedBlocks": "Nessuna casella spuntata vuol dire qualunque blocco."
       },
       "keyIs": "Chiave: {{key}} — si scrive una volta sola, così le pagine nate da questo template continuano a corrispondere a questa sezione.",
-      "howToDivide": "Per mettere cose una accanto all'altra usa le colonne; per una parte dentro questa sezione, una riga; per raggruppare, le Schede o le Domande."
+      "howToDivide": "Per mettere cose una accanto all'altra usa le colonne; per una parte dentro questa sezione, una riga; per raggruppare, le Linguette o le Domande."
     },
     "editor": {
       "structure": "Di cosa è fatta questa pagina",
@@ -1404,15 +1404,15 @@
       }
     },
     "tabs": {
-      "label": "Schede",
-      "about": "Più testi nello stesso spazio, uno per scheda: chi legge vede quello della scheda che sceglie.",
+      "label": "Linguette",
+      "about": "Più testi nello stesso spazio, uno per linguetta: chi legge vede quello della linguetta che sceglie.",
       "fields": {
-        "tabs": "Schede",
+        "tabs": "Linguette",
         "tabs.label": "Etichetta",
         "tabs.body": "Testo"
       },
       "hints": {
-        "tabs.body": "Testo con formattazione. Una scheda contiene testo, mai altri blocchi."
+        "tabs.body": "Testo con formattazione. Una linguetta contiene testo, mai altri blocchi."
       }
     },
     "accordion": {
