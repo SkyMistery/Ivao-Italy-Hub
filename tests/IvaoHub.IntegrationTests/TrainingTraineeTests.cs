@@ -559,12 +559,16 @@ public sealed partial class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyn
         await database.SaveChangesAsync(cancellationToken);
     }
 
-    /// <summary>A ban until somebody lifts it, written as the installation.</summary>
+    /// <summary>
+    /// A ban until somebody lifts it, written as the installation: after the newest ban of the member, as the module gives one (the
+    /// chain of issue #434, unique on the member and the ban followed).
+    /// </summary>
     private async Task<TraineeBan> AddBanAsync(int vid, CancellationToken cancellationToken)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<TrainingDbContext>();
-        var ban = new TraineeBan { Vid = vid, Reason = "trn-test: written by the installation" };
+        var others = await database.TraineeBans.IgnoreQueryFilters().AsNoTracking().Where(row => row.Vid == vid).ToListAsync(cancellationToken);
+        var ban = new TraineeBan { Vid = vid, Reason = "trn-test: written by the installation", FollowsBanId = TrainingBans.Newest(others) };
         database.TraineeBans.Add(ban);
         await database.SaveChangesAsync(cancellationToken);
         return ban;

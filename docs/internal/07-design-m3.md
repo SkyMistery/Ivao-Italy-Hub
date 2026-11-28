@@ -338,7 +338,10 @@ estensione n.6). Niente esito, niente voto: sono su IVAO.
 VID del trainee, motivo, **fino a quando** (vuoto: finché qualcuno non lo toglie), chi l'ha dato, e chi e quando l'ha
 tolto: la forma della tabella `trainee` di PATS. `IOwnedByDepartment` (TD), `[Audited]`, `IHasStakeholder` con il VID
 bannato. Un ban vale per **entrambi i percorsi**. Lista e form generati (§2.9). Un ban dato **chiude i training aperti** del membro
-(§2.9, issue #312): `trn_trainings.closed_by_ban` dice quali (nota `2026-11-01-il-ban-chiude-cio-che-e-aperto`).
+(§2.9, issue #312): `trn_trainings.closed_by_ban` dice quali (nota `2026-11-01-il-ban-chiude-cio-che-e-aperto`). **Due ban dello
+stesso membro nello stesso istante** ne danno uno solo (issue #434): ogni ban nuovo segue il ban più recente del membro che chi lo dà ha
+visto (`trn_bans.follows_ban_id`, 0 per nessuno), con una chiave unica su `(vid, follows_ban_id)`; il secondo salvataggio incontra la
+chiave del primo e risponde 409 (`WriteConflicts` del nucleo, #494), senza mail.
 
 ### 1.6 Le impostazioni — `TrainingSettings`
 

@@ -4509,3 +4509,52 @@ e che `Training.Ban` da solo basta per dare e togliere un ban. Una PR, branch `f
     provate dall'integrazione sulle righe della coda, non arrivate a Mailpit;
   - **le pagine nel browser**: le frasi nuove sono provate dai test web (`dates.test.ts`, `history.test.ts`), non guardate sul banco;
   - **la CI** della PR, che la dice la PR.
+
+### Correzione di #434 — Due ban dello stesso membro nello stesso istante
+
+Dalla fase di test, il punto 4 della revisione #327, lasciato fuori da #431 e #433: due staff che bannano lo stesso membro nello stesso
+istante passano entrambi il controllo «nessun ban in vigore», e i ban salvati sono due, con due mail. La issue proponeva prima un pezzo
+del nucleo, la (A): una chiave unica violata al salvataggio risponde 409. L'ha fatto #494 di Carmine (unita il 14 novembre), e la
+correzione è diventata una PR sola del training, «Closes #434» ([commento sull'issue][fix434-plan]; Carmine non ha risposto in modo
+esplicito). Nessuna nota nuova: caso (b), il meccanismo del nucleo c'è già.
+
+[fix434-plan]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/434#issuecomment-6926607114
+
+**Com'è andata (#434)** (18 novembre 2026, PR #534, da `main` a `1a174116`). **Codice del modulo, una migrazione additiva
+(`AddBanChain`), i test; nessun file del nucleo.**
+
+- **Fatto**:
+  - **la catena**: `trn_bans.follows_ban_id`, il ban più recente del membro che chi dà il ban ha visto (0 per nessuno), scritto in
+    `TrainingBans.BeforeGivingAsync` con `TrainingBans.Newest`; indice unico `ix_trn_bans_vid_follows_ban_id` su `(vid, follows_ban_id)`.
+    Il secondo salvataggio incontra la chiave del primo e il nucleo risponde 409 (`WriteConflicts`, #494); il suo `AfterSave` non gira,
+    quindi una mail sola. `BeforeGivingAsync` legge gli altri ban una volta sola, per il rifiuto e per la catena;
+  - **la migrazione**: la colonna, il riempimento (`COALESCE(LAG(id) OVER (PARTITION BY vid ORDER BY id), 0)`), poi l'indice;
+  - **il test della corsa**, deterministico (`TrainingBanClosingTests.TwoBansOfTheSameMemberAtOnceGiveOneBanOneMailAndAConflict`): una
+    transazione READ COMMITTED del test dà il primo ban e non fa commit, il secondo arriva dall'API e aspetta nel database
+    (`INNODB_TRX`, `LOCK WAIT`), il test fa commit: 409, un ban, una mail; tolto il ban, il membro si banna di nuovo;
+  - **il design**: `07-design-m3.md` §1.5-bis.
+- **Scostamenti dalla issue**:
+  1. **«Il più recente» è per id**, non per `created_at, id`: l'id è l'ordine in cui le righe sono scritte; con la data prima, una data
+     cambiata a mano farebbe seguire a due ban nuovi lo stesso ban, un 409 senza corsa. Codice e riempimento usano lo stesso ordine;
+  2. **`COALESCE`**: il `LAG` di MariaDB non prende il predefinito (`LAG(x,1,0)` è un errore di sintassi su 11.4.10, misurato).
+- **Trovato**:
+  1. ⚠️ **Un ban scritto a mano non passa dalla catena**: il primo giro dell'integrazione intera era rosso su
+     `TrainingTraineeTests.AnErasedTraineeLeavesTheRegisterCountedTheSameWithoutTheirTextsAndABanInForce`, che scrive due ban dello
+     stesso VID «come l'installazione» (`Duplicate entry '790052-0'`). L'helper `AddBanAsync` di quella classe ora segue il più recente,
+     come il modulo; nessuna asserzione cambia;
+  2. **la cancellazione non rompe l'indice**: i ban finiti prendono lo pseudonimo nuovo di quella cancellazione con i loro predecessori
+     distinti, quello in vigore resta col VID ed è il più recente. `follows_ban_id` è un id, non una persona.
+- **Verificato** (18 novembre 2026, in locale):
+  - build Debug **0 avvisi, 0 errori**; unità **1615/1615**;
+  - **rossa su `main`**: con `src/` di `main` e il solo test d'integrazione, il secondo ban è `Created`; col codice rimesso e toccato,
+    verde, e il log dice `… answered 409: DuplicateKeyEntry on /api/training/bans, key ix_trn_bans_vid_follows_ban_id`;
+  - **integrazione intera, senza filtro: 891/892**, il rosso è la trappola del Trovato n.1; dopo la correzione dell'helper,
+    `TrainingTraineeTests`, `TrainingBanClosingTests` ed `ErasureTests` **23/23**;
+  - il riempimento su `mariadb:11.4.10`, in un database di prova poi cancellato: sette righe su tre VID e uno pseudonimo, una con la data
+    più vecchia del suo predecessore; l'indice unico si crea;
+  - `core-guard` (lo script di `main`, dalla base, «Closes #434») in Git Bash: **solo il modulo e i documenti del collaboratore**.
+- **Non verificato**:
+  - l'integrazione intera **dopo** la correzione dell'helper (un'altra sessione aveva la sua suite in corso): solo le tre classi;
+  - `pnpm e2e` ed `e2e:full`: nessuna pagina cambia; web non toccato;
+  - il riempimento su una copia dei dati di produzione;
+  - la CI, che la dice la PR.

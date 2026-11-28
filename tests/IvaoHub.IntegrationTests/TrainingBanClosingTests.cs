@@ -1,3 +1,5 @@
+using System.Data;
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -18,6 +20,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using MySqlConnector;
 using Xunit;
 
 namespace IvaoHub.IntegrationTests;
@@ -28,7 +31,7 @@ namespace IvaoHub.IntegrationTests;
 /// proposed, one dated — in the ban's own save, by whoever gives it and with no reason; the dates proposed go, a dated session leaves the
 /// calendar, its trainer is told by mail; a session that has started waits for its trainer, and rescheduled under the ban it closes; when
 /// the ban is lifted nothing reopens. <c>Training.Ban</c> alone gives and lifts a ban, and nothing else does. And the two writes that can
-/// meet a ban: a step on a training it closes, and a request sent while it is given.
+/// meet a ban: a step on a training it closes, and a request sent while it is given; and two bans of the same member at once (issue #434).
 /// <para>⚠️ The trainees and the trainer have a mailbox, for the mails of the ban; the staff who bans and the one who edits have none
 /// (<c>CONTRIBUTING.md</c>, "Tests").</para>
 /// </summary>
@@ -353,7 +356,86 @@ public sealed class TrainingBanClosingTests(MariaDbFixture mariaDb) : IAsyncLife
         Assert.Empty(await MailsAsync(LateTraineeVid, TrainingNotifications.RequestReceived, token));
     }
 
+    /// <summary>
+    /// Two staff banning the same member at the same instant (issue #434, item 4 of #327): both read that no ban holds, and both would
+    /// save one, with two mails. A transaction of the test holds the first ban, given as the API gives it and not committed; the second,
+    /// through the API, reads no ban — the first is not committed — and waits in the database (<c>INNODB_TRX</c>) for the key of the
+    /// chain the first holds; the test commits, and the second is a 409: one ban, one mail. Lifted, the member is banned again: the
+    /// chain follows the newest ban, so it never stops a ban given after one the writer saw.
+    /// </summary>
+    [Fact]
+    public async Task TwoBansOfTheSameMemberAtOnceGiveOneBanOneMailAndAConflict()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var banner = await SignedInAsync(BannerVid, token);
+
+        TraineeBan first;
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            // The first ban, as the CRUD of the bans gives it — the refusal, then the save —, by the installation, not committed.
+            var database = scope.ServiceProvider.GetRequiredService<TrainingDbContext>();
+            var bans = scope.ServiceProvider.GetRequiredService<TrainingBans>();
+            await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, token);
+            first = new TraineeBan { Vid = TraineeVid, Reason = "trn-test-434: the first" };
+            database.TraineeBans.Add(first);
+            Assert.Null(await bans.BeforeGivingAsync(first, isNew: true, token));
+            await database.SaveChangesAsync(token);
+
+            // The second, through the API, waits for the first …
+            var racing = BanAsync(banner, TraineeVid, token);
+            await UntilALockWaitOrAsync(racing, token);
+
+            // … which is committed, and told by mail.
+            await transaction.CommitAsync(token);
+            await bans.AfterGivingAsync(first, token);
+
+            using var second = await racing;
+            var text = await second.Content.ReadAsStringAsync(token);
+            Assert.True(second.StatusCode == HttpStatusCode.Conflict, $"{second.StatusCode}: {text}");
+        }
+
+        Assert.Equal(1, await CountBansAsync(TraineeVid, token));
+        Assert.Single(await MailsAsync(TraineeVid, TrainingNotifications.Banned, token));
+
+        // Lifted, the member is banned again, after the newest ban.
+        var stored = await StoredBanAsync(first.Id, token);
+        await ReadAsync(await LiftAsync(banner, stored.Id, stored.RowVersion, token), HttpStatusCode.OK, token);
+        await ReadAsync(await BanAsync(banner, TraineeVid, token), HttpStatusCode.Created, token);
+        Assert.Equal(2, await CountBansAsync(TraineeVid, token));
+        Assert.Equal(2, (await MailsAsync(TraineeVid, TrainingNotifications.Banned, token)).Count);
+    }
+
     // ---- helpers -------------------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Until a transaction waits for a lock — the request under test, behind the transaction the test holds —, or the request is answered
+    /// without waiting, which the test's assertions then catch.
+    /// </summary>
+    /// <remarks>InnoDB refreshes <c>INNODB_TRX</c> only when nobody has read it for 100 ms (CONTRIBUTING.md): read every 250 ms.</remarks>
+    private async Task UntilALockWaitOrAsync(Task answered, CancellationToken cancellationToken)
+    {
+        await using var connection = new MySqlConnection(mariaDb.RootConnectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new MySqlCommand("SELECT COUNT(*) FROM information_schema.INNODB_TRX WHERE trx_state = 'LOCK WAIT'", connection);
+        for (var tries = 0; tries < 40 && !answered.IsCompleted; tries++)
+        {
+            await Task.Delay(250, cancellationToken);
+            if (Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken), CultureInfo.InvariantCulture) > 0)
+            {
+                return;
+            }
+        }
+
+        Assert.True(answered.IsCompleted, "The request neither waited for the transaction the test holds nor was answered.");
+    }
+
+    /// <summary>A ban as stored, read past every filter.</summary>
+    private async Task<TraineeBan> StoredBanAsync(long id, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<TrainingDbContext>().TraineeBans.IgnoreQueryFilters().AsNoTracking()
+            .SingleAsync(ban => ban.Id == id, cancellationToken);
+    }
 
     /// <summary>
     /// The theory as the trainee declares it, with a ban of theirs written by the installation while it is asked: outside the flow of

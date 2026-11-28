@@ -131,6 +131,9 @@ public sealed class TrainingDbContext : ModuleDbContext
 
             // A member's bans, read at every request of theirs.
             ban.HasIndex(row => row.Vid);
+
+            // The chain of a member's bans (issue #434): two given at once after the same one, and the second is a 409.
+            ban.HasIndex(row => new { row.Vid, row.FollowsBanId }).IsUnique();
         });
 
         modelBuilder.Entity<TrainingSlot>(slot =>
